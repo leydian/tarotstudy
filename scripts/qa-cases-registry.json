@@ -4,5 +4,6 @@
   "offset": 5,
   "learningCases": 20,
   "yearlyCases": 14,
+  "summaryCases": 18,
   "source": "apps/api/src/data/question-intents.js"
 }

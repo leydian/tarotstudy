@@ -412,6 +412,22 @@
   - 회귀 테스트:
     - `apps/api/test/choice-a-b-reading.test.js`에 도시 선택 케이스 추가
 
+- 전 스프레드 요약 회귀 차단 QA 추가
+  - 파일:
+    - `scripts/summary-regression-cases.json`
+    - `scripts/summary-regression-check.mjs`
+    - `apps/api/test/summary-regression.test.js`
+    - `apps/api/src/index.js`
+    - `package.json`
+  - 변경:
+    - 전 스프레드(원카드/일별/3카드/양자택일/주별/월별/연간/관계회복/켈틱) 케이스셋(18건) 추가
+    - 서버 기동 없이 요약 엔진을 직접 호출하는 회귀 점검기(`qa:summary-regression`) 신설
+    - 공통 정책(판정/근거 라인/문장부호 오류) + 스프레드별 구조 규칙 검사
+    - `verify:quality` 파이프라인에 `qa:summary-regression` 연결
+  - 검증:
+    - `npm run test:api` 통과 (신규 `summary-regression.test.js` 포함)
+    - `npm run qa:summary-regression` 통과
+
 ## 4) 최근 커밋 타임라인 (최신 우선)
 - `cf7642a` Refocus intermediate guide text for tarot-reader training
 - `45ffe13` Expand course tracks and harden card-guide quality gates

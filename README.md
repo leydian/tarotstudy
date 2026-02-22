@@ -152,6 +152,10 @@ npm run qa:refresh-cases
 ```bash
 npm run qa:relationship-recovery
 ```
+- 전 스프레드 요약 회귀 점검(판정/근거/테마 + 구조 규칙):
+```bash
+npm run qa:summary-regression
+```
 - 스프레드별 draw→review 전환율 집계 리포트:
 ```bash
 npm run qa:spread-telemetry

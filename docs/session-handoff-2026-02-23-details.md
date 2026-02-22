@@ -443,3 +443,44 @@
 
 ### 14.5 관련 커밋 (추가)
 - `de1cae9` Add learning read-model APIs and funnel-driven UI integration
+
+## 15) 2026-02-23 추가 후속 7 (전 스프레드 요약 회귀 차단 자동화)
+
+### 15.1 회귀 케이스셋 추가
+- 변경 파일:
+  - `scripts/summary-regression-cases.json`
+  - `apps/api/test/summary-regression.test.js`
+- 핵심:
+  - 전 스프레드(원카드/일별/3카드/양자택일/주별/월별/연간/관계회복/켈틱) 대상 회귀 케이스 18건 고정
+  - 스프레드별 최소 2케이스 커버리지를 테스트로 강제
+  - 케이스 정의에 `requiredAll`/`requiredAny`/`forbidden` 규칙 필드 추가
+
+### 15.2 요약 회귀 검사기 신설
+- 변경 파일:
+  - `scripts/summary-regression-check.mjs`
+  - `apps/api/src/index.js`
+- 핵심:
+  - `START_API_SERVER=false` 모드에서 서버 기동 없이 요약 엔진 직접 호출
+  - 공통 정책 검사:
+    - `판정: 우세|조건부|박빙`
+    - `근거` 라인 최소 1개
+    - 문장부호/조사 오류 금지 패턴
+  - 스프레드별 구조 검사:
+    - 주별: 월~일 + 레거시 라벨 금지
+    - 월별: `총평/주차 흐름/월-주 연결/실행 가이드/한 줄 테마`
+    - 연간: 분기/월(1~12월)/연말 구조
+    - 관계회복: `핵심 진단/관계 리스크/7일 행동 계획`
+  - 결과 리포트: `tmp/summary-regression-report.md`
+
+### 15.3 품질게이트 연결
+- 변경 파일:
+  - `package.json`
+  - `scripts/qa-cases-registry.json`
+- 핵심:
+  - `qa:summary-regression` 명령 추가
+  - `verify:quality`에 `qa:summary-regression` 포함
+  - QA 케이스 레지스트리에 `summaryCases`(18) 반영
+
+### 15.4 검증 로그 (추가)
+- `npm run test:api` 통과
+- `npm run qa:summary-regression` 통과

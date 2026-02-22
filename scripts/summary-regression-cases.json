@@ -1,0 +1,188 @@
+{
+  "generatedDate": "2026-02-22",
+  "version": 1,
+  "cases": [
+    {
+      "id": "one-card-career-1",
+      "spreadId": "one-card",
+      "level": "beginner",
+      "context": "오늘 이직 지원서를 제출해도 될까?",
+      "expect": {
+        "requiredAny": ["실행", "지원", "정비", "한 줄 테마:"],
+        "forbidden": ["소모을", "  ?"]
+      }
+    },
+    {
+      "id": "one-card-relationship-1",
+      "spreadId": "one-card",
+      "level": "beginner",
+      "context": "오늘 연락을 먼저 해도 될까?",
+      "expect": {
+        "requiredAny": ["연락", "대화", "한 줄 테마:"],
+        "forbidden": ["소모을", "  ?"]
+      }
+    },
+    {
+      "id": "daily-fortune-career-1",
+      "spreadId": "daily-fortune",
+      "level": "beginner",
+      "context": "오늘 면접 준비 흐름은 어때?",
+      "expect": {
+        "requiredAny": ["하루", "오늘", "한 줄 테마:"],
+        "forbidden": ["소모을", "  ?"]
+      }
+    },
+    {
+      "id": "daily-fortune-general-1",
+      "spreadId": "daily-fortune",
+      "level": "beginner",
+      "context": "오늘 운세는 어때?",
+      "expect": {
+        "requiredAny": ["오늘", "흐름", "한 줄 테마:"],
+        "forbidden": ["소모을", "  ?"]
+      }
+    },
+    {
+      "id": "three-card-study-1",
+      "spreadId": "three-card",
+      "level": "beginner",
+      "context": "시험 준비를 이번 주에 어떻게 운영하면 좋을까?",
+      "expect": {
+        "requiredAll": ["결론:", "근거:", "실행 가이드:", "한 줄 테마:"],
+        "forbidden": ["소모을", "  ?"]
+      }
+    },
+    {
+      "id": "three-card-relationship-1",
+      "spreadId": "three-card",
+      "level": "beginner",
+      "context": "관계를 이어갈지 잠시 거리를 둘지 고민이야",
+      "expect": {
+        "requiredAll": ["결론:", "근거:", "실행 가이드:", "한 줄 테마:"],
+        "forbidden": ["소모을", "  ?"]
+      }
+    },
+    {
+      "id": "choice-a-b-location-1",
+      "spreadId": "choice-a-b",
+      "level": "beginner",
+      "context": "부산을 갈까 광주를 갈까?",
+      "expect": {
+        "requiredAny": ["이동 거리", "정착 난이도", "관계망/지원망", "한 줄 테마:"],
+        "forbidden": ["소모을", "  ?"]
+      }
+    },
+    {
+      "id": "choice-a-b-single-question-1",
+      "spreadId": "choice-a-b",
+      "level": "beginner",
+      "context": "재회할 수 있을까?",
+      "expect": {
+        "requiredAny": ["관계", "대화", "한 줄 테마:"],
+        "forbidden": ["소모을", "  ?"]
+      }
+    },
+    {
+      "id": "weekly-career-1",
+      "spreadId": "weekly-fortune",
+      "level": "beginner",
+      "context": "다음 주 이직 준비를 어떻게 하면 좋을까?",
+      "expect": {
+        "requiredAll": ["총평:", "일별 흐름:", "실행 가이드:", "한 줄 테마:", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일", "일요일"],
+        "forbidden": ["주간 테마", "월-화", "수-목", "주간 조언", "소모을", "  ?"]
+      }
+    },
+    {
+      "id": "weekly-relationship-1",
+      "spreadId": "weekly-fortune",
+      "level": "beginner",
+      "context": "이번 주 관계 흐름을 알고 싶어",
+      "expect": {
+        "requiredAll": ["총평:", "일별 흐름:", "실행 가이드:", "한 줄 테마:", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일", "일요일"],
+        "forbidden": ["주간 테마", "월-화", "수-목", "주간 조언", "소모을", "  ?"]
+      }
+    },
+    {
+      "id": "monthly-career-1",
+      "spreadId": "monthly-fortune",
+      "level": "intermediate",
+      "context": "다음 달 이직 준비 전략을 세우고 싶어",
+      "expect": {
+        "requiredAll": ["총평:", "주차 흐름:", "월-주 연결:", "실행 가이드:", "한 줄 테마:"],
+        "forbidden": ["소모을", "  ?"]
+      }
+    },
+    {
+      "id": "monthly-finance-1",
+      "spreadId": "monthly-fortune",
+      "level": "intermediate",
+      "context": "다음 달 지출을 어떻게 관리하면 좋을까?",
+      "expect": {
+        "requiredAll": ["총평:", "주차 흐름:", "월-주 연결:", "실행 가이드:", "한 줄 테마:"],
+        "forbidden": ["소모을", "  ?"]
+      }
+    },
+    {
+      "id": "yearly-career-1",
+      "spreadId": "yearly-fortune",
+      "level": "intermediate",
+      "context": "올해 취직 시기와 준비 포인트가 궁금해",
+      "expect": {
+        "requiredAll": ["총평:", "분기별 운세:", "월별 운세:", "1분기(1~3월)", "2분기(4~6월)", "3분기(7~9월)", "4분기(10~12월)", "한 줄 테마:", "연말"],
+        "forbidden": ["소모을", "  ?"]
+      }
+    },
+    {
+      "id": "yearly-relationship-1",
+      "spreadId": "yearly-fortune",
+      "level": "intermediate",
+      "context": "올해 연애 흐름을 알고 싶어",
+      "expect": {
+        "requiredAll": ["총평:", "분기별 운세:", "월별 운세:", "1분기(1~3월)", "2분기(4~6월)", "3분기(7~9월)", "4분기(10~12월)", "한 줄 테마:", "연말"],
+        "forbidden": ["취직 시기 관점으로 정리하면", "소모을", "  ?"]
+      }
+    },
+    {
+      "id": "relationship-recovery-reconnect-1",
+      "spreadId": "relationship-recovery",
+      "level": "beginner",
+      "context": "헤어진 사람과 재회 가능성이 있을까?",
+      "expect": {
+        "requiredAll": ["핵심 진단:", "관계 리스크:", "7일 행동 계획:"],
+        "requiredAny": ["재회", "대화", "연락"],
+        "forbidden": ["소모을", "  ?"]
+      }
+    },
+    {
+      "id": "relationship-recovery-conflict-1",
+      "spreadId": "relationship-recovery",
+      "level": "beginner",
+      "context": "최근 다툰 상대와 어떻게 화해할까?",
+      "expect": {
+        "requiredAll": ["핵심 진단:", "관계 리스크:", "7일 행동 계획:"],
+        "requiredAny": ["갈등", "오해", "대화"],
+        "forbidden": ["소모을", "  ?"]
+      }
+    },
+    {
+      "id": "celtic-career-1",
+      "spreadId": "celtic-cross",
+      "level": "intermediate",
+      "context": "이번 분기 커리어 전환을 해도 될까?",
+      "expect": {
+        "requiredAny": ["현재", "교차/장애", "결과", "한 줄 테마:"],
+        "forbidden": ["소모을", "  ?"]
+      }
+    },
+    {
+      "id": "celtic-relationship-1",
+      "spreadId": "celtic-cross",
+      "level": "intermediate",
+      "context": "관계 갈등을 풀 수 있을까?",
+      "expect": {
+        "requiredAny": ["현재", "교차/장애", "결과", "한 줄 테마:"],
+        "forbidden": ["소모을", "  ?"]
+      }
+    }
+  ]
+}

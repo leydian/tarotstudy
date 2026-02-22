@@ -486,10 +486,13 @@ app.setNotFoundHandler((_request, reply) => {
   reply.code(404).send({ message: 'Not found' });
 });
 
-app.listen({ port, host }).catch((err) => {
-  app.log.error(err);
-  process.exit(1);
-});
+const shouldStartApiServer = process.env.START_API_SERVER !== 'false';
+if (shouldStartApiServer) {
+  app.listen({ port, host }).catch((err) => {
+    app.log.error(err);
+    process.exit(1);
+  });
+}
 
 function pickRandomCards(deck, count) {
   const pool = [...deck];
@@ -563,6 +566,10 @@ function summarizeSpread({ spreadId = '', spreadName, items, context = '', level
   const themeLine = buildSummaryTheme({ spreadName, context: normalizedContext, items, topKeywords });
   rawSummary = polishSummary([leadLine, focusLine, polishedActionLine, themeLine].filter(Boolean).join(' '));
   return finalizeSpreadSummary({ spreadName, items, context: normalizedContext, rawSummary });
+}
+
+export function summarizeSpreadForQa(payload = {}) {
+  return summarizeSpread(payload);
 }
 
 function finalizeSpreadSummary({ spreadName = '', items = [], context = '', rawSummary = '' }) {
