@@ -238,6 +238,75 @@
 ### 2) 연간운세 회귀 케이스 확장(비-커리어 포함)
 - 파일:
   - `scripts/yearly-fortune-regression-cases.json`
+
+---
+
+## 추가 업데이트 4 (2026-02-23: 원카드/일별 어색함 보정 + 학습 코치 전환)
+
+### 1) 원카드/일별 질문 의도 분기 보정
+- 파일: `apps/api/src/index.js`, `apps/api/src/content.js`
+- 변경:
+  - `오늘 운세는?`를 예/아니오 질문에서 제외
+  - 정보형 질문(`운세/흐름/해석`)은 daily intent로 분리
+  - 결론 문체를 `진행/가능` 중심에서 `흐름/운영` 중심으로 조정
+
+### 2) 카드 의미 정합성 보정
+- 파일: `apps/api/src/data/cards.js`, `apps/api/src/content.js`
+- 변경:
+  - `컵 4`: `감정 점검/권태/거리두기`
+  - `소드 8`: `제약/불안/관점 전환`
+  - `소드 킹`: `판단/원칙/명료함`
+  - 카드별 고유 의미와 출력 문체의 정합성 강화
+
+### 3) 학습 리더 코치 관점 전환
+- 파일: `apps/api/src/content.js`, `apps/web/src/pages/SpreadsPage.tsx`
+- 변경:
+  - 행동 코칭 중심 문장을 타로 해석 복기 중심으로 전환
+  - `카드 키워드/정역방향/포지션` 근거 점검 문구 강화
+  - 코치 라벨 중복(`질문 점검 질문`) 제거 및 표기 정리
+
+---
+
+## 추가 업데이트 5 (2026-02-23: 일별 개선 패턴의 전 스프레드 확장 + 벤치마킹 반영)
+
+### 1) 일별 운세 품질 패턴 전 스프레드 확장
+- 파일: `apps/api/src/content.js`
+- 확장 대상:
+  - `weekly-fortune`
+  - `monthly-fortune`
+  - `three-card`
+  - `choice-a-b`
+  - `celtic-cross`
+- 적용 함수:
+  - `buildSpreadConsultingGuide()`
+  - `buildOrientationCounselLine()`
+  - `buildKeywordCounselLine()`
+  - `buildCoreContextLine()`
+  - `buildSpreadCoreLead()`
+  - `buildLearningCoachFrame()`
+- 효과:
+  - 스프레드/포지션별 문장 역할 분리
+  - 반복 템플릿 문장 감소
+  - 학습 코치 포지션별 복기 기준 분기 강화
+
+### 2) 벤치마킹 요소 반영(안전한 범위)
+- 파일: `apps/api/src/index.js`
+- 반영:
+  - 종합 리딩에 `한 줄 테마` 추가
+  - 스토리 연결 문장 강화(포지션 역할 → 카드 근거 → 실행)
+  - 과장·운명 단정·과신 표현은 배제
+
+### 3) 푸시/운영 경로 정리
+- 이슈:
+  - OAuth 토큰 `workflow` scope 부재로 `main` 푸시 차단
+- 조치:
+  - 워크플로우 커밋 제외 브랜치 생성: `publish/no-workflow-v2`
+  - 원격 푸시 완료
+  - PR 생성 링크:
+    - `https://github.com/leydian/tarotstudy/pull/new/publish/no-workflow-v2`
+
+### 4) 관련 커밋
+- `666321c`, `5180d76`, `8e30e75`, `3399153`, `b254feb`, `bcbb6e7`, `f377bf9`
   - `scripts/yearly-fortune-regression-check.mjs`
   - `docs/yearly-fortune-regression-checklist.md`
 - 변경:

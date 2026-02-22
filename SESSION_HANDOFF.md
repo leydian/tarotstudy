@@ -222,3 +222,51 @@
   - `node --check apps/api/src/index.js` 통과
   - `node --check apps/api/src/content.js` 통과
   - 작업 트리는 문서 외 코드 기준 커밋 정리 완료 상태
+
+## 9) 추가 반영 (2026-02-23: 원카드/일별 품질 보정 + 전 스프레드 확장)
+- 원카드/일별 운세 어색함 보정
+  - yes/no 질문 판별에서 `오늘 운세는?` 같은 정보형 질문을 분리
+  - `진행해도 됨` 문체를 `오늘 흐름/운영` 문체로 교체
+  - 키워드 품질 보정:
+    - `컵 4`: `감정 점검/권태/거리두기`
+    - `소드 8`: `제약/불안/관점 전환`
+    - `소드 킹`: `판단/원칙/명료함`
+  - 학습 리더 코치 문체를 행동 코칭에서 타로 학습 복기 중심으로 전환
+
+- 일별 운세 개선 패턴의 전 스프레드 확장
+  - 확장 대상:
+    - `weekly-fortune`
+    - `monthly-fortune`
+    - `three-card`
+    - `choice-a-b`
+    - `celtic-cross`
+  - 공통 확장 포인트:
+    - 포지션 역할 문장 분리
+    - orientation 문장 분리
+    - 키워드 해석 문장 분리
+    - 맥락 연결 문장 분리
+    - 학습 리더 포지션별 복기 프레임 분리
+
+- 벤치마킹 반영(가져갈 요소만 적용)
+  - 과장/과신/운명 단정 문체는 배제
+  - 대신 다음 요소를 반영:
+    - 포지션 기반 서사 연결
+    - 카드 근거를 실행 문장으로 연결
+    - 종합 리딩 `한 줄 테마` 추가
+  - 적용 범위:
+    - 공통 요약 경로(`summarizeSpread`) + 특수 요약(`주간/연간/켈틱`)
+
+- 문서/운영 이슈 정리
+  - GitHub 푸시 시 OAuth 토큰 `workflow` scope 이슈 확인
+  - 워크플로우 커밋을 제외한 출고 브랜치 `publish/no-workflow-v2` 생성/푸시 완료
+  - PR 링크:
+    - `https://github.com/leydian/tarotstudy/pull/new/publish/no-workflow-v2`
+
+- 관련 최신 커밋
+  - `666321c` Improve relationship-recovery summary variation by context and risk theme
+  - `5180d76` Refine one-card repair tone and learning coach phrasing
+  - `8e30e75` Shift learning coach output to tarot interpretation review focus
+  - `3399153` Fix one-card daily-fortune intent and yes/no question detection
+  - `b254feb` Refine one-card daily reading tone, card semantics, and coach labels
+  - `bcbb6e7` Refine daily-fortune reading consistency and learning coach structure
+  - `f377bf9` Extend daily reading quality patterns across spreads and add theme summaries
