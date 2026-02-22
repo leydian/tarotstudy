@@ -30,6 +30,13 @@ type SpreadVisualPreset = {
   minColWidth: number;
 };
 
+type CoachSummarySections = {
+  core: string[];
+  action: string[];
+  caution: string[];
+  question: string[];
+};
+
 const SPREAD_VISUAL_PRESETS: Record<string, SpreadVisualPreset> = {
   'one-card': { scale: 'xl', rowHeight: 246, minColWidth: 196 },
   'three-card': { scale: 'xl', rowHeight: 222, minColWidth: 162 },
@@ -318,7 +325,7 @@ export function SpreadsPage() {
             <h4>리딩 메시지</h4>
             <div className="reading-dual-panel">
               <article className="result-item reading-summary">
-                <p><strong>타로 리더 종합 리딩</strong></p>
+                <h5 className="reading-block-title">타로 리더 종합 리딩</h5>
                 {selected.id === 'yearly-fortune'
                   ? <YearlySummaryView summary={drawMutation.data.summary} />
                   : selected.id === 'weekly-fortune'
@@ -332,7 +339,7 @@ export function SpreadsPage() {
                   )}
               </article>
               <article className="result-item reading-coach">
-                <p><strong>종합 학습 내역</strong></p>
+                <h5 className="reading-block-title">종합 학습 내역</h5>
                 <ul className="reading-lines">
                   {buildLearningDigest(drawMutation.data.items).map((line, idx) => (
                     <li key={`learning-digest-${idx}`}>{line}</li>
@@ -437,7 +444,7 @@ export function SpreadsPage() {
                   </div>
                   <div className="reading-columns">
                     <div className="reader-block">
-                      <p><strong>타로 리더 리딩</strong></p>
+                      <h5 className="reading-block-title">타로 리더 리딩</h5>
                       <div className="reading-prose-wrap">
                         {toParagraphBlocks(mergeTarotMessage(item.coreMessage, item.interpretation)).map((block, idx) => (
                           <p key={`item-tarot-${item.position.name}-${idx}`} className="reading-prose">{block}</p>
@@ -445,14 +452,11 @@ export function SpreadsPage() {
                       </div>
                     </div>
                     <div className="learning-point">
-                      <p><strong>학습 코치 요약</strong></p>
-                      <ul className="reading-lines">
-                        {toCoachBlocks(item.learningPoint || '카드 키워드 1개와 행동 1개를 짝지어 복기하세요.').map((line, idx) => (
-                          <li key={`item-learning-${item.position.name}-${idx}`}>
-                            <span className={`line-tag ${lineTagClass(line)}`}>{lineTagLabel(line)}</span> {cleanCoachPrefix(line)}
-                          </li>
-                        ))}
-                      </ul>
+                      <h5 className="reading-block-title">학습 코치 요약</h5>
+                      <CoachSummaryView
+                        lines={toCoachBlocks(item.learningPoint || '카드 키워드 1개와 행동 1개를 짝지어 복기하세요.')}
+                        scope={item.position.name}
+                      />
                     </div>
                   </div>
                 </article>
@@ -703,6 +707,92 @@ export function SpreadsPage() {
       </article>
     </section>
   );
+}
+
+function CoachSummaryView({
+  lines,
+  scope
+}: {
+  lines: string[];
+  scope: string;
+}) {
+  const sections = groupCoachSummary(lines);
+  return (
+    <div className="coach-summary-grid">
+      <article className="coach-summary-block">
+        <p className="coach-summary-title">핵심</p>
+        <ul className="reading-lines coach-lines">
+          {sections.core.map((line, idx) => (
+            <li key={`${scope}-core-${idx}`}>
+              <span className={`line-tag ${lineTagClass(line)}`}>{lineTagLabel(line)}</span> {cleanCoachPrefix(line)}
+            </li>
+          ))}
+        </ul>
+      </article>
+      <article className="coach-summary-block">
+        <p className="coach-summary-title">행동</p>
+        <ul className="reading-lines coach-lines">
+          {sections.action.map((line, idx) => (
+            <li key={`${scope}-action-${idx}`}>
+              <span className={`line-tag ${lineTagClass(line)}`}>{lineTagLabel(line)}</span> {cleanCoachPrefix(line)}
+            </li>
+          ))}
+        </ul>
+      </article>
+      <article className="coach-summary-block">
+        <p className="coach-summary-title">주의</p>
+        <ul className="reading-lines coach-lines">
+          {sections.caution.map((line, idx) => (
+            <li key={`${scope}-caution-${idx}`}>
+              <span className={`line-tag ${lineTagClass(line)}`}>{lineTagLabel(line)}</span> {cleanCoachPrefix(line)}
+            </li>
+          ))}
+        </ul>
+      </article>
+      <article className="coach-summary-block">
+        <p className="coach-summary-title">복기 질문</p>
+        <ul className="reading-lines coach-lines">
+          {sections.question.map((line, idx) => (
+            <li key={`${scope}-question-${idx}`}>
+              <span className={`line-tag ${lineTagClass(line)}`}>{lineTagLabel(line)}</span> {cleanCoachPrefix(line)}
+            </li>
+          ))}
+        </ul>
+      </article>
+    </div>
+  );
+}
+
+function groupCoachSummary(lines: string[]): CoachSummarySections {
+  const cleaned = lines.map((line) => String(line || '').trim()).filter(Boolean);
+  const sections: CoachSummarySections = {
+    core: [],
+    action: [],
+    caution: [],
+    question: []
+  };
+
+  for (const line of cleaned) {
+    if (/복기 질문|체크 질문|점검 질문|검증 질문|질문/.test(line)) {
+      sections.question.push(line);
+      continue;
+    }
+    if (/주의|리스크|경고|피할|소모|병목|멈추|조절|금지|불안정/.test(line)) {
+      sections.caution.push(line);
+      continue;
+    }
+    if (/행동|실행|시도|적어|기록|루틴|오늘|이번 주|다음/.test(line)) {
+      sections.action.push(line);
+      continue;
+    }
+    sections.core.push(line);
+  }
+
+  if (sections.core.length === 0 && cleaned.length) sections.core.push(cleaned[0]);
+  if (sections.action.length === 0) sections.action.push('핵심 카드 근거 1개와 바로 할 행동 1개를 1문장으로 적어 실행하세요.');
+  if (sections.caution.length === 0) sections.caution.push('과한 해석 확장보다 시간/감정/에너지 조건을 고정해 판단 흔들림을 줄이세요.');
+  if (sections.question.length === 0) sections.question.push('이 포지션 리딩에서 실제 행동으로 바로 옮길 근거 1개는 무엇인가요?');
+  return sections;
 }
 
 function YearlySummaryView({ summary }: { summary: string }) {

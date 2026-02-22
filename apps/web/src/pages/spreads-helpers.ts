@@ -8,10 +8,13 @@ export type ReviewChecklist = {
 };
 
 export function toParagraphBlocks(text: string) {
-  return String(text || '')
+  const rawBlocks = String(text || '')
     .split(/\n{2,}/)
     .map((part) => part.trim())
     .filter(Boolean);
+
+  if (rawBlocks.length === 0) return [];
+  return rawBlocks.flatMap((block) => splitLongParagraph(block));
 }
 
 export function toCoachBlocks(text: string) {
@@ -145,6 +148,44 @@ function splitMonthlyLines(monthlyText: string) {
     .filter(Boolean);
 
   return segments.filter((seg) => /^(?:[1-9]|1[0-2])월\([^)]*\)은/.test(seg));
+}
+
+function splitLongParagraph(block: string) {
+  const compact = String(block || '').replace(/\s+/g, ' ').trim();
+  if (!compact) return [];
+  if (compact.length <= 120) return [compact];
+
+  const sentences = compact
+    .split(/(?<=[.!?])\s+/)
+    .flatMap((line) => splitLongSentence(line.trim()))
+    .filter(Boolean);
+  if (sentences.length <= 1) return [compact];
+
+  const chunks: string[] = [];
+  let current = '';
+  for (const sentence of sentences) {
+    const next = current ? `${current} ${sentence}` : sentence;
+    if (next.length > 120 && current) {
+      chunks.push(current);
+      current = sentence;
+      continue;
+    }
+    current = next;
+  }
+  if (current) chunks.push(current);
+  return chunks;
+}
+
+function splitLongSentence(sentence: string) {
+  const text = String(sentence || '').trim();
+  if (!text) return [];
+  if (text.length <= 90) return [text];
+
+  const clauses = text
+    .split(/,\s+| 그리고 | 하지만 | 다만 | 또한 /g)
+    .map((part) => part.trim())
+    .filter(Boolean);
+  return clauses.length > 1 ? clauses : [text];
 }
 
 export function buildChoiceComparison(result: SpreadDrawResult) {
