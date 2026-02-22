@@ -1410,6 +1410,9 @@ function buildNaturalCoreMessage({
   if (contextProfile.id === 'relationship-repair') {
     return buildRepairBenchmarkCoreMessage({ card, position, orientation, spreadId });
   }
+  if (contextProfile.id === 'study') {
+    return buildStudyBenchmarkCoreMessage({ card, position, orientation, spreadId });
+  }
   if (contextProfile.id === 'social') {
     return buildSocialBenchmarkCoreMessage({ card, position, orientation, spreadId });
   }
@@ -1462,6 +1465,9 @@ function buildTarotConsultingInterpretation({
   if (contextProfile.id === 'relationship-repair') {
     return buildRepairBenchmarkInterpretation({ card, position, orientation, spreadId });
   }
+  if (contextProfile.id === 'study') {
+    return buildStudyBenchmarkInterpretation({ card, position, orientation, spreadId });
+  }
   if (contextProfile.id === 'social') {
     return buildSocialBenchmarkInterpretation({ card, position, orientation, spreadId });
   }
@@ -1513,6 +1519,68 @@ function buildRelationshipBenchmarkCoreMessage({ card, position, orientation, sp
     signalLine,
     closeLine
   ].join(' '));
+}
+
+function buildStudyBenchmarkCoreMessage({ card, position, orientation, spreadId = 'default' }) {
+  const cardDirection = orientation === 'upright' ? '정방향' : '역방향';
+  const keyword = card.keywords?.[0] ?? '학습 흐름';
+  const positionLabel = position.name || '이 자리';
+  const openerBySpread = {
+    'three-card': `${positionLabel} 카드로 시험 준비 흐름을 먼저 점검하겠습니다.`,
+    'daily-fortune': `${positionLabel} 카드로 오늘 학습 운영 포인트를 확인하겠습니다.`,
+    'weekly-fortune': `${positionLabel} 카드로 이번 주 학습 리듬을 점검하겠습니다.`,
+    'monthly-fortune': `${positionLabel} 카드로 이번 달 학습 누적 흐름을 보겠습니다.`,
+    default: `${positionLabel} 카드로 현재 학습 상태를 차분히 점검하겠습니다.`
+  };
+  const signalLine = orientation === 'upright'
+    ? `${card.nameKo}의 "${keyword}" 신호가 열려 있어, 루틴을 지키면 점수 체감으로 이어질 여지가 있습니다.`
+    : `${card.nameKo}의 "${keyword}" 신호가 흔들려, 분량 확대보다 병목 정비를 먼저 두는 편이 좋겠습니다.`;
+  const closeLine = /결과|조언/.test(positionLabel)
+    ? '결과 자리는 합격 확정이 아니라 실행 품질에 따른 변화를 읽는 자리이므로, 검증 지표를 함께 잡는 것이 중요합니다.'
+    : '학습 리딩은 의욕 판단보다 반복 주기와 복기 품질을 먼저 고정할 때 정확도가 올라갑니다.';
+  return polishCoreMessage([
+    openerBySpread[spreadId] ?? openerBySpread.default,
+    `뽑으신 카드는 '${card.nameKo} ${cardDirection}'입니다.`,
+    signalLine,
+    closeLine
+  ].join(' '));
+}
+
+function buildStudyBenchmarkInterpretation({ card, position, orientation, spreadId = 'default' }) {
+  const open = orientation === 'upright';
+  const positionLabel = position.name || '이 자리';
+  const main = card.keywords?.[0] ?? '학습 흐름';
+  const sub = card.keywords?.[1] ?? main;
+  const spreadPrefix = spreadId === 'three-card'
+    ? '3카드 시험 리딩에서는'
+    : '학습 리딩에서는';
+
+  const roleLine = (() => {
+    if (positionLabel === '상황' || positionLabel === '문제' || positionLabel === '과거') {
+      return open
+        ? `${spreadPrefix} ${positionLabel}에서 '${main}' 신호가 유지되고 있어, 기본 루틴을 지키는 힘은 남아 있습니다.`
+        : `${spreadPrefix} ${positionLabel}에서 '${main}' 신호가 꺾여 있어, 피로 누수와 루틴 정체를 먼저 정리해야 합니다.`;
+    }
+    if (positionLabel === '행동' || positionLabel === '해결방법' || positionLabel === '현재') {
+      return open
+        ? `${positionLabel} 자리는 '${main}'에서 '${sub}'로 이어지는 실행 변환 구간이라, 작은 반복을 누적하는 전략이 맞습니다.`
+        : `${positionLabel} 자리는 '${main}' 신호가 흔들리기 쉬워, 범위 확대보다 학습 단위를 줄여 안정화하는 편이 더 효과적입니다.`;
+    }
+    if (positionLabel === '결과' || positionLabel === '조언' || positionLabel === '미래') {
+      return open
+        ? `${positionLabel} 자리는 결과 가능성이 열려 있지만, 점수는 루틴 유지율에 비례해 움직일 가능성이 큽니다.`
+        : `${positionLabel} 자리는 결과 구간 마찰이 있어, 속도보다 복기 품질을 먼저 끌어올려야 체감이 살아납니다.`;
+    }
+    return open
+      ? `${positionLabel}에서는 '${main}' 신호가 열려 있어, 반복형 학습 구조로 연결하면 효율이 올라갑니다.`
+      : `${positionLabel}에서는 '${main}' 신호가 예민해, 학습 강도를 낮추고 리듬을 정비하는 편이 더 안전합니다.`;
+  })();
+
+  const realityLine = '시험 맥락에서는 "많이"보다 "반복 가능성"이 성패를 가르므로, 학습량/복기/휴식 비율을 함께 점검해야 합니다.';
+  const actionLine = open
+    ? '실행 문장: 오늘은 취약 파트 1개 + 기출 1세트 + 오답 복기 20분만 고정해 루틴을 지켜보세요.'
+    : '실행 문장: 오늘은 분량 확장을 중단하고, 가장 막히는 유형 1개만 정리한 뒤 짧은 회독으로 마무리하세요.';
+  return polishTarotInterpretation([roleLine, realityLine, actionLine].join(' '));
 }
 
 function buildRelationshipBenchmarkInterpretation({ card, position, orientation, spreadId = 'default' }) {

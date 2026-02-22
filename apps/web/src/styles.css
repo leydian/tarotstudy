@@ -556,6 +556,131 @@ input {
   background: linear-gradient(135deg, #edf3ff, #e8f7f3);
 }
 
+.reading-controls {
+  display: flex;
+  justify-content: flex-end;
+  margin: 4px 0 10px;
+}
+
+.reading-insights {
+  border: 1px solid #d7def7;
+  background: linear-gradient(135deg, #f8fbff, #eef9ff);
+}
+
+.verdict-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.verdict-badge {
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  border: 1px solid transparent;
+}
+
+.verdict-go {
+  background: #e9f9ef;
+  color: #0c6b34;
+  border-color: #92deb3;
+}
+
+.verdict-conditional {
+  background: #fff7e9;
+  color: #8d5400;
+  border-color: #f0ca8c;
+}
+
+.verdict-hold {
+  background: #fff0f0;
+  color: #9a1f1f;
+  border-color: #efb5b5;
+}
+
+.conflict-warning {
+  margin: 0 0 10px;
+  padding: 8px 10px;
+  border: 1px solid #f1bf83;
+  background: #fff7ea;
+  border-radius: 8px;
+  color: #915312;
+}
+
+.action-cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.action-card {
+  border: 1px solid #d8e4f2;
+  border-radius: 10px;
+  background: #ffffff;
+  padding: 10px;
+}
+
+.action-card h5 {
+  margin: 0 0 6px;
+}
+
+.action-card p {
+  margin: 0;
+}
+
+.timeline-wrap h5 {
+  margin: 0 0 8px;
+}
+
+.timeline-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.timeline-step {
+  border: 1px solid #dce6f8;
+  border-radius: 10px;
+  background: #fff;
+  padding: 8px 10px;
+}
+
+.timeline-step p {
+  margin: 2px 0;
+}
+
+.evidence-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.evidence-chip {
+  border-radius: 999px;
+  border: 1px solid #cbd9f0;
+  background: #f5f9ff;
+  color: #2f4f7b;
+  font-size: 0.76rem;
+  padding: 3px 8px;
+}
+
+.review-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.review-check-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  color: #314862;
+}
+
 @media (max-width: 820px) {
   .topbar {
     flex-direction: column;
@@ -586,6 +711,11 @@ input {
   }
 
   .comparison-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .action-cards,
+  .timeline-grid {
     grid-template-columns: 1fr;
   }
 

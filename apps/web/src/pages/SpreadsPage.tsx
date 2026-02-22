@@ -6,12 +6,21 @@ import { TarotImage } from '../components/TarotImage';
 import { useProgressStore } from '../state/progress';
 import type { SpreadDrawResult } from '../types';
 
+type ReviewChecklist = {
+  routine: boolean;
+  time: boolean;
+  mistakes: boolean;
+  condition: boolean;
+};
+
 export function SpreadsPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [variantId, setVariantId] = useState<string | null>(null);
   const [context, setContext] = useState('');
   const [readingLevel, setReadingLevel] = useState<'beginner' | 'intermediate'>('beginner');
+  const [showDetail, setShowDetail] = useState(false);
   const [reviewDraft, setReviewDraft] = useState<Record<string, string>>({});
+  const [reviewChecklistDraft, setReviewChecklistDraft] = useState<Record<string, ReviewChecklist>>({});
   const spreadsQuery = useQuery({ queryKey: ['spreads'], queryFn: api.getSpreads });
   const spreadHistory = useProgressStore((s) => s.spreadHistory);
   const addSpreadReading = useProgressStore((s) => s.addSpreadReading);
@@ -209,7 +218,7 @@ export function SpreadsPage() {
                   ? <YearlySummaryView summary={drawMutation.data.summary} />
                   : (
                     <div className="reading-prose-wrap">
-                      {toParagraphBlocks(drawMutation.data.summary).map((block, idx) => (
+                      {toParagraphBlocks(drawMutation.data.summary).slice(0, showDetail ? undefined : 2).map((block, idx) => (
                         <p key={`summary-block-${idx}`} className="reading-prose">{block}</p>
                       ))}
                     </div>
@@ -233,6 +242,56 @@ export function SpreadsPage() {
                 </ul>
               </article>
             </div>
+
+            <div className="reading-controls">
+              <button className="btn" onClick={() => setShowDetail((prev) => !prev)}>
+                {showDetail ? '핵심만 보기' : '상세 보기'}
+              </button>
+            </div>
+
+            {(() => {
+              const insights = buildReadingInsights({
+                spreadId: selected.id,
+                context: drawMutation.data.context,
+                items: drawMutation.data.items
+              });
+              return (
+                <article className="result-item reading-insights">
+                  <div className="verdict-row">
+                    <span className={`verdict-badge verdict-${insights.verdict}`}>
+                      {insights.verdictLabel}
+                    </span>
+                    <p className="sub">{insights.verdictReason}</p>
+                  </div>
+                  {insights.conflictWarning && (
+                    <p className="conflict-warning">{insights.conflictWarning}</p>
+                  )}
+                  <div className="action-cards">
+                    {insights.actions.map((action, idx) => (
+                      <article key={`action-${idx}`} className="action-card">
+                        <h5>{action.title}</h5>
+                        <p>{action.body}</p>
+                      </article>
+                    ))}
+                  </div>
+                </article>
+              );
+            })()}
+
+            {selected.id === 'three-card' && drawMutation.data.items.length === 3 && (
+              <article className="result-item timeline-wrap">
+                <h5>상황-행동-결과 타임라인</h5>
+                <div className="timeline-grid">
+                  {drawMutation.data.items.map((item, idx) => (
+                    <div key={`timeline-${item.position.name}-${idx}`} className="timeline-step">
+                      <p className="sub">{item.position.name}</p>
+                      <p><strong>{item.card.nameKo}</strong> · {item.orientation === 'reversed' ? '역방향' : '정방향'}</p>
+                      <p className="sub">핵심: {item.card.keywords[0] || '흐름'}</p>
+                    </div>
+                  ))}
+                </div>
+              </article>
+            )}
 
             {choiceComparison && (
               <div className="comparison-grid">
@@ -277,13 +336,18 @@ export function SpreadsPage() {
                       <p className="sub">{item.position.meaning}</p>
                       <p>{item.card.nameKo} ({item.card.name})</p>
                       <p>키워드: {item.card.keywords.join(' · ')}</p>
+                      <div className="evidence-chips">
+                        <span className="evidence-chip">근거키워드: {item.card.keywords[0] || '흐름'}</span>
+                        <span className="evidence-chip">리스크: {scoreItemRisk(item) >= 2 ? '주의' : '보통'}</span>
+                        <span className="evidence-chip">톤: {item.orientation === 'reversed' ? '조정' : '진행'}</span>
+                      </div>
                     </div>
                   </div>
                   <div className="reading-columns">
                     <div className="reader-block">
                       <p><strong>타로 리더 리딩</strong></p>
                       <div className="reading-prose-wrap">
-                        {toParagraphBlocks(mergeTarotMessage(item.coreMessage, item.interpretation)).map((block, idx) => (
+                        {toParagraphBlocks(mergeTarotMessage(item.coreMessage, item.interpretation)).slice(0, showDetail ? undefined : 1).map((block, idx) => (
                           <p key={`item-tarot-${item.position.name}-${idx}`} className="reading-prose">{block}</p>
                         ))}
                       </div>
@@ -376,10 +440,14 @@ export function SpreadsPage() {
                   value={record.outcome ?? ''}
                   onChange={(e) => {
                     const nextOutcome = (e.target.value || undefined) as 'matched' | 'partial' | 'different' | undefined;
+                    const noteWithChecklist = mergeReviewNoteAndChecklist(
+                      reviewDraft[record.id] ?? stripChecklistTags(record.reviewNote ?? ''),
+                      reviewChecklistDraft[record.id] ?? parseChecklistFromNote(record.reviewNote ?? '')
+                    );
                     reviewSpreadReading(
                       record.id,
                       nextOutcome,
-                      reviewDraft[record.id] ?? record.reviewNote ?? ''
+                      noteWithChecklist
                     );
                     if (nextOutcome) {
                       sendSpreadEvent({
@@ -396,18 +464,50 @@ export function SpreadsPage() {
                   <option value="partial">부분적으로 맞음</option>
                   <option value="different">다름</option>
                 </select>
-                <input
-                  value={reviewDraft[record.id] ?? record.reviewNote ?? ''}
+              <input
+                  value={reviewDraft[record.id] ?? stripChecklistTags(record.reviewNote ?? '')}
                   onChange={(e) => setReviewDraft((prev) => ({ ...prev, [record.id]: e.target.value }))}
                   placeholder="실제 결과 메모"
                 />
+                <div className="review-checks">
+                  {([
+                    ['routine', '루틴 준수'],
+                    ['time', '시간 관리'],
+                    ['mistakes', '오답 관리'],
+                    ['condition', '컨디션 관리']
+                  ] as const).map(([key, label]) => {
+                    const current = reviewChecklistDraft[record.id] ?? parseChecklistFromNote(record.reviewNote ?? '');
+                    return (
+                      <label key={`${record.id}-${key}`} className="review-check-item">
+                        <input
+                          type="checkbox"
+                          checked={Boolean(current[key])}
+                          onChange={(e) =>
+                            setReviewChecklistDraft((prev) => ({
+                              ...prev,
+                              [record.id]: {
+                                ...current,
+                                [key]: e.target.checked
+                              }
+                            }))
+                          }
+                        />
+                        {label}
+                      </label>
+                    );
+                  })}
+                </div>
                 <button
                   className="btn"
                   onClick={() => {
+                    const noteWithChecklist = mergeReviewNoteAndChecklist(
+                      reviewDraft[record.id] ?? stripChecklistTags(record.reviewNote ?? ''),
+                      reviewChecklistDraft[record.id] ?? parseChecklistFromNote(record.reviewNote ?? '')
+                    );
                     reviewSpreadReading(
                       record.id,
                       record.outcome,
-                      reviewDraft[record.id] ?? record.reviewNote ?? ''
+                      noteWithChecklist
                     );
                     if (record.outcome) {
                       sendSpreadEvent({
@@ -590,4 +690,93 @@ function buildChoiceComparison(result: SpreadDrawResult) {
       : '현재 리딩 기준으로는 B 시나리오가 단기-결과 흐름이 더 안정적입니다.';
 
   return { current, aNear, aResult, bNear, bResult, recommendation, confidenceLabel };
+}
+
+function inferQuestionDomain(context: string) {
+  const text = String(context || '').toLowerCase();
+  if (/(한능검|시험|공부|학습|자격증|합격|준비|기출)/.test(text)) return 'study';
+  if (/(이직|취업|면접|업무|프로젝트|커리어)/.test(text)) return 'career';
+  if (/(연애|관계|재회|갈등|화해|상대)/.test(text)) return 'relationship';
+  if (/(돈|재정|지출|저축|투자|수입)/.test(text)) return 'finance';
+  return 'general';
+}
+
+function scoreItemRisk(item: SpreadDrawResult['items'][number] | undefined) {
+  if (!item) return 0;
+  const text = `${item.card.nameKo} ${(item.card.keywords || []).join(' ')}`.toLowerCase();
+  let score = item.orientation === 'reversed' ? 1 : 0;
+  if (/(불안|갈등|소모|병목|손실|지연|권태|혼란|압박)/.test(text)) score += 1;
+  return score;
+}
+
+function buildReadingInsights({
+  spreadId,
+  context,
+  items
+}: {
+  spreadId: string;
+  context: string;
+  items: SpreadDrawResult['items'];
+}) {
+  const first = items[0];
+  const middle = items[1];
+  const last = items[items.length - 1];
+  const domain = inferQuestionDomain(context);
+  const openCount = items.filter((item) => item.orientation === 'upright').length;
+  const riskTotal = items.reduce((acc, item) => acc + scoreItemRisk(item), 0);
+  const verdict: 'go' | 'conditional' | 'hold' =
+    openCount >= 2 && riskTotal <= 2 ? 'go' : openCount >= 1 ? 'conditional' : 'hold';
+  const verdictLabel = verdict === 'go' ? '진행 권장' : verdict === 'conditional' ? '조건부 진행' : '보류 후 정비';
+  const verdictReason = verdict === 'go'
+    ? '결과 카드가 열려 있어 실행 가능성이 있습니다. 다만 과속보다 루틴 유지가 핵심입니다.'
+    : verdict === 'conditional'
+      ? '가능성은 있으나 병목 신호가 있어 실행 조건을 좁혀야 결과가 안정됩니다.'
+      : '지금은 확장보다 정비가 우선입니다. 병목을 먼저 줄인 뒤 재시도하는 편이 안전합니다.';
+  const conflictWarning = first?.orientation === 'reversed' && verdict === 'go'
+    ? '초반 카드 경고와 결론이 충돌할 수 있습니다. 즉시 확장 대신 리스크 관리형 실행으로 조정하세요.'
+    : '';
+  const actions = domain === 'study'
+    ? [
+      { title: '오늘 할 일 1개', body: '취약 파트 1개 + 기출 1세트 + 오답 20분만 고정하고 분량 확장은 멈추세요.' },
+      { title: '이번 주 운영', body: '동일 시간대 학습 루틴을 3일 이상 유지하고, 주 1회 시간 배분 리허설을 넣으세요.' },
+      { title: '지금 피할 것', body: '새 교재/새 범위 확장보다 기존 오답 유형 재정리에 집중하세요.' }
+    ]
+    : [
+      { title: '오늘 실행', body: `${middle?.position.name || '중앙'} 카드 기준으로 실행 항목 1개만 고정하세요.` },
+      { title: '중간 점검', body: `${last?.position.name || '결과'} 카드 기준으로 검증 지표 1개를 정해 오늘 기록하세요.` },
+      { title: '주의점', body: `${first?.position.name || '시작'} 카드의 경고 신호를 무시하지 말고 속도를 조절하세요.` }
+    ];
+
+  if (spreadId !== 'three-card') {
+    actions[0].title = '핵심 실행';
+  }
+
+  return { verdict, verdictLabel, verdictReason, conflictWarning, actions };
+}
+
+function parseChecklistFromNote(note: string): ReviewChecklist {
+  const text = String(note || '');
+  return {
+    routine: text.includes('[루틴준수]'),
+    time: text.includes('[시간관리]'),
+    mistakes: text.includes('[오답관리]'),
+    condition: text.includes('[컨디션관리]')
+  };
+}
+
+function stripChecklistTags(note: string) {
+  return String(note || '')
+    .replace(/\s*\[(루틴준수|시간관리|오답관리|컨디션관리)\]/g, '')
+    .trim();
+}
+
+function mergeReviewNoteAndChecklist(note: string, checklist: ReviewChecklist) {
+  const tags = [
+    checklist.routine ? '[루틴준수]' : '',
+    checklist.time ? '[시간관리]' : '',
+    checklist.mistakes ? '[오답관리]' : '',
+    checklist.condition ? '[컨디션관리]' : ''
+  ].filter(Boolean).join(' ');
+  const cleanNote = stripChecklistTags(note);
+  return `${cleanNote}${tags ? ` ${tags}` : ''}`.trim();
 }
