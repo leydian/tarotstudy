@@ -1835,9 +1835,15 @@ function buildSummaryFocus({ spreadName, firstItem, lastItem, context = '', cont
   const intent = inferYearlyIntent(context);
   if (!firstItem || !lastItem) return contextTone.mainHint;
   if (spreadName === '원카드' || firstItem.position.name === '핵심 메시지') {
+    if (intent === 'relationship') {
+      return '연애 질문에서는 카드 한 장을 크게 해석하기보다, 오늘 내 감정 1개와 전달할 요청 1개를 분리해 읽는 방식이 가장 안정적입니다. 상대 마음을 단정하기보다 실제 반응을 확인하는 대화 한 번에 집중해보세요.';
+    }
     return `실행: ${buildOneCardActionLine({ context, firstItem })}`;
   }
   if (spreadName === '양자택일 (A/B)') {
+    if (intent === 'relationship') {
+      return '연애 양자택일은 누가 더 맞는지보다, 내 감정 소모가 덜하고 대화가 오래 유지되는 쪽을 기준으로 보셔야 정확합니다. 각 선택지에서 마음이 편해지는 순간과 불편해지는 순간을 한 가지씩 비교해보세요.';
+    }
     return `양자택일에서는 현재 상황 카드로 판단 기준을 먼저 고정하고, A/B 결과 카드에서 내가 오래 유지할 수 있는 쪽을 우선 보세요. ${contextTone.mainHint}`;
   }
   if (spreadName === '일별 운세') {
@@ -1847,16 +1853,31 @@ function buildSummaryFocus({ spreadName, firstItem, lastItem, context = '', cont
     return `일별 운세는 오늘의 흐름 카드로 페이스를 잡고, 행동 조언 카드 한 줄만 실제 일정에 반영하면 충분합니다. ${contextTone.mainHint}`;
   }
   if (spreadName === '주별 운세') {
+    if (intent === 'relationship') {
+      return '주간 연애운은 힘이 실리는 날에 대화를 열고, 조심할 날에는 감정 템포를 낮추는 운영이 핵심입니다. 하루에 결론을 내기보다 관계 온도를 안정적으로 맞추는 흐름으로 보시면 좋습니다.';
+    }
     return `주별 운세는 월요일 시동 카드에서 시작해 일요일 복기 카드까지 일자별 흐름으로 연결해서 보면 판단이 안정됩니다. ${contextTone.mainHint}`;
   }
   if (spreadName === '월별 운세') {
+    if (intent === 'relationship') {
+      return '월간 연애운에서는 초반 감정 반응보다 중후반의 일관된 태도가 더 중요합니다. 월간 테마를 기준으로 대화 빈도와 거리 조절을 맞추면 관계 피로를 크게 줄일 수 있습니다.';
+    }
     return `월별 운세는 월간 테마로 방향을 세우고 1~4주차 카드로 강약만 조절하면 됩니다. ${contextTone.mainHint}`;
   }
   if (spreadName === '연간 운세 (12개월)') {
+    if (intent === 'relationship') {
+      return '연간 연애운은 월별 사건보다 분기별 감정 흐름을 읽는 방식이 더 현실적입니다. 가까워지는 시기와 숨 고르는 시기를 나눠 잡으면 관계 안정성이 높아집니다.';
+    }
     return `연간 운세는 월별 사건에 매달리기보다 분기별 공통 흐름을 잡을 때 훨씬 선명해집니다. ${contextTone.mainHint}`;
   }
   if (spreadName === '켈틱 크로스') {
+    if (intent === 'relationship') {
+      return '켈틱 연애 리딩은 현재 감정, 갈등 지점, 결과 흐름을 한 줄로 연결해 읽을 때 정확도가 올라갑니다. 상대 의도 추측보다 반복되는 대화 패턴을 먼저 확인해보세요.';
+    }
     return `켈틱 크로스는 현재/교차 카드로 중심 갈등을 확인하고 결과 카드로 연결하면 흐름이 깔끔해집니다. ${contextTone.mainHint}`;
+  }
+  if (intent === 'relationship') {
+    return '이 연애 흐름은 카드별 결론을 서두르기보다 현재 신호와 다음 행동을 짧게 연결해 읽는 방식이 안정적입니다. 오늘은 감정 1개와 요청 1개를 분리해 전달하는 연습에 집중해보세요.';
   }
   return `먼저 ${firstItem.position.name}의 ${firstItem.card.nameKo} 카드를 중심에 두고, 마지막 ${lastItem.position.name}의 ${lastItem.card.nameKo} 카드를 결론으로 잡아보세요. ${contextTone.mainHint}`;
 }
@@ -1865,32 +1886,56 @@ function buildSummaryAction({ spreadName, level, context = '', firstItem = null,
   const intent = inferYearlyIntent(context);
   const levelLine = level === 'intermediate' ? contextTone.intermediateHint : contextTone.beginnerHint;
   if (spreadName === '원카드') {
+    if (intent === 'relationship') {
+      return `오늘 연애운 조언은 두 갈래로 보시면 됩니다. 관계를 더 깊게 이어가고 싶다면 짧고 분명한 감정 표현을 먼저 건네보세요. 반대로 마음이 버겁다면 대화 간격을 잠시 넓히고 내 리듬을 회복한 뒤 다시 이어가는 편이 좋습니다. ${levelLine}`;
+    }
     const reviewLine = buildOneCardReviewLine({ context, firstItem });
     return `복기: ${reviewLine} ${levelLine}`;
   }
   if (spreadName === '일별 운세') {
     if (intent === 'relationship') {
-      return `오늘은 답을 빨리 내리기보다 사실 확인 질문 1개를 먼저 두고, 감정 소모가 올라가면 대화 템포를 한 단계 늦추세요. ${levelLine}`;
+      return `오늘 연애운 조언은 두 갈래로 보시면 됩니다. 관계를 더 깊게 이어가고 싶다면 짧고 진솔한 확인 대화를 먼저 열어 감정의 접점을 넓혀보세요. 반대로 지금 조금 버겁다면 감정적 거리를 잠시 두고, 내 마음을 회복한 뒤 천천히 대화 속도를 맞추는 편이 좋습니다. ${levelLine}`;
     }
     return `오늘은 맞추려 하기보다 리듬을 지키는 쪽이 더 좋습니다. ${levelLine}`;
   }
   if (spreadName === '주별 운세') {
+    if (intent === 'relationship') {
+      return `이번 주 연애운은 두 갈래 조언으로 정리됩니다. 가까워지고 싶다면 힘이 실리는 날에 확인 대화를 먼저 열어보세요. 거리 조절이 필요하다면 조심할 날에는 결론 대신 감정 정리에 집중하는 편이 좋습니다. ${levelLine}`;
+    }
     return `한 주를 한 번에 바꾸려 하지 말고, 중반부터 천천히 페이스를 맞춰 보세요. ${levelLine}`;
   }
   if (spreadName === '월별 운세') {
+    if (intent === 'relationship') {
+      return `이번 달 연애운은 두 갈래 운영이 좋습니다. 관계 진전을 원하면 짧고 일관된 배려 행동을 반복해 신뢰를 쌓아보세요. 부담이 크다면 대화 강도를 낮추고 오해를 줄이는 확인 질문 중심으로 흐름을 조정하세요. ${levelLine}`;
+    }
     return `월간 리딩은 초반 스퍼트보다 후반 유지력이 더 중요합니다. ${levelLine}`;
   }
   if (spreadName === '연간 운세 (12개월)') {
+    if (intent === 'relationship') {
+      return `연간 연애운도 두 갈래로 보시면 됩니다. 관계를 깊게 가져가고 싶다면 상승 구간에 약속과 계획을 구체화하세요. 숨 고르기가 필요하다면 조정 구간에 감정 소모를 줄이고 경계를 분명히 세우는 편이 좋습니다. ${levelLine}`;
+    }
     return `연간 리딩은 월별 성과보다 분기별 균형을 먼저 챙기면 덜 흔들립니다. ${levelLine}`;
   }
   if (spreadName === '양자택일 (A/B)') {
+    if (intent === 'relationship') {
+      return `선택형 연애운 조언도 두 갈래입니다. 더 가까워지고 싶다면 대화가 편안하게 이어지는 쪽을 고르세요. 안정이 우선이라면 감정 소모가 적고 경계가 지켜지는 선택지를 우선하는 편이 좋습니다. ${levelLine}`;
+    }
     return `결정 전에는 시간, 비용, 마음 소모 이 세 가지만 두 선택지에 대입해 보세요. ${levelLine}`;
   }
   if (spreadName === '3카드 스프레드') {
+    if (intent === 'relationship') {
+      return `3카드 연애운은 두 갈래 실행으로 마무리하면 좋습니다. 관계를 열고 싶다면 오늘 감정 1개를 먼저 솔직하게 말해보세요. 부담이 크다면 판단을 미루고 확인 질문 1개만 남기는 방식이 안전합니다. ${levelLine}`;
+    }
     return `세 장의 공통 키워드 하나를 잡아 오늘 행동 한 줄로 바꾸면 충분합니다. ${levelLine}`;
   }
   if (spreadName === '켈틱 크로스') {
+    if (intent === 'relationship') {
+      return `켈틱 연애운 조언은 두 갈래입니다. 회복과 진전을 원하면 사실-감정-요청 순서로 대화를 짧게 여세요. 소모가 크다면 감정 과열 구간을 먼저 줄이고, 결론은 다음 대화로 넘기는 편이 안정적입니다. ${levelLine}`;
+    }
     return `복합 이슈일수록 중심 흐름과 외부 환경을 분리해서 천천히 정리해 보세요. ${levelLine}`;
+  }
+  if (intent === 'relationship') {
+    return `연애운 조언은 두 갈래로 정리됩니다. 가까워지고 싶다면 확인 대화를 짧고 꾸준하게 이어가세요. 거리 조절이 필요하다면 감정 소모를 낮추고 경계를 분명히 하며 속도를 늦추는 편이 좋습니다. ${levelLine}`;
   }
   return `지금은 완벽한 결론보다 바로 실행할 작은 선택 하나가 더 중요합니다. ${levelLine}`;
 }
@@ -1909,9 +1954,9 @@ function polishSummary(raw = '') {
   while (sentences.length < 3) {
     sentences.push('지금은 마음이 끌리는 방향 하나를 정하고 가볍게 움직여 보세요.');
   }
-  if (sentences.length > 4) sentences.splice(4);
+  if (sentences.length > 5) sentences.splice(5);
   let out = sentences.join(' ');
-  if (out.length > 460) out = `${out.slice(0, 459).trim()}…`;
+  if (out.length > 620) out = `${out.slice(0, 619).trim()}…`;
   return out;
 }
 

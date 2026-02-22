@@ -1369,6 +1369,9 @@ function buildNaturalCoreMessage({
   if (spreadId === 'yearly-fortune' && isYearlyMonthPosition(position.name)) {
     return buildYearlyMonthCoreMessage({ card, position, orientation, context, seed });
   }
+  if (contextProfile.id === 'relationship') {
+    return buildRelationshipBenchmarkCoreMessage({ card, position, orientation, spreadId });
+  }
   if (spreadId === 'one-card') {
     return buildOneCardCoreMessage({ card, orientation, context });
   }
@@ -1406,6 +1409,9 @@ function buildTarotConsultingInterpretation({
   if (spreadId === 'yearly-fortune' && isYearlyMonthPosition(position.name)) {
     return buildYearlyMonthInterpretation({ card, position, orientation, context, seed });
   }
+  if (contextProfile.id === 'relationship') {
+    return buildRelationshipBenchmarkInterpretation({ card, position, orientation, spreadId });
+  }
   if (spreadId === 'one-card') {
     return buildOneCardInterpretation({ card, orientation, focus, context });
   }
@@ -1420,6 +1426,78 @@ function buildTarotConsultingInterpretation({
     : buildCoreContextLine({ spreadId, positionName: position.name, contextProfile, seed });
   const actionLine = buildTarotActionLine({ spreadId, positionName: position.name, contextProfile, orientation, seed });
   return polishTarotInterpretation([spreadGuide, orientationGuide, keywordGuide, contextLine, actionLine].join(' '));
+}
+
+function buildRelationshipBenchmarkCoreMessage({ card, position, orientation, spreadId = 'default' }) {
+  const cardDirection = orientation === 'upright' ? '정방향' : '역방향';
+  const keyword = card.keywords?.[0] ?? '감정';
+  const positionTopic = withKoreanParticle(position.name, '은', '는');
+  const spreadOpeners = {
+    'daily-fortune': `${position.name} 카드로 오늘 연애 흐름을 조심스럽게 살펴보겠습니다.`,
+    'weekly-fortune': `${position.name} 카드로 이번 주 연애 흐름의 결을 차분히 살펴보겠습니다.`,
+    'monthly-fortune': `${position.name} 카드로 이번 달 연애 리듬을 점검해보겠습니다.`,
+    'yearly-fortune': `${position.name} 카드로 올해 연애 흐름의 방향을 살펴보겠습니다.`,
+    'choice-a-b': `${position.name} 카드로 관계 선택의 결을 비교해보겠습니다.`,
+    'celtic-cross': `${position.name} 카드가 관계 서사에서 어떤 역할을 하는지 먼저 보겠습니다.`,
+    'relationship-recovery': `${position.name} 카드로 관계 회복의 현재 신호를 먼저 확인해보겠습니다.`,
+    default: `${position.name} 카드로 현재 연애 흐름을 차분히 살펴보겠습니다.`
+  };
+  const signalLine = orientation === 'upright'
+    ? `${card.nameKo}의 "${keyword}" 신호가 열려 있어 오늘 관계 흐름을 부드럽게 풀어가기 좋은 타이밍입니다.`
+    : `${card.nameKo}의 "${keyword}" 신호가 예민해 보여, 오늘은 결론보다 감정 온도를 먼저 맞추는 편이 좋겠습니다.`;
+  const closeLine = position.name === '행동 조언'
+    ? '오늘 바로 실천할 짧은 대화 문장 1개만 정해도 체감이 달라질 수 있습니다.'
+    : `${positionTopic} 과하게 해석하기보다 오늘 실제 반응을 차분히 확인해보는 것이 중요합니다.`;
+  return polishCoreMessage([
+    spreadOpeners[spreadId] ?? spreadOpeners.default,
+    `뽑으신 카드는 '${card.nameKo} ${cardDirection}'입니다.`,
+    signalLine,
+    closeLine
+  ].join(' '));
+}
+
+function buildRelationshipBenchmarkInterpretation({ card, position, orientation, spreadId = 'default' }) {
+  const main = card.keywords?.[0] ?? '감정';
+  const sub = card.keywords?.[1] ?? main;
+  const open = orientation === 'upright';
+  const positionLabel = position.name || '이 자리';
+  const relationshipLine = (() => {
+    if (positionLabel === '오늘의 흐름') {
+      return open
+        ? `오늘은 '${main}'에서 '${sub}'으로 감정이 자연스럽게 이어질 가능성이 있어, 대화의 문을 부드럽게 열기 좋은 흐름입니다.`
+        : `오늘은 '${main}' 신호가 흔들리기 쉬워, 감정이 커지기 전 속도를 낮추는 접근이 관계를 더 안정적으로 만듭니다.`;
+    }
+    if (positionLabel === '주의할 점') {
+      return open
+        ? `겉으로는 괜찮아 보여도 '${main}' 테마에서 작은 말투 차이가 오해로 번질 수 있으니 표현 강도를 조절하는 편이 좋습니다.`
+        : `'${main}' 테마가 예민하게 반응할 수 있어, 상대 의도를 단정하기보다 사실 확인 질문을 먼저 두는 것이 안전합니다.`;
+    }
+    if (positionLabel === '행동 조언' || /(조언|결과)/.test(positionLabel)) {
+      return open
+        ? `'${main}' 흐름이 열려 있어 짧고 진솔한 한 문장이 관계 온도를 따뜻하게 바꿔줄 수 있습니다.`
+        : `'${main}' 신호가 조정 구간이라, 길게 설명하기보다 감정 1개와 요청 1개만 분리해 전달하는 방식이 효과적입니다.`;
+    }
+    if (/(상대|환경)/.test(positionLabel)) {
+      return open
+        ? `${positionLabel}에서는 '${main}' 신호가 비교적 열려 있어 상대 반응의 긍정 단서를 읽기 쉽습니다.`
+        : `${positionLabel}에서는 '${main}' 신호가 예민해 반응을 단정하면 오해가 커질 수 있으니 확인 질문이 필요합니다.`;
+    }
+    if (spreadId === 'choice-a-b') {
+      return open
+        ? `선택 관점에서 '${main}' 신호가 열려 있어 관계를 안정적으로 이어갈 여지가 보입니다.`
+        : `선택 관점에서 '${main}' 신호가 흔들려 보이니 감정 소모와 거리감의 변화를 먼저 비교하는 편이 좋습니다.`;
+    }
+    return open
+      ? `${positionLabel}에서는 '${main}'에서 '${sub}'으로 이어지는 흐름이 살아 있어 관계 대화를 자연스럽게 잇기 좋은 구간입니다.`
+      : `${positionLabel}에서는 '${main}' 신호가 흔들릴 수 있어 결론을 미루고 감정 온도를 맞추는 편이 더 안정적입니다.`;
+  })();
+  const realityLine = (positionLabel === '행동 조언' || /(조언|결과)/.test(positionLabel))
+    ? '상대 반응을 미리 결론 내리기보다, 오늘 주고받는 실제 반응 한 가지를 기준으로 다음 대화를 정해보세요.'
+    : '관계 해석은 추측보다 오늘 오간 말과 반응 같은 관찰 가능한 단서를 기준으로 잡는 편이 정확합니다.';
+  const actionLine = (positionLabel === '행동 조언' || /(조언|결과)/.test(positionLabel))
+    ? '실행 문장: "내 마음은 이렇고, 나는 이렇게 맞춰가고 싶어"처럼 짧고 분명하게 전달해보세요.'
+    : '실행 문장: 오늘 대화에서는 결론을 내리기보다 확인 질문 1개만 먼저 건네보세요.';
+  return polishTarotInterpretation([relationshipLine, realityLine, actionLine].join(' '));
 }
 
 function buildCelticCrossInterpretation({
