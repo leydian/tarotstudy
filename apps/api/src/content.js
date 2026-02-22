@@ -1362,7 +1362,7 @@ function buildNaturalCoreMessage({
   const mainKeywordSubject = withKoreanParticle(mainKeyword, '이', '가');
   const contextLead = spreadId === 'celtic-cross'
     ? buildCelticCoreLead({ positionName: position.name, seed })
-    : buildClientEmpathyLine({ context, seed });
+    : buildSpreadCoreLead({ spreadId, positionName: position.name, seed });
   const cardLine = `뽑으신 카드는 '${card.nameKo} ${cardDirection}'입니다.`;
   const meaningLine = spreadId === 'celtic-cross'
     ? buildCelticCoreMeaningLine({ cardName: card.nameKo, positionName: position.name, orientation, focus, mainKeyword })
@@ -1371,7 +1371,7 @@ function buildNaturalCoreMessage({
       : `${card.nameKo}의 핵심 키워드인 ${mainKeywordSubject} 잠시 막혀 있어서 ${focus}에서는 속도를 조금 늦추고 차분히 조정해보시는 편이 좋겠습니다.`;
   const adviceLine = spreadId === 'celtic-cross'
     ? buildCelticCoreAdviceLine({ positionName: position.name, orientation, contextProfile, seed })
-    : buildTarotAdviceLine({ contextProfile, tone, orientation, seed });
+    : buildTarotAdviceLine({ spreadId, positionName: position.name, contextProfile, tone, orientation, seed });
   const raw = joinUniqueParts([contextLead, cardLine, meaningLine, adviceLine]);
   return polishCoreMessage(raw);
 }
@@ -1398,10 +1398,10 @@ function buildTarotConsultingInterpretation({
     return buildCelticCrossInterpretation({ card, position, orientation, focus, context, contextProfile, seed });
   }
   const spreadGuide = buildSpreadConsultingGuide({ spreadId, positionName: position.name, positionPrompt, seed });
-  const orientationGuide = buildOrientationCounselLine({ cardName: card.nameKo, orientation, tone, seed });
+  const orientationGuide = buildOrientationCounselLine({ spreadId, positionName: position.name, cardName: card.nameKo, orientation, tone, seed });
   const keywordGuide = buildKeywordCounselLine({ card, focus, seed });
-  const contextLine = buildCoreContextLine({ context, contextProfile, seed });
-  const actionLine = buildTarotActionLine({ contextProfile, orientation, seed });
+  const contextLine = buildCoreContextLine({ spreadId, positionName: position.name, contextProfile, seed });
+  const actionLine = buildTarotActionLine({ spreadId, positionName: position.name, contextProfile, orientation, seed });
   return polishTarotInterpretation([spreadGuide, orientationGuide, keywordGuide, contextLine, actionLine].join(' '));
 }
 
@@ -1878,10 +1878,18 @@ function normalizeClientQuestion(context = '') {
   return String(context || '').trim().replace(/[.!?]+$/g, '');
 }
 
-function buildTarotAdviceLine({ contextProfile, tone, orientation, seed }) {
-  const direction = orientation === 'upright'
-    ? '지금은 작은 시도를 해보셔도 괜찮습니다.'
-    : '지금은 무리하게 밀기보다 컨디션과 리듬을 먼저 회복하시는 편이 좋겠습니다.';
+function buildTarotAdviceLine({ spreadId, positionName, contextProfile, tone, orientation, seed }) {
+  const cautionPosition = isCautionPosition(positionName);
+  const outcomePosition = isOutcomePosition(positionName);
+  const direction = cautionPosition
+    ? '이 포지션은 문제를 단정하기보다 위험 신호를 먼저 분리해보는 편이 좋겠습니다.'
+    : outcomePosition
+      ? (orientation === 'upright'
+          ? '결과 신호는 열려 있으니 실행 문장을 짧고 분명하게 고정해보시는 편이 좋겠습니다.'
+          : '결과 신호의 마찰이 있어 속도보다 전달 방식을 먼저 정리하시는 편이 좋겠습니다.')
+      : orientation === 'upright'
+        ? '지금은 핵심 기준 한 줄을 먼저 고정해보셔도 괜찮습니다.'
+        : '지금은 무리하게 밀기보다 컨디션과 리듬을 먼저 회복하시는 편이 좋겠습니다.';
   const clientActionHint = buildClientActionHint(contextProfile);
   const clientAnchorHint = buildClientAnchorHint(contextProfile);
   const lines = [
@@ -1889,7 +1897,7 @@ function buildTarotAdviceLine({ contextProfile, tone, orientation, seed }) {
     `${direction} ${tone.defaultPrompt}`,
     `${direction} 오늘은 ${clientAnchorHint}`
   ];
-  return pickVariant(`${seed}:tarot-advice`, lines);
+  return pickVariant(`${seed}:${spreadId}:tarot-advice`, lines);
 }
 
 function buildSpreadConsultingGuide({ spreadId, positionName, positionPrompt, seed }) {
@@ -1911,25 +1919,48 @@ function buildSpreadConsultingGuide({ spreadId, positionName, positionPrompt, se
       '복합 이슈일수록 현재의 긴장과 결과 흐름을 한 줄로 연결해 보는 게 핵심입니다.'
     ]
   };
-  const options = map[spreadId] ?? [
-    `${positionName} 자리에서는 ${positionPrompt}`,
-    `${positionName} 포지션은 ${positionPrompt}`
+  const positionTopic = withKoreanParticle(positionName, '은', '는');
+  const defaultOptions = [
+    positionPrompt,
+    `${positionTopic} 이 포지션의 핵심 역할을 먼저 짚는 구간입니다.`,
+    `${positionName} 자리는 앞뒤 카드와 연결해 해석할 때 정확도가 올라갑니다.`
   ];
+  const options = spreadId === 'celtic-cross'
+    ? map[spreadId]
+    : defaultOptions;
   return pickVariant(`${seed}:spread-guide`, options);
 }
 
-function buildOrientationCounselLine({ cardName, orientation, tone, seed }) {
-  const cardNameSubject = withKoreanParticle(cardName, '이', '가');
+function buildOrientationCounselLine({ spreadId, positionName, cardName, orientation, tone, seed }) {
+  const cardNameSubject = withSmartSubject(cardName);
+  const cautionPosition = isCautionPosition(positionName);
+  const outcomePosition = isOutcomePosition(positionName);
+  const toneLine = cautionPosition
+    ? (orientation === 'upright'
+        ? '이 자리에서는 낙관보다 리스크 점검을 우선해야 합니다.'
+        : '이 자리에서는 병목 정리를 우선해야 다음 카드가 살아납니다.')
+    : orientation === 'upright'
+      ? tone.uprightLine
+      : tone.reversedLine;
+  const lineByPosition = orientation === 'upright'
+    ? cautionPosition
+      ? `${cardNameSubject} 정방향이더라도 ${positionName} 자리에서는 리스크를 먼저 확인해야 합니다.`
+      : outcomePosition
+        ? `${cardNameSubject} 정방향이라 결과 가능성은 열려 있지만, 실행 강도에 따라 체감이 달라질 수 있습니다.`
+        : `${cardNameSubject} 정방향이라 이 자리의 신호를 실행으로 옮기기 좋은 구간입니다.`
+    : cautionPosition
+      ? `${cardNameSubject} 역방향이라 ${positionName} 자리의 병목을 먼저 정리해야 후속 전개가 안정됩니다.`
+      : `${cardNameSubject} 역방향이라 속도 조절과 기준 정비를 먼저 두는 편이 안전합니다.`;
   const lines = orientation === 'upright'
     ? [
-      `${cardNameSubject} 정방향으로 나왔다는 건 흐름이 열린 상태라는 뜻입니다. ${tone.uprightLine}`,
-      `${cardName} 정방향은 지금 선택을 차분히 진행해도 된다는 신호입니다. ${tone.uprightLine}`
+      `${lineByPosition} ${toneLine}`,
+      `${cardName} 정방향은 지금 이 포지션의 핵심을 선명하게 잡으면 흐름이 정리됩니다. ${toneLine}`
     ]
     : [
-      `${cardNameSubject} 역방향으로 나왔다는 건 에너지 누수를 먼저 막으라는 신호입니다. ${tone.reversedLine}`,
-      `${cardName} 역방향은 '멈춤 후 정리'가 먼저라는 메시지에 가깝습니다. ${tone.reversedLine}`
+      `${lineByPosition} ${toneLine}`,
+      `${cardName} 역방향은 '멈춤 후 정리'가 먼저라는 메시지에 가깝습니다. ${toneLine}`
     ];
-  return pickVariant(`${seed}:orientation-counsel`, lines);
+  return pickVariant(`${seed}:${spreadId}:orientation-counsel`, lines);
 }
 
 function buildKeywordCounselLine({ card, focus, seed }) {
@@ -1937,25 +1968,34 @@ function buildKeywordCounselLine({ card, focus, seed }) {
   const sub = card.keywords?.[1] ?? main;
   const focusWithParticle = withKoreanParticle(focus, '을', '를');
   const cardNameTopic = withKoreanParticle(card.nameKo, '은', '는');
+  const mainSubject = withKoreanParticle(main, '이', '가');
   const subSubject = withKoreanParticle(sub, '이', '가');
   const lines = [
     `${cardNameTopic} '${main}'에서 '${sub}'으로 넘어가는 과정을 보여주니, 지금은 ${focusWithParticle} 선명하게 잡는 게 중요합니다.`,
-    `카드 키워드를 풀어보면 '${main}'이 출발점이고 ${subSubject} 다음 단계입니다. ${focusWithParticle} 가볍게 정리하면 흐름이 살아납니다.`
+    `카드 키워드를 풀어보면 ${mainSubject} 출발점이고 ${subSubject} 다음 단계입니다. ${focusWithParticle} 한 문장으로 정리하면 흐름이 분명해집니다.`
   ];
   return pickVariant(`${seed}:keyword-counsel`, lines);
 }
 
-function buildTarotActionLine({ contextProfile, orientation, seed }) {
-  const direction = orientation === 'upright'
-    ? '오늘은 가볍게 한 걸음만 보태보세요.'
-    : '오늘은 속도를 줄이고 몸과 마음을 먼저 챙겨보세요.';
+function buildTarotActionLine({ spreadId, positionName, contextProfile, orientation, seed }) {
+  const cautionPosition = isCautionPosition(positionName);
+  const outcomePosition = isOutcomePosition(positionName);
+  const direction = cautionPosition
+    ? '이 자리에서는 결론을 서두르지 말고 위험 신호를 먼저 분리해보세요.'
+    : outcomePosition
+      ? (orientation === 'upright'
+          ? '결과 신호를 살리려면 오늘 실행 문장을 짧고 분명하게 고정해보세요.'
+          : '결과 마찰을 줄이려면 실행 타이밍과 전달 강도를 다시 맞춰보세요.')
+      : orientation === 'upright'
+        ? '오늘은 가볍게 한 걸음만 보태보세요.'
+        : '오늘은 속도를 줄이고 몸과 마음을 먼저 챙겨보세요.';
   const clientActionHint = buildClientActionHint(contextProfile);
   const lines = [
     `${direction} ${clientActionHint}`,
     `${direction} 선택이 끝난 뒤에는 몸의 반응과 마음의 반응을 짧게 체크해 보세요.`,
     `${direction} 너무 완벽하게 하려 하지 말고, 오늘 가능한 선에서만 실천해도 충분합니다.`
   ];
-  return pickVariant(`${seed}:tarot-action`, lines);
+  return pickVariant(`${seed}:${spreadId}:tarot-action`, lines);
 }
 
 function buildClientActionHint(contextProfile) {
@@ -1999,19 +2039,54 @@ function polishTarotInterpretation(raw = '') {
   return out;
 }
 
-function buildCoreContextLine({ context, contextProfile, seed }) {
-  const normalizedContext = normalizeClientQuestion(context);
-  const lines = normalizedContext
+function buildCoreContextLine({ spreadId, positionName, contextProfile, seed }) {
+  const positionTopic = withKoreanParticle(positionName, '은', '는');
+  const lines = spreadId === 'one-card'
     ? [
-      `질문 "${normalizedContext}"에 대입하면 ${contextProfile.anchor}`,
-      `질문 맥락("${normalizedContext}")에서는 ${contextProfile.anchor}`,
-      `이번 질문을 기준으로 보면 ${contextProfile.anchor}`
+      `질문 맥락에서는 ${contextProfile.anchor}`,
+      `이번 질문에서는 ${contextProfile.anchor}`,
+      `핵심 맥락 기준으로는 ${contextProfile.anchor}`
     ]
     : [
-      `질문 맥락이 넓더라도 ${contextProfile.anchor}`,
-      `맥락이 구체적이지 않아도 ${contextProfile.anchor}`
+      `${positionTopic} 질문 맥락상 ${contextProfile.anchor}`,
+      `${positionName} 자리에서는 ${contextProfile.anchor}`,
+      `${positionTopic} 해석할 때는 ${contextProfile.anchor}`
     ];
   return pickVariant(`${seed}:core-context`, lines);
+}
+
+function buildSpreadCoreLead({ spreadId = 'default', positionName = '', seed = '' }) {
+  const topic = withKoreanParticle(positionName, '은', '는');
+  const linesBySpread = {
+    'daily-fortune': [
+      `${topic} 오늘 리듬을 조정하는 핵심 포지션입니다.`,
+      `${positionName} 자리에서 오늘 운영 포인트를 먼저 확인해보겠습니다.`
+    ],
+    'choice-a-b': [
+      `${topic} 선택 비교에서 유지 비용을 가르는 기준입니다.`,
+      `${positionName} 포지션은 A/B 판단의 분기점 역할을 합니다.`
+    ],
+    'relationship-recovery': [
+      `${topic} 관계 회복 대화 순서를 정하는 핵심 자리입니다.`,
+      `${positionName} 자리에서 회복 흐름의 기준 신호를 짚어보겠습니다.`
+    ],
+    default: [
+      `${topic} 전체 리딩의 연결 고리 역할을 합니다.`,
+      `${positionName} 자리의 핵심 신호를 먼저 확인해보겠습니다.`
+    ]
+  };
+  const lines = linesBySpread[spreadId] ?? linesBySpread.default;
+  return pickVariant(`${seed}:spread-core-lead`, lines);
+}
+
+function isCautionPosition(positionName = '') {
+  const text = String(positionName || '');
+  return /(주의|장애|갈등|거리|리스크)/.test(text);
+}
+
+function isOutcomePosition(positionName = '') {
+  const text = String(positionName || '');
+  return /(결과|조언|다음 7일 흐름|행동 조언|4주차·정리|주간 조언)/.test(text);
 }
 
 function inferCelticQuestionIntent(context = '') {
@@ -2223,6 +2298,14 @@ function withKoreanParticle(word = '', consonantParticle = '이', vowelParticle 
   if (ch < HANGUL_START || ch > HANGUL_END) return `${text}${vowelParticle}`;
   const hasFinalConsonant = (ch - HANGUL_START) % 28 !== 0;
   return `${text}${hasFinalConsonant ? consonantParticle : vowelParticle}`;
+}
+
+function withSmartSubject(word = '') {
+  const text = String(word || '').trim();
+  if (!text) return text;
+  const last = text[text.length - 1];
+  if (!/[가-힣]/.test(last)) return text;
+  return withKoreanParticle(text, '이', '가');
 }
 
 function pickVariant(seed = '', variants = []) {
