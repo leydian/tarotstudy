@@ -66,3 +66,51 @@ test('buildFallbackExplanation applies strong context branching across sections'
   assert.match(career.sections.career, /이직|취업|지원/);
   assert.match(career.sections.coreMeaning, /커리어|실행 지표|질문 맥락/);
 });
+
+test('buildFallbackExplanation keeps all sections context-sensitive across multiple card groups', () => {
+  const sectionNames = ['coreMeaning', 'symbolism', 'upright', 'reversed', 'love', 'career', 'advice'];
+  const contexts = {
+    career: '이직 타이밍을 알고 싶어',
+    reconnect: '재회 연락을 해도 될까?',
+    finance: '재정 흐름과 지출 관리를 점검하고 싶어'
+  };
+  const cardIds = [
+    'major-0',
+    'major-14',
+    'minor-cups-six',
+    'minor-swords-two',
+    'minor-pentacles-eight',
+    'minor-wands-three'
+  ];
+
+  for (const cardId of cardIds) {
+    const card = getCardById(cardId);
+    assert.ok(card, `card should exist: ${cardId}`);
+
+    const baseline = buildFallbackExplanation(card, 'intermediate', '');
+    const career = buildFallbackExplanation(card, 'intermediate', contexts.career);
+    const reconnect = buildFallbackExplanation(card, 'intermediate', contexts.reconnect);
+    const finance = buildFallbackExplanation(card, 'intermediate', contexts.finance);
+
+    for (const sectionName of sectionNames) {
+      const baseSection = baseline.sections[sectionName];
+      assert.ok(lines(baseSection).length >= 3, `baseline ${cardId}.${sectionName} should have 3+ lines`);
+
+      assert.notEqual(
+        career.sections[sectionName],
+        baseSection,
+        `career context should change ${cardId}.${sectionName}`
+      );
+      assert.notEqual(
+        reconnect.sections[sectionName],
+        baseSection,
+        `reconnect context should change ${cardId}.${sectionName}`
+      );
+      assert.notEqual(
+        finance.sections[sectionName],
+        baseSection,
+        `finance context should change ${cardId}.${sectionName}`
+      );
+    }
+  }
+});

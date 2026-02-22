@@ -85,6 +85,7 @@
 
 ## 5) 상세 문서 링크
 - 세션 상세 변경 내역: `docs/session-handoff-2026-02-22-details.md`
+- 후속 작업 상세(2026-02-23): `docs/session-handoff-2026-02-23-details.md`
 - 페르소나 지정 현황 보고서: `docs/persona-report-2026-02-22.md`
 - 연간운세 어색함 분석 보고서: `docs/annual-fortune-job-timing-awkwardness-report-2026-02-22.md`
 - 학습 리더 품질 운영 가이드: `docs/learning-leader-quality.md`

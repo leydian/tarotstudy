@@ -14,6 +14,7 @@
     "qa:learning-leader:raw": "node scripts/learning-leader-quality-check.mjs",
     "qa:learning-leader": "node scripts/run-learning-leader-qa.mjs",
     "qa:relationship-recovery": "node scripts/relationship-recovery-variation-check.mjs",
+    "qa:spread-telemetry": "node scripts/spread-telemetry-rollup.mjs",
     "qa:yearly-fortune": "node scripts/yearly-fortune-regression-check.mjs",
     "verify:quality": "npm run test:api && npm run qa:learning-leader && npm run qa:relationship-recovery && npm run qa:yearly-fortune"
   }

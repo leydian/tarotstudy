@@ -26,6 +26,7 @@ const spreadTelemetryStats = {
   totalEvents: 0,
   byType: {},
   bySpread: {},
+  bySpreadType: {},
   recent: []
 };
 let imageHealthSnapshot = null;
@@ -88,6 +89,11 @@ app.post('/api/telemetry/spread-events', async (request, reply) => {
   spreadTelemetryStats.totalEvents += 1;
   spreadTelemetryStats.byType[type] = (spreadTelemetryStats.byType[type] || 0) + 1;
   spreadTelemetryStats.bySpread[spreadId] = (spreadTelemetryStats.bySpread[spreadId] || 0) + 1;
+  if (!spreadTelemetryStats.bySpreadType[spreadId]) {
+    spreadTelemetryStats.bySpreadType[spreadId] = {};
+  }
+  spreadTelemetryStats.bySpreadType[spreadId][type] =
+    (spreadTelemetryStats.bySpreadType[spreadId][type] || 0) + 1;
   spreadTelemetryStats.recent.unshift({
     at: new Date().toISOString(),
     type: String(type),
@@ -512,15 +518,47 @@ function summarizeRelationshipRecovery({ items, context = '', level = 'beginner'
   ].join(' ');
 
   const planOpening = pickByNumber([
-    `7일 행동 계획: 회복 행동(${action?.card?.nameKo || '-'})을 기준으로 오늘 실행할 문장 1개를 먼저 정하세요.`,
-    `7일 행동 계획: 회복 행동(${action?.card?.nameKo || '-'})을 기준으로 이번 주 첫 대화의 목표 문장 1개를 먼저 고정하세요.`,
-    `7일 행동 계획: 회복 행동(${action?.card?.nameKo || '-'})을 바탕으로 오늘 시도할 행동 1개와 멈출 행동 1개를 같이 정하세요.`
+    `7일 행동 계획: 회복 행동(${action?.card?.nameKo || '-'})의 "${keyword(action)}" 신호를 기준으로 오늘 먼저 보낼 1문장을 정하세요.`,
+    `7일 행동 계획: 회복 행동(${action?.card?.nameKo || '-'})에서 읽힌 ${orientationLabel(action)} 흐름을 따라 이번 주 대화 목표 1문장을 고정하세요.`,
+    `7일 행동 계획: 회복 행동(${action?.card?.nameKo || '-'})을 바탕으로 오늘 시도할 행동 1개와 멈출 행동 1개를 같이 정하고 바로 실행하세요.`,
+    `7일 행동 계획: 회복 행동(${action?.card?.nameKo || '-'}) 기준으로 연락 시간대 1개와 대화 길이 기준 1개를 먼저 정하세요.`,
+    `7일 행동 계획: 회복 행동(${action?.card?.nameKo || '-'})의 카드 근거를 살려, 감정 설명보다 확인 질문 1개를 먼저 준비하세요.`
   ], variationSeed + 2);
-  const planRoutine = pickByNumber([
-    '대화 전에는 사실 1개/요청 1개만 준비하고, 대화 후에는 상대 반응을 한 줄 복기로 남기세요.',
-    '대화 전에는 확인 질문 1개만 정하고, 대화 후에는 상대 반응과 내 감정 변화를 각각 한 줄씩 남기세요.',
-    '연락 전에는 전달할 핵심 문장 1개만 적고, 이후에는 결과를 사실/해석으로 분리해 짧게 기록하세요.'
-  ], variationSeed + 3);
+  const planRoutine = (() => {
+    if (riskTheme === 'misread') {
+      return pickByNumber([
+        '대화 전에는 추측 문장을 지우고 사실 질문 1개만 남기고, 대화 후에는 확인된 사실 2가지만 기록하세요.',
+        '연락 전에 해석 대신 관찰 문장 1개를 적고, 대화 후에는 들은 표현을 그대로 한 줄로 남기세요.',
+        '오해 구간에서는 질문 1개와 요청 1개만 준비하고, 통화가 끝나면 사실/해석을 분리해 점검하세요.'
+      ], variationSeed + 31);
+    }
+    if (riskTheme === 'timing') {
+      return pickByNumber([
+        '이번 주는 대화 간격을 먼저 정하고 그 간격을 지키며, 매 대화 뒤 반응 속도를 짧게 기록하세요.',
+        '속도 불일치가 핵심이니 연락 주기 1개를 먼저 합의하고, 대화 후에는 과속 징후를 점검하세요.',
+        '첫 메시지 이후 바로 추가 설명을 붙이지 말고 1회 대기 규칙을 두고, 반응 시간을 기준으로 조정하세요.'
+      ], variationSeed + 32);
+    }
+    if (riskTheme === 'distance') {
+      return pickByNumber([
+        '관계 온도차 구간이라 경계선 1개를 먼저 공유하고, 대화 뒤에는 부담 신호가 있었는지 확인하세요.',
+        '거리감이 커지는 주간에는 접촉 횟수보다 허용 범위 문장을 먼저 정하고, 반응을 기록하세요.',
+        '접근보다 조율이 우선이니 요청 가능한 범위 1개와 보류할 범위 1개를 분리해 대화 전에 준비하세요.'
+      ], variationSeed + 33);
+    }
+    if (riskTheme === 'hurt') {
+      return pickByNumber([
+        '상처 반응이 쉽게 올라오니 길게 해명하지 말고 인정 문장 1개를 먼저 말한 뒤 반응을 기록하세요.',
+        '후폭풍 구간에서는 잘잘못 정리보다 감정 안정 문장을 먼저 준비하고, 대화 뒤 에너지 소모를 점검하세요.',
+        '방어를 낮추기 위해 사과 표현 1개와 재발 방지 문장 1개를 분리해 준비하고 실행하세요.'
+      ], variationSeed + 34);
+    }
+    return pickByNumber([
+      '대화 전에는 사실 1개/요청 1개만 준비하고, 대화 후에는 상대 반응을 한 줄 복기로 남기세요.',
+      '대화 전에는 확인 질문 1개만 정하고, 대화 후에는 상대 반응과 내 감정 변화를 각각 한 줄씩 남기세요.',
+      '연락 전에는 전달할 핵심 문장 1개만 적고, 이후에는 결과를 사실/해석으로 분리해 짧게 기록하세요.'
+    ], variationSeed + 35);
+  })();
   const modePlan = (() => {
     if (repairMode === 'reconnect') {
       return pickByNumber([
@@ -549,11 +587,17 @@ function summarizeRelationshipRecovery({ items, context = '', level = 'beginner'
       '회복 구간에서는 결론보다 관찰이 우선이므로, 반응 로그를 남기고 다음 문장을 조정해 실행하세요.'
     ], variationSeed + 24);
   })();
+  const planCheckpoint = pickByNumber([
+    `점검 기준은 다음 7일 흐름(${week?.card?.nameKo || '-'})의 "${keyword(week)}" 신호가 완화되는지로 잡고, 48시간 간격으로 기록하세요.`,
+    `중간 점검은 거리/갈등의 핵심(${friction?.card?.nameKo || '-'}) 키워드 "${keyword(friction)}"가 대화에서 줄어드는지 확인하는 방식이 좋습니다.`,
+    `주간 마무리에서는 상대 관점 신호(${signal?.card?.nameKo || '-'}) 반응을 기준으로 다음 주 문장 톤을 조정하세요.`
+  ], variationSeed + 4);
 
   const plan = [
     planOpening,
     planRoutine,
     modePlan,
+    planCheckpoint,
     levelHint
   ].join(' ');
 

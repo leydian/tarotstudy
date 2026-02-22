@@ -238,89 +238,6 @@
 
 ### 9.1 관계회복 정량 QA 게이트 추가
 - 변경 파일:
-
-## 10) 2026-02-23 후속 작업 상세 (원카드/일별 보정 + 전 스프레드 확장)
-
-### 10.1 원카드/일별 질문 의도 분기 보정
-- 변경 파일:
-  - `apps/api/src/index.js`
-  - `apps/api/src/content.js`
-- 핵심:
-  - `오늘 운세는?`를 yes/no 질문으로 처리하던 분기 제거
-  - 정보형 운세 질문을 daily intent로 분리
-  - 결론 문체를 `진행/가능`에서 `흐름/운영` 중심으로 전환
-
-### 10.2 카드 의미 정합성 보정
-- 변경 파일: `apps/api/src/data/cards.js`, `apps/api/src/content.js`
-- 핵심:
-  - 카드별 키워드와 해석 문장 불일치 보정
-  - 대표 반영:
-    - 소드 8: 제약/불안/관점 전환
-    - 소드 킹: 판단/원칙/명료함
-    - 컵 4: 감정 점검/권태/거리두기
-
-### 10.3 학습 리더 코치의 타로 학습 관점 전환
-- 변경 파일:
-  - `apps/api/src/content.js`
-  - `apps/web/src/pages/SpreadsPage.tsx`
-- 핵심:
-  - 행동 코칭 중심 문구를 카드 해석 복기 중심 문구로 교체
-  - 카드 키워드/정역방향/포지션 근거 점검 문장 강화
-  - 라벨 중복 표현 제거 및 `리딩 검증` 포맷 일관화
-
-### 10.4 일별 개선 패턴의 전 스프레드 확장
-- 변경 파일: `apps/api/src/content.js`, `apps/api/src/index.js`
-- 대상 스프레드:
-  - 주별 운세
-  - 월별 운세
-  - 3카드
-  - 양자택일(A/B)
-  - 켈틱 크로스
-- 적용 함수:
-  - `buildSpreadConsultingGuide()`
-  - `buildOrientationCounselLine()`
-  - `buildKeywordCounselLine()`
-  - `buildCoreContextLine()`
-  - `buildSpreadCoreLead()`
-  - `buildLearningCoachFrame()`
-- 효과:
-  - 포지션 역할 문장 분리
-  - 템플릿 반복 문장 축소
-  - 스프레드별 학습 복기 프레임 차등화
-
-### 10.5 벤치마킹 반영(채택/배제 기준)
-- 채택:
-  - 포지션 기반 스토리 연결
-  - 카드 근거에서 실행 문장으로 이어지는 흐름
-  - 종합 리딩 `한 줄 테마` 요약
-- 배제:
-  - 과장된 감탄/운명 단정/과신 표현
-  - 사용자 의존도를 높이는 과잉 친밀 문체
-
-### 10.6 푸시 이슈 및 배포 브랜치 정리
-- 이슈:
-  - OAuth 토큰 `workflow` scope 부재로 `main` 푸시 거절
-  - 오류: `.github/workflows/quality-gates.yml` 업데이트 권한 부족
-- 조치:
-  - 워크플로우 커밋 제외 브랜치 `publish/no-workflow-v2` 생성
-  - 원격 푸시 완료
-  - PR 링크:
-    - `https://github.com/leydian/tarotstudy/pull/new/publish/no-workflow-v2`
-
-### 10.7 검증 로그(최신)
-- `npm run test:api` 통과
-- `npm run build:web` 통과
-- `node --check apps/api/src/content.js` 통과
-- `node --check apps/api/src/index.js` 통과
-
-### 10.8 관련 커밋
-- `666321c` Improve relationship-recovery summary variation by context and risk theme
-- `5180d76` Refine one-card repair tone and learning coach phrasing
-- `8e30e75` Shift learning coach output to tarot interpretation review focus
-- `3399153` Fix one-card daily-fortune intent and yes/no question detection
-- `b254feb` Refine one-card daily reading tone, card semantics, and coach labels
-- `bcbb6e7` Refine daily-fortune reading consistency and learning coach structure
-- `f377bf9` Extend daily reading quality patterns across spreads and add theme summaries
   - `scripts/relationship-recovery-variation-check.mjs`
   - `package.json`
   - `README.md`
@@ -392,3 +309,8 @@
 
 ### 10.5 관련 커밋(추가)
 - `dc49a35` Enhance celtic-cross narrative and add relationship QA gate
+
+## 11) 2026-02-23 후속 작업 분리 안내
+- 2026-02-23 이후 작업 내역(원카드/일별 보정, 학습 코치 전환, 전 스프레드 확장)은 날짜 기준으로 분리했습니다.
+- 별도 문서:
+  - `docs/session-handoff-2026-02-23-details.md`
