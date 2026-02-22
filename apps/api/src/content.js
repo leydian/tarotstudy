@@ -1716,17 +1716,43 @@ function buildRepairBenchmarkCoreMessage({ card, position, orientation, spreadId
   const cardDirection = orientation === 'upright' ? '정방향' : '역방향';
   const keyword = card.keywords?.[0] ?? '감정';
   const positionLabel = position.name || '이 자리';
+  const cautionCardIds = new Set([
+    'minor-swords-three', 'minor-swords-five', 'minor-swords-six', 'minor-swords-nine', 'minor-swords-ten',
+    'minor-cups-five', 'minor-wands-five', 'minor-wands-seven',
+    'major-15', 'major-16', 'major-18'
+  ]);
+  const highTension = cautionCardIds.has(card.id);
   const openerBySpread = {
-    'three-card': `${positionLabel} 카드를 통해 갈등 회복의 현재 신호를 먼저 보겠습니다.`,
+    'three-card': `${positionLabel} 카드를 통해 갈등 회복의 핵심 신호를 먼저 보겠습니다.`,
     'celtic-cross': `${positionLabel} 카드가 갈등의 핵심과 회복 경로를 어떻게 비추는지 확인해보겠습니다.`,
     default: `${positionLabel} 카드로 지금 관계 회복 흐름을 차분히 살펴보겠습니다.`
   };
   const signalLine = orientation === 'upright'
-    ? `${card.nameKo}의 "${keyword}" 신호가 열려 있어, 대화 문을 다시 여는 여지는 남아 있습니다.`
+    ? (highTension
+        ? `${card.nameKo}의 "${keyword}" 신호는 겉으로 열려 보여도 긴장도가 높아, 대화 강도를 낮춘 접근이 필요합니다.`
+        : `${card.nameKo}의 "${keyword}" 신호가 열려 있어, 대화 문을 다시 여는 여지는 남아 있습니다.`)
     : `${card.nameKo}의 "${keyword}" 신호가 예민해 보여, 지금은 결론보다 감정 온도 조절이 먼저입니다.`;
-  const closeLine = /(조언|결과)/.test(positionLabel)
-    ? '관계 회복은 한 번의 설득보다 짧고 안전한 대화가 반복될 때 실제로 움직입니다.'
-    : '지금 단계에서는 상대 의도 해석보다, 충돌을 키우는 반응 패턴을 먼저 줄이는 편이 더 효과적입니다.';
+  const closeLine = (() => {
+    if (positionLabel === '문제' || /문제|갈등/.test(positionLabel)) {
+      return '이 자리에서는 누가 옳은지보다 충돌을 키운 패턴을 먼저 특정하는 편이 효과적입니다.';
+    }
+    if (positionLabel === '해결방법' || /해결/.test(positionLabel)) {
+      return '해결 구간은 설득보다 대화 순서를 단순화할수록 실제 회복 가능성이 올라갑니다.';
+    }
+    if (positionLabel === '상대 관점 신호' || /상대/.test(positionLabel)) {
+      return '상대 관점은 단정이 아니라 반응 단서를 읽는 자리이므로 확인 질문 중심이 안전합니다.';
+    }
+    if (positionLabel === '회복 행동' || /행동/.test(positionLabel)) {
+      return '회복 행동은 크게 바꾸기보다 오늘 실행할 한 문장으로 줄일 때 효과가 큽니다.';
+    }
+    if (positionLabel === '다음 7일 흐름' || /7일/.test(positionLabel)) {
+      return '다음 7일은 감정 기복이 생기기 쉬운 구간이므로, 대화 타이밍 관리가 핵심입니다.';
+    }
+    if (/(조언|결과)/.test(positionLabel)) {
+      return '관계 회복은 한 번의 설득보다 짧고 안전한 대화가 반복될 때 실제로 움직입니다.';
+    }
+    return '지금 단계에서는 상대 의도 해석보다, 충돌을 키우는 반응 패턴을 먼저 줄이는 편이 더 효과적입니다.';
+  })();
   return polishCoreMessage([
     openerBySpread[spreadId] ?? openerBySpread.default,
     `뽑으신 카드는 '${card.nameKo} ${cardDirection}'입니다.`,
@@ -1738,9 +1764,16 @@ function buildRepairBenchmarkCoreMessage({ card, position, orientation, spreadId
 function buildRepairBenchmarkInterpretation({ card, position, orientation, spreadId = 'default' }) {
   const main = card.keywords?.[0] ?? '감정';
   const sub = card.keywords?.[1] ?? main;
+  const subTransition = withKoreanParticle(sub, '으로', '로');
   const open = orientation === 'upright';
   const positionLabel = position.name || '이 자리';
   const seed = `${spreadId}:${positionLabel}:${card.id}:${orientation}:repair-int`;
+  const cautionCardIds = new Set([
+    'minor-swords-three', 'minor-swords-five', 'minor-swords-six', 'minor-swords-nine', 'minor-swords-ten',
+    'minor-cups-five', 'minor-wands-five', 'minor-wands-seven',
+    'major-15', 'major-16', 'major-18'
+  ]);
+  const highTension = cautionCardIds.has(card.id);
 
   const repairLine = (() => {
     if (positionLabel === '핵심 메시지') {
@@ -1750,7 +1783,7 @@ function buildRepairBenchmarkInterpretation({ card, position, orientation, sprea
     }
     if (positionLabel === '문제' || /문제|갈등/.test(positionLabel)) {
       return open
-        ? `현재 갈등의 핵심은 '${main}'에서 '${sub}'로 이어지는 해석 차이일 가능성이 큽니다.`
+        ? `현재 갈등의 핵심은 '${main}'에서 '${sub}'${subTransition} 넘어가는 지점의 해석 차이일 가능성이 큽니다.`
         : `지금 갈등은 '${main}' 신호가 과열된 상태라, 대화가 사실보다 감정 반응으로 흘렀을 가능성이 큽니다.`;
     }
     if (positionLabel === '해결방법' || /해결/.test(positionLabel)) {
@@ -1758,27 +1791,87 @@ function buildRepairBenchmarkInterpretation({ card, position, orientation, sprea
         ? `해결 구간에서는 '${main}' 흐름이 열려 있어, 짧은 확인 대화로 접점을 만들 여지가 있습니다.`
         : `해결 구간에서는 '${main}' 신호가 예민해, 설득보다 긴장도를 낮추는 접근이 우선입니다.`;
     }
+    if (positionLabel === '상대 관점 신호' || /상대/.test(positionLabel)) {
+      if (open && !highTension) {
+        return `상대 관점 자리에서는 '${main}' 단서가 비교적 선명해, 반응을 확인하며 대화 수위를 조절하기 좋습니다.`;
+      }
+      return `상대 관점 자리에서는 '${main}' 해석이 엇갈리기 쉬워, 마음 추측보다 확인 질문 1개를 먼저 두는 편이 안전합니다.`;
+    }
+    if (positionLabel === '회복 행동' || /행동/.test(positionLabel)) {
+      return open
+        ? `회복 행동 자리에서는 '${main}' 신호를 작게 실행으로 옮길 때 효과가 커집니다.`
+        : `회복 행동 자리에서는 '${main}' 신호가 흔들려, 행동 강도를 낮추고 경계 문장을 먼저 세우는 편이 좋습니다.`;
+    }
+    if (positionLabel === '다음 7일 흐름' || /7일/.test(positionLabel)) {
+      if (open && !highTension) {
+        return `다음 7일은 '${main}' 기준의 회복 시도가 가능하지만, 속도를 높이면 재충돌 위험이 다시 올라올 수 있습니다.`;
+      }
+      return `다음 7일은 '${main}' 구간의 긴장 신호가 강해, 대화 간격을 두고 감정 과속을 막는 운영이 필요합니다.`;
+    }
     if (positionLabel === '조언' || /조언|결과/.test(positionLabel)) {
       return open
         ? `조언 카드 기준으로 '${main}' 신호는 회복 가능성을 남기고 있어, 작은 신뢰 행동을 먼저 보여주는 편이 좋습니다.`
         : `조언 카드 기준으로 '${main}' 신호가 흔들려, 지금은 관계를 밀어붙이기보다 숨을 고르고 순서를 재정리해야 합니다.`;
     }
     return open
-      ? `'${main}'에서 '${sub}'로 이어지는 흐름이 살아 있어, 회복 대화를 시도할 여지가 있습니다.`
+      ? `'${main}'에서 '${sub}'${subTransition} 이어지는 흐름이 살아 있어, 회복 대화를 시도할 여지가 있습니다.`
       : `'${main}' 신호가 조정 구간이라, 결론보다 감정 과열을 먼저 낮추는 편이 안정적입니다.`;
   })();
 
-  const realityLine = positionLabel === '핵심 메시지'
-    ? pickVariant(`${seed}:reality:core`, [
-      '핵심 메시지에서는 감정을 길게 해석하기보다, 다음 대화를 어떤 순서로 열지 먼저 정하는 편이 실제 회복에 더 도움이 됩니다.',
-      '지금 단계에서는 누가 옳았는지 정리하기보다, 대화가 다시 끊기지 않게 만드는 최소 문장을 먼저 확보하는 것이 중요합니다.'
-    ])
-    : pickVariant(`${seed}:reality`, [
+  const realityLine = (() => {
+    if (positionLabel === '핵심 메시지') {
+      return pickVariant(`${seed}:reality:core`, [
+        '핵심 메시지에서는 감정을 길게 해석하기보다, 다음 대화를 어떤 순서로 열지 먼저 정하는 편이 실제 회복에 더 도움이 됩니다.',
+        '지금 단계에서는 누가 옳았는지 정리하기보다, 대화가 다시 끊기지 않게 만드는 최소 문장을 먼저 확보하는 것이 중요합니다.'
+      ]);
+    }
+    if (positionLabel === '문제' || /문제|갈등/.test(positionLabel)) {
+      return '문제 자리는 원인 규명이 목적이므로 변명보다 충돌을 키운 트리거 문장부터 분리해보는 편이 정확합니다.';
+    }
+    if (positionLabel === '해결방법' || /해결/.test(positionLabel)) {
+      return '해결 자리는 정답 제시보다 대화 안전장치를 먼저 세우는 구간이라, 길이를 줄인 확인 문장이 효과적입니다.';
+    }
+    if (positionLabel === '상대 관점 신호' || /상대/.test(positionLabel)) {
+      return '상대 관점 자리는 추측을 확정하는 구간이 아니라 반응 단서를 모으는 구간이므로, 질문형 문장이 더 유리합니다.';
+    }
+    if (positionLabel === '회복 행동' || /행동/.test(positionLabel)) {
+      return '회복 행동 자리는 결심보다 실행이 핵심이라, 오늘 당장 할 수 있는 한 문장 행동으로 줄이는 편이 효과적입니다.';
+    }
+    if (positionLabel === '다음 7일 흐름' || /7일/.test(positionLabel)) {
+      return '7일 흐름 자리는 결과 확정이 아니라 리스크 타이밍을 보는 구간이므로, 대화 간격과 시간대를 함께 설계하는 것이 중요합니다.';
+    }
+    return pickVariant(`${seed}:reality`, [
       '회복 대화에서는 누가 맞는지보다 사실 1개, 감정 1개, 요청 1개를 분리해 말하는 순서가 중요합니다.',
       '갈등 상황에서는 긴 설명보다 짧은 확인 문장이 오해를 줄이는 데 더 효과적입니다.'
     ]);
+  })();
 
   const actionLine = (() => {
+    if (positionLabel === '문제' || /문제|갈등/.test(positionLabel)) {
+      return open
+        ? '실행 문장: 갈등을 키운 표현 1개를 골라, 다음 대화에서는 그 표현만 제외하고 말해보세요.'
+        : '실행 문장: 지금은 반박보다 "그 부분은 다시 정리해서 말할게"라고 멈춤 문장을 먼저 쓰세요.';
+    }
+    if (positionLabel === '해결방법' || /해결/.test(positionLabel)) {
+      return open
+        ? '실행 문장: 먼저 확인 질문 1개를 건넨 뒤, 사과/설명/요청 중 하나만 한 문장으로 전하세요.'
+        : '실행 문장: 해결을 서두르지 말고, 오늘은 대화 길이를 절반으로 줄여 긴장도를 낮추는 데 집중하세요.';
+    }
+    if (positionLabel === '상대 관점 신호' || /상대/.test(positionLabel)) {
+      return open
+        ? '실행 문장: 상대 마음을 단정하지 말고 "내가 이렇게 이해했는데 맞을까?"처럼 확인 질문 1개만 던져보세요.'
+        : '실행 문장: 해석을 덧붙이지 말고 사실 확인 메시지 1개만 보내 반응 단서를 먼저 모아보세요.';
+    }
+    if (positionLabel === '회복 행동' || /행동/.test(positionLabel)) {
+      return open
+        ? '실행 문장: 오늘은 약속 가능한 행동 1개를 제안해 말보다 실행 신호를 먼저 보여주세요.'
+        : '실행 문장: "지금은 감정을 정리한 뒤 다시 이야기하고 싶어"처럼 경계 문장을 먼저 세우세요.';
+    }
+    if (positionLabel === '다음 7일 흐름' || /7일/.test(positionLabel)) {
+      return open
+        ? '실행 문장: 다음 7일은 대화를 짧게 나누되 하루 1회 이상 감정 과열 시간대 대화는 피하세요.'
+        : '실행 문장: 다음 7일은 즉답을 피하고, 답변 전 10분 멈춤 규칙으로 재충돌 가능성을 낮춰보세요.';
+    }
     if (open) {
       return pickVariant(`${seed}:action:open`, [
         '실행 문장: "그때 내가 이렇게 느꼈고, 다음엔 이렇게 맞춰보고 싶어"처럼 짧게 전달해보세요.',

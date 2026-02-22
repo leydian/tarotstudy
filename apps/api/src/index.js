@@ -402,9 +402,16 @@ function summarizeRelationshipRecovery({ items, context = '', level = 'beginner'
   const tone = inferSummaryContextTone(context);
   const levelHint = level === 'intermediate' ? tone.intermediateHint : tone.beginnerHint;
 
+  const cautionCardIds = new Set([
+    'minor-swords-three', 'minor-swords-five', 'minor-swords-six', 'minor-swords-nine', 'minor-swords-ten',
+    'minor-cups-five', 'minor-wands-five', 'minor-wands-seven',
+    'major-15', 'major-16', 'major-18'
+  ]);
   const orientationLabel = (item) => {
     if (!item) return '신호 확인 필요';
-    return item.orientation === 'upright' ? '열림 신호' : '조정 신호';
+    const cautious = cautionCardIds.has(item?.card?.id || '');
+    if (item.orientation === 'upright') return cautious ? '회복 여지는 있으나 경계 신호' : '열림 신호';
+    return cautious ? '긴장 조정 신호' : '조정 신호';
   };
   const keyword = (item) => item?.card?.keywords?.[0] || '관계 흐름';
   const variationSeed = hashText([
@@ -417,9 +424,9 @@ function summarizeRelationshipRecovery({ items, context = '', level = 'beginner'
   ].join(':'));
 
   const signalLine = pickByNumber([
-    `상대 관점 신호(${signal?.card?.nameKo || '-'})는 ${orientationLabel(signal)}이므로 추측보다 반응 단서를 확인하는 접근이 유리합니다.`,
-    `상대 관점 신호(${signal?.card?.nameKo || '-'})는 ${orientationLabel(signal)}로 읽혀, 해석보다 실제 반응 기록을 먼저 쌓는 편이 안전합니다.`,
-    `상대 관점 신호(${signal?.card?.nameKo || '-'})는 ${orientationLabel(signal)}이어서, 결론을 서두르기보다 확인 대화를 먼저 두는 편이 좋겠습니다.`
+    `상대 관점 신호(${signal?.card?.nameKo || '-'})는 ${orientationLabel(signal)}이므로 마음 추측보다 확인 질문으로 반응 단서를 모으는 접근이 유리합니다.`,
+    `상대 관점 신호(${signal?.card?.nameKo || '-'})는 ${orientationLabel(signal)}로 읽혀, 해석 확정 대신 실제 반응 기록을 먼저 쌓는 편이 안전합니다.`,
+    `상대 관점 신호(${signal?.card?.nameKo || '-'})는 ${orientationLabel(signal)}이어서, 결론을 서두르기보다 짧은 확인 대화부터 두는 편이 좋겠습니다.`
   ], variationSeed);
 
   const diagnosis = [
@@ -428,20 +435,21 @@ function summarizeRelationshipRecovery({ items, context = '', level = 'beginner'
     signalLine
   ].join(' ');
 
-  const riskActionLine = week?.orientation === 'upright'
+  const weekCautious = cautionCardIds.has(week?.card?.id || '');
+  const riskActionLine = week?.orientation === 'upright' && !weekCautious
     ? pickByNumber([
-      '지금은 대화를 열 수 있는 창이 있으니 표현 강도만 낮추면 오해를 줄일 수 있습니다.',
-      '반응 창이 열려 있는 흐름이라, 먼저 짧은 확인 문장으로 접점을 만드는 방식이 유효합니다.',
-      '지금은 관계 신호가 비교적 열려 있어, 감정 설명보다 사실 확인 대화를 우선하면 안정적입니다.'
+      '대화를 열 수 있는 창은 있으니 표현 강도만 낮추면 오해를 줄일 수 있습니다.',
+      '반응 창이 비교적 열려 있어, 짧은 확인 문장으로 접점을 만드는 방식이 유효합니다.',
+      '감정 설명보다 사실 확인 대화를 우선하면 다음 흐름을 안정적으로 이어가기 좋겠습니다.'
     ], variationSeed + 1)
     : pickByNumber([
-      '지금은 결론을 서두르면 오해가 커질 수 있어 확인 대화와 속도 조절을 먼저 두는 편이 좋습니다.',
-      '지금은 감정 해석이 과열되기 쉬워서, 단정 대신 확인 질문 1개로 속도를 낮추는 편이 좋겠습니다.',
-      '지금은 빠른 정리보다 오해 요인을 하나씩 줄이는 대화 설계가 먼저 필요해 보입니다.'
+      '지금은 결론을 서두르면 오해가 커질 수 있어, 확인 대화와 속도 조절을 먼저 두는 편이 좋습니다.',
+      '감정 해석이 과열되기 쉬운 구간이라, 단정 대신 확인 질문 1개로 속도를 낮추는 편이 좋겠습니다.',
+      '빠른 정리보다 오해 요인을 하나씩 줄이는 대화 설계가 먼저 필요해 보입니다.'
     ], variationSeed + 1);
 
   const risk = [
-    `관계 리스크: 다음 7일 흐름(${week?.card?.nameKo || '-'}) 기준으로 "${keyword(week)}" 구간에서 감정 과속이 생기기 쉽습니다.`,
+    `관계 리스크: 다음 7일 흐름(${week?.card?.nameKo || '-'}) 기준으로 "${keyword(week)}" 구간에서 대화 오해가 커질 수 있는 타이밍이 보입니다.`,
     riskActionLine
   ].join(' ');
 
