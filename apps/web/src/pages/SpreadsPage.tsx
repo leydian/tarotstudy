@@ -216,6 +216,8 @@ export function SpreadsPage() {
                 <p><strong>타로 리더 종합 리딩</strong></p>
                 {selected.id === 'yearly-fortune'
                   ? <YearlySummaryView summary={drawMutation.data.summary} />
+                  : selected.id === 'weekly-fortune'
+                    ? <WeeklySummaryView summary={drawMutation.data.summary} />
                   : (
                     <div className="reading-prose-wrap">
                       {toParagraphBlocks(drawMutation.data.summary).slice(0, showDetail ? undefined : 2).map((block, idx) => (
@@ -370,22 +372,22 @@ export function SpreadsPage() {
         )}
 
         <h4>언제 쓰면 좋은가</h4>
-        <ul className="clean-list">
+        <ul className="clean-list compact-list">
           {selected.whenToUse.map((item) => <li key={item}>{item}</li>)}
         </ul>
 
         <h4>포지션 의미</h4>
-        <div className="stack">
+        <div className="position-grid">
           {positions.map((pos) => (
-            <div key={pos.name} className="result-item">
+            <article key={pos.name} className="position-card">
               <p><strong>{pos.name}</strong></p>
               <p>{pos.meaning}</p>
-            </div>
+            </article>
           ))}
         </div>
 
         <h4>학습 루틴</h4>
-        <ol className="clean-list">
+        <ol className="clean-list compact-list">
           {selected.studyGuide.map((item) => <li key={item}>{item}</li>)}
         </ol>
 
@@ -642,6 +644,74 @@ function parseYearlySummary(text: string) {
     quarterly,
     monthly: monthlyLines.length > 0 ? monthlyLines : [monthlyAndClose],
     closing
+  };
+}
+
+function WeeklySummaryView({ summary }: { summary: string }) {
+  const parsed = parseWeeklySummary(summary);
+  if (!parsed) {
+    return (
+      <div className="reading-prose-wrap">
+        {toParagraphBlocks(summary).map((block, idx) => (
+          <p key={`weekly-summary-fallback-${idx}`} className="reading-prose">{block}</p>
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="yearly-summary">
+      <section className="yearly-section">
+        <h5>총평</h5>
+        <p className="reading-prose">{parsed.overall}</p>
+      </section>
+      <section className="yearly-section">
+        <h5>일별 흐름</h5>
+        <div className="weekly-day-grid">
+          {parsed.daily.map((line, idx) => (
+            <article key={`weekly-item-${idx}`} className="yearly-month-item">
+              <p className="reading-prose">{line}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+      <section className="yearly-section">
+        <h5>실행 가이드</h5>
+        <p className="reading-prose">{parsed.actionGuide}</p>
+      </section>
+      {parsed.theme && (
+        <section className="yearly-section">
+          <h5>한 줄 테마</h5>
+          <p className="reading-prose">{parsed.theme}</p>
+        </section>
+      )}
+    </div>
+  );
+}
+
+function parseWeeklySummary(text: string) {
+  const raw = String(text || '').trim();
+  if (!raw.includes('총평:') || !raw.includes('일별 흐름:') || !raw.includes('실행 가이드:')) return null;
+
+  const overall = extractSection(raw, '총평:', '일별 흐름:');
+  const dailyBlock = extractSection(raw, '일별 흐름:', '실행 가이드:');
+  const actionAndTheme = extractSection(raw, '실행 가이드:', null);
+  if (!overall || !dailyBlock || !actionAndTheme) return null;
+
+  const daily = dailyBlock
+    .split(/(?=(?:월요일|화요일|수요일|목요일|금요일|토요일|일요일)\()/g)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  const themeIndex = actionAndTheme.indexOf('한 줄 테마:');
+  const actionGuide = (themeIndex >= 0 ? actionAndTheme.slice(0, themeIndex) : actionAndTheme).trim();
+  const theme = (themeIndex >= 0 ? actionAndTheme.slice(themeIndex + '한 줄 테마:'.length) : '').trim();
+
+  return {
+    overall,
+    daily: daily.length > 0 ? daily : [dailyBlock],
+    actionGuide,
+    theme
   };
 }
 
