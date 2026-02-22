@@ -972,6 +972,257 @@ function buildFriendlyFz1Detail({ lesson, stageMeta, cardNames }) {
   };
 }
 
+function buildFriendlyFm1Detail({ lesson, stageMeta, cardNames }) {
+  const [fool, magician, highPriestess, empress] = [
+    cardNames[0] || '바보',
+    cardNames[1] || '마법사',
+    cardNames[2] || '여교황',
+    cardNames[3] || '여황제'
+  ];
+
+  const onePassScript = [
+    `미션 1: 질문을 한 줄로 씁니다. 예: "지금 단계가 시작-선택-추진 중 어디에 있는가?"`,
+    `미션 2: ${fool}, ${magician}, ${highPriestess}, ${empress} 중 오늘 내 상황과 가장 가까운 카드 1장을 고릅니다.`,
+    '미션 3: 결론 한 줄을 씁니다. 예: "지금은 시작 단계라서 작은 착수가 우선이다."',
+    '미션 4: 근거 한 줄을 붙입니다. "카드 신호 1개 + 내 상황 사실 1개" 구조로 씁니다.',
+    '미션 5: 실행 한 줄로 닫습니다. "오늘 안에 할 행동 1개를 시간까지 고정"하면 됩니다.',
+    '미션 6: 복기 2줄을 남깁니다. "적중 1줄 + 오차 1줄"이면 완료입니다.'
+  ];
+
+  const storyFlow = [
+    '장면 1 - 시작: 학습자는 해야 할 일이 많아 우선순위를 못 정한 상태로 들어옵니다.',
+    `장면 2 - 카드 선택: ${fool}를 뽑고, 오늘은 "시작"이 핵심이라는 힌트를 잡습니다.`,
+    `장면 3 - 결론: "${fool} 신호가 강하니, 지금은 완벽보다 착수가 먼저다."`,
+    '장면 4 - 근거: "시작 신호가 뜬 상황인데, 실제로 첫 행동을 미루고 있었다."',
+    '장면 5 - 실행: "오늘 19:30, 책상에서, 20분 동안 첫 작업 1개만 실행."',
+    '장면 6 - 복기: "적중: 시작 문턱이 낮아졌다." / "오차: 20분 뒤 욕심이 붙었다."',
+    '장면 7 - 다음 리딩: "다음에도 시작 카드는 20분 착수 규칙으로 고정한다."'
+  ];
+
+  return {
+    intro: `${lesson.title}는 메이저 0~7을 "시작-선택-추진" 흐름으로 바로 써먹는 실전 레슨입니다.`,
+    learningGoals: [
+      '목표 1: 메이저 0~7을 암기하지 않고 단계(시작/선택/추진)로 빠르게 분류한다.',
+      '목표 2: 결론 1문장 + 근거 1문장 + 실행 1문장으로 즉시 리딩한다.',
+      '목표 3: 오늘 안에 끝낼 행동 1개를 시간까지 고정한다.',
+      '목표 4: 복기 2줄로 다음 리딩 규칙 1개를 만든다.'
+    ],
+    lessonFlow: storyFlow,
+    lessonBody: [
+      '이 레슨은 "메이저 카드 설명"이 아니라 "오늘 무엇을 먼저 할지 정하는 훈련"입니다.',
+      '0~7 카드를 볼 때는 복잡하게 해석하지 말고 시작/선택/추진 중 어디인지 먼저 고릅니다.',
+      '그리고 결론-근거-실행 3줄을 바로 작성합니다.',
+      '핵심은 길게 맞추는 해석이 아니라, 바로 행동으로 이어지는 짧은 해석입니다.'
+    ],
+    coreConcepts: [
+      '개념 1 - 시작 단계: 바보/마법사 계열은 "작게 시작" 신호로 읽습니다.',
+      '개념 2 - 선택 단계: 여교황/연인 계열은 "무엇을 고를지"를 먼저 정합니다.',
+      '개념 3 - 추진 단계: 전차/힘 계열은 "어떻게 밀고 갈지" 실행 기준을 붙입니다.',
+      '개념 4 - 실행 문장: 오늘 시간 + 장소 + 행동 1개로 닫습니다.',
+      '개념 5 - 복기 문장: 적중 1줄, 오차 1줄만 남겨도 충분합니다.'
+    ],
+    coachingScript: [],
+    workedExample: [
+      ['스토리텔링 스크립트', ...storyFlow].join('\n'),
+      [
+        '예시 스크립트 A (시작)',
+        '질문: 지금 단계가 시작-선택-추진 중 어디에 있는가?',
+        `결론: ${fool} 흐름이므로 지금은 시작 단계다.`,
+        `근거: ${fool} 신호가 강하고, 실제로 첫 작업을 미루고 있었다.`,
+        '실행: 오늘 19:30, 20분, 첫 작업 1개만 착수.',
+        '복기: 적중 1줄 / 오차 1줄'
+      ].join('\n'),
+      [
+        '예시 스크립트 B (선택)',
+        '질문: 지금 단계가 시작-선택-추진 중 어디에 있는가?',
+        `결론: ${highPriestess} 흐름이므로 지금은 선택 단계다.`,
+        `근거: ${highPriestess} 신호는 즉시 확장보다 우선순위 선택에 맞다.`,
+        '실행: 오늘 21:00, 선택지 2개 중 1개만 확정.',
+        '복기: 적중 1줄 / 오차 1줄'
+      ].join('\n'),
+      [
+        '예시 스크립트 C (추진)',
+        '질문: 지금 단계가 시작-선택-추진 중 어디에 있는가?',
+        `결론: ${magician} 흐름이므로 지금은 추진 단계다.`,
+        `근거: ${magician} 신호는 준비 완료보다 실행 고정에 강점이 있다.`,
+        '실행: 오늘 대화/업무에서 핵심 행동 1개만 끝까지 밀기.',
+        '복기: 적중 1줄 / 오차 1줄'
+      ].join('\n')
+    ],
+    practiceChecklist: [
+      '체크 1: 시작/선택/추진 중 단계 분류가 한 줄로 명확한가?',
+      '체크 2: 근거가 카드 신호 1개 + 상황 사실 1개로 쓰였는가?',
+      '체크 3: 실행 문장에 시간/행동이 들어갔는가?',
+      `체크 4: 대표 실수("${stageMeta.mistakes}")를 피했는가?`,
+      '체크 5: 복기 2줄을 남겼는가?'
+    ],
+    commonMistakes: [],
+    assignment: '1차 과제: 같은 질문으로 2회 리딩하고, 단계 판단(시작/선택/추진)이 왜 달라졌는지 3줄로 비교하세요.',
+    completionCriteria: [
+      '완료 기준 1: 단계(시작/선택/추진)를 5초 안에 말할 수 있다.',
+      '완료 기준 2: 결론-근거-실행 3문장을 5분 안에 작성할 수 있다.',
+      '완료 기준 3: 복기 2줄을 빠짐없이 남긴다.',
+      '완료 기준 4: 다음 리딩에서 유지할 규칙 1개를 정한다.'
+    ],
+    reflectionQuestions: [
+      '질문 1: 오늘 단계 판단이 가장 정확했던 순간은 언제였나?',
+      '질문 2: 흔들린 지점은 카드 해석이었나, 상황 판단이었나?',
+      '질문 3: 다음 리딩에서 유지할 문장 규칙 1개는 무엇인가?'
+    ],
+    onePassScript
+  };
+}
+
+const lessonStoryBlueprints = {
+  'fz-1': { character: '민지', situation: '할 일이 밀려 시작을 못함', question: '오늘 뭐부터 하면 흐름이 살아날까?', action: '20분 첫 작업 착수', review: '착수 성공 여부' },
+  'fz-2': { character: '지훈', situation: '키워드는 아는데 문장이 안 나옴', question: '이 카드의 핵심 키워드를 오늘 상황에 어떻게 붙일까?', action: '키워드 1개로 결론 작성', review: '키워드-상황 연결도' },
+  'fz-3': { character: '수아', situation: '리딩하고도 행동이 없음', question: '오늘 바로 실행할 행동 한 가지는 무엇인가?', action: '시간 고정 행동 1개', review: '실행 완료율' },
+  'fm-1': { character: '현우', situation: '지금 단계 판단이 안 됨', question: '지금 단계가 시작-선택-추진 중 어디에 있는가?', action: '단계 1개 확정', review: '단계 판단 정확도' },
+  'fm-2': { character: '서연', situation: '밀어붙일지 조절할지 헷갈림', question: '지금은 속도를 올릴 시기인가, 조율할 시기인가?', action: '줄일 것 1개/유지할 것 1개', review: '과속 감소 여부' },
+  'fm-3': { character: '도윤', situation: '반복 패턴을 끊지 못함', question: '지금 끊어야 할 반복과 마무리할 과제는 무엇인가?', action: '중단 1개/완결 1개', review: '반복 감소 여부' },
+  'bd-1': { character: '유진', situation: '질문이 길어 해석이 흔들림', question: '오늘 질문을 한 줄로 줄이면 무엇이 핵심인가?', action: '질문 1줄 고정', review: '질문 선명도' },
+  'bd-2': { character: '태민', situation: '결론과 근거가 섞임', question: '결론 1문장과 근거 1문장을 어떻게 분리할까?', action: '결론/근거 분리 작성', review: '문장 분리 정확도' },
+  'bd-3': { character: '하린', situation: '복기를 자주 생략함', question: '이번 해석은 어디가 맞고 어디가 빗나갔는가?', action: '복기 2줄 작성', review: '복기 지속률' },
+  'bt-1': { character: '정우', situation: '상황 설명이 감상 위주임', question: '지금 이미 벌어진 사실은 무엇인가?', action: '사실 2문장 정리', review: '사실/해석 분리도' },
+  'bt-2': { character: '예린', situation: '행동 카드가 추상적으로 끝남', question: '이 카드가 지금 요구하는 행동은 무엇인가?', action: '행동 1개 시간 고정', review: '행동 실행률' },
+  'bt-3': { character: '지아', situation: '결과를 좋게만 해석함', question: '기대 결과와 리스크를 함께 쓰면 어떻게 되는가?', action: '결과 1개/리스크 1개', review: '리스크 반영률' },
+  'ubr-1': { character: '성민', situation: '역방향을 무조건 나쁘게 해석함', question: '지연/과속/누락 중 핵심 문제는 무엇인가?', action: '병목 1개 지정', review: '병목 진단 정확도' },
+  'ubr-2': { character: '가은', situation: '교정 문장을 못 만듦', question: '막힌 흐름을 어떤 교정 문장으로 바꿀까?', action: '교정 문장 1개', review: '교정 적용률' },
+  'ubr-3': { character: '민석', situation: '리스크 완화 루틴이 없음', question: '오늘 줄일 것과 지킬 것은 무엇인가?', action: '줄일 것/지킬 것 확정', review: '리스크 체감 변화' },
+  'ubs-1': { character: '다연', situation: '행동과 감정을 구분 못함', question: '지금 문제는 속도인가 감정 온도인가?', action: '속도/감정 우선축 결정', review: '마찰 감소도' },
+  'ubs-2': { character: '영훈', situation: '판단과 운영을 섞어 씀', question: '판단 정리가 먼저인가 운영 정리가 먼저인가?', action: '판단/운영 2칸 분류', review: '의사결정 속도' },
+  'ubs-3': { character: '채원', situation: '수트별 문장 차이가 없음', question: '같은 질문을 수트별로 다르게 말하면 어떻게 달라지는가?', action: '수트별 문장 4개 작성', review: '문장 차별성' },
+  'icb-1': { character: '보람', situation: '관계 질문을 일반 문장으로 처리함', question: '이 관계 질문의 핵심은 감정/대화/경계 중 무엇인가?', action: '관계축 1개 고정', review: '관계 맥락 적합도' },
+  'icb-2': { character: '준호', situation: '업무/학습 질문이 추상적임', question: '성과/준비/운영 중 핵심 축은 무엇인가?', action: '우선순위 1개 확정', review: '성과 지표 변화' },
+  'icb-3': { character: '소희', situation: '재정/일상 질문이 막연함', question: '지금은 누수 관리인가 습관 교정인가?', action: '누수 1개 차단', review: '소모 감소율' },
+  'icv-1': { character: '경민', situation: '탐색형/추진형 구분 실패', question: '지금은 탐색이 맞나 추진이 맞나?', action: '역할 1개 선택', review: '역할 적합도' },
+  'icv-2': { character: '선우', situation: '안정과 책임 균형이 깨짐', question: '내면 안정과 외부 책임 중 무엇을 먼저 잡아야 하나?', action: '안정 1개/책임 1개', review: '균형 회복도' },
+  'icv-3': { character: '지민', situation: '코트카드 역할 선택이 흔들림', question: '지금 상황에 가장 맞는 역할은 무엇인가?', action: '역할 적용 행동 1개', review: '역할 적용 적중도' },
+  'ich-1': { character: '태희', situation: 'A/B 근거가 모호함', question: 'A와 B 중 유지 가능성이 높은 선택은 무엇인가?', action: '우세 선택 1개', review: '7일 후 적중도' },
+  'ich-2': { character: '민호', situation: '판정 라벨이 근거와 불일치', question: '우세/조건부/박빙 중 어디인가?', action: '라벨+조건 문장화', review: '라벨 정확도' },
+  'ich-3': { character: '유나', situation: '선택 후 검증을 안 함', question: '선택 결과를 어떤 지표로 확인할까?', action: '검증 지표 1개 설정', review: '검증 루프 유지율' },
+  'uis-1': { character: '상혁', situation: '카드 문장이 서로 끊김', question: '이 카드들을 한 흐름으로 연결하면 어떤 이야기인가?', action: '연결 문단 1개', review: '스토리 일관성' },
+  'uis-2': { character: '하정', situation: '긍정/경고 충돌을 못 다룸', question: '충돌 신호에서 최종 판정을 어떻게 내릴까?', action: '완충 조건 1개', review: '충돌 판정 정확도' },
+  'uis-3': { character: '동현', situation: '해석이 행동으로 안 내려옴', question: '이 해석을 7일 행동 계획으로 바꾸면?', action: '7일 계획 1개', review: '실행 연속성' },
+  'uip-1': { character: '윤서', situation: '가설만 있고 반례가 없음', question: '내 해석 가설의 반례는 무엇인가?', action: '가설/반례 1쌍', review: '오판 감소율' },
+  'uip-2': { character: '세진', situation: '오차 원인 분류가 안 됨', question: '이번 오차는 무엇 때문인가?', action: '오차 유형 1개 분류', review: '재발률' },
+  'uip-3': { character: '주원', situation: '표현 반복이 심함', question: '같은 뜻을 다른 문장으로 바꾸면?', action: '대체 문장 2개 작성', review: '문장 다양성' },
+  'acs-1': { character: '은채', situation: '켈틱 순서가 자주 꼬임', question: '10포지션을 어떤 순서로 읽어야 하나?', action: '순서 고정 초안 1개', review: '순서 누락률' },
+  'acs-2': { character: '승우', situation: '복합 질문이 뒤엉킴', question: '질문을 변수로 나누면 무엇이 보이나?', action: '변수 3개 분해', review: '충돌 감소도' },
+  'acs-3': { character: '나연', situation: '장문 요약이 길기만 함', question: '긴 리딩에서 지금 필요한 결론은 무엇인가?', action: '5문장 압축', review: '핵심 전달률' },
+  'ayc-1': { character: '현지', situation: '주간 계획이 감으로 작성됨', question: '이번 주 언제 밀고 언제 조정할까?', action: '요일별 행동 1개', review: '이행률' },
+  'ayc-2': { character: '재윤', situation: '월간 흐름 연결이 끊김', question: '4주 흐름을 한 줄씩 어떻게 요약할까?', action: '주차별 핵심 1개', review: '연결성' },
+  'ayc-3': { character: '다희', situation: '분기 계획이 추상적임', question: '확장 구간과 정비 구간을 어떻게 나눌까?', action: '분기 실행 1개', review: '분기 적합도' },
+  'eql-1': { character: '지후', situation: '판정 문장과 근거가 어긋남', question: '판정 라벨이 근거와 일치하는가?', action: '근거 재정렬 1회', review: '라벨 정합성' },
+  'eql-2': { character: '은호', situation: '행동 문장이 막연함', question: '이 행동 문장은 오늘 실행 가능한가?', action: '행동 문장 재작성', review: '실행 성공률' },
+  'eql-3': { character: '민채', situation: '복기 리포트가 끊김', question: '복기 데이터로 다음 리딩을 어떻게 개선할까?', action: '주간 리포트 1회', review: '개선 적용률' }
+};
+
+function buildDedicatedLessonDetail({ lesson, stageMeta, cardNames, lessonProfile, order }) {
+  const blueprint = lessonStoryBlueprints[lesson.id] || {
+    character: '학습자',
+    situation: '질문은 있는데 문장이 흔들림',
+    question: lessonProfile.questionTemplate,
+    action: '오늘 실행 행동 1개 고정',
+    review: '복기 정확도'
+  };
+  const cardPreview = cardNames.slice(0, 4).join(', ');
+  const a = cardNames[0] || '샘플 카드 A';
+  const b = cardNames[1] || '샘플 카드 B';
+  const c = cardNames[2] || '샘플 카드 C';
+  const onePassScript = [
+    `미션 1: 질문 한 줄 작성 - "${blueprint.question}"`,
+    `미션 2: ${cardPreview || '샘플 카드'} 중 중심 카드 1장 선택`,
+    '미션 3: 결론 한 줄 작성 - "지금 먼저 할 일 1개"',
+    '미션 4: 근거 한 줄 작성 - 카드 신호 1개 + 내 상황 사실 1개',
+    `미션 5: 실행 한 줄 작성 - ${blueprint.action}`,
+    '미션 6: 복기 두 줄 작성 - 적중 1줄 + 오차 1줄'
+  ];
+  const storyFlow = [
+    `장면 1 - 시작: ${blueprint.character}는 ${blueprint.situation} 상태로 레슨을 시작합니다.`,
+    `장면 2 - 질문: "${blueprint.question}"를 노트 맨 위에 적습니다.`,
+    `장면 3 - 카드 선택: ${cardPreview || '샘플 카드'} 중 가장 먼저 떠오르는 카드 1장을 고릅니다.`,
+    `장면 4 - 결론: ${a} 기준으로 지금 가장 먼저 할 일 1개를 정합니다.`,
+    `장면 5 - 근거: ${a} 신호와 현재 상황 사실 1개를 붙여 결론 이유를 씁니다.`,
+    `장면 6 - 실행: ${blueprint.action} 문장으로 오늘 행동을 고정합니다.`,
+    `장면 7 - 복기: ${blueprint.review}를 확인하며 적중 1줄/오차 1줄로 마무리합니다.`
+  ];
+
+  return {
+    intro: `${lesson.title}는 스토리 한 편을 따라가며 바로 실행하는 전용 실전 레슨입니다.`,
+    learningGoals: [
+      '목표 1: 질문-결론-근거-실행을 4줄로 끝낸다.',
+      '목표 2: 카드 신호를 상황 사실과 붙여 한 문장으로 설명한다.',
+      '목표 3: 오늘 안에 가능한 행동 1개를 시간까지 고정한다.',
+      '목표 4: 복기 2줄로 다음 리딩 보정점을 남긴다.'
+    ],
+    lessonFlow: storyFlow,
+    lessonBody: [
+      `${lesson.title}는 ${blueprint.character}의 사례를 따라가며 배우는 구조입니다.`,
+      '긴 이론 대신 장면 흐름(시작→질문→선택→결론→근거→실행→복기)만 따라가면 됩니다.',
+      '핵심 문장 공식: 카드 신호 1개 + 내 상황 사실 1개 → 실행 행동 1개 → 복기 2줄.',
+      '읽는 순서대로 쓰면 바로 실전에 적용할 수 있습니다.'
+    ],
+    coreConcepts: [
+      `개념 1 - 질문 축소: "${blueprint.question}"처럼 한 줄로 고정합니다.`,
+      '개념 2 - 결론 우선: 첫 문장에 방향을 먼저 씁니다.',
+      '개념 3 - 근거 연결: 카드 신호 1개 + 상황 사실 1개를 붙입니다.',
+      `개념 4 - 실행 고정: ${blueprint.action} 방식으로 닫습니다.`,
+      '개념 5 - 복기 루프: 적중 1줄 + 오차 1줄을 반복합니다.'
+    ],
+    coachingScript: [],
+    workedExample: [
+      ['스토리텔링 스크립트', ...storyFlow].join('\n'),
+      [
+        '예시 스크립트 A',
+        `질문: ${blueprint.question}`,
+        `결론: ${a} 흐름이 강하므로 우선순위 1개를 먼저 끝낸다.`,
+        `근거: ${a} 신호와 내 상황 사실 1개를 붙이면 분산보다 집중이 유리하다.`,
+        `실행: ${blueprint.action}.`,
+        `복기: 적중 1줄(${c} 연결 적중) / 오차 1줄`
+      ].join('\n'),
+      [
+        '예시 스크립트 B',
+        `질문: ${blueprint.question}`,
+        `결론: ${b} 기준으로 속도를 조절하고 정확도를 먼저 잡는다.`,
+        `근거: ${b} 신호는 확장보다 정비가 유리하다는 증거가 된다.`,
+        '실행: 오늘 21:00, 20분, 보완 행동 1개 진행.',
+        '복기: 적중 1줄 / 오차 1줄'
+      ].join('\n'),
+      [
+        '예시 스크립트 C',
+        `질문: ${blueprint.question}`,
+        `결론: ${c} 흐름으로 핵심 메시지 1개에 집중한다.`,
+        `근거: ${c} 신호는 과한 확장보다 선명한 전달이 맞다.`,
+        '실행: 오늘 대화/업무에서 핵심 문장 1개만 사용.',
+        '복기: 적중 1줄 / 오차 1줄'
+      ].join('\n')
+    ],
+    practiceChecklist: [
+      '체크 1: 첫 문장에 결론이 들어갔는가?',
+      '체크 2: 근거가 카드 신호 1개 + 상황 사실 1개로 쓰였는가?',
+      '체크 3: 실행 문장이 시간/행동까지 구체화됐는가?',
+      `체크 4: 대표 실수("${stageMeta.mistakes}")를 피했는가?`,
+      '체크 5: 복기 2줄을 남겼는가?'
+    ],
+    commonMistakes: [],
+    assignment:
+      `${order}차 과제: 같은 질문으로 2회 리딩하고, 결론/근거/실행 차이를 3줄로 비교하세요.`,
+    completionCriteria: [
+      '완료 기준 1: 결론-근거-실행 3문장을 5분 안에 작성한다.',
+      '완료 기준 2: 질문 한 줄을 고정한 채 2회 리딩 비교가 가능하다.',
+      '완료 기준 3: 복기 2줄을 누락 없이 남긴다.',
+      '완료 기준 4: 다음 리딩에서 유지할 규칙 1개를 말할 수 있다.'
+    ],
+    reflectionQuestions: [
+      '질문 1: 오늘 가장 잘 맞은 근거 문장은 무엇인가?',
+      '질문 2: 흔들린 지점은 카드 해석 문제였나, 상황 판단 문제였나?',
+      '질문 3: 다음 리딩에서 바꿀 표현 1개는 무엇인가?'
+    ],
+    onePassScript
+  };
+}
+
 function buildLessonDetail(course, lesson, lessonIndex) {
   const stageMeta = stagePlaybook[course.stage] || stagePlaybook['기초 입문'];
   const cardNames = getCardNames(lesson.cardIds, 6);
@@ -985,8 +1236,8 @@ function buildLessonDetail(course, lesson, lessonIndex) {
   const easyAction = '오늘 안에 할 행동 1개를 시간까지 고정';
   const easyReview = '적중 1줄 + 오차 1줄';
 
-  if (lesson.id === 'fz-1') {
-    return buildFriendlyFz1Detail({ lesson, stageMeta, cardNames });
+  if (lessonStoryBlueprints[lesson.id]) {
+    return buildDedicatedLessonDetail({ lesson, stageMeta, cardNames, lessonProfile, order });
   }
 
   const sampleCardA = cardNames[0] || '샘플 카드 A';

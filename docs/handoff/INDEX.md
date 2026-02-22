@@ -36,6 +36,8 @@
 - 다크 테마 가독성/레이아웃 재편: `docs/handoff/details/frontend-layout-theme-2026-02-22.md`
 - 스프레드 상단 종합 학습 내역 UI 정리: `docs/codex-updates-2026-02-22.md`
 - 스프레드 리딩 결과/가이드 토글 + 카드 썸네일 확대: `docs/session-handoff-2026-02-23-details.md`
+- 퀴즈 아키타입 다각화 + 문제은행 1,000+ + 레슨 정렬 출제: `docs/session-handoff-2026-02-23-details.md`
+- 전 레슨 전용 실전형 스토리텔링 전환: `docs/session-handoff-2026-02-23-details.md`
 - 질문 뱅크 `100,000/1,000` 확장: `docs/codex-updates-2026-02-22.md`
 - 학습 리더 코치 실전형(입문/중급 차등 강화): `docs/session-handoff-2026-02-23-details.md`
 - QA/회귀/텔레메트리 운영: `docs/handoff/details/quality-gates-telemetry-2026-02-22.md`
@@ -57,6 +59,9 @@
 - `eaa8240` Scale question bank to 10000 questions across 1000 topics
 - `e9699e6` Expand tarot question bank to 5000 across 50 topics
 - `8a0d57f` Update handoff docs with latest A/B and summary-policy rollout
+- `6cd8112` Diversify quiz archetypes and add 1000+ question bank coverage
+- `3e8e8a0` Align quiz archetypes to lesson scope and add story-driven lesson flows
+- `2ffd296` Refine lessons into mission-driven scripts and verify quiz scope alignment
 
 ## 6) 이전 상세 문서(원문 아카이브)
 - `docs/session-handoff-2026-02-22-details.md`

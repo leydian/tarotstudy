@@ -235,3 +235,60 @@
 - `cf7642a` Refocus intermediate guide text for tarot-reader training
 - `45ffe13` Expand course tracks and harden card-guide quality gates
 - `b97a0f6` Refine beginner card guide readability and update handoff docs
+
+## 11) 2026-02-23 추가 후속 3 (퀴즈-레슨 정렬 + 전 레슨 스토리텔링 전환)
+
+### 11.1 퀴즈 아키타입 다각화 + 문제은행 1,000+ 구축
+- 변경 파일:
+  - `apps/api/src/quiz.js`
+  - `apps/api/test/quiz-bank.test.js`
+- 핵심:
+  - 단일 키워드형 출제에서 다중 아키타입 출제로 확장
+    - 키워드(대표/보조/조합)
+    - 아르카나 분류
+    - 수트/랭크
+    - 정방향/역방향 행동
+    - 관계/커리어/학습 맥락
+    - 근거 구조/실행 문장
+  - 카드 전역 기준 문제은행 1,000+ 구성
+  - 출제 시 아키타입 혼합도를 유지하도록 다변화 로직 적용
+
+### 11.2 레슨 범위와 퀴즈 범위를 lessonId 기반으로 정렬
+- 변경 파일:
+  - `apps/api/src/quiz.js`
+  - `apps/api/src/index.js`
+  - `apps/api/test/quiz-bank.test.js`
+- 핵심:
+  - `lessonId` prefix별 허용 아키타입 매핑 도입
+    - `fz-*`: 정/역/기본 키워드/실행 문장 중심
+    - `ubs-*`: 수트/랭크 중심
+    - `icb-*`: 관계/커리어/학습 맥락 중심
+  - `/api/quiz/generate`에서 `lessonMeta`를 전달해 레슨 정렬 출제 활성화
+  - 정렬 회귀 테스트 추가(`fz-1` 케이스)
+
+### 11.3 레슨 콘텐츠 전면 실전형(스토리텔링 우선) 전환
+- 변경 파일:
+  - `apps/api/src/data/courses.js`
+  - `apps/web/src/pages/LessonPage.tsx`
+  - `apps/web/src/types.ts`
+- 핵심:
+  - 전 레슨(42개)에 대해 `lessonId`별 전용 스토리 블루프린트 적용
+    - `character`, `situation`, `question`, `action`, `review`
+  - 본문을 공통 이론형에서 장면형 실전 스토리로 변경
+    - 시작 → 질문 → 카드선택 → 결론 → 근거 → 실행 → 복기
+  - `한 번에 읽는 실전 스크립트`를 미션형으로 고정
+  - `예시 리딩`에 스토리텔링 스크립트 + A/B/C 실전 스크립트 통합
+  - 비어 있는 섹션은 UI에서 렌더링 생략
+
+### 11.4 검증 로그 (추가)
+- `node --check apps/api/src/quiz.js` 통과
+- `node --check apps/api/src/index.js` 통과
+- `node --check apps/api/src/data/courses.js` 통과
+- `npm run test:api` 통과
+- `npm run typecheck:web` 통과
+- `npm run build:web` 통과
+
+### 11.5 관련 커밋 (추가)
+- `6cd8112` Diversify quiz archetypes and add 1000+ question bank coverage
+- `3e8e8a0` Align quiz archetypes to lesson scope and add story-driven lesson flows
+- `2ffd296` Refine lessons into mission-driven scripts and verify quiz scope alignment
