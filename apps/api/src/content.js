@@ -2298,6 +2298,7 @@ function buildOneCardInterpretation({ card, orientation, focus, context = '' }) 
   const cleanConclusion = isYesNo
     ? normalizeOneCardConclusionSentence(explicitConclusion.replace(/^결론:\s*/g, ''))
     : `${decisionLine}.`;
+  const sleepQuestion = isSleepQuestion(context, shortHint);
   const stabilityLine = risk >= 2 || orientation === 'reversed'
     ? '지금은 서두르기보다 속도를 조금 낮춰 운영하시는 편이 더 안정적입니다.'
     : '지금은 무리만 피하면 흐름을 살려보실 수 있는 구간입니다.';
@@ -2307,15 +2308,24 @@ function buildOneCardInterpretation({ card, orientation, focus, context = '' }) 
   const themeLine = risk >= 2 || orientation === 'reversed'
     ? '오늘의 테마는 속도보다 정비를 앞에 두는 운영입니다.'
     : '오늘의 테마는 작은 실행으로 리듬을 살리는 운영입니다.';
+  const directLead = isYesNo
+    ? (sleepQuestion
+      ? `답부터 짧게 말씀드리면, ${cleanConclusion}`
+      : `답부터 말씀드리면, ${cleanConclusion}`)
+    : '';
+  const conclusionNarrative = directLead
+    ? `카드 신호로 보면 이 판단의 핵심은 리듬 안정과 소모 관리입니다. ${stabilityLine}`
+    : `그래서 결론은 ${cleanConclusion}으로 읽힙니다. ${stabilityLine}`;
 
   const story = [
+    directLead,
     `${card.nameKo} 카드는 지금 질문에서 ${keywords.join(', ')} 신호를 중심으로 흐름을 보여주고 있습니다.`,
-    `그래서 결론은 ${cleanConclusion}으로 읽힙니다. ${stabilityLine}`,
-    `바로 적용하신다면 ${actionHint} ${reviewLine}`,
-    themeLine
+    conclusionNarrative,
+    themeLine,
+    `바로 적용하신다면 ${actionHint} ${reviewLine}`
   ]
     .map((line) => applyOneCardConversationTone(line))
-    .slice(0, 6)
+    .slice(0, 7)
     .join(' ');
 
   return polishTarotInterpretation(story);
@@ -2394,6 +2404,11 @@ function normalizeOneCardConclusionSentence(text = '') {
 function buildOneCardYesNoConclusion({ group = 'general', card, orientation = 'upright', questionType = 'open', context = '' }) {
   if (questionType !== 'yes_no' && group === 'daily') return '';
   const risk = scoreOneCardRiskLight({ card, orientation });
+  if (isSleepQuestion(context)) {
+    if (risk >= 2 || orientation === 'reversed') return '결론: 아니오. 지금은 바로 자지 말고 10분만 정리한 뒤 다시 보세요.';
+    if (risk === 1) return '결론: 조건부 예. 10분만 정리하고 자는 쪽이 더 좋아요.';
+    return '결론: 예. 지금은 자는 쪽이 더 좋아요.';
+  }
   if (group === 'caffeine') {
     if (risk >= 2) return '결론: 아니오. 지금은 마시지 않는 쪽이 더 좋아요.';
     if (risk === 1) return '결론: 조건부 예. 한 잔까지만 가볍게 드세요.';
@@ -2427,6 +2442,11 @@ function buildOneCardYesNoConclusion({ group = 'general', card, orientation = 'u
 
 function buildOneCardExecutionHint({ context = '', group = 'general', card, orientation = 'upright' }) {
   const risk = scoreOneCardRiskLight({ card, orientation });
+  if (isSleepQuestion(context)) {
+    if (risk >= 2 || orientation === 'reversed') return '지금은 바로 눕기보다 해야 할 것 1개만 10분 정리하고 다시 수면 여부를 확인해보세요.';
+    if (risk === 1) return '10분만 가볍게 정리한 뒤 바로 주무시면 마음이 덜 걸릴 가능성이 높습니다.';
+    return '지금은 화면을 끄고 바로 주무시는 편이 회복에 더 유리합니다.';
+  }
   if (group === 'caffeine') {
     if (risk >= 2) return '오늘은 커피를 미루거나 디카페인으로 바꿔보세요. 물 먼저 마시고 컨디션을 체크한 뒤, 내일 다시 판단해도 늦지 않아요.';
     if (risk === 1) return '한 잔만 가볍게 드시고, 늦은 시간 추가 카페인은 피하는 쪽이 좋아요.';
@@ -2465,12 +2485,19 @@ function buildOneCardExecutionHint({ context = '', group = 'general', card, orie
 
 function detectOneCardQuestionGroup(context = '') {
   const normalized = String(context || '').toLowerCase();
+  if (isSleepQuestion(normalized)) return 'daily';
   if (/(커피|카페인|에너지드링크|에너지 드링크|수면|잠)/.test(normalized)) return 'caffeine';
   if (/(운동|헬스|러닝|달리기|조깅|산책|근력|유산소|필라테스|요가)/.test(normalized)) return 'exercise';
   if (/(연락|문자|카톡|톡|dm|디엠|전화|답장|고백|메시지)/.test(normalized)) return 'contact';
   if (/(결제|구매|지출|주문|구독|환불|계약|할부|투자|송금|이체)/.test(normalized)) return 'payment';
   if (/(오늘|운세|하루|금일|오늘의)/.test(normalized)) return 'daily';
   return 'general';
+}
+
+function isSleepQuestion(context = '', shortHint = null) {
+  const normalized = String(context || '').toLowerCase().trim();
+  if (shortHint?.subIntent === 'sleep') return true;
+  return /(잠|수면|sleep|잘까|자야|잠들|취침)/.test(normalized);
 }
 
 function buildOneCardDecisionLine({ group = 'general', card, orientation = 'upright' }) {

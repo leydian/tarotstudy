@@ -68,7 +68,8 @@ test('buildSpreadReading compacts one-card output for short questions', () => {
   assert.match(reading.coreMessage, /고민 중이시군요|질문이네요/);
   assert.match(reading.coreMessage, /결론:/);
   assert.match(reading.interpretation, /카드는 지금 질문에서/);
-  assert.match(reading.interpretation, /그래서 결론은/);
+  assert.match(reading.interpretation, /답부터 말씀드리면|답부터 짧게 말씀드리면|그래서 결론은/);
+  assert.match(reading.interpretation, /자는 쪽|바로 자지 말고|주무시는 쪽/);
   assert.match(reading.interpretation, /오늘의 테마는/);
   assert.match(reading.interpretation, /해보신 뒤 체감 변화|실행 후 20분/);
   assert.doesNotMatch(reading.interpretation, /카드 상징 키워드는/);

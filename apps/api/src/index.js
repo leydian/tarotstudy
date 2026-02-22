@@ -582,7 +582,8 @@ function summarizeSpread({ spreadId = '', spreadName, items, context = '', level
     const conclusion = buildOneCardSummaryConclusion({
       orientation: lead?.orientation || 'upright',
       analysisLabel: analysis.label,
-      questionType: analysisInput.questionType
+      questionType: analysisInput.questionType,
+      context
     });
     const action = analysis.label === '우세'
       ? '지금 할 행동 1개만 가볍게 해보세요.'
@@ -661,8 +662,15 @@ function summarizeSpread({ spreadId = '', spreadName, items, context = '', level
   return finalizeSpreadSummary({ spreadId, spreadName, items, context: normalizedContext, rawSummary });
 }
 
-function buildOneCardSummaryConclusion({ orientation = 'upright', analysisLabel = '조건부', questionType = 'open' }) {
+function buildOneCardSummaryConclusion({ orientation = 'upright', analysisLabel = '조건부', questionType = 'open', context = '' }) {
   const isYesNo = questionType === 'yes_no';
+  if (/(잠|수면|sleep|잘까|자야|잠들|취침)/i.test(String(context || ''))) {
+    if (analysisLabel === '우세') return '결론: 예. 지금은 주무시는 쪽이 더 좋습니다.';
+    if (analysisLabel === '박빙') return '결론: 조건부 예. 10분만 정리하고 주무시면 더 안정적입니다.';
+    return orientation === 'upright'
+      ? '결론: 조건부 예. 10분만 정리하고 주무시는 쪽이 좋습니다.'
+      : '결론: 아니오. 지금은 바로 눕기보다 10분 정리 후 다시 판단하는 편이 좋습니다.';
+  }
   if (analysisLabel === '우세') {
     if (!isYesNo) return orientation === 'upright' ? '결론: 지금은 밀어도 괜찮아요.' : '결론: 강도만 낮추면 진행할 수 있어요.';
     return orientation === 'upright' ? '결론: 예. 지금 진행해도 괜찮아요.' : '결론: 조건부 예. 강도만 낮추면 가능해요.';
