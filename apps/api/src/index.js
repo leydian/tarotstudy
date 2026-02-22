@@ -1026,17 +1026,17 @@ function buildSpreadEvidenceReason({ position = '', keyword = '핵심', score = 
   }
   if (score >= 0) {
     if (/월간 테마|현재 상황|현재 관계 상태|현재/.test(position)) {
-      return `${keyword} 기준축을 안정적으로 잡아주는 신호`;
+      return `${keyword} 기준을 잡아주어 흐름이 안정됨`;
     }
     if (/1주차|2주차|가까운 미래|행동/.test(position)) {
-      return `${keyword} 축에서 실행 탄력이 확인됨`;
+      return `${keyword} 쪽으로 움직일 힘이 붙는 흐름`;
     }
-    return `가용 에너지가 ${keyword} 축에서 살아 있음`;
+    return `${keyword} 쪽으로 해볼 만한 힘이 남아 있음`;
   }
   if (/3주차|결과|교차\/장애|거리\/갈등/.test(position)) {
-    return `${keyword} 축의 소모가 누적되기 쉬워 완급 조절이 필요함`;
+    return `${keyword} 쪽 피로가 쌓이기 쉬워 속도 조절이 필요함`;
   }
-  return `${keyword} 축의 소모/지연 리스크가 큼`;
+  return `${keyword} 쪽에서 소모나 지연이 생길 가능성이 큼`;
 }
 
 function pickSpreadLexicon(spreadName = '', intent = 'general') {
