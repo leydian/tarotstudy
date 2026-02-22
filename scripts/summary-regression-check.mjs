@@ -102,14 +102,16 @@ function assertForbidden(summary, phrases, errors, caseId) {
   }
 }
 
-function assertCommonSummaryPolicy(summary, errors, caseId) {
+function assertCommonSummaryPolicy(summary, errors, caseId, spreadId = '') {
   const text = String(summary || '');
-  if (!/판정:\s*(우세|조건부|박빙)/.test(text)) {
-    errors.push(`[${caseId}] missing decision label block`);
-  }
-  const evidenceCount = (text.match(/근거 \d+:/g) || []).length;
-  if (evidenceCount < 1) {
-    errors.push(`[${caseId}] missing evidence line`);
+  if (spreadId !== 'one-card') {
+    if (!/판정:\s*(우세|조건부|박빙)/.test(text)) {
+      errors.push(`[${caseId}] missing decision label block`);
+    }
+    const evidenceCount = (text.match(/근거 \d+:/g) || []).length;
+    if (evidenceCount < 1) {
+      errors.push(`[${caseId}] missing evidence line`);
+    }
   }
   if (/\s\?/.test(text)) {
     errors.push(`[${caseId}] found whitespace before question mark`);
@@ -191,7 +193,7 @@ try {
       level: item.level || 'beginner'
     });
 
-    assertCommonSummaryPolicy(summary, errors, item.id);
+    assertCommonSummaryPolicy(summary, errors, item.id, spread.id);
     assertSpreadSpecificRules(summary, spread.id, errors, item.id);
     assertIncludesAll(summary, item.expect?.requiredAll || [], errors, item.id);
     assertIncludesAny(summary, item.expect?.requiredAny || [], errors, item.id);

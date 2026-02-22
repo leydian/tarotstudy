@@ -2279,64 +2279,37 @@ function buildCelticCrossInterpretation({
 function buildOneCardInterpretation({ card, orientation, focus, context = '' }) {
   const shortHint = inferShortUtterance(context);
   const contextAnalysis = analyzeQuestionContextSync(context);
-  const shouldForceConclusion = Boolean(shortHint) || contextAnalysis.questionType === 'yes_no';
-  if (shortHint) {
-    const group = detectOneCardQuestionGroup(context);
-    const risk = scoreOneCardRiskLight({ card, orientation });
-    const main = card.keywords?.[0] ?? '흐름';
-    const sub = card.keywords?.[1] ?? main;
-    const conclusion = buildOneCardYesNoConclusion({ group, card, orientation, questionType: contextAnalysis.questionType, context });
-    const actionHint = buildOneCardExecutionHint({ context, group, card, orientation })
-      .split('. ')
-      .slice(0, 1)
-      .join('. ')
-      .trim();
-    const reviewHint = shortHint.subIntent === 'sleep'
-      ? '복기: 20분 뒤에 몸이 좀 가라앉았는지, 잠이 올 것 같은지 1줄만 남겨보세요.'
-      : '복기: 해보고 나서 실제 반응이 어땠는지 1줄만 적어두면 다음 판단이 쉬워져요.';
-    const signalLine = risk >= 2 || orientation === 'reversed'
-      ? `지금은 '${main}' 신호가 예민해서, ${sub} 쪽을 기준으로 속도를 좀 낮추는 게 좋아요.`
-      : `지금은 '${main}' 신호가 열려 있어서, ${sub} 기준으로 작게 시작하면 흐름을 살릴 수 있어요.`;
-    return polishTarotInterpretation([
-      conclusion,
-      signalLine,
-      `실행: ${actionHint}`,
-      reviewHint
-    ].join(' '));
-  }
-
   const group = detectOneCardQuestionGroup(context);
   const risk = scoreOneCardRiskLight({ card, orientation });
   const main = card.keywords?.[0] ?? '흐름';
   const sub = card.keywords?.[1] ?? main;
   const third = card.keywords?.[2] ?? sub;
-  const subObject = withKoreanParticle(sub, '을', '를');
-  const subSubject = withKoreanParticle(sub, '이', '가');
-  const evidence = buildOneCardEvidenceLine({
-    group,
-    orientation,
-    main,
-    subSubject,
-    subObject,
-    focus
-  });
-  const symbolKeywords = [...new Set([main, sub, third].map((k) => String(k || '').trim()).filter(Boolean))];
-  const evidenceWithSymbol = `${evidence} 카드 상징 키워드는 ${symbolKeywords.map((k) => `'${k}'`).join(', ')}입니다.`;
-  const comfort = buildOneCardComfortLine({ group, risk });
-  const timing = buildOneCardTimingLine({ group, risk, orientation });
-  const bridge = buildOneCardBridgeLine({ group, card, orientation, main, sub });
-  const action = `실행 기준: ${buildOneCardExecutionHint({ context, group, card, orientation })}`;
-  const outcome = buildOneCardOutcomeLine({ group, risk, orientation });
-  const conclusion = shouldForceConclusion
-    ? `${buildOneCardYesNoConclusion({
-      group,
-      card,
-      orientation,
-      questionType: contextAnalysis.questionType,
-      context
-    })} `
-    : '';
-  return polishTarotInterpretation(`${conclusion}${[comfort, evidenceWithSymbol, timing, action, outcome, bridge].join(' ')}`);
+  const isYesNo = contextAnalysis.questionType === 'yes_no' || Boolean(shortHint);
+  const explicitConclusion = buildOneCardYesNoConclusion({ group, card, orientation, questionType: contextAnalysis.questionType, context });
+  const decisionLine = buildOneCardDecisionLine({ group, card, orientation })
+    .replace(/^한 줄 결론은\s*/g, '')
+    .replace(/\.$/, '');
+  const actionHint = buildOneCardExecutionHint({ context, group, card, orientation })
+    .split('. ')
+    .slice(0, 1)
+    .join('. ')
+    .trim();
+  const keywords = [...new Set([main, sub, third].map((k) => String(k || '').trim()).filter(Boolean))];
+  const meaningLine = `의미: ${card.nameKo} 카드는 ${keywords.join(', ')} 흐름을 보여줘요.`;
+  const conclusionLine = isYesNo
+    ? `한줄 결론: ${normalizeOneCardConclusionSentence(explicitConclusion.replace(/^결론:\s*/g, ''))}`
+    : `한줄 결론: ${decisionLine}.`;
+  const actionLine = `권장 행동: ${actionHint}`;
+  const toneLine = risk >= 2 || orientation === 'reversed'
+    ? `지금은 서두르기보다 속도를 조금 낮추는 쪽이 결과가 더 안정적이에요.`
+    : `지금은 무리만 피하면 흐름을 살릴 수 있는 구간이에요.`;
+  const reviewLine = shortHint?.subIntent === 'sleep'
+    ? '복기: 20분 뒤에 몸이 좀 가라앉았는지 1줄만 적어보세요.'
+    : '복기: 해본 뒤 체감 변화 1줄만 남겨두면 다음 판단이 쉬워져요.';
+  const lines = [meaningLine, conclusionLine, actionLine, toneLine, reviewLine]
+    .map((line) => applyOneCardConversationTone(line))
+    .slice(0, 7);
+  return polishTarotInterpretation(lines.join(' '));
 }
 
 function buildOneCardEvidenceLine({ group = 'general', orientation = 'upright', main = '흐름', subSubject = '흐름이', subObject = '흐름을', focus = '핵심 포인트' }) {
@@ -2376,7 +2349,7 @@ function buildOneCardCoreMessage({ card, orientation, context = '' }) {
     : '';
   if (shortHint) {
     const shortQuestion = normalizedContext || String(context || '').trim() || '지금 질문';
-    return `"${shortQuestion}" 고민 중이시군요. 카드는 '${card.nameKo} ${cardDirection}'이고, ${forcedConclusion}`;
+    return applyOneCardConversationTone(`"${shortQuestion}" 고민 중이시군요. 카드는 '${card.nameKo} ${cardDirection}'이에요. ${forcedConclusion}`);
   }
   const empathy = group === 'daily'
     ? (normalizedContext ? `"${normalizedContext}"에 대한 오늘 흐름을 함께 보겠습니다.` : '오늘 흐름을 카드 기준으로 차분히 정리해보겠습니다.')
@@ -2387,7 +2360,26 @@ function buildOneCardCoreMessage({ card, orientation, context = '' }) {
     ? `카드는 '${card.nameKo} ${cardDirection}'입니다.`
     : `뽑으신 카드는 '${card.nameKo} ${cardDirection}'입니다.`;
   const result = `${empathy} ${lead} ${verdict}`.trim();
-  return shouldForceConclusion ? `${result} ${forcedConclusion}`.trim() : result;
+  return applyOneCardConversationTone(shouldForceConclusion ? `${result} ${forcedConclusion}`.trim() : result);
+}
+
+function applyOneCardConversationTone(line = '') {
+  return String(line || '')
+    .replace(/좋겠습니다\./g, '좋아요.')
+    .replace(/권장됩니다\./g, '권장돼요.')
+    .replace(/필요합니다\./g, '필요해요.')
+    .replace(/가능합니다\./g, '가능해요.')
+    .replace(/좋습니다\./g, '좋아요.')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
+function normalizeOneCardConclusionSentence(text = '') {
+  return String(text || '')
+    .replace(/^예\.\s*/g, '예, ')
+    .replace(/^아니오\.\s*/g, '아니오, ')
+    .replace(/^조건부 예\.\s*/g, '조건부 예, ')
+    .trim();
 }
 
 function buildOneCardYesNoConclusion({ group = 'general', card, orientation = 'upright', questionType = 'open', context = '' }) {
@@ -3435,7 +3427,7 @@ function polishTarotInterpretation(raw = '') {
     .replace(/(^|[\s"'(])축(?=([\s"'.,!?)]|$))/g, '$1기준');
 
   const sentences = splitSentences(text);
-  if (sentences.length > 5) sentences.splice(5);
+  if (sentences.length > 7) sentences.splice(7);
   let out = sentences.join(' ');
   if (out.length > 760) out = `${out.slice(0, 759).trim()}…`;
   return out;

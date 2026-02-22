@@ -573,28 +573,29 @@ function pickRandomCards(deck, count) {
 
 function summarizeSpread({ spreadId = '', spreadName, items, context = '', level = 'beginner' }) {
   const normalizedContext = normalizeContextForSpread({ spreadName, context });
-  const oneCardAnalysis = spreadId === 'one-card' ? analyzeQuestionContextSync(context) : null;
-  const shouldForceYesNoConclusion = spreadId === 'one-card'
-    && (Boolean(inferShortUtterance(context)) || oneCardAnalysis?.questionType === 'yes_no');
-  if (spreadId === 'one-card' && shouldForceYesNoConclusion) {
+  if (spreadId === 'one-card') {
     const lead = items[0];
     const keyword = lead?.card?.keywords?.[0] || '흐름';
     const direction = lead?.orientation === 'upright' ? '정방향' : '역방향';
-    const analysis = analyzeSpreadSignal(items, oneCardAnalysis?.intent || 'general');
+    const analysisInput = analyzeQuestionContextSync(context);
+    const analysis = analyzeSpreadSignal(items, analysisInput.intent || 'general');
     const conclusion = buildOneCardSummaryConclusion({
       orientation: lead?.orientation || 'upright',
-      analysisLabel: analysis.label
+      analysisLabel: analysis.label,
+      questionType: analysisInput.questionType
     });
     const action = analysis.label === '우세'
-      ? '지금 할 행동 1개만 정해서 가볍게 해보세요.'
+      ? '지금 할 행동 1개만 가볍게 해보세요.'
       : analysis.label === '박빙'
         ? '강도를 조금 낮춰서 행동 1개만 해보고 반응을 확인해보세요.'
         : '10분만 정리하고 다시 판단해보세요.';
+    const theme = analysis.label === '우세' ? '작게 시작하면 흐름이 붙는 날' : analysis.label === '박빙' ? '속도 조절이 성패를 가르는 날' : '멈추고 정비하면 손실을 줄이는 날';
     return [
-      conclusion,
-      `판정: ${analysis.label} · ${keyword} 신호(${direction})를 보면, 지금은 속도 조절이 핵심이에요.`,
-      `실행: ${action}`,
-      '복기: 해본 뒤 체감 변화를 1줄만 남겨주세요.'
+      `의미: ${keyword} 신호(${direction})가 지금 결정의 핵심이에요.`,
+      `한줄 결론: ${conclusion.replace(/^결론:\s*/, '')}`,
+      `권장 행동: ${action}`,
+      '복기: 해본 뒤 체감 변화를 1줄만 남겨주세요.',
+      `한 줄 테마: ${theme}`
     ].join('\n');
   }
   let rawSummary = '';
@@ -660,16 +661,16 @@ function summarizeSpread({ spreadId = '', spreadName, items, context = '', level
   return finalizeSpreadSummary({ spreadName, items, context: normalizedContext, rawSummary });
 }
 
-function buildOneCardSummaryConclusion({ orientation = 'upright', analysisLabel = '조건부' }) {
+function buildOneCardSummaryConclusion({ orientation = 'upright', analysisLabel = '조건부', questionType = 'open' }) {
+  const isYesNo = questionType === 'yes_no';
   if (analysisLabel === '우세') {
-    return orientation === 'upright'
-      ? '결론: 예. 지금 진행해도 괜찮아요.'
-      : '결론: 조건부 예. 강도만 낮추면 가능해요.';
+    if (!isYesNo) return orientation === 'upright' ? '결론: 지금은 밀어도 괜찮아요.' : '결론: 강도만 낮추면 진행할 수 있어요.';
+    return orientation === 'upright' ? '결론: 예. 지금 진행해도 괜찮아요.' : '결론: 조건부 예. 강도만 낮추면 가능해요.';
   }
-  if (analysisLabel === '박빙') return '결론: 조건부 예. 속도 조절이 필요해요.';
+  if (analysisLabel === '박빙') return isYesNo ? '결론: 조건부 예. 속도 조절이 필요해요.' : '결론: 속도 조절이 필요해요.';
   return orientation === 'upright'
-    ? '결론: 조건부 예. 지금은 조절하면서 가는 쪽이 좋아요.'
-    : '결론: 아니오. 지금은 멈추고 정비부터 하는 게 좋아요.';
+    ? (isYesNo ? '결론: 조건부 예. 지금은 조절하면서 가는 쪽이 좋아요.' : '결론: 지금은 조절하면서 가는 쪽이 좋아요.')
+    : (isYesNo ? '결론: 아니오. 지금은 멈추고 정비부터 하는 게 좋아요.' : '결론: 지금은 멈추고 정비부터 하는 게 좋아요.');
 }
 
 export function summarizeSpreadForQa(payload = {}) {
