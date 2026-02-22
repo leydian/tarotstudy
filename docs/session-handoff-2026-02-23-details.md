@@ -677,3 +677,77 @@
 - `npm run typecheck:web` 통과
 - `npm run lint` 통과
 - `npm run docs:check-handoff` 통과
+
+## 19) 원카드 초간단 질문 응답 품질 전면 업그레이드 (벤치마크 반영)
+
+### 19.1 초간단 질문 유형 뱅크 100+ 확장
+- 변경 파일:
+  - `apps/api/src/question-understanding/short-utterance-rules.js`
+  - `apps/api/test/question-understanding.test.js`
+- 핵심:
+  - 초단문 발화 유형을 100개 이상으로 확장(`SHORT_QUESTION_TYPE_BANK`)
+  - 수면/연락/결제/운동/이직/학습/일반 선택형까지 초단문 커버리지 확장
+  - 유형 수 회귀 테스트 추가(100+ 보장)
+
+### 19.2 초간단 질문 원카드 압축 응답 적용
+- 변경 파일:
+  - `apps/api/src/content.js`
+  - `apps/api/src/index.js`
+  - `apps/api/test/content-fallback.test.js`
+- 핵심:
+  - `one-card + short_utterance_rules` 매칭 시 장문 템플릿 대신 압축 템플릿 적용
+  - 상단 종합 리딩과 하단 리더 리딩 모두 짧은 실행형 구조로 통일
+  - 학습 리더 코치 문구도 초간단 질문에서는 짧은 복기형으로 축약
+
+### 19.3 yes/no 및 초간단 질문 결론 강제
+- 변경 파일:
+  - `apps/api/src/content.js`
+  - `apps/api/src/index.js`
+  - `apps/api/test/content-fallback.test.js`
+- 핵심:
+  - 초간단 질문 또는 `questionType=yes_no`이면 결론을 반드시 명시
+  - 결론 포맷:
+    - `결론: 예`
+    - `결론: 아니오`
+    - `결론: 조건부 예`
+  - 종합 리딩(summary)에도 동일 결론 라인을 강제
+
+### 19.4 벤치마크형 구어체 톤 반영
+- 변경 파일:
+  - `apps/api/src/content.js`
+  - `apps/api/src/index.js`
+- 핵심:
+  - 딱딱한 보고서체를 대화형 구어체로 완화
+  - 부정 결론 완충(실망 완화), 근거 해석, 대체 행동 제시 흐름 강화
+  - 정방향/역방향과 결론의 어색한 충돌을 줄이도록 결론 매핑 보정
+
+### 19.5 원카드 형식 통일(모든 질문 적용)
+- 변경 파일:
+  - `apps/api/src/content.js`
+  - `apps/api/src/index.js`
+  - `scripts/summary-regression-check.mjs`
+- 핵심:
+  - 원카드 출력 형식을 모든 질문에 통일:
+    - `의미`
+    - `한줄 결론`
+    - `권장 행동`
+    - `복기`
+    - `한 줄 테마`(요약)
+  - 원카드 문장 길이 정책 조정: 해석 문장 최대 7문장(5~7문장 목표)
+  - 요약 회귀 정책에서 원카드는 기존 `판정/근거` 강제 규칙 예외 처리
+
+### 19.6 검증 로그
+- `node --test apps/api/test/question-understanding.test.js` 통과
+- `node --test apps/api/test/content-fallback.test.js` 통과
+- `npm run qa:question-understanding` 통과
+  - total: 30
+  - intent/type/choice/domainFloor: 모두 100%
+- `npm run qa:summary-regression` 통과
+- `npm run test:api` 통과
+
+### 19.7 관련 커밋
+- `f1f5ea2` Expand short-question type bank to 100+ utterance patterns
+- `6f1a818` Compact one-card outputs for short-utterance question bank
+- `d64461a` Force explicit conclusions for short and yes-no one-card questions
+- `a2d1c50` Refine one-card yes-no output with conversational Korean tone
+- `305af3b` Reshape one-card answers to meaning-conclusion-action conversational format
