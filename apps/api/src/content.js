@@ -1676,29 +1676,38 @@ function buildTarotConsultingInterpretation({
   contextProfile,
   seed
 }) {
+  let raw = '';
   if (spreadId === 'yearly-fortune' && isYearlyMonthPosition(position.name)) {
-    return buildYearlyMonthInterpretation({ card, position, orientation, context, seed });
+    raw = buildYearlyMonthInterpretation({ card, position, orientation, context, seed });
+    return buildUnifiedInterpretationNarrative({ raw, spreadId, card, orientation, context, focus });
   }
   if (contextProfile.id === 'relationship-repair') {
-    return buildRepairBenchmarkInterpretation({ card, position, orientation, spreadId });
+    raw = buildRepairBenchmarkInterpretation({ card, position, orientation, spreadId });
+    return buildUnifiedInterpretationNarrative({ raw, spreadId, card, orientation, context, focus });
   }
   if (contextProfile.id === 'study') {
-    return buildStudyBenchmarkInterpretation({ card, position, orientation, spreadId });
+    raw = buildStudyBenchmarkInterpretation({ card, position, orientation, spreadId });
+    return buildUnifiedInterpretationNarrative({ raw, spreadId, card, orientation, context, focus });
   }
   if (contextProfile.id === 'social') {
-    return buildSocialBenchmarkInterpretation({ card, position, orientation, spreadId });
+    raw = buildSocialBenchmarkInterpretation({ card, position, orientation, spreadId });
+    return buildUnifiedInterpretationNarrative({ raw, spreadId, card, orientation, context, focus });
   }
   if (contextProfile.id === 'finance') {
-    return buildFinanceBenchmarkInterpretation({ card, position, orientation, spreadId, context });
+    raw = buildFinanceBenchmarkInterpretation({ card, position, orientation, spreadId, context });
+    return buildUnifiedInterpretationNarrative({ raw, spreadId, card, orientation, context, focus });
   }
   if (contextProfile.id === 'relationship') {
-    return buildRelationshipBenchmarkInterpretation({ card, position, orientation, spreadId });
+    raw = buildRelationshipBenchmarkInterpretation({ card, position, orientation, spreadId });
+    return buildUnifiedInterpretationNarrative({ raw, spreadId, card, orientation, context, focus });
   }
   if (spreadId === 'one-card') {
-    return buildOneCardInterpretation({ card, orientation, focus, context });
+    raw = buildOneCardInterpretation({ card, orientation, focus, context });
+    return buildUnifiedInterpretationNarrative({ raw, spreadId, card, orientation, context, focus });
   }
   if (spreadId === 'celtic-cross') {
-    return buildCelticCrossInterpretation({ card, position, orientation, focus, context, contextProfile, seed });
+    raw = buildCelticCrossInterpretation({ card, position, orientation, focus, context, contextProfile, seed });
+    return buildUnifiedInterpretationNarrative({ raw, spreadId, card, orientation, context, focus });
   }
   const spreadGuide = buildSpreadConsultingGuide({ spreadId, positionName: position.name, positionPrompt, context, seed });
   const orientationGuide = buildOrientationCounselLine({
@@ -1716,7 +1725,83 @@ function buildTarotConsultingInterpretation({
     ? buildWeeklyContextLine({ positionName: position.name, seed })
     : buildCoreContextLine({ spreadId, positionName: position.name, contextProfile, context, seed });
   const actionLine = buildTarotActionLine({ spreadId, positionName: position.name, contextProfile, orientation, context, seed });
-  return polishTarotInterpretation([spreadGuide, orientationGuide, keywordGuide, contextLine, actionLine].join(' '));
+  raw = polishTarotInterpretation([spreadGuide, orientationGuide, keywordGuide, contextLine, actionLine].join(' '));
+  return buildUnifiedInterpretationNarrative({ raw, spreadId, card, orientation, context, focus });
+}
+
+function buildUnifiedInterpretationNarrative({
+  raw = '',
+  spreadId = '',
+  card,
+  orientation = 'upright',
+  context = '',
+  focus = '핵심 흐름'
+}) {
+  const text = String(raw || '').trim();
+  const keyword = card?.keywords?.[0] || '핵심 흐름';
+  const questionAnalysis = analyzeQuestionContextSync(context);
+  const shortHint = inferShortUtterance(context);
+  const isYesNo = questionAnalysis.questionType === 'yes_no' || Boolean(shortHint);
+  const sleepQuestion = isSleepQuestion(context, shortHint);
+  const group = detectOneCardQuestionGroup(context);
+  const explicitConclusion = buildOneCardYesNoConclusion({
+    group,
+    card,
+    orientation,
+    questionType: questionAnalysis.questionType,
+    context
+  });
+  const normalizedConclusion = normalizeOneCardConclusionSentence(String(explicitConclusion || '')
+    .replace(/^결론:\s*/g, '')
+    .trim());
+
+  const answerLine = isYesNo
+    ? `답부터 말씀드리면, ${normalizedConclusion || (orientation === 'upright' ? '예, 진행하셔도 괜찮습니다.' : '아니오, 지금은 정비를 먼저 하시는 편이 좋습니다.')}`
+    : (orientation === 'upright'
+      ? '핵심부터 말씀드리면, 지금은 흐름을 살려 실행해보실 수 있는 구간입니다.'
+      : '핵심부터 말씀드리면, 지금은 속도를 낮추고 정비를 먼저 두시는 편이 안정적입니다.');
+
+  const focusObject = withKoreanParticle(focus || '핵심 흐름', '을', '를');
+  const evidenceLine = `${card?.nameKo || '이번 카드'} 카드는 지금 질문에서 "${keyword}" 신호를 보여주고 있고, ${focusObject} 기준으로 읽으실 때 판단이 가장 선명해집니다.`;
+  const actionLine = buildUnifiedActionLine({ text, spreadId, context, orientation, sleepQuestion });
+  const reviewLine = sleepQuestion
+    ? '실행 후 20분 또는 내일 아침에 잠든 속도와 컨디션 변화를 한 줄로만 남겨 보세요.'
+    : '실행해보신 뒤 체감 변화를 한 줄만 기록해 두시면 다음 판단이 훨씬 정확해집니다.';
+  const themeLine = orientation === 'upright'
+    ? `오늘의 테마는 "${keyword}" 신호를 무리 없이 이어가는 운영입니다.`
+    : `오늘의 테마는 "${keyword}" 신호에서 과속을 줄이고 정비를 앞에 두는 운영입니다.`;
+
+  return polishTarotInterpretation([answerLine, evidenceLine, actionLine, reviewLine, themeLine].join(' '));
+}
+
+function buildUnifiedActionLine({ text = '', spreadId = '', context = '', orientation = 'upright', sleepQuestion = false }) {
+  if (sleepQuestion) {
+    return orientation === 'upright'
+      ? '지금은 화면을 끄고 바로 취침으로 들어가셔도 좋습니다.'
+      : '지금은 바로 눕기보다 10분만 정리한 뒤 취침 여부를 다시 판단해 보세요.';
+  }
+
+  if (spreadId === 'choice-a-b') {
+    const meta = inferChoiceContextMeta(context);
+    const riskHint = meta.isPurchaseChoice
+      ? '유혹·과열 신호는 경계와 통제 기준으로 함께 점검해 주세요.'
+      : '';
+    return `실행은 ${meta.axes[0]}, ${meta.axes[1]}, ${meta.axes[2]} 그리고 ${meta.axes[3]} 기준으로 A/B를 같은 체크리스트로 비교해 보세요. ${riskHint}`.trim();
+  }
+
+  const actionMatch = String(text || '').match(/실행 문장:\s*([^.!?]+[.!?]?)/);
+  if (actionMatch?.[1]) {
+    return `실행은 ${actionMatch[1].trim()}`;
+  }
+  if (spreadId === 'weekly-fortune' || spreadId === 'monthly-fortune' || spreadId === 'yearly-fortune') {
+    return '실행은 강한 구간 1개에 집중하고 약한 구간 1개는 정비 구간으로 분리해 운영해 보세요.';
+  }
+  if (/관계|연애|재회|연락/.test(String(context || ''))) {
+    return '실행은 사실 1문장과 요청 1문장을 분리해 짧게 전달해 보세요.';
+  }
+  return orientation === 'upright'
+    ? '실행은 지금 바로 가능한 행동 1개만 고정해 작게 시작해 보세요.'
+    : '실행은 확장보다 소모를 줄이는 정비 행동 1개를 먼저 선택해 보세요.';
 }
 
 function buildRelationshipBenchmarkCoreMessage({ card, position, orientation, spreadId = 'default' }) {
