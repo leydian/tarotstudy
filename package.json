@@ -1,0 +1,15 @@
+{
+  "name": "tarot-study-app",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev:web": "npm run dev -w @tarot/web",
+    "dev:api": "npm run dev -w @tarot/api",
+    "build:web": "npm run build -w @tarot/web",
+    "start:api": "npm run start -w @tarot/api",
+    "qa:learning-leader": "node scripts/learning-leader-quality-check.mjs"
+  }
+}

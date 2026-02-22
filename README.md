@@ -1,0 +1,158 @@
+# Tarot Study App
+
+코스형 타로 학습 웹앱입니다.  
+카드 도감/코스/퀴즈/스프레드 학습과 함께, 스프레드 실전 리딩/복기/정확도 리포트, 이미지 운영 관측 기능을 포함합니다.
+
+## 빠른 시작
+아래 명령 5줄을 순서대로 실행하면 바로 기동됩니다.
+
+```bash
+cd /home/eunok/studycodex
+npm install
+cp apps/api/.env.example apps/api/.env && cp apps/web/.env.example apps/web/.env
+npm run dev:api
+npm run dev:web -- --host 127.0.0.1 --port 5173
+```
+
+접속:
+- 웹: `http://127.0.0.1:5173`
+- API: `http://127.0.0.1:8787`
+
+## 세션 인수인계
+- 요약(핵심만): [SESSION_HANDOFF.md](./SESSION_HANDOFF.md)
+- 상세 변경 내역: [docs/session-handoff-2026-02-22-details.md](./docs/session-handoff-2026-02-22-details.md)
+- 관련 보고서:
+  - [docs/persona-report-2026-02-22.md](./docs/persona-report-2026-02-22.md)
+  - [docs/annual-fortune-job-timing-awkwardness-report-2026-02-22.md](./docs/annual-fortune-job-timing-awkwardness-report-2026-02-22.md)
+
+## 구성
+- `apps/api`: Fastify 백엔드 (카드/코스/퀴즈/설명/스프레드/운영관측 API)
+- `apps/web`: React + TypeScript 프론트엔드
+
+## 실행
+1. 의존성 설치
+```bash
+npm install
+```
+
+2. API 환경변수 설정
+```bash
+cp apps/api/.env.example apps/api/.env
+```
+
+3. 웹 환경변수 설정
+```bash
+cp apps/web/.env.example apps/web/.env
+```
+
+4. API 환경변수 확인
+```env
+PORT=8787
+HOST=127.0.0.1
+CORS_ORIGIN=http://localhost:5173,http://127.0.0.1:5173
+EXTERNAL_AI_MODE=api
+EXTERNAL_AI_URL=
+EXTERNAL_AI_KEY=
+EXTERNAL_AI_MODEL=
+EXTERNAL_AI_CLI_COMMAND=codex
+EXTERNAL_AI_CLI_CWD=
+TAROT_IMAGE_MIRROR_BASE_URL=
+```
+
+5. 백엔드 실행
+```bash
+npm run dev:api
+```
+
+6. 프론트 실행 (새 터미널)
+```bash
+npm run dev:web -- --host 127.0.0.1 --port 5173
+```
+
+7. 접속
+- 웹: `http://127.0.0.1:5173`
+- API: `http://127.0.0.1:8787`
+
+## 핵심 API
+- `GET /api/health`
+- `GET /api/courses`
+- `GET /api/courses/:courseId/lessons`
+- `GET /api/cards`
+- `GET /api/cards/:cardId`
+- `POST /api/cards/:cardId/explain`
+- `GET /api/spreads`
+- `POST /api/spreads/:spreadId/draw`
+- `POST /api/quiz/generate`
+- `POST /api/quiz/grade`
+
+### 이미지 운영/관측 API
+- `POST /api/telemetry/image-fallback`
+- `GET /api/telemetry/image-fallback`
+- `GET /api/images/health-check`
+- `GET /api/images/alerts?failRateThreshold=20&minChecks=6`
+
+## 주요 기능
+- 카드 이미지 다중 소스 fallback (`imageSources`) + 기본 SVG fallback
+- 카드 이미지 출처/라이선스 고지
+- 스프레드 실전 드로우 및 포지션별 리딩 생성
+- 양자택일 비교 카드(A/B 근미래/결과) + 가중치 기반 결론/신뢰도
+- 스프레드 복기 기록(맞음/부분맞음/다름 + 메모) 저장
+- 대시보드 정확도 리포트(전체/스프레드 유형별)
+- 리딩 템플릿 A/B 실험(`readingExperiment`)
+
+## 비고
+- 외부 AI API를 연결하지 않아도 fallback 템플릿 설명이 동작합니다.
+- 개발/테스트 비용 절감이 필요하면 `apps/api/.env`에서 `EXTERNAL_AI_MODE=cli`로 설정해 Codex CLI를 사용해 카드 설명을 생성할 수 있습니다.
+- CLI 모드 사용 시 사전 조건: `codex` 명령 사용 가능, 로그인 완료, 네트워크 연결 가능.
+- 학습 진도/스프레드 복기 기록은 브라우저 로컬 저장소에 저장됩니다.
+- 카드 이미지는 `TAROT_IMAGE_MIRROR_BASE_URL`를 설정하면 미러 URL을 우선 사용하고, 실패 시 원본(Wikimedia)으로 fallback됩니다.
+
+## 트러블슈팅
+
+### 1) 스프레드 페이지가 빈 화면으로 보일 때
+- 브라우저 강력 새로고침 후 재확인 (`Ctrl+Shift+R`)
+- 프론트 재빌드로 타입/런타임 오류 확인
+```bash
+npm run build:web
+```
+- API 응답 확인
+```bash
+curl -sS http://127.0.0.1:8787/api/spreads
+curl -sS -X POST http://127.0.0.1:8787/api/spreads/choice-a-b/draw -H 'content-type: application/json' -d '{"level":"beginner","context":"점검"}'
+```
+
+### 2) API 실행 시 포트 바인딩 에러 (`EPERM`, `EADDRINUSE`)
+- `apps/api/.env`에서 `HOST=127.0.0.1` 확인
+- 다른 프로세스가 점유 중이면 정리 후 재실행
+```bash
+pkill -f "node --watch src/index.js"
+npm run dev:api
+```
+
+### 3) 웹 서버가 안 뜨거나 404만 나올 때
+- 권장 실행 명령으로 재기동
+```bash
+pkill -f "vite --host 127.0.0.1 --port 5173"
+npm run dev:web -- --host 127.0.0.1 --port 5173
+```
+- 루트 응답 확인
+```bash
+curl -sSI http://127.0.0.1:5173/
+```
+
+### 4) 서버 중복 실행으로 동작이 불안정할 때
+- API/WEB 모두 정리 후 순서대로 재기동
+```bash
+pkill -f "node --watch src/index.js"
+pkill -f "vite --host 127.0.0.1 --port 5173"
+npm run dev:api
+npm run dev:web -- --host 127.0.0.1 --port 5173
+```
+
+### 5) 이미지 로딩 실패가 많을 때
+- 헬스체크/경고 API로 현재 상태 확인
+```bash
+curl -sS http://127.0.0.1:8787/api/images/health-check
+curl -sS "http://127.0.0.1:8787/api/images/alerts?failRateThreshold=20&minChecks=6"
+```
+- 미러를 쓰는 경우 `apps/api/.env`의 `TAROT_IMAGE_MIRROR_BASE_URL` 값 확인
