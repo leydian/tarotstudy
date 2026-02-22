@@ -418,17 +418,41 @@ input {
 .description-box {
   border: 1px dashed var(--line);
   border-radius: 12px;
-  padding: 10px;
+  padding: 12px;
   background: color-mix(in srgb, var(--reading-bg) 82%, var(--accent-soft));
 }
 
 .description-box p {
-  margin: 0 0 8px;
-  line-height: 1.45;
+  margin: 0 0 10px;
+  line-height: 1.62;
 }
 
 .description-box p:last-child {
   margin-bottom: 0;
+}
+
+.reading-line {
+  margin: 0 0 10px;
+  line-height: 1.64;
+  font-size: 0.98rem;
+}
+
+.reading-index {
+  display: inline-block;
+  min-width: 1.3rem;
+  color: var(--ink-1);
+  font-weight: 600;
+}
+
+.explain-section {
+  border: 1px solid var(--reading-line);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--reading-bg) 90%, var(--accent-soft));
+  padding: 12px;
+}
+
+.explain-section h4 {
+  margin: 0 0 8px;
 }
 
 .spread-layout {

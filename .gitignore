@@ -5,3 +5,6 @@ dist
 coverage
 *.log
 apps/api/tmp/
+tmp/*-report.json
+tmp/*-report.md
+tmp/qa-sample-results-*.json

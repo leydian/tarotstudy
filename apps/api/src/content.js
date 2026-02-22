@@ -5,6 +5,8 @@ const TTL_FALLBACK_SOURCE = 'fallback';
 
 export function buildFallbackExplanation(card, level = 'beginner', context = '') {
   const explanationContext = inferExplanationContext(context);
+  const minLinesByLevel = level === 'intermediate' ? 5 : 3;
+  const intermediateFiller = '중급 복기: 근거 1개와 반례 1개를 함께 적어 해석 정확도를 높이세요.';
   if (level === 'beginner') {
     return {
       cardId: card.id,
@@ -41,7 +43,7 @@ export function buildFallbackExplanation(card, level = 'beginner', context = '')
           ? '중급에서는 카드 위치와 인접 카드에 따라 의미 강도와 시점이 어떻게 달라지는지 먼저 확정하세요.'
           : '입문에서는 핵심 키워드 1개를 오늘 상황 1개에 연결해 해석의 초점을 좁히세요.',
         contextFocus.coreAction
-      ].join('\n')),
+      ].join('\n'), minLinesByLevel, intermediateFiller),
       symbolism: enforceMinLines([
         arcanaLine,
         `${rankLine} ${profile.symbolFocus}`,
@@ -49,7 +51,7 @@ export function buildFallbackExplanation(card, level = 'beginner', context = '')
           ? '상징은 결론이 아니라 가설입니다. 관찰 가능한 사실과 충돌하는 해석은 버리고 남은 가설만 검증하세요.'
           : '상징은 정답이 아니라 방향 힌트입니다. 어렵게 확장하기보다 지금 문제와 연결해 읽으세요.',
         contextFocus.symbolism
-      ].join('\n')),
+      ].join('\n'), minLinesByLevel, intermediateFiller),
       upright: enforceMinLines([
         `정방향은 "${primaryKeyword}" 에너지가 비교적 안정적으로 작동하는 흐름입니다.`,
         level === 'intermediate'
@@ -58,7 +60,7 @@ export function buildFallbackExplanation(card, level = 'beginner', context = '')
         level === 'intermediate'
           ? `실행 뒤에는 가설이 맞았는지 근거 1개를 남겨 다음 해석의 기준으로 삼으세요. ${contextFocus.upright}`
           : `${buildBeginnerUprightReviewLine(card)} ${contextFocus.upright}`
-      ].join('\n')),
+      ].join('\n'), minLinesByLevel, intermediateFiller),
       reversed: enforceMinLines([
         `역방향은 "${primaryKeyword}" 에너지가 지연되거나 과잉/결핍으로 나타날 가능성을 뜻합니다.`,
         level === 'intermediate'
@@ -67,13 +69,13 @@ export function buildFallbackExplanation(card, level = 'beginner', context = '')
         level === 'intermediate'
           ? `교정 후에는 같은 질문으로 재평가해 흐름 변화와 남은 리스크를 함께 확인하세요. ${contextFocus.reversed}`
           : `${buildBeginnerReversedReviewLine(card)} ${contextFocus.reversed}`
-      ].join('\n')),
+      ].join('\n'), minLinesByLevel, intermediateFiller),
       love: enforceMinLines([
         ...buildLoveSectionLines({ card, level, profile, context, explanationContext })
-      ].join('\n')),
+      ].join('\n'), minLinesByLevel, intermediateFiller),
       career: enforceMinLines([
         ...buildCareerSectionLines({ card, level, profile, context, explanationContext })
-      ].join('\n')),
+      ].join('\n'), minLinesByLevel, intermediateFiller),
       advice: enforceMinLines([
         level === 'intermediate'
           ? '중급 관점에서는 카드 간 상호작용과 위치 의미를 함께 고려해 해석 강도를 조절합니다.'
@@ -82,7 +84,7 @@ export function buildFallbackExplanation(card, level = 'beginner', context = '')
           ? '실천 과제: 사실(관찰) → 해석(가설) → 행동(검증) 3단계로 문장을 작성해 복기 정확도를 올리세요.'
           : buildBeginnerAdviceTaskLine(card),
         `${buildAdviceReviewLine(card, level)} ${contextFocus.advice}`
-      ].join('\n'))
+      ].join('\n'), minLinesByLevel, intermediateFiller)
     }
   };
 }
@@ -278,7 +280,13 @@ function buildLoveSectionLines({ card, level, profile, context = '', explanation
   return [
     pickCardVariant(card.id, `love-opener-${level}`, level === 'intermediate' ? openersIntermediate : openersBeginner),
     `${profile.loveFocus} ${suitNuance} ${crossDomainLine}`,
-    contextAction
+    contextAction,
+    level === 'intermediate'
+      ? '중급 실전 체크: 대화 전 가설 1개, 대화 후 실제 반응 1개를 나눠 적으면 과해석을 줄일 수 있습니다.'
+      : '입문 실전 체크: 오늘 대화에서 지킬 문장 1개만 정해도 흐름이 안정됩니다.',
+    level === 'intermediate'
+      ? '복기 포인트: 잘 맞은 해석 근거 1개와 빗나간 근거 1개를 같이 남겨 다음 문장을 보정하세요.'
+      : '복기 포인트: 대화 후 마음 변화와 결과를 한 줄씩 기록해 보세요.'
   ];
 }
 
@@ -333,7 +341,13 @@ function buildCareerSectionLines({ card, level, profile, context = '', explanati
   return [
     pickCardVariant(card.id, `career-opener-${level}`, level === 'intermediate' ? openersIntermediate : openersBeginner),
     `${profile.careerFocus} ${suitNuance} ${crossDomainLine}`,
-    contextAction
+    contextAction,
+    level === 'intermediate'
+      ? '중급 실전 체크: 실행 전 기준(완료 조건) 1개와 실행 후 결과(증거) 1개를 짝으로 기록하세요.'
+      : '입문 실전 체크: 오늘 끝낼 작업 1개를 먼저 고정하면 흔들림이 줄어듭니다.',
+    level === 'intermediate'
+      ? '복기 포인트: 속도/품질/소모 중 무엇이 흔들렸는지 1개만 골라 다음 실행 기준을 바꾸세요.'
+      : '복기 포인트: 완료 여부와 막힌 이유 1개를 짧게 남겨보세요.'
   ];
 }
 
@@ -1261,15 +1275,19 @@ function rankStage(rank) {
   return map[rank] ?? '성장 단계';
 }
 
-export function normalizeExternalSections(raw, cardId) {
+export function normalizeExternalSections(raw, cardId, level = 'beginner') {
   if (!raw || typeof raw !== 'object') return null;
   const required = ['coreMeaning', 'symbolism', 'upright', 'reversed', 'love', 'career', 'advice'];
+  const minLines = level === 'intermediate' ? 5 : 3;
+  const filler = level === 'intermediate'
+    ? '중급 복기: 근거 1개와 반례 1개를 함께 적어 해석 정확도를 높이세요.'
+    : '실전 적용은 작은 행동 단위로 검증해 보세요.';
   const sections = {};
   for (const key of required) {
     if (typeof raw[key] !== 'string' || raw[key].trim().length < 10) {
       return null;
     }
-    sections[key] = enforceMinLines(raw[key].trim());
+    sections[key] = enforceMinLines(raw[key].trim(), minLines, filler);
   }
   return {
     cardId,
@@ -1278,7 +1296,7 @@ export function normalizeExternalSections(raw, cardId) {
   };
 }
 
-function enforceMinLines(text, minLines = 3) {
+function enforceMinLines(text, minLines = 3, fillerLine = '실전 적용은 작은 행동 단위로 검증해 보세요.') {
   const lines = String(text || '')
     .split('\n')
     .map((line) => line.trim())
@@ -1295,7 +1313,7 @@ function enforceMinLines(text, minLines = 3) {
   const merged = sentenceLines.length > lines.length ? sentenceLines : lines;
 
   while (merged.length < minLines) {
-    merged.push('실전 적용은 작은 행동 단위로 검증해 보세요.');
+    merged.push(fillerLine);
   }
   return merged.join('\n');
 }
@@ -1325,7 +1343,7 @@ export async function buildCardExplanation({ cardId, level, context, cache, exte
     context,
     timeoutMs: 350
   });
-  const normalizedFast = normalizeExternalSections(generatedFast, cardId);
+  const normalizedFast = normalizeExternalSections(generatedFast, cardId, level);
   if (normalizedFast) {
     cache.set(cacheKey, normalizedFast);
     return normalizedFast;
@@ -1334,7 +1352,7 @@ export async function buildCardExplanation({ cardId, level, context, cache, exte
   cache.set(cacheKey, fallback);
   void Promise.resolve(externalGenerator(card, level, context))
     .then((raw) => {
-      const normalized = normalizeExternalSections(raw, cardId);
+      const normalized = normalizeExternalSections(raw, cardId, level);
       if (normalized) {
         cache.set(cacheKey, normalized);
       }
@@ -1432,7 +1450,7 @@ export function buildSpreadReading({
     seed
   });
 
-  const learningPoint = joinUniqueParts([
+  const learningPointRaw = joinUniqueParts([
     `[학습 리더] ${buildLearningCoachOpening({ positionName: position.name, spreadId, level, contextProfile, seed })}`,
     `[학습 리더] ${buildLearningCoachFrame({ style, spreadId, positionName: position.name, level, seed })}`,
     `[학습 리더] ${buildLearningCoachReview({
@@ -1445,6 +1463,10 @@ export function buildSpreadReading({
       seed
     })}`
   ]);
+  const learningPoint = compactLearningPoint({
+    text: learningPointRaw,
+    positionName: position.name
+  });
 
   return { interpretation, coreMessage, learningPoint };
 }
@@ -1466,6 +1488,45 @@ function joinUniqueParts(parts) {
     out.push(trimmed);
   }
   return out.join(' ');
+}
+
+function compactLearningPoint({ text = '', positionName = '' }) {
+  const normalized = String(text || '')
+    .replace(/\[학습 리더\]\s*/g, '')
+    .replace(/수렴/g, '정리')
+    .replace(/기준점/g, '기준')
+    .replace(/중심축/g, '중심 흐름')
+    .replace(/결과축/g, '결과 흐름')
+    .replace(/(^|[\s"'(])변수(?=([\s"'.,!?)]|$))/g, '$1요인')
+    .replace(/(^|[\s"'(])축(?=([\s"'.,!?)]|$))/g, '$1기준')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  const baseSentences = splitSentences(normalized);
+  const selected = [];
+  for (const sentence of baseSentences) {
+    if (!sentence) continue;
+    const normalizedSentence = sentence.toLowerCase().replace(/[\s"'.,!?()[\]-]/g, '');
+    if (selected.some((s) => s.toLowerCase().replace(/[\s"'.,!?()[\]-]/g, '') === normalizedSentence)) continue;
+    selected.push(sentence);
+    if (selected.length >= 4) break;
+  }
+
+  const hasAction = selected.some((line) => /(하세요|해보세요|기록하세요|정하세요|분리해|줄이세요|수행하세요|실행하세요)/.test(line));
+  const hasQuestion = selected.some((line) => /(복기 질문|체크 질문|검증 질문|질문:)/.test(line));
+
+  if (!hasAction) {
+    selected.push(`실행 지시: ${positionName} 리딩 근거 1개를 정하고 오늘 바로 실행하세요.`);
+  }
+  if (!hasQuestion) {
+    selected.push(`복기 질문: ${positionName} 리딩에서 가장 잘 맞은 근거 1개는 무엇인가?`);
+  }
+
+  while (selected.length < 2) {
+    selected.push('실행 지시: 카드 근거 1개를 행동 1개와 연결해 기록하세요.');
+  }
+
+  return `[학습 리더] ${selected.slice(0, 5).join(' ')}`;
 }
 
 function inferContextProfile(context = '') {
@@ -3782,14 +3843,14 @@ function buildLearningCoachReview({ positionName, cardName, orientation, context
   const direction = orientation === 'upright' ? '정방향' : '역방향';
   const lines = level === 'intermediate'
     ? [
-      `복기 질문: "${positionName}의 ${cardName} ${direction} 가설에서 적중/오차를 만든 핵심 변수 1개는 무엇인가?"`,
-      `점검 질문: "${contextProfile.trackMetric} 기준으로 이 해석의 오차 원인을 정보 부족/과확장/검증 누락 중 어디로 분류할 수 있는가?"`,
-      `복기 질문: "${positionName} 리딩의 반례 시나리오를 사전에 적었고, 실제 반응으로 업데이트했는가?"`
+      `복기 질문: ${positionName}의 ${cardName} ${direction} 가설에서 적중/오차를 만든 핵심 요인 1개는 무엇인가?`,
+      `점검 질문: ${contextProfile.trackMetric} 기준으로 이 해석의 오차 원인을 정보 부족/과확장/검증 누락 중 어디로 분류할 수 있는가?`,
+      `복기 질문: ${positionName} 리딩의 반례 시나리오를 사전에 적고 실제 반응으로 업데이트했는가?`
     ]
     : [
-      `복기 질문: "${positionName}에서 읽은 ${cardName} ${direction} 해석이 실제 반응과 맞았는가?"`,
-      `점검 질문: "${cardName} ${direction}의 핵심 키워드 1개를 오늘 행동과 연결했는가?"`,
-      `복기 질문: "${positionName} 리딩에서 카드 근거 1개를 말로 설명할 수 있는가?"`
+      `복기 질문: ${positionName}에서 읽은 ${cardName} ${direction} 해석이 실제 반응과 맞았는가?`,
+      `점검 질문: ${cardName} ${direction}의 핵심 키워드 1개를 오늘 행동과 연결했는가?`,
+      `복기 질문: ${positionName} 리딩에서 카드 근거 1개를 말로 설명할 수 있는가?`
     ];
   const reviewStep = level === 'intermediate'
     ? `${style.reviewStep} 추가 점검: 다음 리딩 전 반례 1개를 먼저 적고 시작하세요.`

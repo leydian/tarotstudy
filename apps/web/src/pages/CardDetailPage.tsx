@@ -31,7 +31,11 @@ export function CardDetailPage() {
       .split('\n')
       .map((line) => line.trim())
       .filter(Boolean)
-      .map((line, idx) => <p key={`${keyPrefix}-${idx}`}>{line}</p>);
+      .map((line, idx) => (
+        <p key={`${keyPrefix}-${idx}`} className="reading-line">
+          <span className="reading-index">{idx + 1}.</span> {line}
+        </p>
+      ));
 
   return (
     <section className="stack">
@@ -48,9 +52,8 @@ export function CardDetailPage() {
           </div>
         </div>
         <div className="description-box">
-          {card.descriptions[level].split('\n').map((line, idx) => (
-            <p key={`${card.id}-desc-${idx}`}>{line}</p>
-          ))}
+          <p className="sub">기본 {level === 'beginner' ? '입문' : '중급'} 해설</p>
+          {renderMultiline(card.descriptions[level], `${card.id}-desc`)}
         </div>
       </article>
 
@@ -81,13 +84,13 @@ export function CardDetailPage() {
         {explanation && (
           <div className="stack">
             <p className="badge">source: {explanation.source}</p>
-            <section><h4>핵심 의미</h4>{renderMultiline(explanation.sections.coreMeaning, 'core')}</section>
-            <section><h4>상징 해석</h4>{renderMultiline(explanation.sections.symbolism, 'symbol')}</section>
-            <section><h4>정방향</h4>{renderMultiline(explanation.sections.upright, 'upright')}</section>
-            <section><h4>역방향</h4>{renderMultiline(explanation.sections.reversed, 'reversed')}</section>
-            <section><h4>연애/관계</h4>{renderMultiline(explanation.sections.love, 'love')}</section>
-            <section><h4>일/학업</h4>{renderMultiline(explanation.sections.career, 'career')}</section>
-            <section><h4>실전 조언</h4>{renderMultiline(explanation.sections.advice, 'advice')}</section>
+            <section className="explain-section"><h4>핵심 의미</h4>{renderMultiline(explanation.sections.coreMeaning, 'core')}</section>
+            <section className="explain-section"><h4>상징 해석</h4>{renderMultiline(explanation.sections.symbolism, 'symbol')}</section>
+            <section className="explain-section"><h4>정방향</h4>{renderMultiline(explanation.sections.upright, 'upright')}</section>
+            <section className="explain-section"><h4>역방향</h4>{renderMultiline(explanation.sections.reversed, 'reversed')}</section>
+            <section className="explain-section"><h4>연애/관계</h4>{renderMultiline(explanation.sections.love, 'love')}</section>
+            <section className="explain-section"><h4>일/학업</h4>{renderMultiline(explanation.sections.career, 'career')}</section>
+            <section className="explain-section"><h4>실전 조언</h4>{renderMultiline(explanation.sections.advice, 'advice')}</section>
           </div>
         )}
       </article>

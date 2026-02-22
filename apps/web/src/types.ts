@@ -37,10 +37,11 @@ export interface TarotImageAttribution {
 
 export interface Course {
   id: string;
-  track: 'beginner' | 'intermediate';
+  track: string;
+  stage?: string;
   title: string;
   description: string;
-  level: 'beginner' | 'intermediate';
+  level: string;
   lessonCount: number;
 }
 

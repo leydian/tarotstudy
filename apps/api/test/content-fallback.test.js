@@ -94,7 +94,7 @@ test('buildFallbackExplanation keeps all sections context-sensitive across multi
 
     for (const sectionName of sectionNames) {
       const baseSection = baseline.sections[sectionName];
-      assert.ok(lines(baseSection).length >= 3, `baseline ${cardId}.${sectionName} should have 3+ lines`);
+      assert.ok(lines(baseSection).length >= 5, `baseline ${cardId}.${sectionName} should have 5+ lines`);
 
       assert.notEqual(
         career.sections[sectionName],

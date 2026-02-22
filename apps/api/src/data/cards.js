@@ -265,119 +265,47 @@ function pickCardVariant(cardId, salt, variants) {
 function buildIntermediateDescription(card, { context = '' } = {}) {
   const contextProfile = inferBasicContextProfile(context);
   const keyword = card.keywords?.[0] || '핵심';
-  const keyword2 = card.keywords?.[1] || keyword;
   const rankLine = buildIntermediateRankLine(card);
+  const suitLine = buildIntermediateSuitLine(card);
 
-  const leadMajor = [
-    `${card.nameKo}를 중급 관점에서 볼 때, 키워드(${card.keywords.join(', ')}) 자체보다 카드 위치와 연결 흐름을 먼저 확정해야 해석 오차가 줄어듭니다.`,
-    `${card.nameKo}는 단일 의미 카드가 아니라 해석 강도가 크게 변하는 카드입니다. 중급에서는 위치(과거/현재/미래)와 맥락 충돌 여부를 함께 봐야 합니다.`,
-    `${card.nameKo}의 중급 해석은 "키워드 나열"보다 "상황 구조 분석"에 가깝습니다. 같은 카드라도 질문 의도에 따라 결과 해석이 달라집니다.`,
-    `${card.nameKo}는 중급에서 방향성 카드로 다룹니다. "${keyword}" 신호가 언제 강화되고 언제 약해지는지 위치별로 분리해 읽어야 정확합니다.`
-  ];
-  const leadMinorBySuit = {
-    Wands: [
-      `${card.nameKo} 카드의 중급 해석 핵심은 추진 에너지의 지속 조건 분석입니다. "${keyword}" 키워드가 실제 실행으로 이어지는 구조를 먼저 점검하세요.`,
-      `${card.nameKo} 카드는 실행력 카드처럼 보이지만, 중급에서는 속도·소모·완주율의 균형으로 읽어야 정확합니다.`
-    ],
-    Cups: [
-      `${card.nameKo} 카드의 중급 해석 핵심은 감정 신호의 질과 방향성입니다. "${keyword2}" 키워드가 관계 리듬을 어떻게 바꾸는지 먼저 확인하세요.`,
-      `${card.nameKo} 카드는 공감 카드가 아니라 관계 구조 카드로도 읽어야 합니다. 감정 반응과 행동 결과를 분리해 보세요.`
-    ],
-    Swords: [
-      `${card.nameKo} 카드의 중급 해석 핵심은 판단 기준의 일관성입니다. "${keyword}" 신호가 사실 기반인지 해석 기반인지 먼저 나눠 보세요.`,
-      `${card.nameKo} 카드는 사고 카드라서 중급에서는 정보 품질이 해석 품질을 결정합니다. 근거 없는 가설은 먼저 제거하세요.`
-    ],
-    Pentacles: [
-      `${card.nameKo} 카드의 중급 해석 핵심은 운영 지표 연결입니다. "${keyword}" 키워드를 결과물·시간·비용 중 어디와 연결할지 먼저 정해야 합니다.`,
-      `${card.nameKo} 카드는 현실 카드이므로 중급에서는 감보다 운영 기준이 우선입니다. 성과 정의를 먼저 고정하고 읽으세요.`
-    ]
-  };
-  const leadVariants = card.arcana === 'major'
-    ? leadMajor
-    : (leadMinorBySuit[card.suit] || leadMajor);
-
-  const signalMajor = [
-    `${rankLine} 같은 카드라도 질문 범주(연애/일/관계/재정)에 따라 긍정 신호와 경고 신호를 분리해 기록해야 재현성이 생깁니다.`,
-    `${rankLine} 중급에서는 "좋다/나쁘다" 이분법을 피하고, 신호의 지속 조건과 붕괴 조건을 동시에 적어두는 편이 좋습니다.`,
-    `${rankLine} "${keyword2}"이 강화되는 상황과 약해지는 상황을 각각 남기면 카드 해석의 일관성이 높아집니다.`
-  ];
-  const signalMinorBySuit = {
-    Wands: [
-      `${rankLine} 완드 계열은 과열 리스크가 있으니 추진 신호와 소진 신호를 같이 기록하세요.`,
-      `${rankLine} 실행 속도만 보지 말고 유지 가능성까지 함께 계산해야 과해석을 줄일 수 있습니다.`
-    ],
-    Cups: [
-      `${rankLine} 컵 계열은 감정 신호가 왜곡되기 쉬우므로 사실(대화/행동)과 느낌을 분리해 기록하세요.`,
-      `${rankLine} 관계 해석에서는 기대와 실제 반응 차이를 같이 적어야 정확도가 올라갑니다.`
-    ],
-    Swords: [
-      `${rankLine} 소드 계열은 판단 편향 점검이 핵심이므로 반대 근거 1개를 항상 함께 써두세요.`,
-      `${rankLine} 논리 정합성만 보지 말고 의사소통 결과까지 확인해야 신호 판별이 정확해집니다.`
-    ],
-    Pentacles: [
-      `${rankLine} 펜타클 계열은 누적 흐름을 읽는 카드라 단기 성과와 장기 유지 조건을 분리해 보세요.`,
-      `${rankLine} 운영 관점에서는 비용 대비 결과를 같이 적어야 카드 의미가 실전에 연결됩니다.`
-    ]
-  };
-  const signalVariants = card.arcana === 'major'
-    ? signalMajor
-    : (signalMinorBySuit[card.suit] || signalMajor);
-
-  const learningMajor = [
-    `중급 학습 포인트: ${card.nameKo}는 "사실(관찰) → 해석(가설) → 행동(검증)" 3단계로 정리하고, 다음 리딩에서 검증 결과를 반드시 대조해 보세요.`,
-    `중급 학습 포인트: ${card.nameKo}를 읽을 때는 가설 2개 이상을 세운 뒤, 어떤 근거로 1개를 채택했는지 기록하면 품질이 올라갑니다.`,
-    `중급 학습 포인트: ${card.nameKo} 리딩은 단정 문장보다 조건 문장으로 쓰는 편이 좋습니다. "언제 맞고 언제 틀리는지"를 같이 남기세요.`
-  ];
-  const learningMinorBySuit = {
-    Wands: [
-      `중급 학습 포인트: ${card.nameKo}는 실행 로그(시작/완료/중단 이유)를 남기면 다음 해석 정확도가 크게 올라갑니다.`,
-      `중급 학습 포인트: 추진 카드 해석에서는 목표 달성률보다 유지율 지표를 같이 보면 재현성이 좋아집니다.`
-    ],
-    Cups: [
-      `중급 학습 포인트: ${card.nameKo}는 관계 대화 로그(표현·반응·결과)를 남겨야 카드 해석이 실전에서 맞아떨어집니다.`,
-      `중급 학습 포인트: 감정 카드 해석은 체감만 기록하지 말고 행동 변화까지 함께 적어야 품질이 올라갑니다.`
-    ],
-    Swords: [
-      `중급 학습 포인트: ${card.nameKo}는 판단 근거 표를 만들어 사실/해석/추정을 분리하면 오판율을 낮출 수 있습니다.`,
-      `중급 학습 포인트: 사고 카드 해석은 결론보다 반례 점검을 먼저 기록할수록 안정적입니다.`
-    ],
-    Pentacles: [
-      `중급 학습 포인트: ${card.nameKo}는 운영 지표(시간, 비용, 완료율) 중 1~2개를 고정해 추적하면 해석 품질이 빠르게 올라갑니다.`,
-      `중급 학습 포인트: 현실 카드 해석은 결과물 기반 복기가 핵심입니다. 숫자/증거를 반드시 남겨보세요.`
-    ]
-  };
-  const learningVariants = card.arcana === 'major'
-    ? learningMajor
-    : (learningMinorBySuit[card.suit] || learningMajor);
-
-  return [
+  const lines = [
+    `${card.nameKo} 중급 해석 핵심: "${keyword}" 키워드를 어려운 이론으로 보지 말고, 지금 질문에 바로 쓰일 기준 1개로 잡으세요.`,
+    `${rankLine} ${suitLine}`,
     appendContextHint(
-      pickCardVariant(card.id, 'intermediate-lead-line', leadVariants),
+      '실전 적용: 카드 의미를 "오늘 할 행동 1개"와 "피할 행동 1개"로 나누면 해석이 훨씬 선명해집니다.',
       contextProfile.keywordHint
     ),
     appendContextHint(
-      pickCardVariant(card.id, 'intermediate-signal-line', signalVariants),
+      '검증 방법: 해석 후에는 결과를 한 줄로 남기고, 맞았던 근거 1개와 빗나간 근거 1개를 같이 기록하세요.',
       contextProfile.flowHint
     ),
     appendContextHint(
-      pickCardVariant(card.id, 'intermediate-learning-line', learningVariants),
+      '다음 리딩 준비: 같은 질문을 다시 볼 때 문장을 복잡하게 늘리지 말고, 기준 문장 1개를 보완해 정확도를 올리세요.',
       contextProfile.learningHint
     )
-  ].join('\n');
+  ];
+
+  return lines.join('\n');
 }
 
 function buildIntermediateRankLine(card) {
   if (card.rank) {
-    return `${card.rankKo} 단계는 ${rankStage(card.rank)} 맥락을 덧붙입니다.`;
+    return `${card.rankKo} 단계는 ${rankStage(card.rank)} 흐름이라, 속도보다 기준을 고정할수록 해석이 안정됩니다.`;
   }
+  return `${card.nameKo}는 큰 흐름 카드라 단정 결론보다 "지금 어디를 조정할지"를 찾는 데 집중하는 편이 좋습니다.`;
+}
 
-  const majorRankVariants = [
-    `${card.nameKo} 카드는 원형 카드이므로 개인 심리·상황 구조·타이밍 축을 나눠 읽을수록 해석 오차가 줄어듭니다.`,
-    `${card.nameKo} 카드는 단일 의미 카드가 아니라 층위가 많은 원형입니다. 중급에서는 내면 신호와 외부 조건을 분리해 보세요.`,
-    `${card.nameKo} 카드는 사건 예측보다 구조 해석에 강한 카드입니다. 심리 흐름, 상황 제약, 시점을 따로 기록하는 방식이 유효합니다.`,
-    `${card.nameKo} 카드의 원형 에너지는 고정된 답보다 방향 신호에 가깝습니다. 맥락별로 의미 강도를 나눠 기록해 보세요.`
-  ];
-  return pickCardVariant(card.id, 'intermediate-rank-line', majorRankVariants);
+function buildIntermediateSuitLine(card) {
+  if (card.arcana === 'major') {
+    return '메이저는 인생 방향을 다루므로 한 번에 크게 바꾸기보다 작은 전환부터 검증하세요.';
+  }
+  const bySuit = {
+    Wands: '완드 계열은 추진력은 좋지만 과열이 잦아, 실행 범위를 작게 잡아야 실전에서 오래 갑니다.',
+    Cups: '컵 계열은 감정 읽기가 중요해, 느낌만 적지 말고 실제 대화/반응까지 같이 기록해야 합니다.',
+    Swords: '소드 계열은 판단이 빨라지는 대신 단정이 쉬워, 사실과 추측을 분리해 읽어야 정확합니다.',
+    Pentacles: '펜타클 계열은 현실 운영 카드라, 시간·비용·완료 기준을 같이 두면 해석이 생활에 바로 붙습니다.'
+  };
+  return bySuit[card.suit] || '카드 의미를 행동과 결과로 연결해 보면 해석이 훨씬 쉬워집니다.';
 }
 
 function inferBasicContextProfile(context = '') {

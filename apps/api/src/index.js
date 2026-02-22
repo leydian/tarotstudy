@@ -1802,7 +1802,7 @@ function summarizeYearlyFortune({ items, context = '', level = 'beginner' }) {
   }
   const topKeywords = pickTopKeywords(items, 3);
   const keywordText = topKeywords.length ? topKeywords.join(', ') : '핵심 테마';
-  const isJobTimingQuestion = yearlyIntent === 'career';
+  const isJobTimingQuestion = isCareerTimingContext(contextLabel);
   const tone = inferSummaryContextTone(context);
   const levelHint = level === 'intermediate' ? tone.intermediateHint : tone.beginnerHint;
 
@@ -1837,8 +1837,8 @@ function summarizeYearlyFortune({ items, context = '', level = 'beginner' }) {
     `총평: ${overall}`,
     `분기별 운세: ${quarterLines}`,
     `월별 운세: ${monthlyLines}`,
-    timingClose,
-    yearlyThemeLine
+    yearlyThemeLine,
+    timingClose
   ].join('\n\n');
 }
 
@@ -1848,8 +1848,31 @@ function inferYearlyIntent(context = '') {
     includeStudy: true,
     includeHealth: true
   });
+  if (inferred === 'career' && !isCareerTimingContext(context)) {
+    return 'general';
+  }
   if (inferred === 'health') return 'daily';
   return inferred;
+}
+
+function isCareerTimingContext(context = '') {
+  const text = String(context || '').toLowerCase();
+  const hardCareerSignals = [
+    '취업',
+    '이직',
+    '면접',
+    '지원',
+    '지원서',
+    '이력서',
+    '포트폴리오',
+    '오퍼',
+    '협상',
+    '직무',
+    '입사',
+    '퇴사',
+    '채용'
+  ];
+  return hardCareerSignals.some((keyword) => text.includes(keyword));
 }
 
 function buildNonCareerMonthlyAction({ intent, orientation }) {
