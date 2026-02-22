@@ -18,7 +18,6 @@ export function SpreadsPage() {
   const [variantId, setVariantId] = useState<string | null>(null);
   const [context, setContext] = useState('');
   const [readingLevel, setReadingLevel] = useState<'beginner' | 'intermediate'>('beginner');
-  const [showDetail, setShowDetail] = useState(false);
   const [reviewDraft, setReviewDraft] = useState<Record<string, string>>({});
   const [reviewChecklistDraft, setReviewChecklistDraft] = useState<Record<string, ReviewChecklist>>({});
   const spreadsQuery = useQuery({ queryKey: ['spreads'], queryFn: api.getSpreads });
@@ -220,35 +219,20 @@ export function SpreadsPage() {
                     ? <WeeklySummaryView summary={drawMutation.data.summary} />
                   : (
                     <div className="reading-prose-wrap">
-                      {toParagraphBlocks(drawMutation.data.summary).slice(0, showDetail ? undefined : 2).map((block, idx) => (
+                      {toParagraphBlocks(drawMutation.data.summary).map((block, idx) => (
                         <p key={`summary-block-${idx}`} className="reading-prose">{block}</p>
                       ))}
                     </div>
                   )}
               </article>
-              <article className="result-item">
-                <p><strong>학습 리더 코치 내역</strong></p>
+              <article className="result-item reading-coach">
+                <p><strong>종합 학습 내역</strong></p>
                 <ul className="reading-lines">
-                  {drawMutation.data.items.map((item) => (
-                    <li key={`learning-${item.position.name}`}>
-                      <strong>{item.position.name}</strong>
-                      <ul className="reading-lines reading-lines-compact">
-                        {toCoachBlocks(item.learningPoint || '복기 시 카드-포지션 연결 근거를 1문장으로 기록하세요.').map((line, idx) => (
-                          <li key={`learning-line-${item.position.name}-${idx}`}>
-                            <span className={`line-tag ${lineTagClass(line)}`}>{lineTagLabel(line)}</span> {cleanCoachPrefix(line)}
-                          </li>
-                        ))}
-                      </ul>
-                    </li>
+                  {buildLearningDigest(drawMutation.data.items).map((line, idx) => (
+                    <li key={`learning-digest-${idx}`}>{line}</li>
                   ))}
                 </ul>
               </article>
-            </div>
-
-            <div className="reading-controls">
-              <button className="btn" onClick={() => setShowDetail((prev) => !prev)}>
-                {showDetail ? '핵심만 보기' : '상세 보기'}
-              </button>
             </div>
 
             {(() => {
@@ -349,7 +333,7 @@ export function SpreadsPage() {
                     <div className="reader-block">
                       <p><strong>타로 리더 리딩</strong></p>
                       <div className="reading-prose-wrap">
-                        {toParagraphBlocks(mergeTarotMessage(item.coreMessage, item.interpretation)).slice(0, showDetail ? undefined : 1).map((block, idx) => (
+                        {toParagraphBlocks(mergeTarotMessage(item.coreMessage, item.interpretation)).map((block, idx) => (
                           <p key={`item-tarot-${item.position.name}-${idx}`} className="reading-prose">{block}</p>
                         ))}
                       </div>
@@ -551,6 +535,31 @@ function toCoachBlocks(text: string) {
     .split(/(?<=[.!?])\s+/)
     .map((part) => part.trim())
     .filter(Boolean);
+}
+
+function buildLearningDigest(items: SpreadDrawResult['items']) {
+  if (!items.length) {
+    return ['학습 포인트가 아직 없습니다. 카드 근거-행동-검증 1줄씩 먼저 남겨보세요.'];
+  }
+  const positionCount = items.length;
+  const coachLines = items
+    .flatMap((item) => toCoachBlocks(item.learningPoint || ''))
+    .map((line) => cleanCoachPrefix(line))
+    .filter(Boolean);
+
+  const frameLine = coachLines.find((line) => /학습 기준|훈련 프레임|학습 프레임|학습 루틴|복기 기준/.test(line))
+    || '카드/포지션/정역방향을 먼저 분리해 근거 해석 순서를 고정하세요.';
+  const questionLine = coachLines.find((line) => /복기 질문|체크 질문|점검 질문|검증 질문|질문/.test(line))
+    || '각 포지션에서 카드 근거가 질문 의도와 실제로 맞는지 1문장으로 확인하세요.';
+  const verifyLine = coachLines.find((line) => /리딩 검증|실행 후 검증|검증 단계|검증/.test(line))
+    || '24시간 뒤 맞음/부분맞음/다름으로 점검하고 이유를 1줄로 남겨 다음 리딩 기준으로 사용하세요.';
+
+  return [
+    `이번 리딩은 총 ${positionCount}개 포지션 기준으로 해석-복기 루틴을 정리했습니다.`,
+    `프레임: ${frameLine}`,
+    `핵심 질문: ${questionLine}`,
+    `검증: ${verifyLine}`
+  ];
 }
 
 function cleanCoachPrefix(text: string) {

@@ -621,6 +621,22 @@ input {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
   margin: 10px 0 2px;
+  align-items: start;
+}
+
+.reading-dual-panel .result-item {
+  margin-top: 0;
+  height: 100%;
+}
+
+.reading-coach {
+  max-height: 520px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.coach-collapsed-hint {
+  margin-top: 10px;
 }
 
 .reading-columns {
@@ -1093,6 +1109,12 @@ input {
   .reading-dual-panel,
   .reading-columns {
     grid-template-columns: 1fr;
+  }
+
+  .reading-coach {
+    max-height: none;
+    overflow: visible;
+    padding-right: 0;
   }
 
   .reading-highlights {
