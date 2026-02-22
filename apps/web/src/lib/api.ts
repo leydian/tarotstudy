@@ -4,12 +4,14 @@ import type {
   ImageAlertResult,
   ImageFallbackStats,
   ImageHealthCheckResult,
+  LearningKpi,
   Lesson,
   QuizPayload,
   QuizResult,
   Spread,
   SpreadDrawResult,
-  TarotCard
+  TarotCard,
+  UserProgressSnapshot
 } from '../types';
 
 const ENV_API_BASE = String(import.meta.env.VITE_API_BASE_URL || '').trim();
@@ -136,6 +138,21 @@ export const api = {
     if (params?.minChecks != null) search.set('minChecks', String(params.minChecks));
     const qs = search.toString();
     return request<ImageAlertResult>(`/api/images/alerts${qs ? `?${qs}` : ''}`);
+  },
+  getLearningKpi() {
+    return request<LearningKpi>('/api/analytics/learning-kpi');
+  },
+  getUserProgress(userId: string) {
+    return request<UserProgressSnapshot>(`/api/progress/${encodeURIComponent(userId)}`);
+  },
+  syncUserProgress(userId: string, snapshot: UserProgressSnapshot) {
+    return request<{ ok: boolean; userId: string; snapshot: UserProgressSnapshot }>(
+      `/api/progress/${encodeURIComponent(userId)}/sync`,
+      {
+        method: 'POST',
+        body: JSON.stringify(snapshot)
+      }
+    );
   },
   getLessons(courseId: string) {
     return request<Lesson[]>(`/api/courses/${courseId}/lessons`);

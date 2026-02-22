@@ -50,6 +50,8 @@ export function SpreadsPage() {
   const [readingLevel, setReadingLevel] = useState<'beginner' | 'intermediate'>('beginner');
   const [reviewDraft, setReviewDraft] = useState<Record<string, string>>({});
   const [reviewChecklistDraft, setReviewChecklistDraft] = useState<Record<string, ReviewChecklist>>({});
+  const [historyTag, setHistoryTag] = useState<'all' | 'relationship' | 'career' | 'finance' | 'general'>('all');
+  const [historyQuery, setHistoryQuery] = useState('');
   const spreadsQuery = useQuery({ queryKey: ['spreads'], queryFn: api.getSpreads });
   const spreadHistory = useProgressStore((s) => s.spreadHistory);
   const addSpreadReading = useProgressStore((s) => s.addSpreadReading);
@@ -118,6 +120,24 @@ export function SpreadsPage() {
     () => spreadHistory.filter((item) => item.spreadId === selected?.id).slice(0, 8),
     [spreadHistory, selected?.id]
   );
+  const filteredSpreadHistory = useMemo(() => {
+    const q = historyQuery.trim().toLowerCase();
+    return recentSpreadHistory.filter((record) => {
+      const context = String(record.context || '').toLowerCase();
+      const summary = String(record.summary || '').toLowerCase();
+      const inferredTag = /재회|관계|연애|대화|갈등/.test(context) || /재회|관계|연애|대화|갈등/.test(summary)
+        ? 'relationship'
+        : /이직|업무|커리어|학업|시험|면접|직장/.test(context) || /이직|업무|커리어|학업|시험|면접|직장/.test(summary)
+          ? 'career'
+          : /지출|수입|돈|재정|저축|투자/.test(context) || /지출|수입|돈|재정|저축|투자/.test(summary)
+            ? 'finance'
+            : 'general';
+
+      if (historyTag !== 'all' && inferredTag !== historyTag) return false;
+      if (!q) return true;
+      return `${context} ${summary}`.includes(q);
+    });
+  }, [historyQuery, historyTag, recentSpreadHistory]);
   const sendSpreadEvent = (payload: {
     type: 'spread_drawn' | 'spread_review_saved';
     spreadId: string;
@@ -453,9 +473,23 @@ export function SpreadsPage() {
                 이 스프레드 기록 전체 삭제
               </button>
             </div>
-            {recentSpreadHistory.length === 0 && <p>아직 복기 기록이 없습니다.</p>}
+            <div className="filters">
+              <select value={historyTag} onChange={(e) => setHistoryTag(e.target.value as typeof historyTag)}>
+                <option value="all">전체 태그</option>
+                <option value="relationship">관계</option>
+                <option value="career">커리어/학업</option>
+                <option value="finance">재정</option>
+                <option value="general">일반</option>
+              </select>
+              <input
+                value={historyQuery}
+                onChange={(e) => setHistoryQuery(e.target.value)}
+                placeholder="복기 기록 검색"
+              />
+            </div>
+            {filteredSpreadHistory.length === 0 && <p>조건에 맞는 복기 기록이 없습니다.</p>}
             <div className="stack">
-              {recentSpreadHistory.map((record) => (
+              {filteredSpreadHistory.map((record) => (
                 <article key={record.id} className="result-item">
                   <div className="history-row">
                     <p><strong>{new Date(record.drawnAt).toLocaleString()}</strong> · {record.variantName ?? record.spreadName}</p>

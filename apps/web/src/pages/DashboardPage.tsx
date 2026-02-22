@@ -19,6 +19,11 @@ export function DashboardPage() {
     queryFn: () => api.getImageAlerts({ failRateThreshold: 20, minChecks: 6 }),
     refetchInterval: 60000
   });
+  const learningKpiQuery = useQuery({
+    queryKey: ['learning-kpi'],
+    queryFn: api.getLearningKpi,
+    refetchInterval: 60000
+  });
 
   const weakCards = useMemo(() => {
     const cards = cardsQuery.data ?? [];
@@ -55,6 +60,20 @@ export function DashboardPage() {
   const avg = quizHistory.length
     ? Math.round(quizHistory.reduce((acc, item) => acc + item.percent, 0) / quizHistory.length)
     : 0;
+  const weeklyGoal = useMemo(() => {
+    const recentQuiz = quizHistory.slice(0, 7);
+    const recentSpread = spreadHistory.slice(0, 7);
+    const quizAvg = recentQuiz.length
+      ? Math.round(recentQuiz.reduce((acc, row) => acc + row.percent, 0) / recentQuiz.length)
+      : 0;
+    const reviewedCount = recentSpread.filter((row) => row.outcome).length;
+    return {
+      quizAvg,
+      spreadReviewed: reviewedCount,
+      targetQuiz: 75,
+      targetSpreadReview: 3
+    };
+  }, [quizHistory, spreadHistory]);
 
   return (
     <section className="page-shell">
@@ -157,6 +176,35 @@ export function DashboardPage() {
                 <p key={item.name}>{item.name} · 정확도 {item.accuracy}% · 표본 {item.total}건</p>
               ))}
             </div>
+          </article>
+
+          <article className="panel">
+            <h3>주간 학습 목표</h3>
+            <p>퀴즈 평균: {weeklyGoal.quizAvg}% / 목표 {weeklyGoal.targetQuiz}%</p>
+            <p>복기 완료: {weeklyGoal.spreadReviewed}건 / 목표 {weeklyGoal.targetSpreadReview}건</p>
+            <p className="sub">
+              {weeklyGoal.quizAvg >= weeklyGoal.targetQuiz && weeklyGoal.spreadReviewed >= weeklyGoal.targetSpreadReview
+                ? '목표를 충족했습니다. 다음 주에는 실전 난이도를 올려보세요.'
+                : '퀴즈 또는 복기 중 부족한 축을 우선 보완하세요.'}
+            </p>
+          </article>
+
+          <article className="panel">
+            <h3>학습 KPI (서버 집계)</h3>
+            {learningKpiQuery.isLoading && <p>KPI 로딩 중...</p>}
+            {learningKpiQuery.data && (
+              <div className="stack">
+                <p>코스 완료율: {learningKpiQuery.data.courseCompletionRate}%</p>
+                <p>퀴즈→스프레드 전환율: {learningKpiQuery.data.quizToSpreadConversion}%</p>
+                <p>주간 유지율: {learningKpiQuery.data.weeklyRetention}%</p>
+                <p className="sub">집계 사용자 수: {learningKpiQuery.data.users}</p>
+                {learningKpiQuery.data.stageDropoff.slice(0, 4).map((item) => (
+                  <p key={item.stage}>
+                    {item.stage}: 완료 {item.completionRate}% · 이탈 {item.dropoffFromPrev}%
+                  </p>
+                ))}
+              </div>
+            )}
           </article>
         </div>
 

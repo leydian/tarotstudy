@@ -188,6 +188,19 @@ export function QuizPage() {
         </button>
       )}
 
+      {!!quiz && (
+        <article className="mobile-sticky-actions">
+          <button
+            className="btn primary"
+            disabled={unanswered > 0 || gradeMutation.isPending}
+            onClick={() => gradeMutation.mutate()}
+          >
+            {gradeMutation.isPending ? '채점 중...' : '채점하기'}
+          </button>
+          <button className="btn" onClick={() => generateMutation.mutate()}>다시 생성</button>
+        </article>
+      )}
+
       {gradeMutation.data && (
         <article className="panel">
           <h3>결과: {gradeMutation.data.score}/{gradeMutation.data.total} ({gradeMutation.data.percent}%)</h3>

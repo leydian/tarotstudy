@@ -9,6 +9,8 @@ import { makeExternalGenerator } from './external-ai.js';
 import { TTLCache } from './cache.js';
 import { generateQuiz, gradeQuiz } from './quiz.js';
 import { createTelemetryStore } from './telemetry.js';
+import { createProgressStore } from './progress-store.js';
+import { buildLearningKpi } from './learning-kpi.js';
 import {
   inferQuestionIntent,
   getTarotPredictedQuestions,
@@ -24,6 +26,9 @@ const cache = new TTLCache(Number(process.env.CACHE_TTL_SECONDS || 86400));
 const externalGenerator = makeExternalGenerator(process.env);
 const telemetryStore = createTelemetryStore({
   filePath: process.env.TELEMETRY_STORE_PATH
+});
+const progressStore = createProgressStore({
+  filePath: process.env.PROGRESS_STORE_PATH
 });
 let imageHealthSnapshot = null;
 const allowedOrigins = (process.env.CORS_ORIGIN
@@ -58,6 +63,39 @@ app.get('/api/questions/predicted', async (request) => {
 });
 app.get('/api/telemetry/image-fallback', async () => telemetryStore.getImageFallbackStats());
 app.get('/api/telemetry/spread-events', async () => telemetryStore.getSpreadTelemetryStats());
+app.get('/api/analytics/learning-kpi', async () =>
+  buildLearningKpi({
+    progressRows: progressStore.listAllProgress(),
+    courses,
+    lessonsByCourse,
+    spreadTelemetryStats: telemetryStore.getSpreadTelemetryStats()
+  })
+);
+
+app.get('/api/progress/:userId', async (request, reply) => {
+  const { userId } = request.params;
+  if (!String(userId || '').trim()) {
+    reply.code(400);
+    return { message: 'userId is required' };
+  }
+  return progressStore.getUserProgress(userId);
+});
+
+app.post('/api/progress/:userId/sync', async (request, reply) => {
+  const { userId } = request.params;
+  const snapshot = request.body || {};
+  if (!String(userId || '').trim()) {
+    reply.code(400);
+    return { message: 'userId is required' };
+  }
+  try {
+    const saved = progressStore.syncUserProgress(userId, snapshot);
+    return { ok: true, userId, snapshot: saved };
+  } catch (error) {
+    reply.code(400);
+    return { message: error instanceof Error ? error.message : 'sync failed' };
+  }
+});
 
 app.post('/api/telemetry/image-fallback', async (request, reply) => {
   const { stage = 'unknown', cardId = 'unknown', source = '' } = request.body || {};

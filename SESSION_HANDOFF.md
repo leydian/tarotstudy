@@ -36,6 +36,50 @@
   - 텔레메트리 수집 API(`spread_drawn`, `spread_review_saved`) 및 롤업 스크립트 추가
 
 ## 3) 금일 추가 반영 (최신)
+- 페르소나 기반 제품 보완 1차 구현 (사용자/개발자/기획자 관점 반영)
+  - 파일:
+    - `apps/api/src/index.js`
+    - `apps/api/src/progress-store.js`
+    - `apps/api/src/learning-kpi.js`
+    - `apps/api/test/learning-kpi.test.js`
+    - `apps/web/src/lib/api.ts`
+    - `apps/web/src/types.ts`
+    - `apps/web/src/state/progress.ts`
+    - `apps/web/src/pages/HomePage.tsx`
+    - `apps/web/src/pages/CoursesPage.tsx`
+    - `apps/web/src/pages/LessonPage.tsx`
+    - `apps/web/src/pages/QuizPage.tsx`
+    - `apps/web/src/pages/SpreadsPage.tsx`
+    - `apps/web/src/pages/DashboardPage.tsx`
+    - `apps/web/src/styles.css`
+  - 변경:
+    - 사용자 페르소나(입문/중급/실전/모바일)
+      - 홈/코스에 **추천 근거 문구**를 추가해 “왜 이 레슨이 다음인지”를 명확화
+      - 코스/레슨 목록에 **복습 우선 배지**(최근 저점수 lessonId 기반)를 반영
+      - 레슨 완료 사용자에게 **다음 액션 카드(재도전/스프레드 실습)**를 노출
+      - 퀴즈/레슨에 모바일 **sticky CTA**를 추가해 짧은 세션 접근성 개선
+      - 스프레드 복기 기록에 **태그 필터/검색**(관계·커리어·재정·일반) 추가
+    - 개발자 페르소나(확장성/운영성)
+      - 서버 저장형 진도 동기화 API 추가
+        - `GET /api/progress/:userId`
+        - `POST /api/progress/:userId/sync`
+      - 웹 로컬 진도 저장 시 서버 동기화를 best-effort로 병행해 기기 간 동기화 기반 마련
+      - KPI 계산 모듈 분리(`learning-kpi.js`) 및 단위 테스트 추가
+    - 기획자 페르소나(KPI/전환/유지율)
+      - 학습 KPI API 추가: `GET /api/analytics/learning-kpi`
+      - 대시보드에 **주간 학습 목표 카드**(퀴즈 평균/복기 건수)와
+        **서버 집계 KPI 카드**(완료율/전환율/유지율/단계별 이탈률)를 추가
+  - 효과:
+    - 입문자는 추천의 이유를 이해하고 다음 행동으로 자연스럽게 이어짐
+    - 중급/실전 사용자는 오답 환류와 복기 탐색으로 재학습 속도 개선
+    - 운영자는 학습 퍼널 KPI를 API+화면에서 동일 기준으로 추적 가능
+  - 검증:
+    - `npm run lint` 통과
+    - `npm run test:api` 통과
+      - 신규: `apps/api/test/learning-kpi.test.js`
+    - `npm run typecheck:web` 통과
+    - `npm run build:web` 통과
+
 - 코스 목록 UX/성능/탐색성 10개 개선 일괄 반영
   - 파일:
     - `apps/api/src/data/courses.js`

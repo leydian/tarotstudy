@@ -1,9 +1,9 @@
 import { Link } from 'react-router-dom';
 import { useMemo } from 'react';
-import { useQueries, useQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { api } from '../lib/api';
 import { useProgressStore } from '../state/progress';
-import type { Lesson } from '../types';
+import type { RecommendationReason } from '../types';
 
 export function HomePage() {
   const completedLessonIds = useProgressStore((s) => s.completedLessons);
@@ -11,28 +11,34 @@ export function HomePage() {
   const completedLessons = completedLessonIds.length;
   const coursesQuery = useQuery({ queryKey: ['courses'], queryFn: api.getCourses });
   const courses = coursesQuery.data ?? [];
-  const lessonsQueries = useQueries({
-    queries: courses.map((course) => ({
-      queryKey: ['lessons', course.id],
-      queryFn: () => api.getLessons(course.id)
-    }))
-  });
   const completedSet = useMemo(() => new Set(completedLessonIds), [completedLessonIds]);
 
   const avgScore = quizHistory.length
     ? Math.round(quizHistory.reduce((acc, item) => acc + item.percent, 0) / quizHistory.length)
     : 0;
   const nextTarget = useMemo(() => {
-    for (const [index, course] of courses.entries()) {
-      const lessons = (lessonsQueries[index]?.data ?? []) as Lesson[];
-      if (!lessons.length) continue;
+    const ordered = [...courses].sort((a, b) => (a.order ?? 99) - (b.order ?? 99));
+    for (const course of ordered) {
+      const lessons = course.lessonOutline || [];
+      if (!lessons.length) {
+        continue;
+      }
       const nextLesson = lessons.find((lesson) => !completedSet.has(lesson.id));
       if (nextLesson) {
         return { course, lesson: nextLesson };
       }
     }
     return null;
-  }, [completedSet, courses, lessonsQueries]);
+  }, [completedSet, courses]);
+  const reason = useMemo<RecommendationReason | null>(() => {
+    if (!nextTarget) return null;
+    const remaining = (nextTarget.course.lessonOutline || []).filter((lesson) => !completedSet.has(lesson.id)).length;
+    return {
+      stage: nextTarget.course.stage || '기타',
+      remainingLessons: remaining,
+      message: `${nextTarget.course.stage} 단계에서 남은 ${remaining}개 레슨 중 우선순위입니다.`
+    };
+  }, [completedSet, nextTarget]);
   const nextStepLabel = nextTarget ? `${nextTarget.course.stage}: ${nextTarget.lesson.title}` : '스프레드 복기';
 
   return (
@@ -84,6 +90,7 @@ export function HomePage() {
               </Link>
             </p>
           )}
+          {reason && <p className="sub">추천 근거: {reason.message}</p>}
           <Link to="/dashboard" className="text-link">대시보드로 이동</Link>
         </article>
         <article className="panel content-side">

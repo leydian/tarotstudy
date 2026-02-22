@@ -1,9 +1,13 @@
 import { Link, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../lib/api';
+import { useProgressStore } from '../state/progress';
 
 export function LessonPage() {
   const { courseId, lessonId } = useParams();
+  const completedLessons = useProgressStore((s) => s.completedLessons);
+  const spreadHistory = useProgressStore((s) => s.spreadHistory);
+  const isCompleted = Boolean(lessonId && completedLessons.includes(lessonId));
 
   const lessonsQuery = useQuery({
     queryKey: ['lessons', courseId],
@@ -31,6 +35,21 @@ export function LessonPage() {
           <Link to="/courses" className="btn">코스로 돌아가기</Link>
         </div>
       </article>
+
+      {isCompleted && (
+        <article className="panel lesson-panel">
+          <h3>다음 액션 카드</h3>
+          <ul className="clean-list lesson-detail-list">
+            <li>복습: 같은 레슨 퀴즈를 `exam` 모드로 1회 재도전하세요.</li>
+            <li>실습: 스프레드에서 현재 질문으로 1회 드로우 후 복기를 남기세요.</li>
+            <li>누적 기록: {spreadHistory.length}건의 스프레드 복기 기록이 있습니다.</li>
+          </ul>
+          <div className="hero-actions">
+            <Link to={`/quiz/${lesson.id}`} className="btn">퀴즈 재도전</Link>
+            <Link to="/spreads" className="btn primary">스프레드 실습</Link>
+          </div>
+        </article>
+      )}
 
       {detail && (
         <>
@@ -198,6 +217,11 @@ export function LessonPage() {
             </Link>
           ))}
         </div>
+      </article>
+
+      <article className="mobile-sticky-actions">
+        <Link to={`/quiz/${lesson.id}`} className="btn primary">퀴즈 시작</Link>
+        <Link to="/courses" className="btn">코스 목록</Link>
       </article>
     </section>
   );

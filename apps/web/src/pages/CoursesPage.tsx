@@ -23,6 +23,10 @@ export function CoursesPage() {
   const completedLessons = useProgressStore((s) => s.completedLessons);
   const quizHistory = useProgressStore((s) => s.quizHistory);
   const completedSet = useMemo(() => new Set(completedLessons), [completedLessons]);
+  const reviewPriorityLessonIds = useMemo(
+    () => new Set(quizHistory.filter((item) => item.percent < 70).map((item) => item.lessonId)),
+    [quizHistory]
+  );
   const quizScoreByLessonId = useMemo(
     () => new Map(quizHistory.map((item) => [item.lessonId, item.percent])),
     [quizHistory]
@@ -167,6 +171,10 @@ export function CoursesPage() {
           <>
             <h3>{nextTarget.course.title}</h3>
             <p>{nextTarget.nextLesson.title}</p>
+            <p className="sub">
+              추천 근거: {nextTarget.course.stage} 단계에서 남은{' '}
+              {(nextTarget.course.lessonOutline || []).filter((lesson) => !completedSet.has(lesson.id)).length}개 중 선행 우선 레슨
+            </p>
             <div className="hero-actions">
               <Link
                 to={`/courses/${nextTarget.course.id}/lessons/${nextTarget.nextLesson.id}`}
@@ -208,6 +216,9 @@ export function CoursesPage() {
                     <p>{course.description}</p>
                     <p className="sub">레슨 수 {course.lessonCount}개 · 다음 레슨 {nextLesson?.title ?? '완료'}</p>
                     {avgScore != null && <p className="sub">최근 퀴즈 평균 {avgScore}%</p>}
+                    {nextLesson && reviewPriorityLessonIds.has(nextLesson.id) && (
+                      <p className="sub">복습 우선: 최근 퀴즈 정확도 낮음</p>
+                    )}
                   </div>
                   <button
                     className="btn"
@@ -232,6 +243,7 @@ export function CoursesPage() {
                           <h4>{lesson.title}</h4>
                           <p>{lesson.summary}</p>
                           {completedSet.has(lesson.id) && <p className="sub">완료됨</p>}
+                          {reviewPriorityLessonIds.has(lesson.id) && <p className="sub">복습 우선</p>}
                         </div>
                         <Link to={`/courses/${course.id}/lessons/${lesson.id}`} className="btn primary">
                           {completedSet.has(lesson.id) ? '복습하기' : '학습 시작'}

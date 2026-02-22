@@ -16,6 +16,15 @@ interface ProgressState {
 }
 
 const STORAGE_KEY = 'tarot-study-progress-v1';
+const USER_ID_KEY = 'tarot-study-user-id-v1';
+
+function getLocalUserId() {
+  const saved = localStorage.getItem(USER_ID_KEY);
+  if (saved) return saved;
+  const next = `local-${Math.random().toString(36).slice(2, 10)}`;
+  localStorage.setItem(USER_ID_KEY, next);
+  return next;
+}
 
 function loadInitial(): Pick<ProgressState, 'completedLessons' | 'weakCardIds' | 'quizHistory' | 'spreadHistory'> {
   try {
@@ -35,6 +44,12 @@ function loadInitial(): Pick<ProgressState, 'completedLessons' | 'weakCardIds' |
 
 function persist(state: Pick<ProgressState, 'completedLessons' | 'weakCardIds' | 'quizHistory' | 'spreadHistory'>) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  const userId = getLocalUserId();
+  void fetch(`/api/progress/${encodeURIComponent(userId)}/sync`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ ...state, updatedAt: new Date().toISOString() })
+  }).catch(() => {});
 }
 
 export const useProgressStore = create<ProgressState>((set, get) => ({

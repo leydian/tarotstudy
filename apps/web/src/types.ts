@@ -259,3 +259,35 @@ export interface ImageAlertResult {
     minChecks: number;
   };
 }
+
+export interface UserProgressSnapshot {
+  completedLessons: string[];
+  weakCardIds: string[];
+  quizHistory: Array<{ lessonId: string; percent: number; date: string }>;
+  spreadHistory: SpreadReviewRecord[];
+  updatedAt: string;
+}
+
+export interface RecommendationReason {
+  stage: string;
+  remainingLessons: number;
+  message: string;
+}
+
+export interface LearningKpi {
+  users: number;
+  courseCompletionRate: number;
+  quizToSpreadConversion: number;
+  weeklyRetention: number;
+  stageDropoff: Array<{
+    stage: string;
+    completionRate: number;
+    dropoffFromPrev: number;
+  }>;
+  telemetry: {
+    spreadEvents: number;
+    spreadReviewSaved: number;
+    spreadDrawn: number;
+  };
+  generatedAt: string;
+}
