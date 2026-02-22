@@ -18,6 +18,19 @@
   - 우측: 학습 리더 코치 내역
   - 스프레드 모양 슬롯에 카드 이미지 표시
   - 슬롯 카드 클릭 시 카드 상세 페이지(`/cards/:cardId`) 이동
+- 품질 게이트를 자동화했습니다.
+  - `npm run test:api`
+  - `npm run qa:learning-leader`
+  - `npm run qa:yearly-fortune`
+  - `npm run verify:quality`
+  - CI 워크플로우(`.github/workflows/quality-gates.yml`) 연동
+- 신규 스프레드 `relationship-recovery`(관계 회복 5카드)를 추가했습니다.
+  - 전용 포지션/레이아웃/요약 로직 추가
+  - draw/복기 이벤트 텔레메트리 추가
+- 카드 상세 페이지의 질문 맥락 반영을 강화했습니다.
+  - 기본 카드 설명 조회에 `context` 쿼리 반영
+  - 심화 설명 생성 시 최신 `level/context`를 명시 전달
+  - 심화 fallback 설명 전 섹션(core/symbolism/upright/reversed/love/career/advice)에 맥락 강분기 적용
 
 ## 2) 현재 상태(운영 관점)
 - API/WEB 모두 빌드 기준 정상 상태입니다.
@@ -25,29 +38,52 @@
   - `node --check apps/api/src/content.js` 통과
   - `node --check apps/api/src/index.js` 통과
   - `npm run build:web` 통과
+  - `npm run test:api` 통과
+  - `npm run verify:quality` 통과
 
 ## 3) 이번 세션 주요 변경 파일
 - 백엔드
   - `apps/api/src/content.js`
   - `apps/api/src/index.js`
+  - `apps/api/src/data/spreads.js`
 - 프론트
   - `apps/web/src/pages/SpreadsPage.tsx`
+  - `apps/web/src/pages/CardDetailPage.tsx`
+  - `apps/web/src/lib/api.ts`
   - `apps/web/src/styles.css`
+- 테스트/자동화
+  - `apps/api/test/cards-descriptions.test.js`
+  - `apps/api/test/content-fallback.test.js`
+  - `apps/api/test/relationship-recovery-spread.test.js`
+  - `scripts/run-learning-leader-qa.mjs`
+  - `scripts/yearly-fortune-regression-check.mjs`
+  - `scripts/yearly-fortune-regression-cases.json`
+  - `.github/workflows/quality-gates.yml`
 - 문서
   - `SESSION_HANDOFF.md` (본 요약)
   - `docs/session-handoff-2026-02-22-details.md` (상세)
   - `docs/persona-report-2026-02-22.md`
   - `docs/annual-fortune-job-timing-awkwardness-report-2026-02-22.md`
+  - `docs/learning-leader-quality.md`
+  - `docs/yearly-fortune-regression-checklist.md`
+  - `docs/codex-updates-2026-02-22.md`
 
 ## 4) 다음 세션 우선 확인 항목
-- 연간운세 질문(취업/연애/재정)에서 분기/월 문장의 정합성 재확인
-- 4분기(연말 정리) 문장이 실제로 마무리/전환 중심으로 유지되는지 확인
-- 스프레드 슬롯 카드 클릭 이동 UX(모바일/데스크톱) 점검
+- 관계 회복 스프레드(`relationship-recovery`) 실사용 문장 품질 점검
+  - 재회/갈등/일반 맥락별 수동 샘플 확인
+  - 요약(`핵심 진단 → 관계 리스크 → 7일 행동 계획`) 가독성 점검
+- 카드 상세 심화 설명의 맥락 분기 강도 점검
+  - `빈 질문` vs `이직/재회/재정` 입력에서 7개 섹션 모두 변화하는지 확인
+- 스프레드/복기 텔레메트리 활용 점검
+  - `/api/telemetry/spread-events` 수집 확인
+  - `relationship-recovery`의 draw 대비 복기 저장률 확인
 
 ## 5) 상세 문서 링크
 - 세션 상세 변경 내역: `docs/session-handoff-2026-02-22-details.md`
 - 페르소나 지정 현황 보고서: `docs/persona-report-2026-02-22.md`
 - 연간운세 어색함 분석 보고서: `docs/annual-fortune-job-timing-awkwardness-report-2026-02-22.md`
+- 학습 리더 품질 운영 가이드: `docs/learning-leader-quality.md`
+- 연간운세 회귀 체크리스트: `docs/yearly-fortune-regression-checklist.md`
 
 ## 6) 추가 반영 (카드 설명 분기 고도화)
 - 범위:

@@ -138,3 +138,98 @@
 - `229ea45` Diversify intermediate base descriptions by card context
 - `c9fe9ca` Reduce repeated intermediate major arcana rank line
 - `374d9ae` Further segment love/career sections in fallback explanations
+
+## 7) 품질 게이트 자동화/회귀 방지 (추가)
+
+### 7.1 테스트/QA 스크립트 체계 정비 (`package.json`, `scripts/*`)
+- 루트 스크립트 추가:
+  - `test:api`
+  - `qa:learning-leader:raw`
+  - `qa:learning-leader` (API 자동 기동 래퍼)
+  - `qa:yearly-fortune`
+  - `verify:quality` (통합 게이트)
+- 학습 리더 QA 래퍼:
+  - `scripts/run-learning-leader-qa.mjs`
+  - API 미기동 시 자동으로 API를 띄워 점검 후 종료
+- 연간운세 회귀 체크:
+  - `scripts/yearly-fortune-regression-cases.json`
+  - `scripts/yearly-fortune-regression-check.mjs`
+  - 구조/분기/연말 톤 회귀를 자동 검증
+
+### 7.2 API 텍스트 회귀 테스트 추가 (`apps/api/test/*`)
+- `cards-descriptions.test.js`
+  - 카드 설명의 안정성/3줄 형식/맥락 반영 회귀 검증
+- `content-fallback.test.js`
+  - fallback 섹션 최소 줄 수, 맥락 분기, 페르소나 분리 검증
+- `relationship-recovery-spread.test.js`
+  - 신규 스프레드 정의/포지션/리딩 템플릿 검증
+
+### 7.3 CI 게이트 도입 (`.github/workflows/quality-gates.yml`)
+- PR/`main` push 시 `npm run verify:quality` 자동 실행
+- 회귀 발생 시 머지 전에 차단 가능
+
+## 8) 기능 확장 및 버그 픽스 (추가)
+
+### 8.1 관계 회복 스프레드 추가 (`relationship-recovery`)
+- 변경 파일:
+  - `apps/api/src/data/spreads.js`
+  - `apps/api/src/content.js`
+  - `apps/api/src/index.js`
+  - `apps/web/src/pages/SpreadsPage.tsx`
+  - `apps/web/src/lib/api.ts`
+- 추가 내용:
+  - 포지션 5개:
+    - 현재 관계 상태
+    - 거리/갈등의 핵심
+    - 상대 관점 신호
+    - 회복 행동
+    - 다음 7일 흐름
+  - 전용 템플릿/포커스/프롬프트 적용
+  - 전용 요약 생성:
+    - 핵심 진단
+    - 관계 리스크
+    - 7일 행동 계획
+
+### 8.2 스프레드 텔레메트리 추가
+- API:
+  - `POST /api/telemetry/spread-events`
+  - `GET /api/telemetry/spread-events`
+- 수집 이벤트:
+  - `spread_drawn`
+  - `spread_review_saved`
+- 프론트 연동:
+  - `relationship-recovery` 드로우/복기 저장 시 이벤트 전송
+
+### 8.3 카드 상세 질문 맥락 반영 버그 수정
+- 증상:
+  - 질문 입력값이 기본 설명/심화 설명에 충분히 반영되지 않음
+  - 입력 중 로딩으로 타이핑 체감이 나빠짐
+  - 최신 context가 아닌 이전 값으로 심화 생성될 여지
+- 조치:
+  - `api.getCard(cardId, context)`로 기본 설명 조회에 `context` 쿼리 전달
+  - `CardDetailPage` 카드 조회 키를 `['card', cardId, context]`로 확장
+  - `placeholderData` 적용으로 입력 중 UI 유지
+  - 심화 생성 버튼에서 `mutate({ level, context })`로 최신 값 명시 전달
+  - 입력 변경 시 이전 생성 결과 reset
+
+### 8.4 심화 fallback 설명 전 섹션 맥락 강분기
+- 변경 파일: `apps/api/src/content.js`
+- 핵심:
+  - `inferExplanationContext()`로 질문 도메인 해석
+  - `buildContextFocusLines()`로 섹션별 맥락 문장 구성
+  - `buildCrossDomainLine()`로 교차 섹션 반영(예: 커리어 질문→love 섹션 영향)
+  - 적용 범위:
+    - `coreMeaning`
+    - `symbolism`
+    - `upright`
+    - `reversed`
+    - `love`
+    - `career`
+    - `advice`
+- 결과:
+  - `빈 질문` vs `이직을 언제할까?`에서 섹션 전반 문장 차이가 명확히 발생
+
+### 8.5 관련 커밋 (추가 구간)
+- `0c3ae28` Add automated quality gates for reading regressions
+- `9ffa015` Add relationship-recovery spread and telemetry hooks
+- `861df93` Strengthen context-aware card explanations across all sections

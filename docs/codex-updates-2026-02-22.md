@@ -128,3 +128,87 @@
 
 ### E) 관련 커밋 (추가 구간)
 - `a2214fd`, `07a5e67`, `5b731d0`, `a8753e2`, `c0fae16`, `974cd64`, `9ca2ac6`, `229ea45`, `c9fe9ca`, `374d9ae`
+
+---
+
+## 추가 업데이트 2 (운영 안정화 + 기능 확장 + 맥락 강분기)
+
+### 1) 품질 게이트 자동화
+- 파일:
+  - `package.json`
+  - `scripts/run-learning-leader-qa.mjs`
+  - `scripts/yearly-fortune-regression-check.mjs`
+  - `scripts/yearly-fortune-regression-cases.json`
+  - `.github/workflows/quality-gates.yml`
+- 변경:
+  - 로컬/CI 공통 품질 게이트 정비
+    - `npm run test:api`
+    - `npm run qa:learning-leader`
+    - `npm run qa:yearly-fortune`
+    - `npm run verify:quality`
+  - 학습 리더 QA 시 API 자동 기동
+  - 연간운세 구조/톤 회귀 자동 점검
+
+### 2) API 테스트 확장
+- 파일:
+  - `apps/api/test/cards-descriptions.test.js`
+  - `apps/api/test/content-fallback.test.js`
+  - `apps/api/test/relationship-recovery-spread.test.js`
+- 변경:
+  - 설명 안정성/맥락 반영/페르소나 분리 회귀 테스트 추가
+  - 신규 스프레드 정의/리딩 템플릿 검증 추가
+
+### 3) 관계 회복 5카드 스프레드 추가
+- 파일:
+  - `apps/api/src/data/spreads.js`
+  - `apps/api/src/content.js`
+  - `apps/api/src/index.js`
+  - `apps/web/src/pages/SpreadsPage.tsx`
+- 변경:
+  - `relationship-recovery` 스프레드 정의/레이아웃/학습 가이드 추가
+  - 전용 리딩 템플릿 추가
+  - 전용 요약(`핵심 진단 → 관계 리스크 → 7일 행동 계획`) 추가
+
+### 4) 스프레드 이벤트 텔레메트리 추가
+- 파일:
+  - `apps/api/src/index.js`
+  - `apps/web/src/lib/api.ts`
+  - `apps/web/src/pages/SpreadsPage.tsx`
+- API:
+  - `POST /api/telemetry/spread-events`
+  - `GET /api/telemetry/spread-events`
+- 이벤트:
+  - `spread_drawn`
+  - `spread_review_saved`
+
+### 5) 카드 상세 질문 맥락 반영 강화 + UX 버그 픽스
+- 파일:
+  - `apps/web/src/lib/api.ts`
+  - `apps/web/src/pages/CardDetailPage.tsx`
+- 변경:
+  - 기본 카드 조회에 `context` 쿼리 전달
+  - 질문 입력 시 카드 설명 재조회 키 확장
+  - 입력 중 이전 데이터 유지(`placeholderData`)로 타이핑 끊김 완화
+  - 심화 생성 시 최신 `{ level, context }`를 명시 전달
+
+### 6) 심화 설명 전 섹션 맥락 강분기
+- 파일: `apps/api/src/content.js`
+- 변경:
+  - `inferExplanationContext()`
+  - `buildContextFocusLines()`
+  - `buildCrossDomainLine()`
+- 적용 섹션:
+  - `coreMeaning`
+  - `symbolism`
+  - `upright`
+  - `reversed`
+  - `love`
+  - `career`
+  - `advice`
+- 효과:
+  - 동일 카드에서도 질문 맥락(예: 이직/재회/재정)에 따라 전 섹션 문장 차이가 명확하게 발생
+
+### 7) 관련 커밋 (추가)
+- `0c3ae28` Add automated quality gates for reading regressions
+- `9ffa015` Add relationship-recovery spread and telemetry hooks
+- `861df93` Strengthen context-aware card explanations across all sections
