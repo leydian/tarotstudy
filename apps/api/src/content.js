@@ -2295,21 +2295,30 @@ function buildOneCardInterpretation({ card, orientation, focus, context = '' }) 
     .join('. ')
     .trim();
   const keywords = [...new Set([main, sub, third].map((k) => String(k || '').trim()).filter(Boolean))];
-  const meaningLine = `의미: ${card.nameKo} 카드는 ${keywords.join(', ')} 흐름을 보여줘요.`;
-  const conclusionLine = isYesNo
-    ? `한줄 결론: ${normalizeOneCardConclusionSentence(explicitConclusion.replace(/^결론:\s*/g, ''))}`
-    : `한줄 결론: ${decisionLine}.`;
-  const actionLine = `권장 행동: ${actionHint}`;
-  const toneLine = risk >= 2 || orientation === 'reversed'
-    ? `지금은 서두르기보다 속도를 조금 낮추는 쪽이 결과가 더 안정적이에요.`
-    : `지금은 무리만 피하면 흐름을 살릴 수 있는 구간이에요.`;
+  const cleanConclusion = isYesNo
+    ? normalizeOneCardConclusionSentence(explicitConclusion.replace(/^결론:\s*/g, ''))
+    : `${decisionLine}.`;
+  const stabilityLine = risk >= 2 || orientation === 'reversed'
+    ? '지금은 서두르기보다 속도를 조금 낮춰 운영하시는 편이 더 안정적입니다.'
+    : '지금은 무리만 피하면 흐름을 살려보실 수 있는 구간입니다.';
   const reviewLine = shortHint?.subIntent === 'sleep'
-    ? '복기: 20분 뒤에 몸이 좀 가라앉았는지 1줄만 적어보세요.'
-    : '복기: 해본 뒤 체감 변화 1줄만 남겨두면 다음 판단이 쉬워져요.';
-  const lines = [meaningLine, conclusionLine, actionLine, toneLine, reviewLine]
+    ? '실행 후 20분 정도 지나 몸이 가라앉았는지 한 줄로만 적어보시면 좋겠습니다.'
+    : '해보신 뒤 체감 변화를 한 줄만 남겨 두시면 다음 판단이 훨씬 선명해집니다.';
+  const themeLine = risk >= 2 || orientation === 'reversed'
+    ? '오늘의 테마는 속도보다 정비를 앞에 두는 운영입니다.'
+    : '오늘의 테마는 작은 실행으로 리듬을 살리는 운영입니다.';
+
+  const story = [
+    `${card.nameKo} 카드는 지금 질문에서 ${keywords.join(', ')} 신호를 중심으로 흐름을 보여주고 있습니다.`,
+    `그래서 결론은 ${cleanConclusion}으로 읽힙니다. ${stabilityLine}`,
+    `바로 적용하신다면 ${actionHint} ${reviewLine}`,
+    themeLine
+  ]
     .map((line) => applyOneCardConversationTone(line))
-    .slice(0, 7);
-  return polishTarotInterpretation(lines.join(' '));
+    .slice(0, 6)
+    .join(' ');
+
+  return polishTarotInterpretation(story);
 }
 
 function buildOneCardEvidenceLine({ group = 'general', orientation = 'upright', main = '흐름', subSubject = '흐름이', subObject = '흐름을', focus = '핵심 포인트' }) {

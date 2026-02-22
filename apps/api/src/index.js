@@ -590,38 +590,38 @@ function summarizeSpread({ spreadId = '', spreadName, items, context = '', level
         ? '강도를 조금 낮춰서 행동 1개만 해보고 반응을 확인해보세요.'
         : '10분만 정리하고 다시 판단해보세요.';
     const theme = analysis.label === '우세' ? '작게 시작하면 흐름이 붙는 날' : analysis.label === '박빙' ? '속도 조절이 성패를 가르는 날' : '멈추고 정비하면 손실을 줄이는 날';
-    return [
-      `의미: ${keyword} 신호(${direction})가 지금 결정의 핵심이에요.`,
-      `한줄 결론: ${conclusion.replace(/^결론:\s*/, '')}`,
-      `권장 행동: ${action}`,
-      '복기: 해본 뒤 체감 변화를 1줄만 남겨주세요.',
-      `한 줄 테마: ${theme}`
-    ].join('\n');
+    const cleanConclusion = conclusion.replace(/^결론:\s*/, '');
+    return polishSummaryRhythm([
+      `${lead?.card?.nameKo || '이번 카드'}가 보여주는 핵심은 "${keyword}" 신호(${direction})입니다. 지금 결정에서 가장 먼저 보실 기준이 바로 이 부분입니다.`,
+      `그래서 결론은 ${cleanConclusion}으로 읽힙니다. 성급하게 단정하기보다 지금 상황에 맞게 강도를 조절해 적용하시는 편이 안정적입니다.`,
+      `실행은 크게 벌리지 마시고 ${action} 실행해보신 뒤에는 체감 변화를 한 줄만 남겨 주세요. 그 기록이 다음 판단의 정확도를 높여줍니다.`,
+      `오늘의 테마는 "${theme}"입니다.`
+    ].join('\n\n'));
   }
   let rawSummary = '';
   if (spreadId === 'yearly-fortune') {
     rawSummary = summarizeYearlyFortune({ items, context: normalizedContext, level });
-    return finalizeSpreadSummary({ spreadName, items, context: normalizedContext, rawSummary });
+    return finalizeSpreadSummary({ spreadId, spreadName, items, context: normalizedContext, rawSummary });
   }
   if (spreadId === 'weekly-fortune') {
     rawSummary = summarizeWeeklyFortune({ items, context: normalizedContext, level });
-    return finalizeSpreadSummary({ spreadName, items, context: normalizedContext, rawSummary });
+    return finalizeSpreadSummary({ spreadId, spreadName, items, context: normalizedContext, rawSummary });
   }
   if (spreadId === 'monthly-fortune') {
     rawSummary = summarizeMonthlyFortune({ items, context: normalizedContext, level });
-    return finalizeSpreadSummary({ spreadName, items, context: normalizedContext, rawSummary });
+    return finalizeSpreadSummary({ spreadId, spreadName, items, context: normalizedContext, rawSummary });
   }
   if (spreadId === 'three-card') {
     rawSummary = summarizeThreeCard({ items, context: normalizedContext, level });
-    return finalizeSpreadSummary({ spreadName, items, context: normalizedContext, rawSummary });
+    return finalizeSpreadSummary({ spreadId, spreadName, items, context: normalizedContext, rawSummary });
   }
   if (spreadId === 'relationship-recovery') {
     rawSummary = summarizeRelationshipRecovery({ items, context: normalizedContext, level });
-    return finalizeSpreadSummary({ spreadName, items, context: normalizedContext, rawSummary });
+    return finalizeSpreadSummary({ spreadId, spreadName, items, context: normalizedContext, rawSummary });
   }
   if (spreadId === 'celtic-cross') {
     rawSummary = summarizeCelticCross({ items, context: normalizedContext, level });
-    return finalizeSpreadSummary({ spreadName, items, context: normalizedContext, rawSummary });
+    return finalizeSpreadSummary({ spreadId, spreadName, items, context: normalizedContext, rawSummary });
   }
   const contextTone = inferSummaryContextTone(normalizedContext);
   const topKeywords = pickTopKeywords(items, 3);
@@ -658,7 +658,7 @@ function summarizeSpread({ spreadId = '', spreadName, items, context = '', level
   });
   const themeLine = buildSummaryTheme({ spreadName, context: normalizedContext, items, topKeywords });
   rawSummary = polishSummary([leadLine, focusLine, polishedActionLine, themeLine].filter(Boolean).join(' '));
-  return finalizeSpreadSummary({ spreadName, items, context: normalizedContext, rawSummary });
+  return finalizeSpreadSummary({ spreadId, spreadName, items, context: normalizedContext, rawSummary });
 }
 
 function buildOneCardSummaryConclusion({ orientation = 'upright', analysisLabel = '조건부', questionType = 'open' }) {
@@ -788,14 +788,18 @@ function buildReviewMetric({ spreadId = '', questionType = 'open' }) {
   return '핵심 행동 수행률 + 결과 일치도';
 }
 
-function finalizeSpreadSummary({ spreadName = '', items = [], context = '', rawSummary = '' }) {
+function finalizeSpreadSummary({ spreadId = '', spreadName = '', items = [], context = '', rawSummary = '' }) {
   const decisionBlock = buildSpreadDecisionBlock({ spreadName, items, context });
   const intent = inferYearlyIntent(context);
   const shouldLeadWithNarrative = intent === 'relationship' || intent === 'relationship-repair';
   const merged = shouldLeadWithNarrative
     ? [rawSummary, decisionBlock].filter(Boolean).join('\n\n')
     : [decisionBlock, rawSummary].filter(Boolean).join('\n\n');
-  return polishSummaryRhythm(merged);
+  const polished = polishSummaryRhythm(merged);
+  if (spreadId === 'weekly-fortune' || spreadId === 'monthly-fortune' || spreadId === 'yearly-fortune') {
+    return applySectionedSummaryTone({ spreadId, summary: polished });
+  }
+  return applyNarrativeSummaryTone({ spreadId, summary: polished });
 }
 
 function buildSpreadDecisionBlock({ spreadName = '', items = [], context = '' }) {
@@ -811,10 +815,120 @@ function buildSpreadDecisionBlock({ spreadName = '', items = [], context = '' })
     : analysis.label === '박빙'
       ? `${lexicon.main} 기준이 비슷해 미세 조정이 결과를 가를 가능성이 큽니다.`
       : `${lexicon.main} 구간의 마찰 신호가 있어 조건부 접근이 맞습니다.`;
-  const evidence = evidenceSource.slice(0, 3).map((entry, idx) =>
-    `근거 ${idx + 1}: ${entry.position}(${entry.card}, ${entry.orientation}, '${entry.keyword}') · ${entry.reason}`
+  const evidence = evidenceSource.slice(0, 3).map((entry) =>
+    `${entry.position}에서는 ${entry.card} ${entry.orientation} 카드의 "${entry.keyword}" 신호가 보였고, ${entry.reason}로 해석됩니다.`
   );
-  return [`판정: ${analysis.label} · ${lead}`, ...evidence].join('\n');
+  return [
+    `이번 리딩의 1차 판정은 ${analysis.label}이며, ${lead}`,
+    ...evidence
+  ].join(' ');
+}
+
+function applyNarrativeSummaryTone({ spreadId = '', summary = '' }) {
+  const text = String(summary || '').trim();
+  if (!text) return text;
+
+  // Weekly/Monthly/Yearly summaries are parsed by section labels in UI.
+  if (spreadId === 'weekly-fortune' || spreadId === 'monthly-fortune' || spreadId === 'yearly-fortune') {
+    return text;
+  }
+
+  const labelMap = new Map([
+    ['의미:', '의미'],
+    ['한줄 결론:', '결론'],
+    ['한 줄 결론:', '결론'],
+    ['결론:', '결론'],
+    ['권장 행동:', '실행'],
+    ['실행 가이드:', '실행'],
+    ['복기:', '복기'],
+    ['한 줄 테마:', '테마'],
+    ['판정:', '판정']
+  ]);
+
+  const buckets = {
+    meaning: [],
+    conclusion: [],
+    action: [],
+    review: [],
+    theme: [],
+    verdict: [],
+    other: []
+  };
+
+  for (const rawLine of text.split('\n')) {
+    const line = rawLine.trim();
+    if (!line) continue;
+    const label = [...labelMap.keys()].find((key) => line.startsWith(key));
+    if (!label) {
+      buckets.other.push(line);
+      continue;
+    }
+    const payload = line.slice(label.length).trim();
+    const kind = labelMap.get(label);
+    if (kind === '의미' && payload) buckets.meaning.push(payload);
+    else if (kind === '결론' && payload) buckets.conclusion.push(payload);
+    else if (kind === '실행' && payload) buckets.action.push(payload);
+    else if (kind === '복기' && payload) buckets.review.push(payload);
+    else if (kind === '테마' && payload) buckets.theme.push(payload);
+    else if (kind === '판정' && payload) buckets.verdict.push(payload);
+  }
+
+  const paragraphs = [];
+  const openingParts = [...buckets.verdict, ...buckets.meaning];
+  if (openingParts.length) {
+    paragraphs.push(`이번 흐름에서는 ${openingParts.join(' ')}`);
+  }
+  if (buckets.conclusion.length) {
+    paragraphs.push(`정리하면 결론은 ${buckets.conclusion.join(' ')}`);
+  }
+  if (buckets.action.length || buckets.review.length) {
+    const actionText = buckets.action.length ? `지금은 ${buckets.action.join(' ')}` : '';
+    const reviewText = buckets.review.length ? `실행 후에는 ${buckets.review.join(' ')}` : '';
+    paragraphs.push([actionText, reviewText].filter(Boolean).join(' '));
+  }
+  if (buckets.theme.length) {
+    paragraphs.push(`오늘의 테마는 ${buckets.theme.join(' ')}`);
+  }
+  if (buckets.other.length) {
+    paragraphs.push(buckets.other.join(' '));
+  }
+
+  const narrative = paragraphs.filter(Boolean).join('\n\n').trim();
+  return narrative || text;
+}
+
+function applySectionedSummaryTone({ spreadId = '', summary = '' }) {
+  const text = String(summary || '').trim();
+  if (!text) return text;
+
+  const lines = text.split('\n\n').map((line) => line.trim()).filter(Boolean);
+  const sectionLeadByLabel = {
+    '총평:': spreadId === 'yearly-fortune'
+      ? '올해 전체 흐름을 먼저 편하게 정리해드리면,'
+      : spreadId === 'monthly-fortune'
+        ? '이번 달 흐름을 먼저 한 장면으로 묶어보면,'
+        : '이번 주 흐름을 먼저 한눈에 보면,',
+    '일별 흐름:': '하루씩 이어서 보면 이런 리듬입니다.',
+    '주차 흐름:': '주차별로 나눠 보면 흐름이 이렇게 이어집니다.',
+    '분기별 운세:': '분기 단위로는 흐름이 이렇게 갈립니다.',
+    '월별 운세:': '월별 장면으로 풀어보면 이렇게 읽힙니다.',
+    '월-주 연결:': '그래서 월간 흐름을 주간 운영으로 옮기실 때는,',
+    '실행 가이드:': '실제로 적용하실 때는 이렇게 가져가시면 좋겠습니다.',
+    '한 줄 테마:': '마지막으로 테마를 한 문장으로 묶어보면,'
+  };
+
+  const softened = lines.map((line) => {
+    if (line.startsWith('이번 리딩의 1차 판정은')) {
+      return line.replace(/^이번 리딩의 1차 판정은/, '먼저 이번 리딩의 1차 판정은');
+    }
+    const label = Object.keys(sectionLeadByLabel).find((key) => line.startsWith(key));
+    if (!label) return line;
+    const body = line.slice(label.length).trim();
+    if (!body) return line;
+    return `${label} ${sectionLeadByLabel[label]} ${body}`;
+  });
+
+  return softened.join('\n\n');
 }
 
 function prioritizeChoiceEvidence(items = [], fallbackEvidence = [], intent = 'general') {

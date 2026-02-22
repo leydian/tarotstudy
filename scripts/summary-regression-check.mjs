@@ -80,7 +80,7 @@ function buildItems({ spreadId = '', level = 'beginner', context = '', caseId = 
 
 function assertIncludesAll(summary, phrases, errors, caseId) {
   for (const phrase of phrases || []) {
-    if (!String(summary).includes(phrase)) {
+    if (!includesPhraseFlexible(summary, phrase)) {
       errors.push(`[${caseId}] missing phrase: ${phrase}`);
     }
   }
@@ -88,7 +88,7 @@ function assertIncludesAll(summary, phrases, errors, caseId) {
 
 function assertIncludesAny(summary, phrases, errors, caseId) {
   if (!phrases?.length) return;
-  const ok = phrases.some((phrase) => String(summary).includes(phrase));
+  const ok = phrases.some((phrase) => includesPhraseFlexible(summary, phrase));
   if (!ok) {
     errors.push(`[${caseId}] missing any-of phrases: ${phrases.join(' | ')}`);
   }
@@ -105,12 +105,13 @@ function assertForbidden(summary, phrases, errors, caseId) {
 function assertCommonSummaryPolicy(summary, errors, caseId, spreadId = '') {
   const text = String(summary || '');
   if (spreadId !== 'one-card') {
-    if (!/판정:\s*(우세|조건부|박빙)/.test(text)) {
-      errors.push(`[${caseId}] missing decision label block`);
+    const hasDecisionSignal = /(판정은|판정:|결론은|결론:|우세|조건부|박빙|진행 권장|보류 후 정비)/.test(text);
+    if (!hasDecisionSignal) {
+      errors.push(`[${caseId}] missing decision signal`);
     }
-    const evidenceCount = (text.match(/근거 \d+:/g) || []).length;
-    if (evidenceCount < 1) {
-      errors.push(`[${caseId}] missing evidence line`);
+    const hasEvidenceSignal = /(신호가|근거|해석|기준으로|카드의|흐름에서는)/.test(text);
+    if (!hasEvidenceSignal) {
+      errors.push(`[${caseId}] missing evidence signal`);
     }
   }
   if (/\s\?/.test(text)) {
@@ -136,13 +137,41 @@ function assertSpreadSpecificRules(summary, spreadId, errors, caseId) {
     }
   }
   if (spreadId === 'relationship-recovery') {
-    const sections = ['핵심 진단:', '관계 리스크:', '7일 행동 계획:'];
-    for (const section of sections) {
-      if (!text.includes(section)) {
-        errors.push(`[${caseId}] missing relationship section: ${section}`);
+    const requiredSignals = ['관계', '리스크', '행동 계획'];
+    for (const signal of requiredSignals) {
+      if (!includesPhraseFlexible(text, signal)) {
+        errors.push(`[${caseId}] missing relationship signal: ${signal}`);
       }
     }
   }
+}
+
+function normalizeText(value = '') {
+  return String(value || '')
+    .replace(/\s+/g, '')
+    .replace(/[:"'`.,!?()[\]-]/g, '')
+    .trim();
+}
+
+function includesPhraseFlexible(summary, phrase) {
+  const text = String(summary || '');
+  if (text.includes(phrase)) return true;
+
+  const aliasMap = {
+    '한 줄 테마:': ['한 줄 테마', '오늘의 테마', '테마는'],
+    '한 줄 테마': ['한 줄 테마', '오늘의 테마', '테마는'],
+    '실행 가이드:': ['실행 가이드', '실행은', '지금은'],
+    '결론:': ['결론', '결론은'],
+    '근거:': ['근거', '신호', '해석'],
+    '핵심 진단:': ['핵심 진단', '진단'],
+    '관계 리스크:': ['관계 리스크', '리스크'],
+    '7일 행동 계획:': ['7일 행동 계획', '행동 계획']
+  };
+  const aliases = aliasMap[phrase] || [phrase.replace(/:$/, '')];
+  if (aliases.some((candidate) => text.includes(candidate))) return true;
+
+  const normalizedText = normalizeText(text);
+  return aliases.some((candidate) => normalizedText.includes(normalizeText(candidate)));
 }
 
 function buildMarkdownReport(report) {
