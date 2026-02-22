@@ -1,7 +1,7 @@
 # 세션 인수인계 문서 (메인)
 
 작성일: 2026-02-22  
-최종 갱신: 2026-02-23  
+최종 갱신: 2026-02-23 (late)  
 작업 경로: `/home/eunok/studycodex`
 
 ## 1) 문서 구조
@@ -35,21 +35,51 @@
   - `test:api`, `qa:learning-leader`, `qa:relationship-recovery`, `qa:yearly-fortune`, `verify:quality` 체계 정비
   - 텔레메트리 수집 API(`spread_drawn`, `spread_review_saved`) 및 롤업 스크립트 추가
 
-## 3) 최근 커밋 타임라인 (최신 우선)
+## 3) 금일 추가 반영 (최신)
+- 양자택일(`choice-a-b`) 리딩 품질 2차/3차 고도화
+  - 질문 맥락별 전용 축 분기:
+    - 근무지 선택: `통근 시간/교통 피로/생활비/성장 기회/지속 가능성`
+    - 구매/브랜드 선택: `예산 압박/즉시 만족도/활용도/스타일 적합성/3개월 후 만족도`
+  - 포지션 역할 고정:
+    - `현재 상황`: 공통 기준 고정
+    - `A/B 가까운 미래`: 1~2주 단기 반응/적응
+    - `A/B 결과`: 1~3개월 누적 보상/소모
+  - 카드 긴장도 보정:
+    - `악마/달/탑/소드 고긴장군`은 정방향이어도 경계 문장 우선
+  - 조사/문장 품질 보정:
+    - `'...는'` 조사 오류, 목적격 조사(`...을/를`) 오류 교정
+  - 반복 완화:
+    - 양자택일 공통 반복 문장을 포지션별/맥락별 문장으로 분리
+
+- 전 스프레드 공통 결론 정책 적용
+  - `우세 / 조건부 / 박빙` 판정 블록을 모든 summary 앞단에 삽입
+  - 근거 2~3개를 `포지션/카드/정역/키워드` 단위로 함께 제시
+  - 스프레드별 어휘 중심축 분리:
+    - 예: 선택 유지성, 서사 중심축, 요일별 완급, 분기별 전략 축
+
+- 전 스프레드 문장 리듬 보정
+  - summary 후처리에서 문장 중복 제거(문단 간 중복 포함)
+  - 동일 문장 재출력 억제로 가독성 개선
+
+## 4) 최근 커밋 타임라인 (최신 우선)
+- `6135a1b` Apply verdict-and-evidence summary policy across all spreads
+- `389fa59` Improve purchase-focused A/B reading tone and decision clarity
+- `cd445be` Refine choice A/B reading for clarity and work-location context
+- `cde023c` Reorganize handoff docs into main-index-details structure
 - `e1ad671` Add regression test for weekly fortune monday-to-sunday positions
 - `737899b` Compact spread metadata layout and restore weekly day-separated summary
 - `274481f` Rebuild page layouts and fix dark-theme text contrast
-- `4b6f8cd` Redesign app layout and fix dark-theme readability
-- `2d5672e` Apply lilac-pink theme, dark mode toggle, and reading-focused UI polish
-- `a3de4de` Refine three-card reading quality and upgrade spread UI insights
-- `57b9885` Improve recovery variation QA, telemetry rollup, and handoff docs
 
-## 4) 현재 상태
+## 5) 현재 상태
 - 빌드/테스트 기준으로 주요 기능은 정상 범위
 - 다만 운영 환경에서 이전 API 프로세스가 살아 있으면 스프레드 정의가 즉시 반영되지 않는 사례가 있었음
   - 조치: API 재기동 후 `weekly-fortune` 포지션 확인
+- 최신 검증:
+  - `node --check apps/api/src/content.js` 통과
+  - `node --check apps/api/src/index.js` 통과
+  - `npm run test:api` 통과
 
-## 5) 즉시 참조 링크
+## 6) 즉시 참조 링크
 - 전체 인수인계 인덱스: `docs/handoff/INDEX.md`
 - 기존 상세 이력(원문):
   - `docs/session-handoff-2026-02-22-details.md`

@@ -1,7 +1,7 @@
 # 세션 인수인계 인덱스
 
 작성일: 2026-02-22  
-최종 갱신: 2026-02-23
+최종 갱신: 2026-02-23 (late)
 
 ## 1) 목적
 - 작업 내역을 `메인 -> 인덱스 -> 세부내역` 3계층으로 분리해 탐색성과 유지보수성을 높입니다.
@@ -26,18 +26,19 @@
 
 ## 4) 주제별 빠른 이동
 - 3카드 리딩 구조 개선: `docs/handoff/details/backend-reading-quality-2026-02-22.md`
+- 양자택일 맥락 분기(근무지/구매): `docs/handoff/details/backend-reading-quality-2026-02-22.md`
+- 전 스프레드 판정 정책(우세/조건부/박빙): `docs/handoff/details/backend-reading-quality-2026-02-22.md`
 - 다크 테마 가독성/레이아웃 재편: `docs/handoff/details/frontend-layout-theme-2026-02-22.md`
 - QA/회귀/텔레메트리 운영: `docs/handoff/details/quality-gates-telemetry-2026-02-22.md`
 - 문서 분리 기준/운영 규칙: `docs/handoff/details/docs-ops-structure-2026-02-22.md`
 
 ## 5) 최근 핵심 커밋
+- `6135a1b` Apply verdict-and-evidence summary policy across all spreads
+- `389fa59` Improve purchase-focused A/B reading tone and decision clarity
+- `cd445be` Refine choice A/B reading for clarity and work-location context
+- `cde023c` Reorganize handoff docs into main-index-details structure
 - `e1ad671` Add regression test for weekly fortune monday-to-sunday positions
 - `737899b` Compact spread metadata layout and restore weekly day-separated summary
-- `274481f` Rebuild page layouts and fix dark-theme text contrast
-- `4b6f8cd` Redesign app layout and fix dark-theme readability
-- `2d5672e` Apply lilac-pink theme, dark mode toggle, and reading-focused UI polish
-- `a3de4de` Refine three-card reading quality and upgrade spread UI insights
-- `57b9885` Improve recovery variation QA, telemetry rollup, and handoff docs
 
 ## 6) 이전 상세 문서(원문 아카이브)
 - `docs/session-handoff-2026-02-22-details.md`

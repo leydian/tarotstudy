@@ -63,10 +63,22 @@
   - `weekly-fortune` 포지션이 `월요일~일요일`인지 고정 검증
   - 레거시 라벨 재유입 방지
 
+6. 양자택일 회귀 테스트 확장
+- 테스트: `apps/api/test/choice-a-b-reading.test.js`
+- 검증 포인트:
+  - 근무지 질문에서 `통근/교통/생활비/지속 가능성` 축 반영
+  - 구매 질문에서 `예산 압박/활용도/스타일 적합성/3개월 만족도` 축 반영
+  - 반복 보일러플레이트 문구 재출력 방지
+  - 조사 오류(`'...는'`, 목적격 조사) 회귀 방지
+  - 포지션 간 해석 차별성 유지
+
 ## 운영 체크리스트
 - API 재기동 후 스프레드 정의 반영 확인
 - `npm run verify:quality`를 머지 전 필수 실행
 - 텔레메트리 리포트에서 draw 대비 review 저장률 추적
+- 신규 회귀 테스트(`choice-a-b-reading.test.js`) 실패 시:
+  - `apps/api/src/content.js`의 `inferChoiceContextMeta()` 축 분기 우선 점검
+  - `apps/api/src/index.js`의 공통 요약 후처리(`finalizeSpreadSummary`) 영향 확인
 
 ## 리스크/후속
 - QA 샘플이 고정되면 품질 하락이 누락될 수 있어 케이스셋을 정기 갱신해야 함
