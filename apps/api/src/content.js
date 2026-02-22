@@ -1457,10 +1457,32 @@ export function buildSpreadReading({
   });
 
   const learningPointRaw = shortHint
-    ? `[학습 리더] 오늘 질문(${normalizeClientQuestion(context) || '초간단 질문'})은 핵심 판단 1문장과 근거 1문장만 짧게 정리하세요. [학습 리더] 복기 질문: 실행 후 실제 체감에서 카드 방향과 맞은 점/어긋난 점은 무엇이었는가?`
+    ? joinUniqueParts([
+      `[학습 리더] 관찰 근거: ${position.name}에서 ${card.nameKo} ${orientation === 'upright' ? '정방향' : '역방향'} 신호를 확인했습니다.`,
+      `[학습 리더] 타로 리더 추론: 질문(${normalizeClientQuestion(context) || '초간단 질문'})은 결론 1문장과 카드 근거 1문장을 분리해 설명할 때 정확도가 올라갑니다.`,
+      '[학습 리더] 학습 코칭: 카드 근거 1개와 실행 행동 1개를 오늘 안에 기록하세요. 복기 질문: 실행 후 체감이 카드 방향과 가장 일치한 근거 1개는 무엇인가?'
+    ])
     : joinUniqueParts([
-      `[학습 리더] ${buildLearningCoachOpening({ positionName: position.name, spreadId, level, contextProfile, seed })}`,
-      `[학습 리더] ${buildLearningCoachFrame({ style, spreadId, positionName: position.name, level, seed })}`,
+      `[학습 리더] ${buildLearningCoachOpening({
+        positionName: position.name,
+        cardName: card.nameKo,
+        cardKeywords: card.keywords || [],
+        orientation,
+        spreadId,
+        level,
+        contextProfile,
+        seed
+      })}`,
+      `[학습 리더] ${buildLearningCoachFrame({
+        style,
+        spreadId,
+        positionName: position.name,
+        cardName: card.nameKo,
+        orientation,
+        contextProfile,
+        level,
+        seed
+      })}`,
       `[학습 리더] ${buildLearningCoachReview({
         positionName: position.name,
         cardName: card.nameKo,
@@ -4079,23 +4101,41 @@ function splitSentences(text = '') {
   return chunks.map((chunk) => chunk.trim()).filter(Boolean);
 }
 
-function buildLearningCoachOpening({ positionName, spreadId = 'default', level = 'beginner', contextProfile, seed }) {
-  const topic = withKoreanParticle(positionName, '은', '는');
-  const lines = level === 'intermediate'
+function buildLearningCoachOpening({
+  positionName,
+  cardName = '',
+  cardKeywords = [],
+  orientation = 'upright',
+  spreadId = 'default',
+  level = 'beginner',
+  contextProfile,
+  seed
+}) {
+  const keywordA = cardKeywords[0] || '핵심 흐름';
+  const keywordB = cardKeywords[1] || keywordA;
+  const direction = orientation === 'upright' ? '정방향' : '역방향';
+  const evidenceModes = level === 'intermediate'
     ? [
-      `${positionName} 중급 훈련 목표는 감상형 해석이 아니라, 가설과 반례를 같이 남기는 실험형 리딩입니다.`,
-      `${topic} 해석에서는 카드 키워드 1개를 중심 가설로 두고, 반례 가능성 1개를 반드시 같이 적어보세요.`,
-      `${spreadId} 중급 복기는 문장 퀄리티보다 지표 일치율(${contextProfile.trackMetric}) 개선에 집중하는 편이 정확합니다.`
+      `관찰 근거: ${positionName}에서 ${cardName} ${direction}, 핵심 키워드(${keywordA}/${keywordB}), 포지션 의미를 먼저 고정했습니다.`,
+      `관찰 근거: ${spreadId}의 ${positionName} 위치에서 ${cardName} ${direction} 카드 사실과 질문 맥락(${contextProfile.id})을 1차 근거로 채택했습니다.`
     ]
     : [
-      `${positionName} 입문 복기는 정답 맞히기보다 카드 근거 1줄 + 행동 1줄을 바로 남기는 훈련이 핵심입니다.`,
-      `${topic} 감으로 단정하지 말고, 지금 보이는 사실 신호 1개만 먼저 적어 실전 감각을 만드세요.`,
-      `${positionName} 입문 학습 목표는 화려한 해석보다 오늘 1회 실행 가능한 리딩 루틴을 만드는 것입니다.`
+      `관찰 근거: ${positionName}에서 ${cardName} ${direction} 카드와 키워드(${keywordA})를 먼저 확인했습니다.`,
+      `관찰 근거: ${positionName} 자리의 카드 사실(${cardName} ${direction})과 키워드(${keywordA})를 해석 출발점으로 잡았습니다.`
     ];
-  return pickVariant(`${seed}:coach-open`, lines);
+  return pickVariant(`${seed}:coach-open`, evidenceModes);
 }
 
-function buildLearningCoachFrame({ style, spreadId = 'default', positionName = '', level = 'beginner', seed }) {
+function buildLearningCoachFrame({
+  style,
+  spreadId = 'default',
+  positionName = '',
+  cardName = '',
+  orientation = 'upright',
+  contextProfile,
+  level = 'beginner',
+  seed
+}) {
   const spreadPositionFrame = (() => {
     if (spreadId === 'daily-fortune') {
       if (positionName === '오늘의 흐름') return '오늘의 흐름 카드는 당일 사건 1개를 골라 키워드와 실제 전개를 1:1로 대응해보세요.';
@@ -4135,42 +4175,59 @@ function buildLearningCoachFrame({ style, spreadId = 'default', positionName = '
     }
     return '';
   })();
-  const baseFrame = level === 'intermediate'
+  const direction = orientation === 'upright' ? '정방향' : '역방향';
+  const inferenceModes = level === 'intermediate'
     ? [
-      `훈련 프레임: ${style.learningFrame} 실전 규칙: 예측 문장 1개, 반례 문장 1개, 검증 지표 1개를 반드시 세트로 남기세요.`,
-      `타로 학습 루틴: ${style.learningFrame} 중급 루틴: 리딩 직후 가설을 확정하고, 24~72시간 내 반응 데이터로 판정 업데이트를 하세요.`,
-      `리딩 결과 학습 기준: ${style.learningFrame} 중급에서는 해석 정확도보다 의사결정 품질(오판 감소율)을 지표로 관리하세요.`
+      `타로 리더 추론: ${cardName} ${direction} 신호를 ${positionName} 역할에 대입해 해석 가설을 세우고, 반례 가능성도 함께 점검했습니다.`,
+      `타로 리더 추론: 카드 의미를 단독으로 쓰지 않고 ${positionName} 기능과 질문 맥락(${contextProfile.id})을 결합해 결론 후보를 좁혔습니다.`
     ]
     : [
-      `훈련 프레임: ${style.learningFrame} 실전 규칙: 오늘은 카드 근거 1개와 실행 1개만 고정하고 바로 실행하세요.`,
-      `타로 학습 루틴: ${style.learningFrame} 입문 루틴: 10분 내 실행 가능한 행동으로 번역하고 그날 저녁 1회 복기하세요.`,
-      `리딩 결과 학습 기준: ${style.learningFrame} 입문에서는 해석 길이보다 실행 완료 여부를 우선 점검하세요.`
+      `타로 리더 추론: ${positionName} 자리에서 ${cardName} ${direction}가 말하는 핵심 신호를 행동 문장 1개로 번역했습니다.`,
+      `타로 리더 추론: 카드 키워드와 현재 질문을 직접 연결해 과해석을 줄이고 실행 가능한 결론으로 정리했습니다.`
     ];
-  const lines = baseFrame.filter(Boolean);
-  const base = pickVariant(`${seed}:coach-frame`, lines);
-  if (spreadPositionFrame) {
-    return `${base} 포지션 학습 기준: ${spreadPositionFrame}`;
-  }
-  return base;
+  const conclusionModes = level === 'intermediate'
+    ? [
+      `결론 기준: ${style.learningFrame} 기준으로 ${contextProfile.trackMetric} 일치율을 확인하고 우선순위를 확정하세요.`,
+      `결론 기준: 해석 선명도보다 의사결정 품질을 우선해, 반응 데이터(24~72시간)로 결론을 업데이트하세요.`
+    ]
+    : [
+      `결론 기준: ${style.learningFrame}에서 카드 근거 1개 + 실행 1개 + 체감 1개를 같은 기준으로 비교하세요.`,
+      `결론 기준: 길게 해석하기보다 오늘 바로 실행 가능한 행동 1개를 고르고 저녁에 체감만 복기하세요.`
+    ];
+
+  const inferenceLine = pickVariant(`${seed}:coach-frame-infer`, inferenceModes);
+  const conclusionLine = pickVariant(`${seed}:coach-frame-conclusion`, conclusionModes);
+  const positionLine = spreadPositionFrame ? `포지션 기준: ${spreadPositionFrame}` : '';
+  return [inferenceLine, conclusionLine, positionLine].filter(Boolean).join(' ');
 }
 
 function buildLearningCoachReview({ positionName, cardName, orientation, contextProfile, style, level = 'beginner', seed }) {
   const direction = orientation === 'upright' ? '정방향' : '역방향';
-  const lines = level === 'intermediate'
+  const coachModes = level === 'intermediate'
     ? [
-      `복기 질문: ${positionName}의 ${cardName} ${direction} 가설에서 적중/오차를 만든 핵심 요인 1개는 무엇인가?`,
-      `점검 질문: ${contextProfile.trackMetric} 기준으로 이 해석의 오차 원인을 정보 부족/과확장/검증 누락 중 어디로 분류할 수 있는가?`,
-      `복기 질문: ${positionName} 리딩의 반례 시나리오를 사전에 적고 실제 반응으로 업데이트했는가?`
+      `학습 코칭: ${positionName} 해석에서 사용한 근거(카드/포지션/맥락)와 결론 문장을 분리 기록하고, 오차 요인 1개를 바로 표기하세요.`,
+      `학습 코칭: ${contextProfile.trackMetric} 기준으로 적중 근거 1개와 빗나간 근거 1개를 나눠 적어 다음 리딩 가중치를 조정하세요.`
     ]
     : [
-      `복기 질문: ${positionName}에서 읽은 ${cardName} ${direction} 해석이 실제 반응과 맞았는가?`,
-      `점검 질문: ${cardName} ${direction}의 핵심 키워드 1개를 오늘 행동과 연결했는가?`,
-      `복기 질문: ${positionName} 리딩에서 카드 근거 1개를 말로 설명할 수 있는가?`
+      `학습 코칭: ${positionName} 리딩은 카드 근거 1개와 행동 1개를 한 세트로 남기면 재현성이 올라갑니다.`,
+      `학습 코칭: ${cardName} ${direction} 해석에서 "왜 이 결론인지" 근거 문장 1개를 반드시 붙여 기록하세요.`
+    ];
+  const questionModes = level === 'intermediate'
+    ? [
+      `복기 질문: ${positionName}에서 ${cardName} ${direction} 결론을 만들 때 가장 결정적이었던 근거 1개와 반례 1개는 무엇인가?`,
+      `복기 질문: 이번 결론이 ${contextProfile.trackMetric} 기준으로 유지되는지, 24~72시간 데이터로 어떻게 업데이트할 것인가?`
+    ]
+    : [
+      `복기 질문: ${positionName}에서 ${cardName} ${direction} 결론이 실제 반응과 가장 잘 맞은 근거 1개는 무엇인가?`,
+      `복기 질문: 오늘 실행 결과가 카드 키워드와 어긋난 지점 1개를 내일 어떻게 보정할 것인가?`
     ];
   const reviewStep = level === 'intermediate'
-    ? `${style.reviewStep} 추가 점검: 다음 리딩 전 반례 1개를 먼저 적고 시작하세요.`
-    : `${style.reviewStep} 추가 점검: 맞음/부분/다름 중 하나만 선택해도 좋으니 당일에 바로 기록하세요.`;
-  return `${pickVariant(`${seed}:coach-review-q`, lines)} 리딩 검증: ${reviewStep}`;
+    ? `리딩 검증: ${style.reviewStep}`
+    : `리딩 검증: ${style.reviewStep}`;
+
+  const coaching = pickVariant(`${seed}:coach-review-coaching`, coachModes);
+  const question = pickVariant(`${seed}:coach-review-question`, questionModes);
+  return `${coaching} ${reviewStep} ${question}`;
 }
 
 function withKoreanParticle(word = '', consonantParticle = '이', vowelParticle = '가') {
