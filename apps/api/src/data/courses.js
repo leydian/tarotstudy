@@ -1148,18 +1148,38 @@ function selectStoryNovelType(lessonId, order) {
   return (hash + order) % 8;
 }
 
+function hasFinalConsonant(word = '') {
+  const chars = [...String(word).trim()];
+  const last = chars[chars.length - 1];
+  if (!last) return false;
+  const code = last.charCodeAt(0);
+  if (code < 0xAC00 || code > 0xD7A3) return false;
+  return ((code - 0xAC00) % 28) !== 0;
+}
+
+function withTopicParticle(word = '') {
+  return `${word}${hasFinalConsonant(word) ? '은' : '는'}`;
+}
+
+function withSubjectParticle(word = '') {
+  return `${word}${hasFinalConsonant(word) ? '이' : '가'}`;
+}
+
 function buildStoryNovelByType({ type, blueprint, cardPreview, a, b, c }) {
   const cards = cardPreview || '카드';
   const supportCard = b || a;
   const checkCard = c || b || a;
+  const characterTopic = withTopicParticle(blueprint.character);
+  const aSubject = withSubjectParticle(a);
+  const supportSubject = withSubjectParticle(supportCard);
 
   if (type === 0) {
     return [
-      `${blueprint.character}는 ${blueprint.situation} 때문에 리딩 시작 전에 숨을 길게 고르고 메모장을 펼쳤습니다.`,
+      `${characterTopic} ${blueprint.situation} 때문에 리딩 시작 전에 숨을 길게 고르고 메모장을 펼쳤습니다.`,
       `첫 줄에는 "${blueprint.question}"를 적고, 질문에서 군더더기 단어를 지웠습니다.`,
-      `${cards} 중에서는 ${a}가 가장 빠르게 반응했습니다. 결론은 짧게 적었습니다. "이번엔 이 한 가지를 먼저 끝낸다."`,
-      `${a}의 신호를 오늘 일정표와 대조하자 우선순위가 또렷해졌고, ${supportCard}는 과한 확장을 멈추라는 보조 근거가 됐습니다.`,
-      `${blueprint.character}는 "${blueprint.action}"을 캘린더에 고정한 뒤 시작 시간을 알림으로 걸었습니다.`,
+      `${cards} 중에서는 ${aSubject} 가장 빠르게 반응했습니다. 결론은 짧게 적었습니다. "이번엔 이 한 가지를 먼저 끝낸다."`,
+      `${a}의 신호를 오늘 일정표와 대조하자 우선순위가 또렷해졌고, ${supportSubject} 과한 확장을 멈추라는 보조 근거가 됐습니다.`,
+      `${characterTopic} "${blueprint.action}"을 캘린더에 고정한 뒤 시작 시간을 알림으로 걸었습니다.`,
       `마감 전에는 ${blueprint.review}만 확인하며 적중 1줄과 오차 1줄을 남겼고, ${checkCard}는 다음 점검 포인트로 표시했습니다.`
     ];
   }
@@ -1168,7 +1188,7 @@ function buildStoryNovelByType({ type, blueprint, cardPreview, a, b, c }) {
     return [
       `코치: "지금 상태를 한 줄로 말해봐." ${blueprint.character}: "${blueprint.situation}이라 해석이 퍼집니다."`,
       `코치: "좋아, 질문을 줄이자." 두 사람은 노트 상단에 "${blueprint.question}"를 고정했습니다.`,
-      `${cards} 중 ${a}가 중심 카드로 뽑히자, ${blueprint.character}는 "핵심 하나만 밀자"라고 결론을 정리했습니다.`,
+      `${cards} 중 ${aSubject} 중심 카드로 뽑히자, ${characterTopic} "핵심 하나만 밀자"라고 결론을 정리했습니다.`,
       `코치: "${a} 근거에 상황 사실 1개를 붙여." 그러자 문장이 짧아졌고 실행 판단이 흔들리지 않았습니다.`,
       `${blueprint.character}: "오늘은 ${blueprint.action}으로 닫겠습니다." 코치는 시간/장소를 덧붙여 확정하게 했습니다.`,
       `종료 체크에서는 ${blueprint.review}만 봤습니다. 적중 1줄, 오차 1줄을 남기고 다음 리딩 규칙 1개를 적었습니다.`
@@ -1177,23 +1197,23 @@ function buildStoryNovelByType({ type, blueprint, cardPreview, a, b, c }) {
 
   if (type === 2) {
     return [
-      `[리딩 로그 00:00] 상태 요약: ${blueprint.character}, ${blueprint.situation}.`,
-      `[리딩 로그 00:02] 질문 압축 완료: "${blueprint.question}".`,
-      `[리딩 로그 00:04] 카드 선택: ${cards} 중 ${a} 채택. 결론: 지금은 우선순위 1개 집중.`,
-      `[리딩 로그 00:06] 근거 정리: ${a} 신호 + 현실 사실 1개 연결, ${supportCard}로 리스크 문장 보완.`,
-      `[리딩 로그 00:08] 실행 고정: ${blueprint.action} (시간/장소 확정).`,
-      `[리딩 로그 00:12] 복기 종료: ${blueprint.review} 점검, 적중 1줄/오차 1줄 기록.`
+      `${characterTopic} ${blueprint.situation} 때문에 시작부터 마음이 분산되는 걸 느꼈습니다.`,
+      `그래서 노트 한가운데에 "${blueprint.question}"를 쓰고, 핵심이 아닌 문장을 과감히 지웠습니다.`,
+      `${cards}를 한 장씩 넘기는 동안 ${aSubject} 가장 선명하게 남았고, 결론은 "우선순위 1개만 끝낸다"로 좁혀졌습니다.`,
+      `${a}의 신호를 현실 사실에 붙이자 판단이 흔들리지 않았고, ${supportSubject} 지나친 해석을 누르는 안전장치가 됐습니다.`,
+      `${characterTopic} ${blueprint.action}을 실제 시간과 장소에 연결해 바로 움직일 수 있는 상태로 만들었습니다.`,
+      `하루가 끝나기 전 ${blueprint.review}를 기준으로 적중 1줄과 오차 1줄을 남기며 다음 리딩의 기준을 세웠습니다.`
     ];
   }
 
   if (type === 3) {
     return [
-      `관찰 노트: ${blueprint.character}는 ${blueprint.situation} 때문에 시작 직후 판단 속도가 느렸습니다.`,
-      `개입 1: 질문을 "${blueprint.question}"로 축약하자 해석 범위가 좁혀졌습니다.`,
-      `개입 2: ${cards} 중 ${a}를 중심 카드로 지정하자 결론 문장이 즉시 생성됐습니다.`,
-      `근거 품질: ${a} 신호와 상황 사실을 결합한 문장이 가장 명확했고, ${supportCard}는 보완 근거로 안정적이었습니다.`,
-      `실행 전환: ${blueprint.action}을 일정에 넣은 시점부터 망설임이 유의미하게 감소했습니다.`,
-      `회고 결과: ${blueprint.review} 기준으로 적중/오차를 분리 기록했고, 다음 리딩 교정 포인트가 확보됐습니다.`
+      `${characterTopic} ${blueprint.situation}이라는 부담을 안고 카드를 펼쳤고, 첫 판단에서 속도가 느려졌습니다.`,
+      `잠시 멈춘 뒤 "${blueprint.question}"를 기준 문장으로 정하자 해석의 범위가 자연스럽게 좁아졌습니다.`,
+      `${cards} 중 ${a}를 중심으로 잡는 순간 결론이 먼저 떠올랐고, 해야 할 일이 한 줄로 정리됐습니다.`,
+      `${a}의 핵심 신호에 현실 사실을 붙이자 설명은 짧아졌고, ${supportSubject} 결론을 지탱하는 보완 근거가 됐습니다.`,
+      `${blueprint.action}을 일정에 고정한 다음부터는 망설임보다 실행이 앞섰고, 행동의 리듬이 일정해졌습니다.`,
+      `마무리에서는 ${blueprint.review}만 확인하며 적중과 오차를 분리 기록해 다음 리딩의 교정점을 남겼습니다.`
     ];
   }
 
@@ -1201,21 +1221,21 @@ function buildStoryNovelByType({ type, blueprint, cardPreview, a, b, c }) {
     return [
       `${blueprint.character}의 오늘 목표는 길게 해석하지 않는 것이었습니다. 출발 조건은 ${blueprint.situation}.`,
       `그래서 첫 문장을 "${blueprint.question}"로 못 박고, 질문을 벗어나는 문장은 바로 지웠습니다.`,
-      `${cards}를 훑는 동안 ${a}가 유독 또렷했고, 결론은 "지금 필요한 행동 1개만 선택"으로 정리됐습니다.`,
-      `${a} 근거 뒤에 현실 증거를 붙이자 문장이 짧아졌고, ${supportCard}는 속도 조절 기준을 제공했습니다.`,
-      `실행 단계에서 ${blueprint.character}는 ${blueprint.action}을 구체 시간으로 잠갔습니다.`,
+      `${cards}를 훑는 동안 ${aSubject} 유독 또렷했고, 결론은 "지금 필요한 행동 1개만 선택"으로 정리됐습니다.`,
+      `${a} 근거 뒤에 현실 증거를 붙이자 문장이 짧아졌고, ${supportSubject} 속도 조절 기준을 제공했습니다.`,
+      `실행 단계에서 ${characterTopic} ${blueprint.action}을 구체 시간으로 잠갔습니다.`,
       `마지막 체크는 단순했습니다. ${blueprint.review}만 보고 적중 1줄, 오차 1줄을 남겨 다음 리딩에 넘겼습니다.`
     ];
   }
 
   if (type === 5) {
     return [
-      `체크리스트 시작: [상태] ${blueprint.character} / ${blueprint.situation}.`,
-      `체크리스트 1: [질문] "${blueprint.question}" 한 줄 고정.`,
-      `체크리스트 2: [카드] ${cards} 중 중심은 ${a}. [결론] 우선 행동 1개 먼저.`,
-      `체크리스트 3: [근거] ${a} 신호 + 현실 사실 1개. [보완] ${supportCard}로 과잉 해석 차단.`,
-      `체크리스트 4: [실행] ${blueprint.action}을 시간/장소와 함께 등록.`,
-      `체크리스트 종료: [복기] ${blueprint.review} 점검 후 적중 1줄, 오차 1줄 기록.`
+      `${blueprint.character}에게 오늘 리딩은 복잡한 생각을 정리하는 시간이었다. 출발점은 ${blueprint.situation}이었다.`,
+      `노트 맨 위에 "${blueprint.question}"를 적자 질문의 중심이 드러났고, 덜 중요한 표현은 자연스럽게 밀려났다.`,
+      `${cards} 중에서 ${aSubject} 유독 강하게 읽혔고, 결론은 우선 행동 1개를 먼저 끝내는 방향으로 정리됐다.`,
+      `${a}의 신호를 현실 사실과 나란히 놓자 문장은 짧고 단단해졌고, ${supportSubject} 과한 확대 해석을 막아 주었다.`,
+      `${characterTopic} ${blueprint.action}을 실제 일정에 넣어 망설임이 끼어들 틈을 줄였다.`,
+      `하루를 닫기 전에는 ${blueprint.review}만 확인하며 적중 1줄과 오차 1줄을 남겼고, 그 기록이 다음 리딩의 시작점이 됐다.`
     ];
   }
 
@@ -1224,18 +1244,18 @@ function buildStoryNovelByType({ type, blueprint, cardPreview, a, b, c }) {
       `오늘 리딩은 "복잡함을 줄이는 실험"으로 시작했습니다. ${blueprint.character}의 현재 이슈는 ${blueprint.situation}였습니다.`,
       `실험 규칙은 단 하나였습니다. 질문은 "${blueprint.question}" 한 줄만 사용하기.`,
       `${cards} 중 ${a}를 선택하자 결론이 빨리 나왔고, 방향은 "바로 실행할 1개를 고정"으로 모였습니다.`,
-      `해석 단계에서는 ${a}의 신호를 사실 문장에만 연결했습니다. ${supportCard}는 반례 점검 용도로 붙였습니다.`,
-      `실행 단계에서 ${blueprint.character}는 ${blueprint.action}을 오늘 스케줄의 첫 고정 항목으로 배치했습니다.`,
+      `해석 단계에서는 ${a}의 신호를 사실 문장에만 연결했습니다. ${supportSubject} 반례 점검 용도로 붙였습니다.`,
+      `실행 단계에서 ${characterTopic} ${blueprint.action}을 오늘 스케줄의 첫 고정 항목으로 배치했습니다.`,
       `종료 단계에서 ${blueprint.review}를 확인하며 적중/오차를 각 1줄씩 남겼고, 다음 시도 조건을 짧게 정의했습니다.`
     ];
   }
 
   return [
-    `${blueprint.character}가 노트를 연 이유는 단순했습니다. ${blueprint.situation}을 오늘 안에 정리해야 했기 때문입니다.`,
+    `${withSubjectParticle(blueprint.character)} 노트를 연 이유는 단순했습니다. ${blueprint.situation}을 오늘 안에 정리해야 했기 때문입니다.`,
     `첫 행동은 질문 축소였습니다. "${blueprint.question}"를 쓰고, 핵심에서 벗어난 표현을 삭제했습니다.`,
     `${cards}에서 중심 카드로 ${a}를 고른 뒤 결론을 먼저 확정했습니다. "이 일부터 처리한다."`,
-    `${a}의 신호에 현실 근거를 붙이자 해석이 안정됐고, ${supportCard}는 실행 강도를 조절하는 기준이 됐습니다.`,
-    `${blueprint.character}는 ${blueprint.action}을 즉시 일정에 반영해 시작 조건을 명확히 했습니다.`,
+    `${a}의 신호에 현실 근거를 붙이자 해석이 안정됐고, ${supportSubject} 실행 강도를 조절하는 기준이 됐습니다.`,
+    `${characterTopic} ${blueprint.action}을 즉시 일정에 반영해 시작 조건을 명확히 했습니다.`,
     `마무리는 ${blueprint.review} 확인으로 끝냈습니다. 적중 1줄과 오차 1줄이 다음 리딩의 시작점이 됐습니다.`
   ];
 }
