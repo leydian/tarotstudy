@@ -261,6 +261,25 @@
   line-height: 1.64;
 }
 
+.reading-digest-item {
+  line-height: 1.6;
+}
+
+.reading-digest-title {
+  display: block;
+  margin: 0 0 2px;
+  color: color-mix(in srgb, #fff 88%, var(--ink-0));
+}
+
+.reading-digest-body {
+  margin: 0;
+  line-height: 1.62;
+}
+
+.reading-digest-body + .reading-digest-body {
+  margin-top: 4px;
+}
+
 .reading-lines-compact {
   margin-top: 4px;
   gap: 4px;

@@ -33,7 +33,11 @@ export function toCoachBlocks(text: string) {
 
 export function buildLearningDigest(items: SpreadDrawResult['items']) {
   if (!items.length) {
-    return ['학습 포인트가 아직 없습니다. 카드 근거-행동-검증 1줄씩 먼저 남겨보세요.'];
+    return [
+      '오늘 할 일 1개: 아직 기록이 없어요. 카드 1장만 골라 오늘 해볼 행동 1개를 적어보세요.',
+      '복기 메모: 오늘 끝나고 맞았던 점 1개와 달랐던 점 1개만 남겨보세요.',
+      '다음 리딩 질문: 이 카드 해석이 내 상황과 맞았는지 한 줄로 확인해보세요.'
+    ];
   }
   const positionCount = items.length;
   const coachLines = items
@@ -41,18 +45,33 @@ export function buildLearningDigest(items: SpreadDrawResult['items']) {
     .map((line) => cleanCoachPrefix(line))
     .filter(Boolean);
 
-  const frameLine = coachLines.find((line) => /학습 기준|훈련 프레임|학습 프레임|학습 루틴|복기 기준/.test(line))
-    || '카드/포지션/정역방향을 먼저 분리해 근거 해석 순서를 고정하세요.';
-  const questionLine = coachLines.find((line) => /복기 질문|체크 질문|점검 질문|검증 질문|질문/.test(line))
-    || '각 포지션에서 카드 근거가 질문 의도와 실제로 맞는지 1문장으로 확인하세요.';
-  const verifyLine = coachLines.find((line) => /리딩 검증|실행 후 검증|검증 단계|검증/.test(line))
-    || '24시간 뒤 맞음/부분맞음/다름으로 점검하고 이유를 1줄로 남겨 다음 리딩 기준으로 사용하세요.';
+  const frameLineRaw = coachLines.find((line) => /학습 기준|훈련 프레임|학습 프레임|학습 루틴|복기 기준/.test(line))
+    || '카드와 질문을 먼저 맞춰 보고, 해석 순서를 짧게 정해두세요.';
+  const questionLineRaw = coachLines.find((line) => /복기 질문|체크 질문|점검 질문|검증 질문|질문/.test(line))
+    || '이 카드 해석이 내 상황과 맞았는지 한 줄로 확인해보세요.';
+  const verifyLineRaw = coachLines.find((line) => /리딩 검증|실행 후 검증|검증 단계|검증/.test(line))
+    || '오늘 끝나고 맞았던 점 1개, 달랐던 점 1개만 적어두세요.';
+  const frameLine = toShortEverydayLine(frameLineRaw, '카드와 질문을 먼저 맞춰 보고 해석 순서를 짧게 정해두세요.');
+  const questionLine = toShortEverydayLine(questionLineRaw, frameLine);
+  const verifyLine = toShortEverydayLine(verifyLineRaw, '오늘 끝나고 맞았던 점 1개와 달랐던 점 1개를 남겨보세요.');
 
   return [
-    `오늘 할 일: ${positionCount}개 포지션 중 핵심 1개만 골라 카드 근거 1문장과 바로 할 행동 1문장을 적어보세요.`,
-    `복기 기준: ${verifyLine}`,
-    `다음 리딩에서 바꿀 점 1개: ${questionLine || frameLine}`
+    `오늘 할 일 1개: ${positionCount}개 자리 중 핵심 카드 1장만 고르세요.`,
+    '바로 적기: 그 카드로 지금 상황 1문장과 오늘 할 행동 1문장만 적으면 충분합니다.',
+    `복기 메모: ${verifyLine}`,
+    `다음 리딩 질문: ${questionLine || frameLine}`
   ];
+}
+
+export function splitDigestLine(line: string) {
+  const text = String(line || '').trim();
+  if (!text) return { title: '', body: '' };
+  const idx = text.indexOf(':');
+  if (idx < 0) return { title: '', body: text };
+  return {
+    title: text.slice(0, idx).trim(),
+    body: text.slice(idx + 1).trim()
+  };
 }
 
 export function cleanCoachPrefix(text: string) {
@@ -186,6 +205,21 @@ function splitLongSentence(sentence: string) {
     .map((part) => part.trim())
     .filter(Boolean);
   return clauses.length > 1 ? clauses : [text];
+}
+
+function toShortEverydayLine(text: string, fallback: string) {
+  const cleaned = cleanCoachPrefix(text).replace(/\s+/g, ' ').trim();
+  if (!cleaned) return fallback;
+  const first = cleaned.split(/(?<=[.!?])\s+| 그리고 | 다만 | 또한 | 이어서 | 먼저 /g)[0]?.trim() || cleaned;
+  const plain = first
+    .replace(/포지션/g, '자리')
+    .replace(/근거/g, '이유')
+    .replace(/검증/g, '확인')
+    .replace(/프레임/g, '기준')
+    .replace(/체감/g, '느낌')
+    .replace(/정역방향/g, '정방향/역방향');
+  if (plain.length <= 92) return plain;
+  return `${plain.slice(0, 91).trim()}…`;
 }
 
 export function buildChoiceComparison(result: SpreadDrawResult) {

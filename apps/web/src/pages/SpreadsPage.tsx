@@ -17,6 +17,7 @@ import {
   parseWeeklySummary,
   parseYearlySummary,
   scoreItemRisk,
+  splitDigestLine,
   stripChecklistTags,
   toCoachBlocks,
   toParagraphBlocks
@@ -359,8 +360,21 @@ export function SpreadsPage() {
                 <h5 className="reading-block-title">종합 학습 내역</h5>
                 <ul className="reading-lines">
                   {buildLearningDigest(drawMutation.data.items).map((line, idx) => (
-                    <li key={`learning-digest-${idx}`}>
-                      {renderHighlightedText(normalizeDisplayText(line), emphasisKeywords, `digest-${idx}`)}
+                    <li key={`learning-digest-${idx}`} className="reading-digest-item">
+                      {(() => {
+                        const digest = splitDigestLine(line);
+                        const bodyBlocks = toParagraphBlocks(digest.body || line);
+                        return (
+                          <>
+                            {digest.title && <strong className="reading-digest-title">{digest.title}</strong>}
+                            {bodyBlocks.map((block, blockIdx) => (
+                              <p key={`digest-block-${idx}-${blockIdx}`} className="reading-digest-body">
+                                {renderHighlightedText(normalizeDisplayText(block), emphasisKeywords, `digest-${idx}-${blockIdx}`)}
+                              </p>
+                            ))}
+                          </>
+                        );
+                      })()}
                     </li>
                   ))}
                 </ul>
@@ -615,7 +629,22 @@ export function SpreadsPage() {
                     <p className="badge">판정: {toOutcomeLabel(record.outcome)}</p>
                     <ul className="clean-list reading-lines reading-lines-compact">
                       {buildLearningDigest(record.items).slice(0, expandedHistory[record.id] ? 5 : 2).map((line, idx) => (
-                        <li key={`${record.id}:digest:${idx}`}>{line}</li>
+                        <li key={`${record.id}:digest:${idx}`} className="reading-digest-item">
+                          {(() => {
+                            const digest = splitDigestLine(line);
+                            const bodyBlocks = toParagraphBlocks(digest.body || line);
+                            return (
+                              <>
+                                {digest.title && <strong className="reading-digest-title">{digest.title}</strong>}
+                                {bodyBlocks.map((block, blockIdx) => (
+                                  <p key={`${record.id}:digest:${idx}:${blockIdx}`} className="reading-digest-body">
+                                    {block}
+                                  </p>
+                                ))}
+                              </>
+                            );
+                          })()}
+                        </li>
                       ))}
                     </ul>
                   </div>
