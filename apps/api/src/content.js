@@ -40,7 +40,7 @@ export function buildFallbackExplanation(card, level = 'beginner', context = '')
         `${card.nameKo} (${card.name})의 핵심은 ${card.keywords.join(', ')}입니다.`,
         `${contextLine} ${profile.coreFocus} ${contextFocus.core}`,
         level === 'intermediate'
-          ? '중급에서는 카드 위치와 인접 카드에 따라 의미 강도와 시점이 어떻게 달라지는지 먼저 확정하세요.'
+          ? '중급에서는 내담자 조언보다 리더 해석 근거(포지션/카드/맥락)를 먼저 확정해 설명하세요.'
           : '입문에서는 핵심 키워드 1개를 오늘 상황 1개에 연결해 해석의 초점을 좁히세요.',
         contextFocus.coreAction
       ].join('\n'), minLinesByLevel, intermediateFiller),
@@ -48,26 +48,26 @@ export function buildFallbackExplanation(card, level = 'beginner', context = '')
         arcanaLine,
         `${rankLine} ${profile.symbolFocus}`,
         level === 'intermediate'
-          ? '상징은 결론이 아니라 가설입니다. 관찰 가능한 사실과 충돌하는 해석은 버리고 남은 가설만 검증하세요.'
+          ? '상징은 리더의 해석 가설입니다. 관찰 사실과 충돌하는 가설은 버리고 근거가 남는 가설만 설명하세요.'
           : '상징은 정답이 아니라 방향 힌트입니다. 어렵게 확장하기보다 지금 문제와 연결해 읽으세요.',
         contextFocus.symbolism
       ].join('\n'), minLinesByLevel, intermediateFiller),
       upright: enforceMinLines([
         `정방향은 "${primaryKeyword}" 에너지가 비교적 안정적으로 작동하는 흐름입니다.`,
         level === 'intermediate'
-          ? `${profile.uprightIntermediate} 긍정 신호의 지속 조건(시간, 자원, 관계)을 같이 점검해야 과해석을 줄일 수 있습니다.`
+          ? `${profile.uprightIntermediate} 리더는 긍정 신호를 단정하지 말고 지속 조건(시간, 자원, 관계)을 함께 설명해야 합니다.`
           : `${profile.uprightBeginner} ${buildBeginnerUprightActionLine(card)}`,
         level === 'intermediate'
-          ? `실행 뒤에는 가설이 맞았는지 근거 1개를 남겨 다음 해석의 기준으로 삼으세요. ${contextFocus.upright}`
+          ? `리딩 후에는 가설 적중 근거 1개를 남겨 다음 해석 기준으로 보정하세요. ${contextFocus.upright}`
           : `${buildBeginnerUprightReviewLine(card)} ${contextFocus.upright}`
       ].join('\n'), minLinesByLevel, intermediateFiller),
       reversed: enforceMinLines([
         `역방향은 "${primaryKeyword}" 에너지가 지연되거나 과잉/결핍으로 나타날 가능성을 뜻합니다.`,
         level === 'intermediate'
-          ? `${profile.reversedIntermediate} 원인을 내부 요인과 외부 제약으로 분리해 어디를 먼저 조정할지 우선순위를 정하세요.`
+          ? `${profile.reversedIntermediate} 리더는 원인을 내부 요인과 외부 제약으로 분리해 해석 우선순위를 제시하세요.`
           : `${profile.reversedBeginner} ${buildBeginnerReversedActionLine(card)}`,
         level === 'intermediate'
-          ? `교정 후에는 같은 질문으로 재평가해 흐름 변화와 남은 리스크를 함께 확인하세요. ${contextFocus.reversed}`
+          ? `교정 후에는 같은 질문으로 재평가해 해석 변화와 남은 리스크를 함께 복기하세요. ${contextFocus.reversed}`
           : `${buildBeginnerReversedReviewLine(card)} ${contextFocus.reversed}`
       ].join('\n'), minLinesByLevel, intermediateFiller),
       love: enforceMinLines([
@@ -78,10 +78,10 @@ export function buildFallbackExplanation(card, level = 'beginner', context = '')
       ].join('\n'), minLinesByLevel, intermediateFiller),
       advice: enforceMinLines([
         level === 'intermediate'
-          ? '중급 관점에서는 카드 간 상호작용과 위치 의미를 함께 고려해 해석 강도를 조절합니다.'
+          ? '중급 관점에서는 리더가 카드 간 상호작용과 위치 의미를 함께 읽어 해석 강도를 조절해야 합니다.'
           : '입문 관점에서는 카드의 핵심 키워드와 상황별 기본 의미를 먼저 고정합니다.',
         level === 'intermediate'
-          ? '실천 과제: 사실(관찰) → 해석(가설) → 행동(검증) 3단계로 문장을 작성해 복기 정확도를 올리세요.'
+          ? '리더 과제: 사실(관찰) → 해석(가설) → 검증(복기) 3단계로 리딩 로그를 작성해 해석 정확도를 높이세요.'
           : buildBeginnerAdviceTaskLine(card),
         `${buildAdviceReviewLine(card, level)} ${contextFocus.advice}`
       ].join('\n'), minLinesByLevel, intermediateFiller)
@@ -186,51 +186,51 @@ function buildBeginnerPracticalSections({ card, context = '', explanationContext
     coreMeaning: enforceMinLines([
       `핵심: ${card.nameKo} (${card.name})의 중심 의미는 ${card.keywords.join(', ')}입니다.`,
       `현재 상황: ${contextLine} "${keyword}" 키워드를 오늘 기준으로 잡으면 이해가 쉬워집니다.`,
-      `쉬운 해석: ${domainCore}`,
-      '오늘 할 일: 지금 바로 시작할 행동 1개를 정하세요.',
-      '복기 기준: 오늘 끝난 뒤 결과를 한 줄로 남기세요.'
+      `리더 해석 기준: ${domainCore}`,
+      '리더 실습: 내담자 질문을 1문장으로 재정의해 카드 키워드와 연결하세요.',
+      '복기 기준: 이번 해석에서 근거로 쓴 문장 1개를 끝나고 다시 확인하세요.'
     ].join('\n'), 5),
     symbolism: enforceMinLines([
       `상징 요약: ${suitHint}`,
       `핵심 포인트: 이 카드의 상징은 "${keyword2}" 키워드를 어떻게 쓰는지 보여줍니다.`,
-      '읽는 방법: 어려운 뜻풀이보다 지금 고민과 바로 연결해 읽으세요.',
+      '리더 읽기 방법: 어려운 뜻풀이보다 질문 맥락과 상징의 연결 근거를 먼저 말해보세요.',
       `실전 연결: ${domainSymbol}`,
-      '확인 질문: 그래서 오늘 무엇을 바꿀지 한 줄로 적어보세요.'
+      '확인 질문: 이 상징이 내담자 상황에서 어떤 해석 근거가 되는지 한 줄로 설명해보세요.'
     ].join('\n'), 5),
     upright: enforceMinLines([
       `상태: 정방향은 "${keyword}" 흐름이 비교적 잘 풀리는 상태입니다.`,
-      '행동 원칙: 완벽을 기다리지 말고 작은 시작 1개부터 하세요.',
-      `실전 팁: ${domainUpright}`,
-      '실행 체크: 시작 전 마음 1줄, 시작 후 결과 1줄을 적으세요.',
-      '주의할 점: 한 번에 많이 하지 말고 끝낼 수 있는 크기로 하세요.'
+      '리더 해석 원칙: 정방향일수록 단정하지 말고, 왜 흐름이 열리는지 카드 근거를 먼저 제시하세요.',
+      `리더 실전 팁: ${domainUpright}`,
+      '해석 체크: 카드 키워드 1개, 포지션 의미 1개, 맥락 근거 1개를 함께 말해보세요.',
+      '주의할 점: 긍정 신호만 강조하지 말고 유지 조건과 리스크도 같이 안내하세요.'
     ].join('\n'), 5),
     reversed: enforceMinLines([
       `상태: 역방향은 "${keyword}" 흐름이 막히거나 과해질 수 있습니다.`,
-      '원인 찾기: 문제를 한 번에 다 보지 말고 원인 1개만 고르세요.',
-      '교정 방법: 고친 행동 1개만 먼저 실행해 보세요.',
+      '리더 해석 원칙: 역방향은 부정 예언이 아니라 지연/과잉/누락 신호로 구분해서 설명하세요.',
+      '원인 분석: 문제를 한 번에 다 말하지 말고, 카드가 가리키는 핵심 병목 1개만 먼저 짚으세요.',
       `실전 팁: ${domainReversed}`,
-      '복기 체크: 바꾸기 전/후 차이를 한 줄로 적어보세요.'
+      '복기 체크: 해석 전후에 내담자 반응이 어떻게 달라졌는지 한 줄로 기록하세요.'
     ].join('\n'), 5),
     love: enforceMinLines([
-      '관계 원칙: 상대 마음 추측보다 내 표현을 먼저 정리하세요.',
+      '관계 해석 원칙: 상대 마음 단정보다 카드 근거 기반으로 관계 흐름을 설명하세요.',
       `카드 메시지: 이 카드의 관계 포인트는 "${keyword2}" 키워드를 말과 행동에서 맞추는 것입니다.`,
-      `오늘 대화: ${loveAction}`,
-      '실전 문장: 전할 말 1문장, 피할 말 1문장을 먼저 적으세요.',
-      '복기 방법: 대화 후 상대 반응과 내 기분을 한 줄씩 남기세요.'
+      `리더 안내 문장: ${loveAction}`,
+      '실전 문장: 해석 문장 1개와 근거 문장 1개를 분리해 전달하세요.',
+      '복기 방법: 상담 후 어떤 해석 근거가 설득됐는지 한 줄로 남기세요.'
     ].join('\n'), 5),
     career: enforceMinLines([
-      '일/학업 원칙: 큰 전략보다 오늘 끝낼 수 있는 작은 실행이 더 중요합니다.',
+      '일/학업 해석 원칙: 내담자 행동 지시보다 카드 근거와 우선순위 해석을 먼저 제시하세요.',
       `카드 메시지: 이 카드의 실전 포인트는 "${keyword}" 키워드를 결과로 남기는 것입니다.`,
-      `오늘 실행: ${careerAction}`,
-      '검증 방법: 완료 여부를 체크하고 막힌 이유 1개를 적으세요.',
-      '다음 단계: 내일도 같은 방식으로 1개만 반복해 보세요.'
+      `리더 안내 문장: ${careerAction}`,
+      '검증 방법: 해석한 우선순위가 실제 상황과 맞았는지 근거 1개를 다시 확인하세요.',
+      '다음 단계: 다음 리딩에서 같은 카드가 나오면 해석 차이를 비교 기록하세요.'
     ].join('\n'), 5),
     advice: enforceMinLines([
-      '기본 원칙: 입문 해설은 쉬운 말로, 바로 행동할 수 있어야 합니다.',
-      '실전 과제 1: 카드 메시지를 오늘 체크리스트 1개로 바꾸세요.',
-      '실전 과제 2: 행동이 끝나면 결과를 한 줄로 적으세요.',
+      '기본 원칙: 입문 해설은 내담자 조언 이전에 리더의 해석 근거를 분명히 보여줘야 합니다.',
+      '실전 과제 1: 카드 메시지를 "해석 결론 1문장 + 근거 1문장" 형식으로 말해보세요.',
+      '실전 과제 2: 리딩 후 내 해석에서 과장되거나 단정적인 표현이 있었는지 점검하세요.',
       `복기 팁: ${domainAdvice}`,
-      '마무리: 오늘은 많이보다 꾸준함이 더 중요합니다.'
+      '마무리: 좋은 리딩은 긴 문장보다 근거가 선명한 짧은 문장에서 시작됩니다.'
     ].join('\n'), 5)
   };
 }

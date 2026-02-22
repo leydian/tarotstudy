@@ -269,18 +269,18 @@ function buildIntermediateDescription(card, { context = '' } = {}) {
   const suitLine = buildIntermediateSuitLine(card);
 
   const lines = [
-    `${card.nameKo} 중급 해석 핵심: "${keyword}" 키워드를 어려운 이론으로 보지 말고, 지금 질문에 바로 쓰일 기준 1개로 잡으세요.`,
+    `${card.nameKo} 중급 해석 핵심: "${keyword}" 키워드를 리더 관점의 해석 기준 1개로 고정하고 상담 문장에 적용하세요.`,
     `${rankLine} ${suitLine}`,
     appendContextHint(
-      '실전 적용: 카드 의미를 "오늘 할 행동 1개"와 "피할 행동 1개"로 나누면 해석이 훨씬 선명해집니다.',
+      '리더 실전 적용: 카드 의미를 "해석 결론 1문장"과 "근거 1문장"으로 분리하면 전달 정확도가 높아집니다.',
       contextProfile.keywordHint
     ),
     appendContextHint(
-      '검증 방법: 해석 후에는 결과를 한 줄로 남기고, 맞았던 근거 1개와 빗나간 근거 1개를 같이 기록하세요.',
+      '검증 방법: 리딩 후에는 적중 근거 1개와 오차 근거 1개를 나눠 기록해 다음 해석 규칙을 보정하세요.',
       contextProfile.flowHint
     ),
     appendContextHint(
-      '다음 리딩 준비: 같은 질문을 다시 볼 때 문장을 복잡하게 늘리지 말고, 기준 문장 1개를 보완해 정확도를 올리세요.',
+      '다음 리딩 준비: 같은 질문을 다시 볼 때 문장을 늘리기보다 해석 기준 문장 1개를 더 명확하게 다듬으세요.',
       contextProfile.learningHint
     )
   ];
@@ -297,15 +297,15 @@ function buildIntermediateRankLine(card) {
 
 function buildIntermediateSuitLine(card) {
   if (card.arcana === 'major') {
-    return '메이저는 인생 방향을 다루므로 한 번에 크게 바꾸기보다 작은 전환부터 검증하세요.';
+    return '메이저는 큰 흐름 해석 카드이므로, 리더는 단정 결론보다 전환 신호의 근거를 우선 제시해야 합니다.';
   }
   const bySuit = {
-    Wands: '완드 계열은 추진력은 좋지만 과열이 잦아, 실행 범위를 작게 잡아야 실전에서 오래 갑니다.',
-    Cups: '컵 계열은 감정 읽기가 중요해, 느낌만 적지 말고 실제 대화/반응까지 같이 기록해야 합니다.',
-    Swords: '소드 계열은 판단이 빨라지는 대신 단정이 쉬워, 사실과 추측을 분리해 읽어야 정확합니다.',
-    Pentacles: '펜타클 계열은 현실 운영 카드라, 시간·비용·완료 기준을 같이 두면 해석이 생활에 바로 붙습니다.'
+    Wands: '완드 계열은 추진 신호와 과열 신호를 함께 읽어야 하므로, 리더는 속도보다 통제 기준을 같이 설명해야 합니다.',
+    Cups: '컵 계열은 감정 해석이 핵심이라, 리더는 느낌 단정 대신 대화/반응 근거를 함께 제시해야 합니다.',
+    Swords: '소드 계열은 판단이 선명해지는 대신 단정 오차가 생기기 쉬워, 리더는 사실/추측 분리를 먼저 안내해야 합니다.',
+    Pentacles: '펜타클 계열은 현실 운영 해석 카드라, 리더는 시간·비용·완료 기준을 근거로 설명해야 정확합니다.'
   };
-  return bySuit[card.suit] || '카드 의미를 행동과 결과로 연결해 보면 해석이 훨씬 쉬워집니다.';
+  return bySuit[card.suit] || '리더는 카드 의미를 결론/근거/검증 기준으로 나눠 설명하면 해석 품질이 올라갑니다.';
 }
 
 function inferBasicContextProfile(context = '') {
