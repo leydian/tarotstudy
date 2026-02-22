@@ -944,7 +944,6 @@ function buildFriendlyFz1Detail({ lesson, stageMeta, cardNames }) {
     ],
     coachingScript: [],
     workedExample: [
-      ['스토리텔링 스크립트', ...storyScript].join('\n'),
       [
         '예시 스크립트 A',
         '질문: 오늘 일정을 덜 흔들리게 하려면 무엇부터 해야 할까?',
@@ -1045,7 +1044,6 @@ function buildFriendlyFm1Detail({ lesson, stageMeta, cardNames }) {
     ],
     coachingScript: [],
     workedExample: [
-      ['스토리텔링 스크립트', ...storyFlow].join('\n'),
       [
         '예시 스크립트 A (시작)',
         '질문: 지금 단계가 시작-선택-추진 중 어디에 있는가?',
@@ -1304,10 +1302,10 @@ function buildDedicatedLessonDetail({ lesson, stageMeta, cardNames, lessonProfil
     ],
     lessonFlow: storyFlow,
     lessonBody: [
-      `${lesson.title}는 ${blueprint.character}의 사례를 따라가며 배우는 구조입니다.`,
-      '긴 이론 대신 장면 흐름(시작→질문→선택→결론→근거→실행→복기)만 따라가면 됩니다.',
-      '핵심 문장 공식: 카드 신호 1개 + 내 상황 사실 1개 → 실행 행동 1개 → 복기 2줄.',
-      '읽는 순서대로 쓰면 바로 실전에 적용할 수 있습니다.'
+      '이번 레슨 본문은 질문을 줄이고 결론을 먼저 쓰는 연습에 집중합니다.',
+      '카드를 설명하기보다 카드 근거를 현실 사실과 연결하는 방식으로 진행합니다.',
+      '실행 문장은 반드시 시간과 행동을 포함해 당일 적용 가능하게 작성합니다.',
+      '마지막에는 적중/오차 기록으로 다음 리딩 보정 포인트를 남깁니다.'
     ],
     coreConcepts: [
       `개념 1 - 질문 축소: "${blueprint.question}"처럼 한 줄로 고정합니다.`,
@@ -1318,7 +1316,6 @@ function buildDedicatedLessonDetail({ lesson, stageMeta, cardNames, lessonProfil
     ],
     coachingScript: [],
     workedExample: [
-      ['스토리텔링 스크립트', ...storyFlow].join('\n'),
       [
         '예시 스크립트 A',
         `질문: ${blueprint.question}`,
@@ -1413,10 +1410,10 @@ function buildLessonDetail(course, lesson, lessonIndex) {
     ],
     lessonFlow: storyFlow,
     lessonBody: [
-      `${lesson.title}는 예시 이야기를 따라가며 배우는 레슨입니다.`,
-      '긴 이론 설명 대신, 장면별로 질문-해석-실행-복기를 한 번에 익힙니다.',
-      `문장 구조는 간단합니다: ${easyEvidence} → ${easyAction} → ${easyReview}.`,
-      '읽는 순서대로 그대로 써보면 레슨 핵심을 빠르게 체득할 수 있습니다.'
+      '이번 레슨 본문은 질문 정리와 실행 연결을 한 세트로 훈련하는 데 초점을 둡니다.',
+      '해석 문장은 카드 신호와 상황 근거가 분리되도록 짧게 작성합니다.',
+      `권장 문장 흐름은 ${easyEvidence} → ${easyAction} → ${easyReview} 순서입니다.`,
+      '마무리 복기에서 다음 시도에 유지할 규칙 1개를 확정합니다.'
     ],
     coreConcepts: [
       `개념 1 - 질문 축소: "${lessonProfile.questionTemplate}"처럼 질문을 한 줄로 고정합니다.`,
@@ -1427,7 +1424,6 @@ function buildLessonDetail(course, lesson, lessonIndex) {
     ],
     coachingScript: [],
     workedExample: [
-      ['스토리텔링 스크립트', ...storyFlow].join('\n'),
       [
         '예시 스크립트 A',
         `질문: ${lessonProfile.questionTemplate}`,
