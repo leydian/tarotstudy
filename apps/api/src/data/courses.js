@@ -1543,7 +1543,9 @@ function buildDedicatedLessonDetail({ lesson, stageMeta, cardNames, lessonProfil
   const storyNovel = buildStoryNovelByType({ lessonId: lesson.id, type: storyType, blueprint, cardPreview, a, b, c });
 
   return {
-    intro: `${lesson.title}는 스토리 한 편을 따라가며 바로 실행하는 전용 실전 레슨입니다.`,
+    intro:
+      `"${lesson.title}" 레슨의 핵심 목표는 "${lesson.summary}"입니다. `
+      + `이번 레슨은 "${blueprint.question}" 질문으로 시작해 ${blueprint.action}까지 연결합니다.`,
     storyNovel,
     learningGoals: [
       '목표 1: 질문-결론-근거-실행을 4줄로 끝낸다.',
