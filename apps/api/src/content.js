@@ -1360,12 +1360,18 @@ function buildNaturalCoreMessage({
   const cardDirection = orientation === 'upright' ? '정방향' : '역방향';
   const mainKeyword = card.keywords?.[0] ?? '흐름';
   const mainKeywordSubject = withKoreanParticle(mainKeyword, '이', '가');
-  const contextLead = buildClientEmpathyLine({ context, seed });
+  const contextLead = spreadId === 'celtic-cross'
+    ? buildCelticCoreLead({ positionName: position.name, seed })
+    : buildClientEmpathyLine({ context, seed });
   const cardLine = `뽑으신 카드는 '${card.nameKo} ${cardDirection}'입니다.`;
-  const meaningLine = orientation === 'upright'
-    ? `${card.nameKo}의 핵심 키워드인 ${mainKeywordSubject} 열려 있어서 ${focus}에 힘을 실어주기 좋은 타이밍입니다.`
-    : `${card.nameKo}의 핵심 키워드인 ${mainKeywordSubject} 잠시 막혀 있어서 ${focus}에서는 속도를 조금 늦추고 차분히 조정해보시는 편이 좋겠습니다.`;
-  const adviceLine = buildTarotAdviceLine({ contextProfile, tone, orientation, seed });
+  const meaningLine = spreadId === 'celtic-cross'
+    ? buildCelticCoreMeaningLine({ cardName: card.nameKo, positionName: position.name, orientation, focus, mainKeyword })
+    : orientation === 'upright'
+      ? `${card.nameKo}의 핵심 키워드인 ${mainKeywordSubject} 열려 있어서 ${focus}에 힘을 실어주기 좋은 타이밍입니다.`
+      : `${card.nameKo}의 핵심 키워드인 ${mainKeywordSubject} 잠시 막혀 있어서 ${focus}에서는 속도를 조금 늦추고 차분히 조정해보시는 편이 좋겠습니다.`;
+  const adviceLine = spreadId === 'celtic-cross'
+    ? buildCelticCoreAdviceLine({ positionName: position.name, orientation, contextProfile, seed })
+    : buildTarotAdviceLine({ contextProfile, tone, orientation, seed });
   const raw = joinUniqueParts([contextLead, cardLine, meaningLine, adviceLine]);
   return polishCoreMessage(raw);
 }
@@ -1388,12 +1394,32 @@ function buildTarotConsultingInterpretation({
   if (spreadId === 'one-card') {
     return buildOneCardInterpretation({ card, orientation, focus, context });
   }
+  if (spreadId === 'celtic-cross') {
+    return buildCelticCrossInterpretation({ card, position, orientation, focus, context, contextProfile, seed });
+  }
   const spreadGuide = buildSpreadConsultingGuide({ spreadId, positionName: position.name, positionPrompt, seed });
   const orientationGuide = buildOrientationCounselLine({ cardName: card.nameKo, orientation, tone, seed });
   const keywordGuide = buildKeywordCounselLine({ card, focus, seed });
   const contextLine = buildCoreContextLine({ context, contextProfile, seed });
   const actionLine = buildTarotActionLine({ contextProfile, orientation, seed });
   return polishTarotInterpretation([spreadGuide, orientationGuide, keywordGuide, contextLine, actionLine].join(' '));
+}
+
+function buildCelticCrossInterpretation({
+  card,
+  position,
+  orientation,
+  focus,
+  context,
+  contextProfile,
+  seed
+}) {
+  const intent = inferCelticQuestionIntent(context);
+  const spreadGuide = buildCelticSpreadGuideLine({ positionName: position.name, seed });
+  const orientationGuide = buildCelticOrientationLine({ cardName: card.nameKo, positionName: position.name, orientation, intent, seed });
+  const keywordGuide = buildCelticKeywordLine({ card, focus, positionName: position.name, seed });
+  const actionLine = buildCelticActionLine({ positionName: position.name, orientation, intent, contextProfile, seed });
+  return polishTarotInterpretation([spreadGuide, orientationGuide, keywordGuide, actionLine].join(' '));
 }
 
 function buildOneCardInterpretation({ card, orientation, focus, context = '' }) {
@@ -1893,13 +1919,14 @@ function buildSpreadConsultingGuide({ spreadId, positionName, positionPrompt, se
 }
 
 function buildOrientationCounselLine({ cardName, orientation, tone, seed }) {
+  const cardNameSubject = withKoreanParticle(cardName, '이', '가');
   const lines = orientation === 'upright'
     ? [
-      `${cardName}가 정방향으로 나왔다는 건 흐름이 열린 상태라는 뜻입니다. ${tone.uprightLine}`,
+      `${cardNameSubject} 정방향으로 나왔다는 건 흐름이 열린 상태라는 뜻입니다. ${tone.uprightLine}`,
       `${cardName} 정방향은 지금 선택을 차분히 진행해도 된다는 신호입니다. ${tone.uprightLine}`
     ]
     : [
-      `${cardName}가 역방향으로 나왔다는 건 에너지 누수를 먼저 막으라는 신호입니다. ${tone.reversedLine}`,
+      `${cardNameSubject} 역방향으로 나왔다는 건 에너지 누수를 먼저 막으라는 신호입니다. ${tone.reversedLine}`,
       `${cardName} 역방향은 '멈춤 후 정리'가 먼저라는 메시지에 가깝습니다. ${tone.reversedLine}`
     ];
   return pickVariant(`${seed}:orientation-counsel`, lines);
@@ -1909,9 +1936,11 @@ function buildKeywordCounselLine({ card, focus, seed }) {
   const main = card.keywords?.[0] ?? '핵심';
   const sub = card.keywords?.[1] ?? main;
   const focusWithParticle = withKoreanParticle(focus, '을', '를');
+  const cardNameTopic = withKoreanParticle(card.nameKo, '은', '는');
+  const subSubject = withKoreanParticle(sub, '이', '가');
   const lines = [
-    `${card.nameKo}는 '${main}'에서 '${sub}'으로 넘어가는 과정을 보여주니, 지금은 ${focusWithParticle} 선명하게 잡는 게 중요합니다.`,
-    `카드 키워드를 풀어보면 '${main}'이 출발점이고 '${sub}'이 다음 단계입니다. ${focusWithParticle} 가볍게 정리하면 흐름이 살아납니다.`
+    `${cardNameTopic} '${main}'에서 '${sub}'으로 넘어가는 과정을 보여주니, 지금은 ${focusWithParticle} 선명하게 잡는 게 중요합니다.`,
+    `카드 키워드를 풀어보면 '${main}'이 출발점이고 ${subSubject} 다음 단계입니다. ${focusWithParticle} 가볍게 정리하면 흐름이 살아납니다.`
   ];
   return pickVariant(`${seed}:keyword-counsel`, lines);
 }
@@ -1971,10 +2000,11 @@ function polishTarotInterpretation(raw = '') {
 }
 
 function buildCoreContextLine({ context, contextProfile, seed }) {
-  const lines = context?.trim()
+  const normalizedContext = normalizeClientQuestion(context);
+  const lines = normalizedContext
     ? [
-      `질문 "${context.trim()}"에 대입하면 ${contextProfile.anchor}`,
-      `질문 맥락(${context.trim()})에서는 ${contextProfile.anchor}`,
+      `질문 "${normalizedContext}"에 대입하면 ${contextProfile.anchor}`,
+      `질문 맥락("${normalizedContext}")에서는 ${contextProfile.anchor}`,
       `이번 질문을 기준으로 보면 ${contextProfile.anchor}`
     ]
     : [
@@ -1982,6 +2012,135 @@ function buildCoreContextLine({ context, contextProfile, seed }) {
       `맥락이 구체적이지 않아도 ${contextProfile.anchor}`
     ];
   return pickVariant(`${seed}:core-context`, lines);
+}
+
+function inferCelticQuestionIntent(context = '') {
+  const text = String(context || '').toLowerCase();
+  if (/(화해|친구|싸웠|싸움|다툼|갈등|서운|오해|관계 회복)/.test(text)) return 'relationship-repair';
+  if (/(연애|재회|상대|썸|결혼|이별)/.test(text)) return 'relationship';
+  if (/(이직|취업|커리어|업무|면접|회사|직장)/.test(text)) return 'career';
+  if (/(재정|돈|지출|수입|저축|투자|소비|자산)/.test(text)) return 'finance';
+  return 'general';
+}
+
+function buildCelticSpreadGuideLine({ positionName = '', seed = '' }) {
+  const topic = withKoreanParticle(positionName, '은', '는');
+  const lines = [
+    `${topic} 전체 서사에서 역할이 분명한 자리라, 한 줄 핵심으로 정리해야 다음 카드와 연결이 정확해집니다.`,
+    `${positionName} 포지션은 앞뒤 카드와 연결해서 읽을수록 해석 오차가 줄어듭니다.`,
+    `${positionName} 자리는 단독 해석보다 중심축-결과축 연결로 볼 때 의미가 선명해집니다.`
+  ];
+  return pickVariant(`${seed}:celtic-spread-guide`, lines);
+}
+
+function buildCelticOrientationLine({ cardName, positionName, orientation, intent = 'general', seed = '' }) {
+  const isObstacle = positionName === '교차/장애';
+  const isOutcome = positionName === '결과';
+  const isOuter = positionName === '외부 환경';
+  let baseLine = '';
+  let relationLine = '';
+
+  if (orientation === 'upright') {
+    if (isObstacle) {
+      baseLine = `${cardName} 정방향이더라도 이 자리는 병목 포지션이라, 문제를 곧장 풀기보다 충돌 패턴을 먼저 특정하는 게 우선입니다.`;
+    } else if (isOuter) {
+      baseLine = `${cardName} 정방향은 외부 조건에 활용 가능한 여지가 있다는 뜻이지만, 제3의 반응에 끌려가면 중심 흐름이 약해질 수 있습니다.`;
+    } else if (isOutcome) {
+      baseLine = `${cardName} 정방향이면 결과 가능성은 열려 있습니다. 다만 결과는 현재 행동의 질에 따라 강도가 달라집니다.`;
+    } else {
+      baseLine = `${cardName} 정방향은 이 자리의 의미를 실행으로 옮길 여지가 있다는 신호입니다.`;
+    }
+  } else if (isObstacle) {
+    baseLine = `${cardName} 역방향이면 병목이 누적된 상태라, 결론보다 감정 과열과 해석 충돌을 먼저 낮춰야 합니다.`;
+  } else if (isOutcome) {
+    baseLine = `${cardName} 역방향이면 결과 구간의 마찰이 남아 있다는 뜻이므로, 실행 타이밍과 전달 방식을 재조정해야 합니다.`;
+  } else {
+    baseLine = `${cardName} 역방향은 이 자리에서 속도 조절이 필요하다는 신호라, 무리한 확장보다 정비를 먼저 두는 편이 안전합니다.`;
+  }
+
+  if (intent === 'relationship-repair' || intent === 'relationship') {
+    relationLine = isObstacle
+      ? '관계 질문에서는 누가 맞는지보다, 어떤 문장이 방어 반응을 키우는지부터 분리해보는 접근이 효과적입니다.'
+      : '관계 질문에서는 감정 해석보다 확인 가능한 사실 문장을 먼저 놓아야 대화 리듬이 살아납니다.';
+  }
+
+  return [baseLine, relationLine].filter(Boolean).join(' ');
+}
+
+function buildCelticKeywordLine({ card, focus, positionName, seed = '' }) {
+  const main = card.keywords?.[0] ?? '핵심';
+  const sub = card.keywords?.[1] ?? main;
+  const cardNameTopic = withKoreanParticle(card.nameKo, '은', '는');
+  const focusWithParticle = withKoreanParticle(focus, '을', '를');
+  const role = positionName === '교차/장애'
+    ? '판단 기준'
+    : positionName === '결과'
+      ? '결과 판단 기준'
+      : '핵심 판단 기준';
+  const lines = [
+    `${cardNameTopic} '${main}'에서 '${sub}'으로 넘어가는 흐름을 보여주며, 이 자리에서는 ${focusWithParticle} ${role}으로 고정해 읽는 편이 정확합니다.`,
+    `키워드 축을 풀면 '${main}'은 현재 신호, '${sub}'은 다음 조정 포인트입니다. ${focusWithParticle} 한 문장으로 고정하면 해석 흔들림이 줄어듭니다.`
+  ];
+  return pickVariant(`${seed}:celtic-keyword`, lines);
+}
+
+function buildCelticActionLine({ positionName, orientation, intent = 'general', contextProfile, seed = '' }) {
+  const relationshipHint = orientation === 'upright'
+    ? '짧은 확인 질문 1개와 요청 1개만 남기면 대화 충돌을 줄일 수 있습니다.'
+    : '설득보다 감정 정리 문장을 먼저 두고, 반응 확인 후 다음 문장을 이어가는 편이 안전합니다.';
+  const neutralHint = orientation === 'upright'
+    ? '지금은 실행 항목을 하나로 좁혀 실제 반응을 먼저 확인해 보세요.'
+    : '지금은 속도를 늦추고 병목 요인 하나를 먼저 정리한 뒤 다음 행동을 이어가세요.';
+  const positionHint = positionName === '교차/장애'
+    ? '이 포지션은 해결책 제시보다 충돌 지점을 정확히 이름 붙이는 단계가 우선입니다.'
+    : positionName === '결과'
+      ? '결과 포지션의 신호를 살리려면, 오늘 실행 문장을 짧고 측정 가능하게 정하는 편이 좋습니다.'
+      : buildClientActionHint(contextProfile);
+  const lines = [
+    positionHint,
+    intent === 'relationship-repair' || intent === 'relationship' ? relationshipHint : neutralHint
+  ];
+  return lines.join(' ');
+}
+
+function buildCelticCoreAdviceLine({ positionName, orientation, contextProfile, seed = '' }) {
+  const topic = withKoreanParticle(positionName, '은', '는');
+  const direction = orientation === 'upright'
+    ? `${topic} 과하게 확장하기보다 핵심 한 줄을 분명히 두면 흐름이 더 안정됩니다.`
+    : `${topic} 속도를 낮추고 해석 기준을 정리한 뒤 움직이면 어긋남이 줄어듭니다.`;
+  const lines = [
+    `${direction} ${buildClientActionHint(contextProfile)}`,
+    `${direction} ${buildClientAnchorHint(contextProfile)}`
+  ];
+  return pickVariant(`${seed}:celtic-core-advice`, lines);
+}
+
+function buildCelticCoreLead({ positionName = '', seed = '' }) {
+  const topic = withKoreanParticle(positionName, '은', '는');
+  const lines = [
+    `${topic} 전체 해석의 연결 고리 역할을 합니다.`,
+    `${positionName} 포지션을 기준으로 현재 흐름을 짚어보겠습니다.`,
+    `${positionName} 자리에서 드러난 핵심 신호를 먼저 확인해보겠습니다.`
+  ];
+  return pickVariant(`${seed}:celtic-core-lead`, lines);
+}
+
+function buildCelticCoreMeaningLine({ cardName, positionName, orientation, focus, mainKeyword }) {
+  const keywordSubject = withKoreanParticle(mainKeyword, '이', '가');
+  const focusWithParticle = withKoreanParticle(focus, '을', '를');
+  if (positionName === '교차/장애') {
+    return orientation === 'upright'
+      ? `${cardName}의 '${mainKeyword}' 신호는 문제의 형태를 분명히 보여줍니다. 이 자리는 해결보다 병목 정의가 먼저입니다.`
+      : `${cardName}의 '${mainKeyword}' 신호가 뒤집혀 있어, 병목이 누적된 지점을 먼저 분리해야 다음 전개가 열립니다.`;
+  }
+  if (positionName === '결과') {
+    return orientation === 'upright'
+      ? `${cardName}의 '${mainKeyword}' 신호는 결과 가능성이 열려 있음을 보여줍니다. ${focusWithParticle} 지금 행동으로 연결하면 체감이 올라갑니다.`
+      : `${cardName}의 '${mainKeyword}' 신호는 결과 구간의 마찰을 보여줍니다. ${focus}의 기준을 다시 세우는 편이 안전합니다.`;
+  }
+  return orientation === 'upright'
+    ? `${cardName}의 핵심 키워드인 ${keywordSubject} 열려 있어 ${focus}의 방향성을 정리하기 좋은 흐름입니다.`
+    : `${cardName}의 핵심 키워드인 ${keywordSubject} 조정 구간에 있어 ${focus}에서는 속도를 낮추고 기준을 먼저 맞추는 편이 좋습니다.`;
 }
 
 function polishCoreMessage(raw = '') {
