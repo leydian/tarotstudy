@@ -108,6 +108,18 @@ npm run dev:web -- --host 127.0.0.1 --port 5173
 - `GET /api/images/alerts?failRateThreshold=20&minChecks=6`
 
 ## 품질 게이트
+- 코드 정적 점검:
+```bash
+npm run lint
+```
+- 웹 타입 점검:
+```bash
+npm run typecheck:web
+```
+- 웹 스모크 테스트:
+```bash
+npm run test:web
+```
 - API 텍스트 회귀 테스트:
 ```bash
 npm run test:api
@@ -133,6 +145,11 @@ npm run qa:spread-telemetry
 npm run verify:quality
 ```
 
+### QA 실행 모드
+- 기본값(`QA_API_MODE=auto`): API가 살아 있지 않으면 QA 스크립트가 API를 자동 기동합니다.
+- 외부 API 강제(`QA_API_MODE=external`): `API_BASE_URL`의 API가 반드시 떠 있어야 합니다.
+- 자동 기동 비활성(`QA_API_MODE=off`): API 자동 기동 없이 즉시 실패합니다.
+
 ## 주요 기능
 - 카드 이미지 다중 소스 fallback (`imageSources`) + 기본 SVG fallback
 - 카드 이미지 출처/라이선스 고지
@@ -140,7 +157,7 @@ npm run verify:quality
 - 관계 회복 5카드 스프레드(`relationship-recovery`) 제공
 - 양자택일 비교 카드(A/B 근미래/결과) + 가중치 기반 결론/신뢰도
 - 스프레드 복기 기록(맞음/부분맞음/다름 + 메모) 저장
-- 관계 회복 스프레드 draw/복기 이벤트 텔레메트리 수집
+- 전 스프레드 draw/복기 이벤트 텔레메트리 수집
 - 대시보드 정확도 리포트(전체/스프레드 유형별)
 - 리딩 템플릿 A/B 실험(`readingExperiment`)
 
@@ -150,6 +167,17 @@ npm run verify:quality
 - CLI 모드 사용 시 사전 조건: `codex` 명령 사용 가능, 로그인 완료, 네트워크 연결 가능.
 - 학습 진도/스프레드 복기 기록은 브라우저 로컬 저장소에 저장됩니다.
 - 카드 이미지는 `TAROT_IMAGE_MIRROR_BASE_URL`를 설정하면 미러 URL을 우선 사용하고, 실패 시 원본(Wikimedia)으로 fallback됩니다.
+- 서버 텔레메트리 통계는 `tmp/telemetry-store.json`에 영속 저장됩니다.
+
+## CI
+- GitHub Actions: `.github/workflows/ci.yml`
+- PR/`main` push에서 아래를 자동 실행합니다.
+  - `npm run lint`
+  - `npm run typecheck:web`
+  - `npm run test:web`
+  - `npm run test:api`
+  - `npm run build:web`
+  - `npm run verify:quality`
 
 ## 트러블슈팅
 

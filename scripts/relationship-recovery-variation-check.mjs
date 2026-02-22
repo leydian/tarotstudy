@@ -1,11 +1,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { spawn } from 'node:child_process';
 import process from 'node:process';
+import { withApiRuntime } from './lib/api-runtime.mjs';
 
 const root = process.cwd();
-const apiBase = process.env.API_BASE_URL || 'http://127.0.0.1:8787';
-const healthUrl = `${apiBase}/api/health`;
 const sampleCount = Number(process.env.RELATIONSHIP_QA_SAMPLES || 50);
 const outDir = path.join(root, 'tmp');
 const outJsonPath = path.join(outDir, 'relationship-recovery-variation-report.json');
@@ -102,31 +100,7 @@ function hasActionVerb(text = '') {
   return /(정하세요|고정하세요|준비하고|남기세요|확인|실행|점검|대화|기록하세요)/.test(String(text));
 }
 
-async function sleep(ms) {
-  await new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-async function isApiReady() {
-  try {
-    const res = await fetch(healthUrl);
-    if (!res.ok) return false;
-    const data = await res.json().catch(() => ({}));
-    return data?.ok === true;
-  } catch {
-    return false;
-  }
-}
-
-async function waitForApi(maxWaitMs = 12000) {
-  const startedAt = Date.now();
-  while (Date.now() - startedAt < maxWaitMs) {
-    if (await isApiReady()) return true;
-    await sleep(250);
-  }
-  return false;
-}
-
-async function drawRelationshipRecovery({ level, context }) {
+async function drawRelationshipRecovery({ apiBase, level, context }) {
   const res = await fetch(`${apiBase}/api/spreads/relationship-recovery/draw`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
@@ -174,100 +148,87 @@ function buildMarkdownReport(report) {
   return `${lines.join('\n')}\n`;
 }
 
-let apiChild = null;
-
 try {
-  let spawned = false;
-  if (!(await isApiReady())) {
-    apiChild = spawn(process.execPath, ['apps/api/src/index.js'], {
-      stdio: 'inherit',
-      env: process.env
-    });
-    spawned = true;
-    const ready = await waitForApi();
-    if (!ready) {
-      console.error('[relationship-recovery-qa] API did not become ready in time.');
-      process.exit(1);
-    }
-  }
-
-  const sectionValues = {
-    diagnosis: [],
-    risk: [],
-    plan: []
-  };
-  let structureFailures = 0;
-  let actionFailures = 0;
-  const sampledRows = [];
-
-  for (let i = 0; i < sampleCount; i += 1) {
-    const context = contexts[i % contexts.length];
-    const data = await drawRelationshipRecovery({
-      level: 'beginner',
-      context
-    });
-    const sections = splitSummarySections(data.summary || '');
-    const hasStructure = Boolean(sections.diagnosis && sections.risk && sections.plan);
-    const hasAction = hasActionVerb(sections.plan);
-
-    if (!hasStructure) structureFailures += 1;
-    if (!hasAction) actionFailures += 1;
-
-    sectionValues.diagnosis.push(sections.diagnosis);
-    sectionValues.risk.push(sections.risk);
-    sectionValues.plan.push(sections.plan);
-
-    sampledRows.push({
-      index: i + 1,
-      context,
-      hasStructure,
-      hasAction
-    });
-  }
-
-  const sectionMetrics = {};
-  for (const [key, values] of Object.entries(sectionValues)) {
-    const distinctCount = new Set(values.map((v) => normalizeText(v))).size;
-    const pairMetric = measurePairs(values);
-    sectionMetrics[key] = {
-      count: values.length,
-      distinctCount,
-      distinctRatio: Number((distinctCount / Math.max(values.length, 1)).toFixed(4)),
-      ...pairMetric
+  const report = await withApiRuntime({ label: 'relationship-recovery-qa' }, async ({ apiBase }) => {
+    const sectionValues = {
+      diagnosis: [],
+      risk: [],
+      plan: []
     };
-  }
+    let structureFailures = 0;
+    let actionFailures = 0;
+    const sampledRows = [];
 
-  const failReasons = [];
-  if (structureFailures > thresholds.maxStructureFailures) {
-    failReasons.push(`structureFailures>${thresholds.maxStructureFailures}`);
-  }
-  if (actionFailures > thresholds.maxActionFailures) {
-    failReasons.push(`actionFailures>${thresholds.maxActionFailures}`);
-  }
-  for (const [name, metric] of Object.entries(sectionMetrics)) {
-    if (metric.exactPairRate > thresholds.maxExactPairRate) {
-      failReasons.push(`${name}.exactPairRate>${thresholds.maxExactPairRate}`);
-    }
-    if (metric.highSimilarityPairRate > thresholds.maxHighSimilarityPairRate) {
-      failReasons.push(`${name}.highSimilarityPairRate>${thresholds.maxHighSimilarityPairRate}`);
-    }
-    if (metric.distinctRatio < thresholds.minDistinctRatio) {
-      failReasons.push(`${name}.distinctRatio<${thresholds.minDistinctRatio}`);
-    }
-  }
+    for (let i = 0; i < sampleCount; i += 1) {
+      const context = contexts[i % contexts.length];
+      const data = await drawRelationshipRecovery({
+        apiBase,
+        level: 'beginner',
+        context
+      });
+      const sections = splitSummarySections(data.summary || '');
+      const hasStructure = Boolean(sections.diagnosis && sections.risk && sections.plan);
+      const hasAction = hasActionVerb(sections.plan);
 
-  const report = {
-    generatedAt: new Date().toISOString(),
-    apiBase,
-    sampleCount,
-    thresholds,
-    structureFailures,
-    actionFailures,
-    sectionMetrics,
-    failReasons,
-    pass: failReasons.length === 0,
-    sampledRows
-  };
+      if (!hasStructure) structureFailures += 1;
+      if (!hasAction) actionFailures += 1;
+
+      sectionValues.diagnosis.push(sections.diagnosis);
+      sectionValues.risk.push(sections.risk);
+      sectionValues.plan.push(sections.plan);
+
+      sampledRows.push({
+        index: i + 1,
+        context,
+        hasStructure,
+        hasAction
+      });
+    }
+
+    const sectionMetrics = {};
+    for (const [key, values] of Object.entries(sectionValues)) {
+      const distinctCount = new Set(values.map((v) => normalizeText(v))).size;
+      const pairMetric = measurePairs(values);
+      sectionMetrics[key] = {
+        count: values.length,
+        distinctCount,
+        distinctRatio: Number((distinctCount / Math.max(values.length, 1)).toFixed(4)),
+        ...pairMetric
+      };
+    }
+
+    const failReasons = [];
+    if (structureFailures > thresholds.maxStructureFailures) {
+      failReasons.push(`structureFailures>${thresholds.maxStructureFailures}`);
+    }
+    if (actionFailures > thresholds.maxActionFailures) {
+      failReasons.push(`actionFailures>${thresholds.maxActionFailures}`);
+    }
+    for (const [name, metric] of Object.entries(sectionMetrics)) {
+      if (metric.exactPairRate > thresholds.maxExactPairRate) {
+        failReasons.push(`${name}.exactPairRate>${thresholds.maxExactPairRate}`);
+      }
+      if (metric.highSimilarityPairRate > thresholds.maxHighSimilarityPairRate) {
+        failReasons.push(`${name}.highSimilarityPairRate>${thresholds.maxHighSimilarityPairRate}`);
+      }
+      if (metric.distinctRatio < thresholds.minDistinctRatio) {
+        failReasons.push(`${name}.distinctRatio<${thresholds.minDistinctRatio}`);
+      }
+    }
+
+    return {
+      generatedAt: new Date().toISOString(),
+      apiBase,
+      sampleCount,
+      thresholds,
+      structureFailures,
+      actionFailures,
+      sectionMetrics,
+      failReasons,
+      pass: failReasons.length === 0,
+      sampledRows
+    };
+  });
 
   fs.mkdirSync(outDir, { recursive: true });
   fs.writeFileSync(outJsonPath, JSON.stringify(report, null, 2), 'utf-8');
@@ -284,12 +245,8 @@ try {
     outMdPath
   }, null, 2));
 
-  if (spawned && apiChild) {
-    apiChild.kill('SIGTERM');
-  }
   process.exit(report.pass ? 0 : 2);
 } catch (err) {
   console.error('[relationship-recovery-qa] failed', err);
-  if (apiChild) apiChild.kill('SIGTERM');
   process.exit(1);
 }

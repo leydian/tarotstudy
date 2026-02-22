@@ -9,6 +9,9 @@
     "dev:web": "npm run dev -w @tarot/web",
     "dev:api": "npm run dev -w @tarot/api",
     "build:web": "npm run build -w @tarot/web",
+    "typecheck:web": "npm run typecheck -w @tarot/web",
+    "test:web": "npm run test -w @tarot/web",
+    "lint": "node scripts/lint-check.mjs",
     "start:api": "npm run start -w @tarot/api",
     "test:api": "node --test apps/api/test/*.test.js",
     "qa:learning-leader:raw": "node scripts/learning-leader-quality-check.mjs",
@@ -16,6 +19,6 @@
     "qa:relationship-recovery": "node scripts/relationship-recovery-variation-check.mjs",
     "qa:spread-telemetry": "node scripts/spread-telemetry-rollup.mjs",
     "qa:yearly-fortune": "node scripts/yearly-fortune-regression-check.mjs",
-    "verify:quality": "npm run test:api && npm run qa:learning-leader && npm run qa:relationship-recovery && npm run qa:yearly-fortune"
+    "verify:quality": "npm run lint && npm run typecheck:web && npm run test:web && npm run test:api && npm run qa:learning-leader && npm run qa:relationship-recovery && npm run qa:yearly-fortune"
   }
 }

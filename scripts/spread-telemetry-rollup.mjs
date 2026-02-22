@@ -1,16 +1,14 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
-import { spawn } from 'node:child_process';
+import { withApiRuntime } from './lib/api-runtime.mjs';
 
 const root = process.cwd();
-const apiBase = process.env.API_BASE_URL || 'http://127.0.0.1:8787';
 const outDir = path.join(root, 'tmp');
 const outJsonPath = path.join(outDir, 'spread-telemetry-report.json');
 const outMdPath = path.join(outDir, 'spread-telemetry-report.md');
 const minDrawForAlert = Number(process.env.SPREAD_TELEMETRY_MIN_DRAWS || 5);
 const minReviewRate = Number(process.env.SPREAD_TELEMETRY_MIN_REVIEW_RATE || 20);
-const healthUrl = `${apiBase}/api/health`;
 
 function toRate(draws, reviews) {
   if (!draws) return 0;
@@ -54,99 +52,61 @@ function buildMarkdown(report) {
   return `${lines.join('\n')}\n`;
 }
 
-async function sleep(ms) {
-  await new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-async function isApiReady() {
-  try {
-    const res = await fetch(healthUrl);
-    if (!res.ok) return false;
-    const data = await res.json().catch(() => ({}));
-    return data?.ok === true;
-  } catch {
-    return false;
-  }
-}
-
-async function waitForApi(maxWaitMs = 12000) {
-  const startedAt = Date.now();
-  while (Date.now() - startedAt < maxWaitMs) {
-    if (await isApiReady()) return true;
-    await sleep(250);
-  }
-  return false;
-}
-
-let apiChild = null;
-
 try {
-  let spawned = false;
-  if (!(await isApiReady())) {
-    apiChild = spawn(process.execPath, ['apps/api/src/index.js'], {
-      stdio: 'inherit',
-      env: process.env
-    });
-    spawned = true;
-    const ready = await waitForApi();
-    if (!ready) {
-      console.error('[spread-telemetry] API did not become ready in time.');
-      process.exit(1);
+  const report = await withApiRuntime({ label: 'spread-telemetry' }, async ({ apiBase }) => {
+    const res = await fetch(`${apiBase}/api/telemetry/spread-events`);
+    if (!res.ok) {
+      throw new Error(`telemetry fetch failed: ${res.status}`);
     }
-  }
+    const payload = await res.json();
+    const byType = payload?.byType || {};
+    const bySpread = payload?.bySpread || {};
+    let bySpreadType = payload?.bySpreadType || {};
+    let usedRecentFallback = false;
 
-  const res = await fetch(`${apiBase}/api/telemetry/spread-events`);
-  if (!res.ok) {
-    throw new Error(`telemetry fetch failed: ${res.status}`);
-  }
-  const payload = await res.json();
-  const byType = payload?.byType || {};
-  const bySpread = payload?.bySpread || {};
-  let bySpreadType = payload?.bySpreadType || {};
-  let usedRecentFallback = false;
+    if (!Object.keys(bySpreadType).length) {
+      bySpreadType = countBySpreadFromRecent(payload?.recent || []);
+      usedRecentFallback = true;
+    }
 
-  if (!Object.keys(bySpreadType).length) {
-    bySpreadType = countBySpreadFromRecent(payload?.recent || []);
-    usedRecentFallback = true;
-  }
+    const spreadIds = new Set([
+      ...Object.keys(bySpread),
+      ...Object.keys(bySpreadType)
+    ]);
 
-  const spreadIds = new Set([
-    ...Object.keys(bySpread),
-    ...Object.keys(bySpreadType)
-  ]);
+    const rows = [...spreadIds].map((spreadId) => {
+      const spreadTypeBucket = bySpreadType[spreadId] || {};
+      const draws = Number(spreadTypeBucket.spread_drawn || 0);
+      const reviews = Number(spreadTypeBucket.spread_review_saved || 0);
+      const reviewRate = toRate(draws, reviews);
+      const status = draws >= minDrawForAlert && reviewRate < minReviewRate ? 'warn' : 'ok';
+      return {
+        spreadId,
+        draws,
+        reviews,
+        reviewRate,
+        status
+      };
+    }).sort((a, b) => b.draws - a.draws || b.reviews - a.reviews || a.spreadId.localeCompare(b.spreadId));
 
-  const rows = [...spreadIds].map((spreadId) => {
-    const spreadTypeBucket = bySpreadType[spreadId] || {};
-    const draws = Number(spreadTypeBucket.spread_drawn || 0);
-    const reviews = Number(spreadTypeBucket.spread_review_saved || 0);
-    const reviewRate = toRate(draws, reviews);
-    const status = draws >= minDrawForAlert && reviewRate < minReviewRate ? 'warn' : 'ok';
-    return {
-      spreadId,
-      draws,
-      reviews,
-      reviewRate,
-      status
+    const summary = {
+      draws: Number(byType.spread_drawn || 0),
+      reviews: Number(byType.spread_review_saved || 0),
+      reviewRate: toRate(Number(byType.spread_drawn || 0), Number(byType.spread_review_saved || 0))
     };
-  }).sort((a, b) => b.draws - a.draws || b.reviews - a.reviews || a.spreadId.localeCompare(b.spreadId));
 
-  const summary = {
-    draws: Number(byType.spread_drawn || 0),
-    reviews: Number(byType.spread_review_saved || 0),
-    reviewRate: toRate(Number(byType.spread_drawn || 0), Number(byType.spread_review_saved || 0))
-  };
-
-  const report = {
-    generatedAt: new Date().toISOString(),
-    apiBase,
-    thresholds: {
-      minDrawForAlert,
-      minReviewRate
-    },
-    usedRecentFallback,
-    summary,
-    bySpread: rows
-  };
+    return {
+      generatedAt: new Date().toISOString(),
+      apiBase,
+      thresholds: {
+        minDrawForAlert,
+        minReviewRate
+      },
+      usedRecentFallback,
+      summary,
+      bySpread: rows
+    };
+  });
 
   fs.mkdirSync(outDir, { recursive: true });
   fs.writeFileSync(outJsonPath, JSON.stringify(report, null, 2), 'utf-8');
@@ -156,16 +116,12 @@ try {
   console.log(JSON.stringify({
     summary: report.summary,
     spreadCount: report.bySpread.length,
-    usedRecentFallback,
+    usedRecentFallback: report.usedRecentFallback,
     outJsonPath,
     outMdPath
   }, null, 2));
 
-  if (spawned && apiChild) {
-    apiChild.kill('SIGTERM');
-  }
 } catch (err) {
   console.error('[spread-telemetry] failed', err);
-  if (apiChild) apiChild.kill('SIGTERM');
   process.exit(1);
 }

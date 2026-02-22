@@ -12,6 +12,10 @@
 npm run qa:spread-telemetry
 ```
 
+실행 모드:
+- `QA_API_MODE=auto`(기본): API 미기동 시 자동 기동
+- `QA_API_MODE=external`: `API_BASE_URL` API 사용
+
 ## 산출물
 - JSON: `tmp/spread-telemetry-report.json`
 - Markdown: `tmp/spread-telemetry-report.md`
@@ -26,3 +30,4 @@ npm run qa:spread-telemetry
 ## 참고
 - API가 제공하는 `bySpreadType`를 우선 사용합니다.
 - `bySpreadType`가 비어 있으면 `recent`(최대 80건) 기준으로 fallback 집계합니다.
+- 서버 텔레메트리 원본은 `tmp/telemetry-store.json`에 영속 저장됩니다.

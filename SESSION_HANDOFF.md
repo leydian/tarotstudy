@@ -36,6 +36,31 @@
   - 텔레메트리 수집 API(`spread_drawn`, `spread_review_saved`) 및 롤업 스크립트 추가
 
 ## 3) 금일 추가 반영 (최신)
+- 품질 게이트/CI/운영 안정화
+  - 파일:
+    - `package.json`, `apps/web/package.json`
+    - `.github/workflows/ci.yml`
+    - `scripts/lib/api-runtime.mjs`, `scripts/run-learning-leader-qa.mjs`
+    - `scripts/relationship-recovery-variation-check.mjs`
+    - `scripts/yearly-fortune-regression-check.mjs`
+    - `scripts/spread-telemetry-rollup.mjs`
+  - 변경:
+    - `verify:quality`에 `lint`, `typecheck:web`, `test:web` 포함
+    - 누락된 학습 리더 QA 실행기 복구(`run-learning-leader-qa.mjs`)
+    - QA 공통 런타임 도입(`QA_API_MODE=auto|external|off`)
+    - GitHub Actions CI에서 품질 게이트 자동 실행
+
+- 텔레메트리 저장/수집 범위 개선
+  - 파일: `apps/api/src/telemetry.js`, `apps/api/src/index.js`, `apps/web/src/pages/SpreadsPage.tsx`
+  - 변경:
+    - 텔레메트리 통계를 파일(`tmp/telemetry-store.json`)로 영속화
+    - 스프레드 이벤트 수집 대상을 전 스프레드로 확장
+
+- 프론트 유지보수성 개선(헬퍼 분리)
+  - 파일: `apps/web/src/pages/spreads-helpers.ts`, `apps/web/src/pages/SpreadsPage.tsx`
+  - 변경:
+    - 스프레드 페이지의 파싱/요약/판정/복기 유틸을 분리해 페이지 본문 복잡도 완화
+
 - 스프레드 카드 시각 가독성 + 뷰 전환 UX 개선
   - 파일: `apps/web/src/pages/SpreadsPage.tsx`, `apps/web/src/styles.css`
   - 변경:

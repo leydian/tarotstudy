@@ -19,6 +19,9 @@
 
 ## 주요 변경
 1. 품질 게이트 명령 체계 정비
+- `npm run lint`
+- `npm run typecheck:web`
+- `npm run test:web`
 - `npm run test:api`
 - `npm run qa:learning-leader`
 - `npm run qa:relationship-recovery`
@@ -51,6 +54,10 @@
 - 이벤트:
   - `spread_drawn`
   - `spread_review_saved`
+- 저장:
+  - 서버 메모리 + 파일 영속(`tmp/telemetry-store.json`)
+- 수집 범위:
+  - `relationship-recovery` 한정에서 전 스프레드로 확장
 - 롤업 스크립트:
   - `scripts/spread-telemetry-rollup.mjs`
 - 산출물:
@@ -76,6 +83,9 @@
 - API 재기동 후 스프레드 정의 반영 확인
 - `npm run verify:quality`를 머지 전 필수 실행
 - 텔레메트리 리포트에서 draw 대비 review 저장률 추적
+- QA 실행 모드 확인:
+  - 기본 `QA_API_MODE=auto`
+  - CI/원격 API 연동 시 `QA_API_MODE=external` + `API_BASE_URL` 지정
 - 신규 회귀 테스트(`choice-a-b-reading.test.js`) 실패 시:
   - `apps/api/src/content.js`의 `inferChoiceContextMeta()` 축 분기 우선 점검
   - `apps/api/src/index.js`의 공통 요약 후처리(`finalizeSpreadSummary`) 영향 확인
@@ -83,3 +93,4 @@
 ## 리스크/후속
 - QA 샘플이 고정되면 품질 하락이 누락될 수 있어 케이스셋을 정기 갱신해야 함
 - 텔레메트리 저장소가 커질 경우 로테이션 정책 필요
+- CI 실패 시 워크플로 로그 기준으로 `lint -> typecheck:web -> test:web -> test:api -> verify:quality` 순서로 역추적

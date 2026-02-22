@@ -8,6 +8,7 @@ import { buildCardExplanation, buildSpreadReading, chooseReadingExperimentVarian
 import { makeExternalGenerator } from './external-ai.js';
 import { TTLCache } from './cache.js';
 import { generateQuiz, gradeQuiz } from './quiz.js';
+import { createTelemetryStore } from './telemetry.js';
 import {
   inferQuestionIntent,
   getTarotPredictedQuestions,
@@ -21,19 +22,9 @@ const port = Number(process.env.PORT || 8787);
 const host = process.env.HOST || '127.0.0.1';
 const cache = new TTLCache(Number(process.env.CACHE_TTL_SECONDS || 86400));
 const externalGenerator = makeExternalGenerator(process.env);
-const imageFallbackStats = {
-  totalEvents: 0,
-  byStage: {},
-  byCard: {},
-  recent: []
-};
-const spreadTelemetryStats = {
-  totalEvents: 0,
-  byType: {},
-  bySpread: {},
-  bySpreadType: {},
-  recent: []
-};
+const telemetryStore = createTelemetryStore({
+  filePath: process.env.TELEMETRY_STORE_PATH
+});
 let imageHealthSnapshot = null;
 const allowedOrigins = (process.env.CORS_ORIGIN
   || 'http://localhost:5173,http://127.0.0.1:5173')
@@ -65,8 +56,8 @@ app.get('/api/questions/predicted', async (request) => {
     byTopic: getTarotPredictedQuestionsByTopic()
   };
 });
-app.get('/api/telemetry/image-fallback', async () => imageFallbackStats);
-app.get('/api/telemetry/spread-events', async () => spreadTelemetryStats);
+app.get('/api/telemetry/image-fallback', async () => telemetryStore.getImageFallbackStats());
+app.get('/api/telemetry/spread-events', async () => telemetryStore.getSpreadTelemetryStats());
 
 app.post('/api/telemetry/image-fallback', async (request, reply) => {
   const { stage = 'unknown', cardId = 'unknown', source = '' } = request.body || {};
@@ -75,17 +66,11 @@ app.post('/api/telemetry/image-fallback', async (request, reply) => {
     return { message: 'stage is required' };
   }
 
-  imageFallbackStats.totalEvents += 1;
-  imageFallbackStats.byStage[stage] = (imageFallbackStats.byStage[stage] || 0) + 1;
-  imageFallbackStats.byCard[cardId] = (imageFallbackStats.byCard[cardId] || 0) + 1;
-  imageFallbackStats.recent.unshift({
-    at: new Date().toISOString(),
+  telemetryStore.recordImageFallbackEvent({
     stage,
     cardId,
-    source: typeof source === 'string' ? source.slice(0, 180) : ''
+    source
   });
-  imageFallbackStats.recent = imageFallbackStats.recent.slice(0, 50);
-
   return { ok: true };
 });
 
@@ -102,23 +87,12 @@ app.post('/api/telemetry/spread-events', async (request, reply) => {
     return { message: 'type must be spread_drawn or spread_review_saved' };
   }
 
-  spreadTelemetryStats.totalEvents += 1;
-  spreadTelemetryStats.byType[type] = (spreadTelemetryStats.byType[type] || 0) + 1;
-  spreadTelemetryStats.bySpread[spreadId] = (spreadTelemetryStats.bySpread[spreadId] || 0) + 1;
-  if (!spreadTelemetryStats.bySpreadType[spreadId]) {
-    spreadTelemetryStats.bySpreadType[spreadId] = {};
-  }
-  spreadTelemetryStats.bySpreadType[spreadId][type] =
-    (spreadTelemetryStats.bySpreadType[spreadId][type] || 0) + 1;
-  spreadTelemetryStats.recent.unshift({
-    at: new Date().toISOString(),
-    type: String(type),
-    spreadId: String(spreadId),
-    level: String(level),
-    context: String(context).slice(0, 180)
+  telemetryStore.recordSpreadEvent({
+    type,
+    spreadId,
+    level,
+    context
   });
-  spreadTelemetryStats.recent = spreadTelemetryStats.recent.slice(0, 80);
-
   return { ok: true };
 });
 
@@ -133,6 +107,7 @@ app.get('/api/images/alerts', async (request) => {
   const health = imageHealthSnapshot ?? await runImageHealthCheck();
   imageHealthSnapshot = health;
   const failRate = health.summary.total > 0 ? (health.summary.fail / health.summary.total) * 100 : 0;
+  const imageFallbackStats = telemetryStore.getImageFallbackStats();
   const fallbackRate = imageFallbackStats.totalEvents > 0
     ? ((imageFallbackStats.byStage.fallback_svg_used || 0) / imageFallbackStats.totalEvents) * 100
     : 0;

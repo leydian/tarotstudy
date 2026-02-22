@@ -22,6 +22,11 @@
 - 메시지 규칙 검증(질문 포함, 행동 포함, 금지 패턴, 중복도)
 - 점수 집계 및 실패 항목 출력
 
+실행 모드:
+- `QA_API_MODE=auto`(기본): API 미기동 시 자동 기동 후 점검
+- `QA_API_MODE=external`: `API_BASE_URL` API가 떠 있어야 실행
+- `QA_API_MODE=off`: 자동 기동 없이 즉시 실패
+
 ## 수동 리뷰 루프
 명령:
 - `npm run qa:learning-leader -- --write-review`

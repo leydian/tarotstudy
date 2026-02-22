@@ -1,42 +1,16 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { spawn } from 'node:child_process';
 import process from 'node:process';
+import { withApiRuntime } from './lib/api-runtime.mjs';
 
 const root = process.cwd();
 const casesPath = path.join(root, 'scripts', 'yearly-fortune-regression-cases.json');
-const apiBase = process.env.API_BASE_URL || 'http://127.0.0.1:8787';
-const healthUrl = `${apiBase}/api/health`;
 
 function readCases() {
   return JSON.parse(fs.readFileSync(casesPath, 'utf-8'));
 }
 
-async function sleep(ms) {
-  await new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-async function isApiReady() {
-  try {
-    const res = await fetch(healthUrl);
-    if (!res.ok) return false;
-    const data = await res.json().catch(() => ({}));
-    return data?.ok === true;
-  } catch {
-    return false;
-  }
-}
-
-async function waitForApi(maxWaitMs = 12000) {
-  const startedAt = Date.now();
-  while (Date.now() - startedAt < maxWaitMs) {
-    if (await isApiReady()) return true;
-    await sleep(250);
-  }
-  return false;
-}
-
-async function drawYearly({ level, context }) {
+async function drawYearly({ apiBase, level, context }) {
   const res = await fetch(`${apiBase}/api/spreads/yearly-fortune/draw`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
@@ -106,31 +80,18 @@ function assertIntentRules(summary, item, errors) {
   }
 }
 
-let apiChild = null;
-
 try {
-  let spawned = false;
-  if (!(await isApiReady())) {
-    apiChild = spawn(process.execPath, ['apps/api/src/index.js'], {
-      stdio: 'inherit',
-      env: process.env
-    });
-    spawned = true;
-    const ready = await waitForApi();
-    if (!ready) {
-      console.error('[yearly-regression] API did not become ready in time.');
-      process.exit(1);
-    }
-  }
-
   const cases = readCases();
   const errors = [];
-  for (const item of cases) {
-    const data = await drawYearly(item);
-    const summary = String(data?.summary || '');
-    assertCommonStructure(summary, errors, item.id);
-    assertIntentRules(summary, item, errors);
-  }
+
+  await withApiRuntime({ label: 'yearly-regression' }, async ({ apiBase }) => {
+    for (const item of cases) {
+      const data = await drawYearly({ apiBase, ...item });
+      const summary = String(data?.summary || '');
+      assertCommonStructure(summary, errors, item.id);
+      assertIntentRules(summary, item, errors);
+    }
+  });
 
   console.log('[yearly-regression] evaluated cases:', cases.length);
   if (errors.length) {
@@ -138,12 +99,8 @@ try {
     for (const err of errors) console.error('-', err);
   }
 
-  if (spawned && apiChild) {
-    apiChild.kill('SIGTERM');
-  }
   process.exit(errors.length ? 2 : 0);
 } catch (err) {
   console.error('[yearly-regression] failed', err);
-  if (apiChild) apiChild.kill('SIGTERM');
   process.exit(1);
 }
