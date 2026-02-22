@@ -428,7 +428,7 @@
     - `npm run test:api` 통과 (신규 `summary-regression.test.js` 포함)
     - `npm run qa:summary-regression` 통과
 
-- 질문 이해도 엔진 1차 고도화(의도분기 + 선택지 파싱)
+- 질문 이해도 엔진 1차 고도화(의도분기 + 선택지 파싱 + 하이브리드 라우팅)
   - 파일:
     - `apps/api/src/question-understanding/index.js`
     - `apps/api/src/question-understanding/local-classifier.js`
@@ -442,11 +442,33 @@
   - 변경:
     - 하이브리드 모드(`legacy|hybrid|shadow`) 기반 질문 이해 파이프라인 추가
     - 로컬 분류기(가중치 기반) + 외부 분류기 폴백 구조 도입
-    - 선택지 파서 모듈 분리 및 `vs`, `A/B`, `할까/갈까/살까` 패턴 강화
+      - 로컬 신뢰도 임계치 미만에서만 외부 분류기 폴백
+      - 외부 분류기 실패 시 규칙 fallback으로 즉시 복귀
+    - 선택지 파서 모듈 분리 및 `vs`, `A/B`, `할까/갈까/살까`, `...중 무엇` 패턴 강화
+    - 근무지 선택 문장(`강남에서 일할까 용인에서 일할까`)의 `isWorkChoice` 인식 보정
+    - 구매형 양자택일(`샤넬을 살까 버버리를 살까`)에서 축 문구(`예산 압박/활용도/스타일 적합성`) 회귀 보정
     - `POST /api/question-understanding` 진단 엔드포인트 추가
     - 기존 의도/선택지 분기 로직을 신모듈 기반으로 교체
+      - `index.js`의 `inferYearlyIntent`, `inferThreeCardIntent`, `inferCelticIntent`, summary tone 분기
+      - `content.js`의 `inferChoiceContextMeta`, yearly/celtic intent 분기
+  - 검증:
+    - `npm run test:api` 통과
+      - 신규 `apps/api/test/question-understanding.test.js` 포함
+      - 기존 `apps/api/test/choice-a-b-reading.test.js` 회귀 통과
+    - `npm run qa:question-understanding` 통과
+      - 핵심셋 20문장 기준
+      - intent 정확도 `100%`
+      - questionType 정확도 `90%`
+      - choice mode 정확도 `100%`
+    - `npm run qa:summary-regression` 통과
+    - `npm run docs:check-handoff` 통과
+  - 운영 메모:
+    - 현재 환경에서 API 포트 바인딩(`127.0.0.1:8787`) 제약이 있어 일부 API 자동기동형 QA는 환경 의존
+    - 질문 이해 엔진은 `legacy` 즉시 롤백 경로를 유지해 운영 리스크를 낮춤
 
 ## 4) 최근 커밋 타임라인 (최신 우선)
+- `b041618` Improve spread question understanding with hybrid intent parsing
+- `6584a26` Add full-spread summary regression QA and quality gate wiring
 - `cf7642a` Refocus intermediate guide text for tarot-reader training
 - `45ffe13` Expand course tracks and harden card-guide quality gates
 - `b97a0f6` Refine beginner card guide readability and update handoff docs
@@ -482,6 +504,8 @@
   - `npm run qa:learning-leader` 통과
   - `npm run qa:relationship-recovery` 통과
   - `npm run qa:yearly-fortune` 통과
+  - `npm run qa:question-understanding` 통과
+  - `npm run qa:summary-regression` 통과
   - `npm run verify:quality` 통과
 
 ## 6) 즉시 참조 링크

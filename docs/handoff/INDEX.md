@@ -53,6 +53,8 @@
 - 문서 분리 기준/운영 규칙: `docs/handoff/details/docs-ops-structure-2026-02-22.md`
 
 ## 5) 최근 핵심 커밋
+- `b041618` Improve spread question understanding with hybrid intent parsing
+- `6584a26` Add full-spread summary regression QA and quality gate wiring
 - `cf7642a` Refocus intermediate guide text for tarot-reader training
 - `45ffe13` Expand course tracks and harden card-guide quality gates
 - `b97a0f6` Refine beginner card guide readability and update handoff docs

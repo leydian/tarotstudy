@@ -516,3 +516,49 @@
 - 핵심:
   - QA 명령 추가: `npm run qa:question-understanding`
   - 평가 기준: intent/질문형/choice-mode 정확도 리포트 생성
+
+### 16.4 구현 상세(추가)
+- 질문 이해 파이프라인(`question-understanding/index.js`)
+  - `analyzeQuestionContextSync()`: `legacy|hybrid|shadow` 모드별 동기 판별
+  - `analyzeQuestionContext()`: `hybrid` 모드에서 외부 폴백까지 포함한 비동기 판별
+  - `inferQuestionIntentEnhanced()`: 기존 의도 분기 호출부 치환용 경량 wrapper
+- 로컬 분류기(`local-classifier.js`)
+  - 키워드 가중치 + 기존 분기 결과(legacy intent) 앵커를 결합해 최종 intent 산출
+  - 신뢰도 점수(상위-차상위 점수 간격 기반) 계산 후 폴백 여부 결정
+- 선택지 파서(`choice-parser.js`)
+  - `vs|A/B|또는|혹은|...중 무엇` + `할까/갈까/살까` 패턴 지원
+  - 구매형/근무형/지역형 축 메타를 통일된 구조로 반환
+  - 근무형 인식 보정(`일할`) 추가
+- 콘텐츠 연동(`content.js`)
+  - `inferChoiceContextMeta()`를 공통 parser 기반으로 전환
+  - 구매형 양자택일에서 축 문구(`예산 압박/활용도/스타일 적합성`)가 유지되도록 회귀 보정
+- API 연동(`index.js`)
+  - `POST /api/question-understanding` 엔드포인트 추가
+  - 요약/분기 함수의 기존 `inferQuestionIntent` 호출을 신엔진 기반으로 교체
+
+### 16.5 정량 결과(추가)
+- 실행: `npm run qa:question-understanding`
+- 핵심셋: 20문장
+- 결과:
+  - intent 정확도: `100%`
+  - questionType 정확도: `90%`
+  - choice mode 정확도: `100%`
+  - 판정: `pass`
+- 리포트:
+  - `tmp/question-understanding-eval-report.md`
+
+### 16.6 회귀/검증 로그 (추가)
+- `npm run test:api` 통과
+  - 신규 `apps/api/test/question-understanding.test.js`
+  - 기존 `apps/api/test/choice-a-b-reading.test.js` 회귀 통과
+- `npm run qa:question-understanding` 통과
+- `npm run qa:summary-regression` 통과
+- `npm run docs:check-handoff` 통과
+
+### 16.7 운영 리스크 및 롤백 경로
+- 런타임 모드:
+  - `QUESTION_UNDERSTANDING_MODE=legacy|hybrid|shadow`
+- 운영 리스크:
+  - API 자동기동형 QA는 실행 환경의 포트 바인딩 정책에 영향받을 수 있음
+- 롤백:
+  - `legacy` 모드 전환으로 즉시 기존 규칙 기반 분기로 복귀 가능
