@@ -135,6 +135,10 @@ export function SpreadsPage() {
   });
 
   const drawItems = drawMutation.data?.items ?? [];
+  const emphasisKeywords = useMemo(
+    () => Array.from(new Set(drawItems.flatMap((item) => item.card.keywords || []).filter(Boolean))),
+    [drawItems]
+  );
   const cardByPosition = new Map(drawItems.map((item) => [item.position.name, item]));
   const spreadVisualPreset =
     (selected ? SPREAD_VISUAL_PRESETS[selected.id] : null) ??
@@ -344,7 +348,9 @@ export function SpreadsPage() {
                   : (
                     <div className="reading-prose-wrap">
                       {toParagraphBlocks(drawMutation.data.summary).map((block, idx) => (
-                        <p key={`summary-block-${idx}`} className="reading-prose">{block}</p>
+                        <p key={`summary-block-${idx}`} className="reading-prose">
+                          {renderHighlightedText(normalizeDisplayText(block), emphasisKeywords, `summary-${idx}`)}
+                        </p>
                       ))}
                     </div>
                   )}
@@ -353,7 +359,9 @@ export function SpreadsPage() {
                 <h5 className="reading-block-title">종합 학습 내역</h5>
                 <ul className="reading-lines">
                   {buildLearningDigest(drawMutation.data.items).map((line, idx) => (
-                    <li key={`learning-digest-${idx}`}>{line}</li>
+                    <li key={`learning-digest-${idx}`}>
+                      {renderHighlightedText(normalizeDisplayText(line), emphasisKeywords, `digest-${idx}`)}
+                    </li>
                   ))}
                 </ul>
               </article>
@@ -371,16 +379,20 @@ export function SpreadsPage() {
                     <span className={`verdict-badge verdict-${insights.verdict}`}>
                       {insights.verdictLabel}
                     </span>
-                    <p className="sub">{insights.verdictReason}</p>
+                    <p className="sub">
+                      {renderHighlightedText(normalizeDisplayText(insights.verdictReason), emphasisKeywords, 'verdict-reason')}
+                    </p>
                   </div>
                   {insights.conflictWarning && (
-                    <p className="conflict-warning">{insights.conflictWarning}</p>
+                    <p className="conflict-warning">
+                      {renderHighlightedText(normalizeDisplayText(insights.conflictWarning), emphasisKeywords, 'conflict-warning')}
+                    </p>
                   )}
                   <div className="action-cards">
                     {insights.actions.map((action, idx) => (
                       <article key={`action-${idx}`} className="action-card">
                         <h5>{action.title}</h5>
-                        <p>{action.body}</p>
+                        <p>{renderHighlightedText(normalizeDisplayText(action.body), emphasisKeywords, `action-body-${idx}`)}</p>
                       </article>
                     ))}
                   </div>
@@ -1005,7 +1017,7 @@ type HighlightPattern = {
 };
 
 function renderHighlightedText(text: string, keywords: string[], keyBase: string): ReactNode[] {
-  const input = String(text || '');
+  const input = normalizeDisplayText(String(text || ''));
   if (!input) return [input];
   const patterns = buildHighlightPatterns(keywords);
   if (!patterns.length) return [input];
@@ -1064,9 +1076,15 @@ function buildHighlightPatterns(keywords: string[]): HighlightPattern[] {
   }));
 
   patterns.push({ regex: /(실행|행동|기록|검증|복기|점검|고정|적어|비교)/g, tone: 'action' });
-  patterns.push({ regex: /(주의|리스크|소모|과속|지연|불안|오차|병목|과잉)/g, tone: 'caution' });
+  patterns.push({ regex: /(주의|리스크|소모|과속|지연|불안|오차|막히는 지점|과잉)/g, tone: 'caution' });
   patterns.push({ regex: /(근거|키워드|신호|질문|결론|포지션)/g, tone: 'evidence' });
   return patterns;
+}
+
+function normalizeDisplayText(text: string) {
+  return String(text || '')
+    .replace(/병목/g, '막히는 지점')
+    .replace(/각성\"로/g, '각성\"으로');
 }
 
 function escapeRegex(text: string) {

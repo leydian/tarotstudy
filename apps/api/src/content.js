@@ -1687,13 +1687,14 @@ function buildNaturalCoreMessage({
     return buildOneCardCoreMessage({ card, orientation, context });
   }
   const cardDirection = orientation === 'upright' ? '정방향' : '역방향';
-  const mainKeyword = card.keywords?.[0] ?? '흐름';
+  const mainKeywordRaw = card.keywords?.[0] ?? '흐름';
+  const mainKeyword = toEverydayKeyword(mainKeywordRaw);
   const mainKeywordSubject = withKoreanParticle(mainKeyword, '이', '가');
   const contextLead = spreadId === 'celtic-cross'
     ? buildCelticCoreLead({ positionName: position.name, seed })
     : buildSpreadCoreLead({ spreadId, positionName: position.name, seed });
   const cardLine = `뽑으신 카드는 '${card.nameKo} ${cardDirection}'입니다.`;
-  const isTensionKeyword = /(제약|불안|권태|무기력|과잉 사고|소모|병목|갈등|오해|혼란|집착|유혹|환상)/.test(mainKeyword);
+  const isTensionKeyword = /(제약|불안|권태|무기력|과잉 사고|소모|병목|갈등|오해|혼란|집착|유혹|환상)/.test(mainKeywordRaw);
   const meaningLine = spreadId === 'celtic-cross'
     ? buildCelticCoreMeaningLine({ cardName: card.nameKo, positionName: position.name, orientation, focus, mainKeyword })
     : spreadId === 'choice-a-b' && orientation === 'upright' && isTensionKeyword
@@ -1784,7 +1785,7 @@ function buildUnifiedInterpretationNarrative({
   focus = '핵심 흐름'
 }) {
   const text = String(raw || '').trim();
-  const keyword = card?.keywords?.[0] || '핵심 흐름';
+  const keyword = toEverydayKeyword(card?.keywords?.[0] || '핵심 흐름');
   const questionAnalysis = analyzeQuestionContextSync(context);
   const shortHint = inferShortUtterance(context);
   const isYesNo = questionAnalysis.questionType === 'yes_no' || Boolean(shortHint);
@@ -2571,6 +2572,7 @@ function buildEmpathyLeadLine({ conclusionTone = 'neutral', group = 'general', c
 function buildCardMeaningDetailLine({ card, orientation = 'upright', keyword = '핵심 흐름', group = 'general' }) {
   const cardName = card?.nameKo || '이 카드';
   const directionLabel = orientation === 'upright' ? '정방향' : '역방향';
+  const plainKeyword = toEverydayKeyword(keyword);
   if (orientation === 'reversed') {
     if (group === 'caffeine') {
       return `${cardName} ${directionLabel}은 선택 균형이 흔들리기 쉬워, 욕구보다 회복 기준을 먼저 두라는 신호입니다.`;
@@ -2578,12 +2580,12 @@ function buildCardMeaningDetailLine({ card, orientation = 'upright', keyword = '
     if (group === 'daily') {
       return `${cardName} ${directionLabel}은 에너지 분산 구간이라, 우선순위를 좁혀 다시 판단하라는 메시지에 가깝습니다.`;
     }
-    return `${cardName} ${directionLabel}은 '${keyword}' 축의 과속 신호라, 선택 방식과 순서를 재정렬하라는 뜻에 가깝습니다.`;
+    return `${cardName} ${directionLabel}은 '${plainKeyword}' 축의 과속 신호라, 선택 방식과 순서를 재정렬하라는 뜻에 가깝습니다.`;
   }
   if (group === 'caffeine') {
     return `${cardName} ${directionLabel}은 에너지 축이 열려 있지만, 양과 타이밍을 통제할 때 해석이 맞습니다.`;
   }
-  return `${cardName} ${directionLabel}은 '${keyword}' 기준이 선명하다는 뜻이라, 감정 반응보다 기준 문장을 먼저 고정하는 편이 정확합니다.`;
+  return `${cardName} ${directionLabel}은 '${plainKeyword}' 기준이 선명하다는 뜻이라, 감정 반응보다 기준 문장을 먼저 고정하는 편이 정확합니다.`;
 }
 
 function buildRecheckGuideLine({ group = 'general', conclusionTone = 'neutral', sleepQuestion = false }) {
@@ -3726,6 +3728,7 @@ function polishTarotInterpretation(raw = '') {
     .replace(/기준점/g, '기준')
     .replace(/중심축/g, '중심 흐름')
     .replace(/결과축/g, '결과 흐름')
+    .replace(/병목/g, '막히는 지점')
     .replace(/(^|[\s"'(])변수(?=([\s"'.,!?)]|$))/g, '$1요인')
     .replace(/(^|[\s"'(])축(?=([\s"'.,!?)]|$))/g, '$1기준');
 
@@ -4067,6 +4070,7 @@ function polishCoreMessage(raw = '') {
     .replace(/기준점/g, '기준')
     .replace(/중심축/g, '중심 흐름')
     .replace(/결과축/g, '결과 흐름')
+    .replace(/병목/g, '막히는 지점')
     // Replace standalone "변수" while avoiding suffix corruption in compounds.
     .replace(/(^|[\s"'(])변수(?=([\s"'.,!?)]|$))/g, '$1요인')
     // Replace standalone "축" while keeping compound nouns intact.
@@ -4228,6 +4232,24 @@ function buildLearningCoachReview({ positionName, cardName, orientation, context
   const coaching = pickVariant(`${seed}:coach-review-coaching`, coachModes);
   const question = pickVariant(`${seed}:coach-review-question`, questionModes);
   return `${coaching} ${reviewStep} ${question}`;
+}
+
+function toEverydayKeyword(keyword = '') {
+  const raw = String(keyword || '').trim();
+  if (!raw) return '핵심 흐름';
+  const map = {
+    각성: '정신이 또렷해지는 흐름',
+    심판: '다시 점검해 바로잡는 흐름',
+    절제: '균형을 맞추는 흐름',
+    은둔: '혼자 정리하는 흐름',
+    운명: '변화 전환의 흐름',
+    유혹: '끌리지만 흔들리기 쉬운 흐름',
+    환상: '헷갈리기 쉬운 흐름',
+    권태: '의욕이 떨어진 흐름',
+    성찰: '돌아보며 정리하는 흐름',
+    통찰: '핵심을 꿰뚫어 보는 흐름'
+  };
+  return map[raw] || raw;
 }
 
 function withKoreanParticle(word = '', consonantParticle = '이', vowelParticle = '가') {

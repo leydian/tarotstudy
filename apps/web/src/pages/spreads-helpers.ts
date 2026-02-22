@@ -230,7 +230,7 @@ export function scoreItemRisk(item: SpreadDrawResult['items'][number] | undefine
   if (!item) return 0;
   const text = `${item.card.nameKo} ${(item.card.keywords || []).join(' ')}`.toLowerCase();
   let score = item.orientation === 'reversed' ? 1 : 0;
-  if (/(불안|갈등|소모|병목|손실|지연|권태|혼란|압박)/.test(text)) score += 1;
+  if (/(불안|갈등|소모|막힘|병목|손실|지연|권태|혼란|압박)/.test(text)) score += 1;
   return score;
 }
 
@@ -261,8 +261,8 @@ export function buildReadingInsights({
       return '지금은 확장보다 정비가 우선입니다. 막히는 유형 1개를 정리한 뒤 같은 기준으로 재도전하는 편이 안전합니다.';
     }
     if (verdict === 'go') return '결과 카드가 열려 있어 실행 가능성이 있습니다. 다만 과속보다 루틴 유지가 핵심입니다.';
-    if (verdict === 'conditional') return '가능성은 있으나 병목 신호가 있어 실행 조건을 좁혀야 결과가 안정됩니다.';
-    return '지금은 확장보다 정비가 우선입니다. 병목을 먼저 줄인 뒤 재시도하는 편이 안전합니다.';
+    if (verdict === 'conditional') return '가능성은 있으나 막히는 지점 신호가 있어 실행 조건을 좁혀야 결과가 안정됩니다.';
+    return '지금은 확장보다 정비가 우선입니다. 막히는 지점을 먼저 줄인 뒤 재시도하는 편이 안전합니다.';
   })();
   const conflictWarning = first?.orientation === 'reversed' && verdict === 'go'
     ? '초반 카드 경고와 결론이 충돌할 수 있습니다. 즉시 확장 대신 리스크 관리형 실행으로 조정하세요.'
