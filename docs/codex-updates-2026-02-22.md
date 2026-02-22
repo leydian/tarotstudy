@@ -79,3 +79,52 @@
 ## 비고
 - 현재 작업 디렉터리는 기존 `.git`이 없는 상태였음.
 - GitHub 업로드를 위해 저장소 초기화 및 원격 연결이 추가로 필요함.
+
+---
+
+## 추가 업데이트 (카드 설명 분기 고도화)
+
+### A) 기본 카드 설명(비-심화) 분기 강화
+- 파일: `apps/api/src/data/cards.js`
+- 변경:
+  - 입문 설명 1/2/3줄 모두 카드 중심 분기로 전환
+    - `buildBeginnerKeywordLine()`
+    - `buildBeginnerFlowLine()`
+    - `buildBeginnerLearningPoint()`
+  - 마이너 학습 포인트를 수트+랭크+키워드 조합으로 확장
+  - 중급 기본 설명도 카드별/수트별/맥락별 분기로 전환
+    - `buildIntermediateDescription()`
+    - `buildIntermediateRankLine()`
+
+### B) 심화 설명 분기/품질/속도 개선
+- 파일: `apps/api/src/content.js`
+- 변경:
+  - 메이저 22장, 마이너 56조합 분기 강화
+  - 섹션별 최소 3줄 보장
+  - 반복 문구 완화(정방향/역방향/조언 변주)
+  - `love`/`career` 전용 빌더 추가
+    - 카드/난이도/맥락 기반 세분화
+    - 관계 맥락: 재회/회복, 갈등
+    - 커리어 맥락: 면접/지원, 프로젝트, 학습
+  - 빠른 fallback 반환 + 후속 캐시 갱신 전략으로 응답성 개선
+
+### C) API/프론트 연결 개선
+- 파일: `apps/api/src/index.js`
+  - `/api/cards`, `/api/cards/:cardId`에서 기본 설명을 동적 생성
+  - `context` 쿼리 반영
+  - 동일 카드 문구 안정화를 위해 로테이션(variant seed) 제거
+- 파일: `apps/web/src/pages/CardDetailPage.tsx`
+  - 심화 설명 줄바꿈 렌더링 개선
+- 파일: `apps/api/src/external-ai.js`
+  - 입문/중급 프롬프트 가이드 분리
+  - 3줄 이상 출력 지시 강화
+
+### D) 중복 완화 결과
+- 반복됐던 대표 문구 다수 제거/치환:
+  - 입문 기본 설명 공통 문장
+  - 중급 기본 설명 공통 문장
+  - 심화 설명의 관계/일학업 공통 문장
+- 같은 카드는 항상 같은 기본 문구를 사용하도록 고정
+
+### E) 관련 커밋 (추가 구간)
+- `a2214fd`, `07a5e67`, `5b731d0`, `a8753e2`, `c0fae16`, `974cd64`, `9ca2ac6`, `229ea45`, `c9fe9ca`, `374d9ae`

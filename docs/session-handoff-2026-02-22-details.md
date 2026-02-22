@@ -74,3 +74,67 @@
 - `node --check apps/api/src/content.js` 통과
 - `node --check apps/api/src/index.js` 통과
 - `npm run build:web` 통과
+
+## 6) 카드 설명 분기 고도화 상세 (추가)
+
+### 6.1 기본 카드 설명(심화 설명 아님) 카드별 분기 (`apps/api/src/data/cards.js`)
+- `descriptions.beginner`/`descriptions.intermediate`의 고정 문구를 단계적으로 제거
+- 입문 설명:
+  - 1줄: `buildBeginnerKeywordLine()`로 카드/수트별 분기
+  - 2줄: `buildBeginnerFlowLine()`로 카드/수트별 분기
+  - 3줄: `buildBeginnerLearningPoint()` + `buildMinorLearningPointVariants()`로 마이너 세분화(수트+랭크+키워드)
+- 중급 설명:
+  - `buildIntermediateDescription()`를 카드/수트/맥락 기반 분기 구조로 확장
+  - 메이저 원형 카드 공통 문장 반복 완화: `buildIntermediateRankLine()` 추가
+- 공통:
+  - 카드별 선택 함수 `pickCardVariant()` 유지
+  - 조사/문장 자연화 다수 반영
+
+### 6.2 심화 설명 생성 분기 강화 (`apps/api/src/content.js`)
+- `buildFallbackExplanation()` 품질 고도화
+  - 섹션별 최소 3줄 보장 유지
+  - `love`/`career` 섹션을 고정 문장에서 전용 빌더로 교체
+    - `buildLoveSectionLines()`
+    - `buildCareerSectionLines()`
+  - 질문 맥락 세분화:
+    - 관계: `detectRelationshipContext()` (재회/회복, 갈등, 기본)
+    - 커리어/학습: `detectCareerContext()` (면접/지원, 프로젝트, 학습, 기본)
+- 메이저 22장 + 마이너 56조합 분기 유지/확장
+- 반복 문장 완화:
+  - 정방향/역방향/조언 문장 변주
+  - 카드별 해시 기반 문장 선택
+
+### 6.3 기본 카드 설명 API 동적화 (`apps/api/src/index.js`)
+- `/api/cards`, `/api/cards/:cardId`에서 `descriptions`를 `buildCardDescriptions()`로 동적 생성
+- `context` 쿼리 반영으로 기본 설명에도 맥락 힌트 적용
+- 동일 카드 문구 안정화 요구 반영:
+  - `variantSeed` 기반 로테이션 제거
+  - 카드 ID 기준 고정 문구 유지
+
+### 6.4 심화 설명 UI 렌더링 개선 (`apps/web/src/pages/CardDetailPage.tsx`)
+- 심화 설명 섹션 문자열의 `\n`을 문단으로 렌더링하도록 변경
+- 섹션별 3줄 이상 설명이 화면에 그대로 드러나도록 개선
+
+### 6.5 심화 설명 프롬프트 개선 (`apps/api/src/external-ai.js`)
+- 입문/중급 관점 가이드 분리 문구 추가
+- 섹션별 `3줄 이상` 출력 지시 강화
+
+### 6.6 성능/응답성 개선 (`apps/api/src/content.js`)
+- 심화 설명 생성 응답 전략:
+  - 캐시 히트 시 즉시 반환
+  - 빠른 생성 시도(짧은 timeout) 후 실패 시 fallback 즉시 반환
+  - 후속 생성 성공 시 캐시 갱신
+- 체감 개선:
+  - 첫 호출 지연 감소(기존 대비 단축), 재호출은 캐시로 매우 빠름
+
+### 6.7 이번 추가 작업 커밋 이력 (요약)
+- `a2214fd` Enhance card explanation detail, speed, and card-specific variation
+- `07a5e67` Diversify beginner base description lines per card
+- `5b731d0` Vary beginner keyword intro line by card
+- `a8753e2` Expand minor arcana beginner learning-point branching
+- `c0fae16` Refine explanation variation and reduce repeated guidance
+- `974cd64` Add context-aware base descriptions and rotating card variants
+- `9ca2ac6` Remove card description rotation for stable per-card text
+- `229ea45` Diversify intermediate base descriptions by card context
+- `c9fe9ca` Reduce repeated intermediate major arcana rank line
+- `374d9ae` Further segment love/career sections in fallback explanations
