@@ -1,13 +1,39 @@
 import { Link } from 'react-router-dom';
+import { useMemo } from 'react';
+import { useQueries, useQuery } from '@tanstack/react-query';
+import { api } from '../lib/api';
 import { useProgressStore } from '../state/progress';
+import type { Lesson } from '../types';
 
 export function HomePage() {
-  const completedLessons = useProgressStore((s) => s.completedLessons.length);
+  const completedLessonIds = useProgressStore((s) => s.completedLessons);
   const quizHistory = useProgressStore((s) => s.quizHistory);
+  const completedLessons = completedLessonIds.length;
+  const coursesQuery = useQuery({ queryKey: ['courses'], queryFn: api.getCourses });
+  const courses = coursesQuery.data ?? [];
+  const lessonsQueries = useQueries({
+    queries: courses.map((course) => ({
+      queryKey: ['lessons', course.id],
+      queryFn: () => api.getLessons(course.id)
+    }))
+  });
+  const completedSet = useMemo(() => new Set(completedLessonIds), [completedLessonIds]);
 
   const avgScore = quizHistory.length
     ? Math.round(quizHistory.reduce((acc, item) => acc + item.percent, 0) / quizHistory.length)
     : 0;
+  const nextTarget = useMemo(() => {
+    for (const [index, course] of courses.entries()) {
+      const lessons = (lessonsQueries[index]?.data ?? []) as Lesson[];
+      if (!lessons.length) continue;
+      const nextLesson = lessons.find((lesson) => !completedSet.has(lesson.id));
+      if (nextLesson) {
+        return { course, lesson: nextLesson };
+      }
+    }
+    return null;
+  }, [completedSet, courses, lessonsQueries]);
+  const nextStepLabel = nextTarget ? `${nextTarget.course.stage}: ${nextTarget.lesson.title}` : '스프레드 복기';
 
   return (
     <section className="page-shell">
@@ -38,7 +64,7 @@ export function HomePage() {
         </article>
         <article className="kpi-card">
           <p className="sub">추천 다음 단계</p>
-          <h3>스프레드 복기</h3>
+          <h3>{nextStepLabel}</h3>
         </article>
       </section>
 
@@ -47,6 +73,17 @@ export function HomePage() {
           <h3>학습 현황</h3>
           <p>완료한 레슨: <strong>{completedLessons}</strong></p>
           <p>최근 퀴즈 평균: <strong>{avgScore}%</strong></p>
+          {nextTarget && (
+            <p>
+              다음 추천 레슨:{' '}
+              <Link
+                className="text-link"
+                to={`/courses/${nextTarget.course.id}/lessons/${nextTarget.lesson.id}`}
+              >
+                {nextTarget.lesson.title}
+              </Link>
+            </p>
+          )}
           <Link to="/dashboard" className="text-link">대시보드로 이동</Link>
         </article>
         <article className="panel content-side">

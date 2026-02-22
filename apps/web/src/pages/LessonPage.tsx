@@ -17,6 +17,7 @@ export function LessonPage() {
   const lesson = lessonsQuery.data.find((item) => item.id === lessonId);
   if (!lesson) return <p>해당 레슨을 찾을 수 없습니다.</p>;
   const hasStoryNovel = Boolean(lesson.detail?.storyNovel && lesson.detail.storyNovel.length > 0);
+  const detail = lesson.detail;
 
   return (
     <section className="stack">
@@ -31,148 +32,160 @@ export function LessonPage() {
         </div>
       </article>
 
-      {lesson.detail && (
+      {detail && (
         <>
-          <article className="panel">
-            {lesson.detail.learningGoals.length > 0 && (
-              <>
-                <h3>학습 목표</h3>
-                <ul className="clean-list">
-                  {lesson.detail.learningGoals.map((goal) => (
-                    <li key={goal}>{goal}</li>
-                  ))}
-                </ul>
-              </>
-            )}
-
-            {lesson.detail.storyNovel && lesson.detail.storyNovel.length > 0 && (
-              <>
-                <h3>레슨 소설</h3>
-                {lesson.detail.storyNovel.map((paragraph) => (
-                  <p key={paragraph}>{paragraph}</p>
+          {detail.learningGoals.length > 0 && (
+            <article className="panel lesson-panel">
+              <h3>학습 목표</h3>
+              <ul className="clean-list lesson-detail-list">
+                {detail.learningGoals.map((goal) => (
+                  <li key={goal}>{goal}</li>
                 ))}
-              </>
-            )}
+              </ul>
+            </article>
+          )}
 
-            {lesson.detail.lessonBody.length > 0 && (
-              <>
-                <h3>레슨 본문</h3>
-                <ul className="clean-list">
-                  {lesson.detail.lessonBody.map((line) => (
-                    <li key={line}>{line}</li>
-                  ))}
-                </ul>
-              </>
-            )}
+          {detail.storyNovel && detail.storyNovel.length > 0 && (
+            <article className="panel lesson-panel lesson-prose-panel">
+              <h3>레슨 소설</h3>
+              <div className="lesson-prose-wrap">
+                {detail.storyNovel.map((paragraph) => (
+                  <p key={paragraph} className="lesson-prose-paragraph">{paragraph}</p>
+                ))}
+              </div>
+            </article>
+          )}
 
-            {lesson.detail.coreConcepts.length > 0 && (
-              <>
-                <h3>핵심 이론</h3>
-                <ul className="clean-list">
-                  {lesson.detail.coreConcepts.map((line) => (
-                    <li key={line}>{line}</li>
-                  ))}
-                </ul>
-              </>
-            )}
+          {(detail.lessonBody.length > 0 || detail.coreConcepts.length > 0) && (
+            <article className="panel lesson-panel">
+              {detail.lessonBody.length > 0 && (
+                <>
+                  <h3>레슨 본문</h3>
+                  <ul className="clean-list lesson-detail-list">
+                    {detail.lessonBody.map((line) => (
+                      <li key={line}>{line}</li>
+                    ))}
+                  </ul>
+                </>
+              )}
 
-            {!hasStoryNovel && lesson.detail.lessonFlow.length > 0 && (
-              <>
-                <h3>레슨 진행 순서</h3>
-                <ul className="clean-list">
-                  {lesson.detail.lessonFlow.map((step) => (
-                    <li key={step}>{step}</li>
-                  ))}
-                </ul>
-              </>
-            )}
+              {detail.coreConcepts.length > 0 && (
+                <>
+                  <h3>핵심 이론</h3>
+                  <ul className="clean-list lesson-detail-list">
+                    {detail.coreConcepts.map((line) => (
+                      <li key={line}>{line}</li>
+                    ))}
+                  </ul>
+                </>
+              )}
+            </article>
+          )}
 
-            {!hasStoryNovel && lesson.detail.onePassScript && lesson.detail.onePassScript.length > 0 && (
-              <>
-                <h3>한 번에 읽는 실전 스크립트</h3>
-                <ul className="clean-list">
-                  {lesson.detail.onePassScript.map((line) => (
-                    <li key={line}>{line}</li>
-                  ))}
-                </ul>
-              </>
-            )}
+          {!hasStoryNovel && detail.lessonFlow.length > 0 && (
+            <article className="panel lesson-panel">
+              <h3>레슨 진행 순서</h3>
+              <ul className="clean-list lesson-detail-list">
+                {detail.lessonFlow.map((step) => (
+                  <li key={step}>{step}</li>
+                ))}
+              </ul>
+            </article>
+          )}
 
-            {lesson.detail.workedExample.length > 0 && (
-              <>
-                <h3>예시 리딩</h3>
-                <ul className="clean-list">
-                  {lesson.detail.workedExample.map((line) => (
-                    <li key={line}>
-                      <pre>{line}</pre>
-                    </li>
-                  ))}
-                </ul>
-              </>
-            )}
+          {!hasStoryNovel && detail.onePassScript && detail.onePassScript.length > 0 && (
+            <article className="panel lesson-panel">
+              <h3>한 번에 읽는 실전 스크립트</h3>
+              <ul className="clean-list lesson-detail-list">
+                {detail.onePassScript.map((line) => (
+                  <li key={line}>{line}</li>
+                ))}
+              </ul>
+            </article>
+          )}
 
-            {lesson.detail.practiceChecklist.length > 0 && (
-              <>
-                <h3>실전 체크리스트</h3>
-                <ul className="clean-list">
-                  {lesson.detail.practiceChecklist.map((item) => (
-                    <li key={item}>{item}</li>
-                  ))}
-                </ul>
-              </>
-            )}
+          {detail.workedExample.length > 0 && (
+            <article className="panel lesson-panel">
+              <h3>예시 리딩</h3>
+              <ul className="clean-list lesson-detail-list">
+                {detail.workedExample.map((line) => (
+                  <li key={line}>
+                    <pre className="lesson-example-pre">{line}</pre>
+                  </li>
+                ))}
+              </ul>
+            </article>
+          )}
 
-            {lesson.detail.commonMistakes.length > 0 && (
-              <>
-                <h3>흔한 실수와 교정 포인트</h3>
-                <ul className="clean-list">
-                  {lesson.detail.commonMistakes.map((item) => (
-                    <li key={item}>{item}</li>
-                  ))}
-                </ul>
-              </>
-            )}
+          {(detail.practiceChecklist.length > 0 || detail.commonMistakes.length > 0 || detail.coachingScript.length > 0) && (
+            <article className="panel lesson-panel">
+              {detail.practiceChecklist.length > 0 && (
+                <>
+                  <h3>실전 체크리스트</h3>
+                  <ul className="clean-list lesson-detail-list">
+                    {detail.practiceChecklist.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                </>
+              )}
 
-            {lesson.detail.coachingScript.length > 0 && (
-              <>
-                <h3>지도 스크립트</h3>
-                <ul className="clean-list">
-                  {lesson.detail.coachingScript.map((line) => (
-                    <li key={line}>{line}</li>
-                  ))}
-                </ul>
-              </>
-            )}
+              {detail.commonMistakes.length > 0 && (
+                <>
+                  <h3>흔한 실수와 교정 포인트</h3>
+                  <ul className="clean-list lesson-detail-list">
+                    {detail.commonMistakes.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                </>
+              )}
 
-            {lesson.detail.assignment && (
-              <>
-                <h3>과제</h3>
-                <p>{lesson.detail.assignment}</p>
-              </>
-            )}
+              {detail.coachingScript.length > 0 && (
+                <>
+                  <h3>지도 스크립트</h3>
+                  <ul className="clean-list lesson-detail-list">
+                    {detail.coachingScript.map((line) => (
+                      <li key={line}>{line}</li>
+                    ))}
+                  </ul>
+                </>
+              )}
+            </article>
+          )}
 
-            {lesson.detail.completionCriteria.length > 0 && (
-              <>
-                <h3>완료 기준</h3>
-                <ul className="clean-list">
-                  {lesson.detail.completionCriteria.map((item) => (
-                    <li key={item}>{item}</li>
-                  ))}
-                </ul>
-              </>
-            )}
+          {(detail.assignment || detail.completionCriteria.length > 0 || detail.reflectionQuestions.length > 0) && (
+            <article className="panel lesson-panel">
+              {detail.assignment && (
+                <>
+                  <h3>과제</h3>
+                  <p className="lesson-assignment">{detail.assignment}</p>
+                </>
+              )}
 
-            {lesson.detail.reflectionQuestions.length > 0 && (
-              <>
-                <h3>복기 질문</h3>
-                <ul className="clean-list">
-                  {lesson.detail.reflectionQuestions.map((question) => (
-                    <li key={question}>{question}</li>
-                  ))}
-                </ul>
-              </>
-            )}
-          </article>
+              {detail.completionCriteria.length > 0 && (
+                <>
+                  <h3>완료 기준</h3>
+                  <ul className="clean-list lesson-detail-list">
+                    {detail.completionCriteria.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                </>
+              )}
+
+              {detail.reflectionQuestions.length > 0 && (
+                <>
+                  <h3>복기 질문</h3>
+                  <ul className="clean-list lesson-detail-list">
+                    {detail.reflectionQuestions.map((question) => (
+                      <li key={question}>{question}</li>
+                    ))}
+                  </ul>
+                </>
+              )}
+            </article>
+          )}
         </>
       )}
 

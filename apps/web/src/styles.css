@@ -319,6 +319,46 @@ input {
   align-items: center;
 }
 
+.course-progress-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  padding: 3px 10px;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.status-done {
+  background: var(--ok-bg);
+  color: var(--ok-ink);
+  border-color: color-mix(in srgb, var(--ok-ink) 35%, var(--line));
+}
+
+.status-progress {
+  background: color-mix(in srgb, var(--brand-1) 16%, var(--reading-bg));
+  color: var(--brand-1);
+  border-color: color-mix(in srgb, var(--brand-1) 35%, var(--line));
+}
+
+.status-loading {
+  background: color-mix(in srgb, var(--accent-soft) 75%, var(--reading-bg));
+  color: var(--ink-1);
+}
+
+.status-idle {
+  background: color-mix(in srgb, var(--reading-bg) 88%, var(--accent-soft));
+  color: var(--ink-1);
+}
+
 .chip-wrap {
   display: flex;
   flex-wrap: wrap;
@@ -982,6 +1022,56 @@ input {
 .position-card p + p {
   margin-top: 6px;
   color: var(--ink-1);
+}
+
+.lesson-panel {
+  max-width: 92ch;
+}
+
+.lesson-panel h3 {
+  margin: 0 0 10px;
+}
+
+.lesson-prose-panel {
+  background: color-mix(in srgb, var(--panel) 92%, var(--accent-soft));
+}
+
+.lesson-prose-wrap {
+  display: grid;
+  gap: 10px;
+  max-width: 78ch;
+}
+
+.lesson-prose-paragraph {
+  margin: 0;
+  line-height: 1.82;
+  letter-spacing: 0.002em;
+}
+
+.lesson-detail-list {
+  display: grid;
+  gap: 7px;
+}
+
+.lesson-detail-list li {
+  line-height: 1.68;
+}
+
+.lesson-example-pre {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: keep-all;
+  line-height: 1.75;
+  border: 1px solid var(--reading-line);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--reading-bg) 90%, var(--accent-soft));
+  padding: 10px 12px;
+}
+
+.lesson-assignment {
+  margin: 0;
+  line-height: 1.68;
 }
 
 .app-root {
