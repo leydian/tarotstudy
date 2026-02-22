@@ -1,7 +1,7 @@
 # 세션 인수인계 문서 (메인)
 
 작성일: 2026-02-22  
-최종 갱신: 2026-02-22 (latest)  
+최종 갱신: 2026-02-23 (latest)  
 작업 경로: `/home/eunok/studycodex`
 
 ## 1) 문서 구조
@@ -36,6 +36,43 @@
   - 텔레메트리 수집 API(`spread_drawn`, `spread_review_saved`) 및 롤업 스크립트 추가
 
 ## 3) 금일 추가 반영 (최신)
+- 스프레드 카드 시각 가독성 + 뷰 전환 UX 개선
+  - 파일: `apps/web/src/pages/SpreadsPage.tsx`, `apps/web/src/styles.css`
+  - 변경:
+    - 전 스프레드 카드 이미지 썸네일 확대
+    - 스프레드별 카드 수/ID 기준 시각 프리셋(`scale/rowHeight/minColWidth`) 적용
+    - `스프레드 리딩 결과` / `스프레드 가이드·복기` 토글 도입
+    - 스프레드/변형 전환 시 뷰를 자동으로 리딩 결과 탭으로 초기화
+
+- 월별/주별/관계회복 요약 품질 고도화
+  - 파일: `apps/api/src/index.js`
+  - 변경:
+    - `monthly-fortune` 전용 요약기 신설(`총평/주차 흐름/월-주 연결/실행 가이드/한 줄 테마`)
+    - 관계/관계회복 질문에서는 `서사 요약 → 판정` 순서로 출력 전환
+    - 판정 로직 보수화: `우세`라도 고위험 역방향 신호가 있으면 `조건부`로 다운그레이드
+    - 근거 문장 다양화(포지션 중복 완화 + 관계 질문용 근거 톤 교체)
+    - 기간 문구 정규화 보수화(비교/대비 문맥에서는 자동 치환 회피)
+
+- 양자택일 리딩을 질문 형태 기반으로 분기
+  - 파일: `apps/api/src/index.js`
+  - 변경:
+    - 명시적 A/B 질문: 기존 비교형 유지
+    - 단일 판단 질문(예: `재회할 수 있을까?`): A/B 라벨 노출 없이 단일판단형 문장으로 전환
+    - 관계 질문 축 교정: `감정 소모·대화 안정성·오해 가능성·지속 가능성`
+    - 양자택일 근거 우선순위 개선(`현재 상황 + 결과 포지션` 우선)
+    - 조사/문장부호 정리(`...소모을` 방지, 물음표 앞 공백 정리)
+
+- 학습 리더 코치 내역 실전형 개편(입문/중급 차등 확대)
+  - 파일: `apps/api/src/content.js`, `apps/web/src/pages/SpreadsPage.tsx`
+  - 변경:
+    - 입문: `카드 근거 1개 + 행동 1개 + 당일 복기` 중심
+    - 중급: `가설·반례·검증 지표·오차 분류` 중심
+    - 코치 문장 생성 로직을 레벨별로 분리해 문체/난이도 차이를 크게 강화
+    - 종합 학습 내역을 3줄 실전 요약형으로 단순화
+      - `오늘 할 일`
+      - `복기 기준`
+      - `다음 리딩에서 바꿀 점 1개`
+
 - 질문 뱅크 대규모 확장 + 의도 분기 통합
   - 신규 파일: `apps/api/src/data/question-intents.js`
   - 질문 규모: `100,000`문항 / `1,000`주제
@@ -69,6 +106,12 @@
     - `apps/api/test/choice-a-b-reading.test.js`에 도시 선택 케이스 추가
 
 ## 4) 최근 커밋 타임라인 (최신 우선)
+- `ba9e199` Differentiate beginner/intermediate coaching with practical execution flows
+- `edaf90a` Improve choice spread branching and simplify learning digest output
+- `fb90f37` Refine relationship-reading tone and stabilize spread view UX
+- `a30569a` Improve monthly/weekly fortune summary consistency and verdict logic
+- `539995c` Add toggle view for spread reading results and guide sections
+- `9021afe` Adjust spread card image sizing across all spread layouts
 - `b7e7443` Improve choice A/B location intent detection for city decisions
 - `036c5d2` Simplify spread top panel with consolidated learning digest
 - `571a610` Expand question bank to 100k questions across 1k topics
