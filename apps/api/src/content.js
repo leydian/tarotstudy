@@ -5,6 +5,13 @@ const TTL_FALLBACK_SOURCE = 'fallback';
 
 export function buildFallbackExplanation(card, level = 'beginner', context = '') {
   const explanationContext = inferExplanationContext(context);
+  if (level === 'beginner') {
+    return {
+      cardId: card.id,
+      source: TTL_FALLBACK_SOURCE,
+      sections: buildBeginnerPracticalSections({ card, context, explanationContext })
+    };
+  }
   const contextLine = context?.trim()
     ? `질문 맥락(${context.trim()})에 맞춰 보면,`
     : '맥락 없이 기본 의미로 보면,';
@@ -77,6 +84,140 @@ export function buildFallbackExplanation(card, level = 'beginner', context = '')
         `${buildAdviceReviewLine(card, level)} ${contextFocus.advice}`
       ].join('\n'))
     }
+  };
+}
+
+function buildBeginnerPracticalSections({ card, context = '', explanationContext }) {
+  const keyword = card.keywords?.[0] || '흐름';
+  const keyword2 = card.keywords?.[1] || keyword;
+  const contextLine = context?.trim()
+    ? `질문 맥락("${context.trim()}") 기준으로 보면,`
+    : '지금 상황 기준으로 보면,';
+
+  const suitHint = card.arcana === 'major'
+    ? '큰 흐름을 보여주는 카드라서, 당장 결과보다 방향을 먼저 잡는 데 도움이 됩니다.'
+    : ({
+      Wands: '실행과 속도에 관한 카드라서, 시작은 빠르게 하고 범위는 작게 잡는 게 좋습니다.',
+      Cups: '감정과 관계에 관한 카드라서, 내 마음을 짧고 분명하게 말하는 게 중요합니다.',
+      Swords: '생각과 판단에 관한 카드라서, 사실과 추측을 나눠보면 훨씬 선명해집니다.',
+      Pentacles: '현실과 결과에 관한 카드라서, 눈에 보이는 작은 결과를 먼저 남기는 게 좋습니다.'
+    }[card.suit] ?? '오늘 바로 해볼 수 있는 행동으로 바꿔 읽으면 실전에 잘 맞습니다.');
+
+  const domain = explanationContext?.domain || 'general';
+  const tag = explanationContext?.tag || 'default';
+  const domainCore = ({
+    relationship: '관계 질문이라면 상대 추측보다 내 말투와 경계부터 점검하세요.',
+    career: '커리어 질문이라면 멋진 계획보다 오늘 끝낼 1개를 정하는 게 먼저입니다.',
+    study: '학습 질문이라면 분량보다 복기 1줄을 남기는 습관이 더 중요합니다.',
+    finance: '재정 질문이라면 수익보다 지출 통제 1개를 먼저 잡는 편이 안전합니다.',
+    health: '건강 질문이라면 무리한 변화보다 회복 루틴 1개를 고정하는 게 좋습니다.',
+    daily: '오늘 운세 질문이라면 일정 1개와 감정 관리 1개만 잡아도 충분합니다.',
+    general: '지금은 크게 벌리기보다 오늘 바로 할 수 있는 1개에 집중하세요.'
+  }[domain] ?? '지금은 크게 벌리기보다 오늘 바로 할 수 있는 1개에 집중하세요.');
+  const domainSymbol = ({
+    relationship: '관계 상황에서는 상징을 대화 방식과 경계 설정으로 바꿔 읽어보세요.',
+    career: '커리어 상황에서는 상징을 일정·완료 기준으로 바꿔 읽어보세요.',
+    study: '학습 상황에서는 상징을 반복 루틴과 복기 습관으로 바꿔 읽어보세요.',
+    finance: '재정 상황에서는 상징을 지출 통제와 손실 방어 기준으로 바꿔 읽어보세요.',
+    health: '건강 상황에서는 상징을 수면·회복 루틴으로 바꿔 읽어보세요.',
+    daily: '하루 흐름에서는 상징을 오늘 할 일 1개와 피할 일 1개로 바꿔 읽어보세요.',
+    general: '상징을 오늘 행동 기준으로 바꿔 적으면 실전에 바로 쓸 수 있습니다.'
+  }[domain] ?? '상징을 오늘 행동 기준으로 바꿔 적으면 실전에 바로 쓸 수 있습니다.');
+  const domainUpright = ({
+    relationship: '관계에서는 짧은 대화 제안을 먼저 하면 흐름이 좋아집니다.',
+    career: '커리어에서는 작은 제출/완료를 먼저 만들면 흐름이 살아납니다.',
+    study: '학습에서는 짧은 반복을 끊기지 않게 유지하면 효과가 큽니다.',
+    finance: '재정에서는 작은 절약 1개를 바로 실행하면 체감이 빨라집니다.',
+    health: '건강에서는 무리하지 말고 회복 루틴 1개를 지키는 게 핵심입니다.',
+    daily: '하루 흐름에서는 일정을 가볍게 시작하는 쪽이 유리합니다.',
+    general: '지금은 시작 문턱을 낮출수록 결과가 잘 붙습니다.'
+  }[domain] ?? '지금은 시작 문턱을 낮출수록 결과가 잘 붙습니다.');
+  const domainReversed = ({
+    relationship: '관계에서는 결론을 서두르지 말고 오해를 줄이는 질문부터 하세요.',
+    career: '커리어에서는 확장보다 문서/준비를 먼저 다듬는 게 안전합니다.',
+    study: '학습에서는 범위를 줄이고 복기부터 다시 잡는 게 좋습니다.',
+    finance: '재정에서는 추가 지출보다 누수 차단이 우선입니다.',
+    health: '건강에서는 강도보다 회복 속도 조절이 먼저입니다.',
+    daily: '하루 흐름에서는 일정을 줄여 소모를 먼저 낮추세요.',
+    general: '지금은 속도보다 정리가 먼저입니다.'
+  }[domain] ?? '지금은 속도보다 정리가 먼저입니다.');
+  const domainAdvice = ({
+    relationship: '관계 복기는 대화 한 줄과 반응 한 줄만 남겨도 충분합니다.',
+    career: '커리어 복기는 실행 1개와 결과 1개를 짧게 기록하세요.',
+    study: '학습 복기는 오답 이유 1개와 다음 보완 1개만 적으세요.',
+    finance: '재정 복기는 지출 1개와 절약 1개만 기록하세요.',
+    health: '건강 복기는 컨디션 변화 1개만 남겨도 도움이 됩니다.',
+    daily: '하루 복기는 잘한 것 1개와 줄일 것 1개만 적어보세요.',
+    general: '복기는 길게 쓰지 말고 행동 1개와 결과 1개만 남기세요.'
+  }[domain] ?? '복기는 길게 쓰지 말고 행동 1개와 결과 1개만 남기세요.');
+
+  const loveAction = ({
+    reconnect: '재회/회복 맥락이라면 오늘 보낼 첫 문장 1개만 정해서 짧게 시도해 보세요.',
+    conflict: '갈등 맥락이라면 비난 문장 1개를 요청 문장 1개로 바꿔 말해보세요.',
+    relationship: '오늘은 전할 말 1문장과 피할 말 1문장을 먼저 정해보세요.',
+    career: '일 얘기를 할 때도 상대 감정을 한 번 확인하고 말하면 충돌이 줄어듭니다.',
+    general: '관계에서는 해석보다 대화 순서(사실-감정-요청)를 짧게 지키는 게 효과적입니다.'
+  }[tag] ?? ({
+    relationship: '오늘은 전할 말 1문장과 피할 말 1문장을 먼저 정해보세요.',
+    career: '일 얘기를 할 때도 상대 감정을 한 번 확인하고 말하면 충돌이 줄어듭니다.',
+    general: '관계에서는 해석보다 대화 순서(사실-감정-요청)를 짧게 지키는 게 효과적입니다.'
+  }[domain] ?? '오늘은 전할 말 1문장과 피할 말 1문장을 먼저 정해보세요.'));
+
+  const careerAction = ({
+    jobChange: '이직/취업 맥락이라면 오늘 지원 1건 또는 이력서 보완 1개 중 하나만 끝내세요.',
+    interview: '면접/지원 맥락이라면 답변 1개를 소리 내어 연습하고 근거 사례 1개를 붙이세요.',
+    project: '프로젝트 맥락이라면 오늘 완료할 작업 1개를 정하고 종료 시간을 고정하세요.',
+    career: '오늘 20분 안에 끝낼 수 있는 작업 1개를 정하고 바로 시작하세요.',
+    study: '25분 집중 + 5분 복기 1세트만 먼저 해보세요.',
+    finance: '오늘 줄일 지출 1개와 유지할 지출 1개를 나눠 적어보세요.',
+    relationship: '대화 전에 핵심 메시지 1문장을 메모해 두면 흔들림이 줄어듭니다.',
+    general: '일/학업에서는 우선순위 1개만 정하고 완료 체크를 남기세요.'
+  }[tag] ?? ({
+    career: '오늘 20분 안에 끝낼 수 있는 작업 1개를 정하고 바로 시작하세요.',
+    study: '25분 집중 + 5분 복기 1세트만 먼저 해보세요.',
+    finance: '오늘 줄일 지출 1개와 유지할 지출 1개를 나눠 적어보세요.',
+    relationship: '대화 전에 핵심 메시지 1문장을 메모해 두면 흔들림이 줄어듭니다.',
+    general: '일/학업에서는 우선순위 1개만 정하고 완료 체크를 남기세요.'
+  }[domain] ?? '오늘 20분 안에 끝낼 수 있는 작업 1개를 정하고 바로 시작하세요.'));
+
+  return {
+    coreMeaning: enforceMinLines([
+      `${card.nameKo} (${card.name})의 핵심은 ${card.keywords.join(', ')}입니다.`,
+      `${contextLine} "${keyword}"를 오늘 선택 기준으로 잡으면 읽기가 쉬워집니다.`,
+      domainCore,
+      '해석 체크: 오늘 바로 할 행동 1개로 문장을 끝내세요.'
+    ].join('\n')),
+    symbolism: enforceMinLines([
+      suitHint,
+      `이 카드의 상징은 "${keyword2}"를 어떻게 쓰느냐를 묻는 신호입니다.`,
+      '어려운 뜻풀이보다 지금 고민에 바로 연결해 읽는 게 더 정확합니다.',
+      domainSymbol
+    ].join('\n')),
+    upright: enforceMinLines([
+      `정방향은 "${keyword}" 흐름이 비교적 잘 풀리는 상태입니다.`,
+      '완벽히 준비될 때까지 기다리지 말고 작은 시작 1개부터 해보세요.',
+      domainUpright
+    ].join('\n')),
+    reversed: enforceMinLines([
+      `역방향은 "${keyword}" 흐름이 막히거나 과해질 수 있는 상태입니다.`,
+      '원인 하나만 고르고, 고치는 행동 하나만 먼저 적용해 보세요.',
+      domainReversed
+    ].join('\n')),
+    love: enforceMinLines([
+      '연애/관계에서는 상대 마음 추측보다 내 표현을 먼저 정리하는 게 정확합니다.',
+      `이 카드의 관계 포인트는 "${keyword2}"를 말과 행동에서 맞추는 것입니다.`,
+      loveAction
+    ].join('\n')),
+    career: enforceMinLines([
+      '일/학업에서는 큰 전략보다 오늘 끝낼 수 있는 작은 실행이 더 중요합니다.',
+      `이 카드의 실전 포인트는 "${keyword}"를 결과로 남기는 것입니다.`,
+      careerAction
+    ].join('\n')),
+    advice: enforceMinLines([
+      '입문 해설은 어렵게 길게 쓰기보다, 짧고 바로 할 수 있어야 합니다.',
+      '실전 과제: 카드 메시지를 오늘 체크리스트 1개로 바꾸세요.',
+      domainAdvice
+    ].join('\n'))
   };
 }
 
@@ -1151,10 +1292,14 @@ export async function buildCardExplanation({ cardId, level, context, cache, exte
   const card = getCardById(cardId);
   if (!card) return null;
 
-  const cacheKey = `explain:v5:${cardId}:${level}:${context || ''}`;
+  const cacheKey = `explain:v6:${cardId}:${level}:${context || ''}`;
   const cached = cache.get(cacheKey);
   if (cached) return { ...cached, source: 'cache' };
   const fallback = buildFallbackExplanation(card, level, context);
+  if (level === 'beginner') {
+    cache.set(cacheKey, fallback);
+    return fallback;
+  }
 
   if (!externalGenerator) {
     cache.set(cacheKey, fallback);
