@@ -388,6 +388,7 @@ function summarizeSpread({ spreadId = '', spreadName, items, context = '', level
     spreadName,
     firstItem: items[0],
     lastItem: items[items.length - 1],
+    items,
     context,
     contextTone
   });
@@ -1577,7 +1578,7 @@ function summarizeYearlyFortune({ items, context = '', level = 'beginner' }) {
 
 function inferYearlyIntent(context = '') {
   const text = String(context || '').toLowerCase();
-  if (/(취직|취업|이직|입사|지원|면접|커리어|직장|회사|오퍼|협상|이력서|포트폴리오|직무)/.test(text)) return 'career';
+  if (/(취직|취업|이직|입사|지원|면접|커리어|직장|회사|오퍼|협상|이력서|포트폴리오|직무|근무|일하는|출퇴근|통근|강남|용인)/.test(text)) return 'career';
   if (/(싸웠|싸움|다툼|갈등|서운|오해|화해|관계 회복)/.test(text)) return 'relationship-repair';
   if (/(친구|동료|사람들이|어떻게 생각|평판|인상|인간관계)/.test(text)) return 'social';
   if (/(연애|관계|재회|결혼|상대|썸)/.test(text)) return 'relationship';
@@ -2081,7 +2082,7 @@ function pickTopKeywords(items, count = 3) {
 
 function inferSummaryContextTone(context = '') {
   const text = String(context || '').toLowerCase();
-  if (['이직', '직장', '회사', '업무', '커리어', '면접', '승진'].some((k) => text.includes(k))) {
+  if (['이직', '직장', '회사', '업무', '커리어', '면접', '승진', '근무', '일하는', '출퇴근', '통근', '강남', '용인'].some((k) => text.includes(k))) {
     return {
       mainHint: '이직/업무 이슈는 기대보다 내 체력과 일정이 버티는지부터 확인하는 게 안전합니다.',
       beginnerHint: '지금 당장 붙잡을 일 하나와 내려놓을 일 하나를 먼저 정해 보세요.',
@@ -2218,7 +2219,7 @@ function buildSummaryLead({
   return `${spreadName} 스프레드의 전체 흐름을 보면 ${keywordLine} ${flowLine}`;
 }
 
-function buildSummaryFocus({ spreadName, firstItem, lastItem, context = '', contextTone }) {
+function buildSummaryFocus({ spreadName, firstItem, lastItem, items = [], context = '', contextTone }) {
   const intent = inferYearlyIntent(context);
   if (!firstItem || !lastItem) return contextTone.mainHint;
   if (spreadName === '원카드' || firstItem.position.name === '핵심 메시지') {
@@ -2242,6 +2243,10 @@ function buildSummaryFocus({ spreadName, firstItem, lastItem, context = '', cont
     return `실행: ${buildOneCardActionLine({ context, firstItem })}`;
   }
   if (spreadName === '양자택일 (A/B)') {
+    const choiceSnapshot = buildChoiceABSnapshot({ items, context });
+    if (choiceSnapshot.recommendationLine) {
+      return choiceSnapshot.recommendationLine;
+    }
     if (intent === 'relationship-repair') {
       return '갈등 상황의 양자택일은 누가 맞는지보다, 오해를 덜 키우고 대화를 다시 열 수 있는 선택지를 기준으로 보시는 편이 좋습니다. 각 선택지에서 감정 소모와 회복 가능성을 하나씩 비교해보세요.';
     }
@@ -2346,6 +2351,56 @@ function buildSummaryFocus({ spreadName, firstItem, lastItem, context = '', cont
   return `먼저 ${firstItem.position.name}의 ${firstItem.card.nameKo} 카드를 중심에 두고, 마지막 ${lastItem.position.name}의 ${lastItem.card.nameKo} 카드를 결론으로 잡아보세요. ${contextTone.mainHint}`;
 }
 
+function buildChoiceABSnapshot({ items = [], context = '' }) {
+  if (!Array.isArray(items) || !items.length) return { recommendationLine: '' };
+  const aNear = items.find((item) => item.position?.name === 'A 선택 시 가까운 미래');
+  const aResult = items.find((item) => item.position?.name === 'A 선택 시 결과');
+  const bNear = items.find((item) => item.position?.name === 'B 선택 시 가까운 미래');
+  const bResult = items.find((item) => item.position?.name === 'B 선택 시 결과');
+  const current = items.find((item) => item.position?.name === '현재 상황');
+  if (!aNear || !aResult || !bNear || !bResult) return { recommendationLine: '' };
+
+  const score = (item, weight = 1) => {
+    const direction = item?.orientation === 'upright' ? 1.2 : -1.1;
+    const riskPenalty = scoreCardRisk(item) >= 2 ? 1.1 : scoreCardRisk(item) >= 1 ? 0.5 : 0;
+    return (direction - riskPenalty) * weight;
+  };
+  const aScore = score(aNear, 1) + score(aResult, 1.4);
+  const bScore = score(bNear, 1) + score(bResult, 1.4);
+  const gap = aScore - bScore;
+  const options = parseChoiceOptions(context);
+  const axis = options.isWorkChoice ? '통근·생활비·지속 가능성' : '시간·비용·감정 소모';
+  const currentKeyword = current?.card?.keywords?.[0] || '현재 신호';
+
+  if (Math.abs(gap) < 0.65) {
+    return {
+      recommendationLine: `A/B 점수는 박빙입니다. "${currentKeyword}"를 기준으로 ${axis} 체크리스트를 같은 포맷으로 비교한 뒤, 3개월 유지가 더 쉬운 쪽을 최종 선택하세요.`
+    };
+  }
+  if (gap > 0) {
+    return {
+      recommendationLine: `카드 흐름은 ${options.optionA} 쪽이 조금 더 우세합니다. 단기 반응보다 3개월 유지 기준으로 ${axis}을 점검하면 선택 정확도가 높아집니다.`
+    };
+  }
+  return {
+    recommendationLine: `카드 흐름은 ${options.optionB} 쪽이 조금 더 우세합니다. 단기 만족보다 3개월 유지 기준으로 ${axis}을 확인하고 결정하는 편이 안전합니다.`
+  };
+}
+
+function parseChoiceOptions(context = '') {
+  const raw = String(context || '').trim();
+  const lowered = raw.toLowerCase();
+  const places = [...raw.matchAll(/([가-힣A-Za-z0-9]{2,20})\s*에서/g)]
+    .map((m) => m[1])
+    .filter(Boolean);
+  const uniquePlaces = [...new Set(places)];
+  return {
+    optionA: uniquePlaces[0] || 'A',
+    optionB: uniquePlaces[1] || 'B',
+    isWorkChoice: /(일하|근무|출퇴근|통근|직장|회사|오피스|사무실|출근)/.test(lowered)
+  };
+}
+
 function buildSummaryTheme({ spreadName, context = '', items = [], topKeywords = [] }) {
   const intent = inferYearlyIntent(context);
   const leadKeyword = topKeywords[0] || items[0]?.card?.keywords?.[0] || '흐름';
@@ -2362,7 +2417,14 @@ function buildSummaryTheme({ spreadName, context = '', items = [], topKeywords =
     return `한 줄 테마: 올해는 '${leadKeyword}' 키워드를 분기 기준으로 나눠 운영하면 변동성을 줄이기 좋습니다.`;
   }
   if (spreadName === '양자택일 (A/B)') {
-    return `한 줄 테마: 선택 판단은 '${leadKeyword}' 기준으로 유지 가능성과 소모도를 함께 비교하는 것이 핵심입니다.`;
+    const choiceSnapshot = buildChoiceABSnapshot({ items, context });
+    if (choiceSnapshot.recommendationLine.includes('A 쪽이')) {
+      return `한 줄 테마: '${leadKeyword}' 기준으로 보면 A축이 조금 우세하니, 단기 반응보다 3개월 지속성을 우선 비교하세요.`;
+    }
+    if (choiceSnapshot.recommendationLine.includes('B 쪽이')) {
+      return `한 줄 테마: '${leadKeyword}' 기준으로 보면 B축이 조금 우세하니, 즉시 만족보다 장기 소모를 함께 확인하세요.`;
+    }
+    return `한 줄 테마: '${leadKeyword}' 기준으로 A/B가 박빙이라, 같은 체크리스트로 비교해 최종 결정을 좁히는 것이 핵심입니다.`;
   }
   if (spreadName === '3카드 스프레드') {
     return `한 줄 테마: 세 장을 '${leadKeyword}' 한 축으로 연결해 읽으면 실행 문장이 훨씬 또렷해집니다.`;
@@ -2462,6 +2524,10 @@ function buildSummaryAction({ spreadName, level, context = '', firstItem = null,
     return `연간 리딩은 월별 성과보다 분기별 균형을 먼저 챙기면 덜 흔들립니다. ${levelLine}`;
   }
   if (spreadName === '양자택일 (A/B)') {
+    const choiceMeta = parseChoiceOptions(context);
+    const workChecklist = choiceMeta.isWorkChoice
+      ? `${choiceMeta.optionA}/${choiceMeta.optionB} 각각에 대해 통근 시간, 월 고정비, 체력 소모를 같은 포맷으로 적어 보세요.`
+      : 'A/B 각각에 대해 시간, 비용, 감정 소모를 같은 포맷으로 적어 보세요.';
     if (intent === 'relationship-repair') {
       return `선택형 관계 회복 조언도 두 갈래입니다: 화해를 열고 싶다면 오해를 덜 키우는 선택을 고르세요. 소모를 줄이려면 경계가 지켜지는 선택지를 우선하는 편이 좋습니다. ${levelLine}`;
     }
@@ -2474,7 +2540,7 @@ function buildSummaryAction({ spreadName, level, context = '', firstItem = null,
     if (intent === 'relationship') {
       return `선택형 연애운 조언도 두 갈래입니다. 더 가까워지고 싶다면 대화가 편안하게 이어지는 쪽을 고르세요. 안정이 우선이라면 감정 소모가 적고 경계가 지켜지는 선택지를 우선하는 편이 좋습니다. ${levelLine}`;
     }
-    return `결정 전에는 시간, 비용, 마음 소모 이 세 가지만 두 선택지에 대입해 보세요. ${levelLine}`;
+    return `결정 전 실행 기준: ${workChecklist} 3개월 뒤에도 유지 가능한 쪽을 우선하세요. ${levelLine}`;
   }
   if (spreadName === '3카드 스프레드') {
     if (intent === 'relationship-repair') {

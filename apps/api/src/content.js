@@ -1330,7 +1330,7 @@ function inferContextProfile(context = '') {
     },
     {
       id: 'career',
-      keywords: ['이직', '직장', '회사', '업무', '승진', '프로젝트', '커리어', '창업', '면접'],
+      keywords: ['이직', '직장', '회사', '업무', '승진', '프로젝트', '커리어', '창업', '면접', '근무', '일하는', '출퇴근', '통근', '오피스', '출근'],
       anchor: '현실 제약(시간/성과/역할)을 먼저 고정해야 합니다.',
       interpretationHint: '성과와 리스크를 같은 기준으로 비교해야 의사결정 오류를 줄일 수 있습니다.',
       actionHint: '일정과 책임 범위를 명확히 써서 실행하세요.',
@@ -1435,6 +1435,8 @@ function buildNaturalCoreMessage({
   const isTensionKeyword = /(제약|불안|권태|무기력|과잉 사고|소모|병목|갈등|오해|혼란)/.test(mainKeyword);
   const meaningLine = spreadId === 'celtic-cross'
     ? buildCelticCoreMeaningLine({ cardName: card.nameKo, positionName: position.name, orientation, focus, mainKeyword })
+    : spreadId === 'choice-a-b' && orientation === 'upright' && isTensionKeyword
+      ? `${card.nameKo}의 핵심 키워드인 ${mainKeywordSubject} 경계 신호로 작동해, ${focus}에서는 속도보다 기준 점검이 더 중요합니다.`
     : spreadId === 'daily-fortune' && orientation === 'upright' && isTensionKeyword
       ? `${card.nameKo}의 핵심 키워드인 ${mainKeywordSubject} 보여주는 경계 신호를 읽어, ${focus}에서 과속을 줄이는 운영이 더 중요합니다.`
     : orientation === 'upright'
@@ -1442,7 +1444,7 @@ function buildNaturalCoreMessage({
       : `${card.nameKo}의 핵심 키워드인 ${mainKeywordSubject} 잠시 막혀 있어서 ${focus}에서는 속도를 조금 늦추고 차분히 조정해보시는 편이 좋겠습니다.`;
   const adviceLine = spreadId === 'celtic-cross'
     ? buildCelticCoreAdviceLine({ positionName: position.name, orientation, contextProfile, seed })
-    : buildTarotAdviceLine({ spreadId, positionName: position.name, contextProfile, tone, orientation, seed });
+    : buildTarotAdviceLine({ spreadId, positionName: position.name, contextProfile, tone, orientation, context, seed });
   const raw = joinUniqueParts([contextLead, cardLine, meaningLine, adviceLine]);
   return polishCoreMessage(raw);
 }
@@ -1483,13 +1485,13 @@ function buildTarotConsultingInterpretation({
   if (spreadId === 'celtic-cross') {
     return buildCelticCrossInterpretation({ card, position, orientation, focus, context, contextProfile, seed });
   }
-  const spreadGuide = buildSpreadConsultingGuide({ spreadId, positionName: position.name, positionPrompt, seed });
-  const orientationGuide = buildOrientationCounselLine({ spreadId, positionName: position.name, cardName: card.nameKo, orientation, tone, seed });
-  const keywordGuide = buildKeywordCounselLine({ card, spreadId, positionName: position.name, focus, seed });
+  const spreadGuide = buildSpreadConsultingGuide({ spreadId, positionName: position.name, positionPrompt, context, seed });
+  const orientationGuide = buildOrientationCounselLine({ spreadId, positionName: position.name, cardName: card.nameKo, orientation, tone, context, seed });
+  const keywordGuide = buildKeywordCounselLine({ card, spreadId, positionName: position.name, focus, context, seed });
   const contextLine = spreadId === 'weekly-fortune'
     ? buildWeeklyContextLine({ positionName: position.name, seed })
-    : buildCoreContextLine({ spreadId, positionName: position.name, contextProfile, seed });
-  const actionLine = buildTarotActionLine({ spreadId, positionName: position.name, contextProfile, orientation, seed });
+    : buildCoreContextLine({ spreadId, positionName: position.name, contextProfile, context, seed });
+  const actionLine = buildTarotActionLine({ spreadId, positionName: position.name, contextProfile, orientation, context, seed });
   return polishTarotInterpretation([spreadGuide, orientationGuide, keywordGuide, contextLine, actionLine].join(' '));
 }
 
@@ -2464,7 +2466,7 @@ function buildYearlyMonthInterpretation({ card, position, orientation, context =
 
 function inferYearlyIntent(context = '') {
   const text = String(context || '').toLowerCase();
-  if (/(취직|취업|이직|입사|지원|면접|커리어|직장|회사)/.test(text)) return 'career';
+  if (/(취직|취업|이직|입사|지원|면접|커리어|직장|회사|근무|일하는|출퇴근|통근|강남|용인)/.test(text)) return 'career';
   if (/(싸웠|싸움|다툼|갈등|서운|오해|화해|관계 회복)/.test(text)) return 'relationship-repair';
   if (/(친구|동료|사람들이|어떻게 생각|평판|인상|인간관계)/.test(text)) return 'social';
   if (/(연애|관계|재회|결혼|상대|썸)/.test(text)) return 'relationship';
@@ -2699,7 +2701,29 @@ function normalizeClientQuestion(context = '') {
   return String(context || '').trim().replace(/[.!?]+$/g, '');
 }
 
-function buildTarotAdviceLine({ spreadId, positionName, contextProfile, tone, orientation, seed }) {
+function buildTarotAdviceLine({ spreadId, positionName, contextProfile, tone, orientation, context = '', seed }) {
+  if (spreadId === 'choice-a-b') {
+    const meta = inferChoiceContextMeta(context);
+    const axis = pickChoicePrimaryAxis(positionName, meta);
+    const linesByPosition = {
+      '현재 상황': orientation === 'upright'
+        ? `현재 상황 자리는 판단 기준을 고정하는 구간입니다. ${axis} 기준을 먼저 숫자로 적어두면 비교 오차가 줄어듭니다.`
+        : `현재 상황 자리는 감정이 기준을 덮기 쉬운 구간입니다. ${axis} 기준부터 다시 고정한 뒤 A/B를 비교하세요.`,
+      'A 선택 시 가까운 미래': orientation === 'upright'
+        ? `A 가까운 미래는 초기 반응을 보는 자리입니다. ${meta.optionA} 선택 시 ${axis}가 버티는지 1~2주 단위로 확인해보세요.`
+        : `A 가까운 미래는 초반 마찰 점검 자리입니다. ${meta.optionA} 선택 시 ${axis}에서 과부하 신호가 나는지 먼저 보세요.`,
+      'A 선택 시 결과': orientation === 'upright'
+        ? `A 결과는 중기 지속성을 읽는 자리입니다. ${meta.optionA} 선택 시 ${axis}의 유지 가능성을 우선 판단하세요.`
+        : `A 결과는 장기 소모를 점검하는 자리입니다. ${meta.optionA} 선택 시 ${axis} 부담이 누적되는지 먼저 확인하세요.`,
+      'B 선택 시 가까운 미래': orientation === 'upright'
+        ? `B 가까운 미래는 초기 적응 속도를 보는 자리입니다. ${meta.optionB} 선택 시 ${axis} 변화를 짧게 기록해보세요.`
+        : `B 가까운 미래는 초반 흔들림 점검 자리입니다. ${meta.optionB} 선택 시 ${axis}의 변동성을 먼저 줄이는 편이 좋습니다.`,
+      'B 선택 시 결과': orientation === 'upright'
+        ? `B 결과는 장기 운영 가능성을 보는 자리입니다. ${meta.optionB} 선택 시 ${axis}이 오래 유지되는지 확인하세요.`
+        : `B 결과는 누적 피로를 점검하는 자리입니다. ${meta.optionB} 선택 시 ${axis}에서 지치는 패턴이 생기는지 먼저 보세요.`
+    };
+    return linesByPosition[positionName] ?? `양자택일에서는 ${axis} 기준을 먼저 고정하고 비교하는 편이 정확합니다.`;
+  }
   const cautionPosition = isCautionPosition(positionName);
   const outcomePosition = isOutcomePosition(positionName);
   const direction = cautionPosition
@@ -2721,7 +2745,7 @@ function buildTarotAdviceLine({ spreadId, positionName, contextProfile, tone, or
   return pickVariant(`${seed}:${spreadId}:tarot-advice`, lines);
 }
 
-function buildSpreadConsultingGuide({ spreadId, positionName, positionPrompt, seed }) {
+function buildSpreadConsultingGuide({ spreadId, positionName, positionPrompt, context = '', seed }) {
   const dailyGuideByPosition = {
     '오늘의 흐름': [
       '오늘의 흐름 카드는 하루 전반의 페이스와 에너지 배분을 정하는 기준입니다.'
@@ -2762,11 +2786,21 @@ function buildSpreadConsultingGuide({ spreadId, positionName, positionPrompt, se
   };
   const choiceGuideByPosition = {
     '현재 상황': ['현재 상황 카드는 A/B 비교 전에 공통 판단 기준을 고정하는 자리입니다.'],
-    'A 선택 시 가까운 미래': ['A 가까운 미래 카드는 단기 리스크와 즉시 체감 변화를 읽는 자리입니다.'],
-    'A 선택 시 결과': ['A 결과 카드는 선택 유지 시 장기 지속 가능성을 확인하는 자리입니다.'],
-    'B 선택 시 가까운 미래': ['B 가까운 미래 카드는 단기 리스크와 즉시 체감 변화를 읽는 자리입니다.'],
-    'B 선택 시 결과': ['B 결과 카드는 선택 유지 시 장기 지속 가능성을 확인하는 자리입니다.']
+    'A 선택 시 가까운 미래': ['A 가까운 미래 카드는 선택 직후 1~2주 체감 변화를 점검하는 자리입니다.'],
+    'A 선택 시 결과': ['A 결과 카드는 1~3개월 유지 시 누적 보상과 소모를 비교하는 자리입니다.'],
+    'B 선택 시 가까운 미래': ['B 가까운 미래 카드는 선택 직후 적응 속도와 마찰 비용을 보는 자리입니다.'],
+    'B 선택 시 결과': ['B 결과 카드는 장기 지속 가능성과 확장 여지를 확인하는 자리입니다.']
   };
+  const choiceMeta = inferChoiceContextMeta(context);
+  const choiceContextGuide = choiceMeta.isWorkChoice
+    ? [
+      `이번 질문은 근무지 선택 맥락이므로 ${choiceMeta.axes[0]}, ${choiceMeta.axes[1]}, ${choiceMeta.axes[2]}를 공통 기준으로 먼저 고정하세요.`,
+      `${choiceMeta.optionA}/${choiceMeta.optionB} 비교에서는 즉시 만족보다 3개월 뒤 지속 가능성을 우선 보는 편이 정확합니다.`
+    ]
+    : [
+      '양자택일 리딩은 감정보다 유지 비용을 같이 봐야 후회가 줄어듭니다.',
+      'A/B 리딩에서는 즉시 만족보다 오래 유지 가능한 쪽이 보통 더 안정적입니다.'
+    ];
   const yearlyGuideByPosition = isYearlyMonthPosition(positionName)
     ? [`${positionName} 카드는 연간 흐름에서 해당 달 운영 기준을 정하는 자리입니다.`]
     : null;
@@ -2802,8 +2836,7 @@ function buildSpreadConsultingGuide({ spreadId, positionName, positionPrompt, se
     ],
     'choice-a-b': [
       ...(choiceGuideByPosition[positionName] ?? []),
-      '양자택일 리딩은 감정보다 유지 비용을 같이 봐야 후회가 줄어듭니다.',
-      'A/B 리딩에서는 즉시 만족보다 오래 유지 가능한 쪽이 보통 더 안정적입니다.'
+      ...choiceContextGuide
     ],
     'yearly-fortune': yearlyGuideByPosition ?? [
       '연간 운세는 월별 사건보다 분기별 공통 흐름을 먼저 읽을 때 실제 활용성이 높습니다.'
@@ -2824,7 +2857,7 @@ function buildSpreadConsultingGuide({ spreadId, positionName, positionPrompt, se
   return pickVariant(`${seed}:spread-guide`, options);
 }
 
-function buildOrientationCounselLine({ spreadId, positionName, cardName, orientation, tone, seed }) {
+function buildOrientationCounselLine({ spreadId, positionName, cardName, orientation, tone, context = '', seed }) {
   const cardNameSubject = withSmartSubject(cardName);
   const cautionPosition = isCautionPosition(positionName);
   const outcomePosition = isOutcomePosition(positionName);
@@ -2888,14 +2921,31 @@ function buildOrientationCounselLine({ spreadId, positionName, cardName, orienta
       : `${cardNameSubject} 역방향이라 ${positionName} 포지션 신호는 속도 조절 후 적용하는 편이 좋습니다.`;
   }
   if (spreadId === 'choice-a-b') {
+    const meta = inferChoiceContextMeta(context);
+    const axis = pickChoicePrimaryAxis(positionName, meta);
     if (positionName === '현재 상황') {
       return orientation === 'upright'
-        ? `${cardNameSubject} 정방향이라 비교 기준을 명확히 세우기 좋은 구간입니다.`
-        : `${cardNameSubject} 역방향이라 현재 판단 기준이 흔들릴 수 있어 기준 재정렬이 먼저입니다.`;
+        ? `${cardNameSubject} 정방향이라 비교 기준이 선명해집니다. ${axis}을 우선 기준으로 두면 판단이 빨라집니다.`
+        : `${cardNameSubject} 역방향이라 기준이 흔들릴 수 있습니다. ${axis}부터 다시 고정하고 비교하세요.`;
+    }
+    if (positionName === 'A 선택 시 가까운 미래') {
+      return orientation === 'upright'
+        ? `${cardNameSubject} 정방향이라 A의 초반 적응력은 비교적 좋습니다. 다만 ${axis} 과속은 경계가 필요합니다.`
+        : `${cardNameSubject} 역방향이라 A는 초반 마찰이 커질 수 있습니다. ${axis} 부담을 먼저 낮추는 편이 좋습니다.`;
+    }
+    if (positionName === 'A 선택 시 결과') {
+      return orientation === 'upright'
+        ? `${cardNameSubject} 정방향이라 A의 중기 성과 여지는 있습니다. 대신 ${axis} 지속성을 같이 확인하세요.`
+        : `${cardNameSubject} 역방향이라 A의 중기 누적 소모 가능성이 보입니다. ${axis} 리스크를 우선 점검하세요.`;
+    }
+    if (positionName === 'B 선택 시 가까운 미래') {
+      return orientation === 'upright'
+        ? `${cardNameSubject} 정방향이라 B의 초기 안정성은 괜찮아 보입니다. ${axis} 체감을 1~2주 내 확인하세요.`
+        : `${cardNameSubject} 역방향이라 B는 초반 적응 흔들림이 예상됩니다. ${axis}을 완충하는 전략이 필요합니다.`;
     }
     return orientation === 'upright'
-      ? `${cardNameSubject} 정방향이라 ${positionName} 시나리오의 유지 가능성을 높게 볼 수 있습니다.`
-      : `${cardNameSubject} 역방향이라 ${positionName} 시나리오는 단기 마찰을 먼저 점검해야 합니다.`;
+      ? `${cardNameSubject} 정방향이라 B의 장기 운영 가능성은 비교적 열려 있습니다. ${axis}의 지속성을 함께 보세요.`
+      : `${cardNameSubject} 역방향이라 B는 장기 구간에서 피로 누적 가능성이 있습니다. ${axis} 리스크를 먼저 정리하세요.`;
   }
   if (spreadId === 'celtic-cross') {
     if (positionName === '결과') {
@@ -2940,7 +2990,7 @@ function buildOrientationCounselLine({ spreadId, positionName, cardName, orienta
   return pickVariant(`${seed}:${spreadId}:orientation-counsel`, lines);
 }
 
-function buildKeywordCounselLine({ card, spreadId = 'default', positionName = '', focus, seed }) {
+function buildKeywordCounselLine({ card, spreadId = 'default', positionName = '', focus, context = '', seed }) {
   const main = card.keywords?.[0] ?? '핵심';
   const sub = card.keywords?.[1] ?? main;
   const focusWithParticle = withKoreanParticle(focus, '을', '를');
@@ -2974,7 +3024,10 @@ function buildKeywordCounselLine({ card, spreadId = 'default', positionName = ''
     return `${card.nameKo} 카드의 '${main}' 키워드를 ${positionName} 포지션 근거로 고정하면 세 장 연결 해석의 오차를 줄일 수 있습니다.`;
   }
   if (spreadId === 'choice-a-b') {
-    return `${card.nameKo} 카드의 '${main}' 키워드를 ${positionName} 시나리오의 유지 가능성 기준으로 두고, '${sub}' 신호를 리스크 항목으로 비교해보세요.`;
+    const meta = inferChoiceContextMeta(context);
+    const primaryAxis = pickChoicePrimaryAxis(positionName, meta);
+    const riskAxis = pickChoiceRiskAxis(positionName, meta);
+    return `${card.nameKo} 카드의 '${main}' 신호를 ${primaryAxis} 기준으로 두고, '${sub}'는 ${riskAxis} 점검 항목으로 비교해보세요.`;
   }
   if (spreadId === 'celtic-cross') {
     return `${card.nameKo} 카드의 '${main}' 키워드를 ${positionName} 서사 역할과 연결하고, '${sub}'를 교차 검증 포인트로 적어두면 해석 일관성이 올라갑니다.`;
@@ -2989,7 +3042,18 @@ function buildKeywordCounselLine({ card, spreadId = 'default', positionName = ''
   return pickVariant(`${seed}:keyword-counsel`, lines);
 }
 
-function buildTarotActionLine({ spreadId, positionName, contextProfile, orientation, seed }) {
+function buildTarotActionLine({ spreadId, positionName, contextProfile, orientation, context = '', seed }) {
+  if (spreadId === 'choice-a-b') {
+    const meta = inferChoiceContextMeta(context);
+    const linesByPosition = {
+      '현재 상황': `실행 문장: ${meta.axes[0]}·${meta.axes[2]}·${meta.axes[4]}를 A/B 동일 포맷(숫자/체감)으로 먼저 적어두세요.`,
+      'A 선택 시 가까운 미래': `실행 문장: ${meta.optionA}를 2주 가정했을 때 ${meta.axes[1]} 변화를 하루 1줄로 기록해보세요.`,
+      'A 선택 시 결과': `실행 문장: ${meta.optionA}의 3개월 기준으로 ${meta.axes[3]}와 ${meta.axes[4]}를 분리해 평가하세요.`,
+      'B 선택 시 가까운 미래': `실행 문장: ${meta.optionB}를 2주 가정했을 때 ${meta.axes[0]}·${meta.axes[1]} 체감을 먼저 점검하세요.`,
+      'B 선택 시 결과': `실행 문장: ${meta.optionB}의 3개월 운영 기준으로 ${meta.axes[2]}와 ${meta.axes[4]}를 숫자로 확인하세요.`
+    };
+    return linesByPosition[positionName] ?? `실행 문장: A/B를 같은 기준표로 비교해 판단 오차를 줄여보세요.`;
+  }
   const cautionPosition = isCautionPosition(positionName);
   const outcomePosition = isOutcomePosition(positionName);
   const direction = cautionPosition
@@ -3051,7 +3115,7 @@ function polishTarotInterpretation(raw = '') {
   return out;
 }
 
-function buildCoreContextLine({ spreadId, positionName, contextProfile, seed }) {
+function buildCoreContextLine({ spreadId, positionName, contextProfile, context = '', seed }) {
   if (spreadId === 'daily-fortune') {
     const byPosition = {
       '오늘의 흐름': [
@@ -3099,9 +3163,11 @@ function buildCoreContextLine({ spreadId, positionName, contextProfile, seed }) 
     return pickVariant(`${seed}:three-core-context:${positionName}`, options);
   }
   if (spreadId === 'choice-a-b') {
+    const meta = inferChoiceContextMeta(context);
+    const axis = pickChoicePrimaryAxis(positionName, meta);
     const options = [
-      `${positionName} 해석에서는 시간/비용/감정 소모 중 1개 기준을 먼저 정해 비교 오차를 줄여보세요.`,
-      `${positionName} 해석에서는 카드 키워드를 시나리오 리스크 항목으로 변환해 기록하면 판단이 빨라집니다.`
+      `${positionName} 해석에서는 ${axis}을 공통 기준으로 고정해 비교 오차를 줄여보세요.`,
+      `${positionName} 해석에서는 카드 키워드를 ${pickChoiceRiskAxis(positionName, meta)} 리스크 항목으로 바꿔 기록하면 판단이 빨라집니다.`
     ];
     return pickVariant(`${seed}:choice-core-context:${positionName}`, options);
   }
@@ -3125,6 +3191,46 @@ function buildCoreContextLine({ spreadId, positionName, contextProfile, seed }) 
       `${positionName} 해석에서는 ${contextProfile.anchor}`
     ];
   return pickVariant(`${seed}:core-context`, lines);
+}
+
+function inferChoiceContextMeta(context = '') {
+  const raw = String(context || '').trim();
+  const lowered = raw.toLowerCase();
+  const places = [...raw.matchAll(/([가-힣A-Za-z0-9]{2,20})\s*에서/g)]
+    .map((m) => m[1])
+    .filter(Boolean);
+  const uniquePlaces = [...new Set(places)];
+  const isWorkChoice = /(일하|근무|출퇴근|통근|직장|회사|오피스|사무실|출근)/.test(lowered);
+  const optionA = uniquePlaces[0] || 'A안';
+  const optionB = uniquePlaces[1] || 'B안';
+  const isLocationChoice = uniquePlaces.length >= 2;
+  const axes = (isLocationChoice || isWorkChoice)
+    ? ['통근 시간', '교통 피로', '생활비', '성장 기회', '지속 가능성']
+    : ['시간', '비용', '감정 소모', '성장 여지', '지속 가능성'];
+  return {
+    optionA,
+    optionB,
+    isLocationChoice,
+    isWorkChoice,
+    axes
+  };
+}
+
+function pickChoicePrimaryAxis(positionName = '', meta) {
+  const axis = meta?.axes || ['시간', '비용', '감정 소모', '성장 여지', '지속 가능성'];
+  if (positionName === '현재 상황') return axis[0];
+  if (positionName === 'A 선택 시 가까운 미래' || positionName === 'B 선택 시 가까운 미래') return axis[1];
+  if (positionName === 'A 선택 시 결과') return axis[3];
+  if (positionName === 'B 선택 시 결과') return axis[4];
+  return axis[0];
+}
+
+function pickChoiceRiskAxis(positionName = '', meta) {
+  const axis = meta?.axes || ['시간', '비용', '감정 소모', '성장 여지', '지속 가능성'];
+  if (positionName === '현재 상황') return axis[2];
+  if (positionName === 'A 선택 시 가까운 미래' || positionName === 'B 선택 시 가까운 미래') return axis[0];
+  if (positionName === 'A 선택 시 결과' || positionName === 'B 선택 시 결과') return axis[2];
+  return axis[2];
 }
 
 function buildWeeklyContextLine({ positionName, seed = '' }) {
@@ -3171,8 +3277,8 @@ function buildSpreadCoreLead({ spreadId = 'default', positionName = '', seed = '
       `${positionName} 자리에서 시간축/문제축 해석의 핵심 신호를 먼저 확인해보겠습니다.`
     ],
     'choice-a-b': [
-      `${topic} 선택 비교에서 유지 비용을 가르는 기준입니다.`,
-      `${positionName} 포지션은 A/B 판단의 분기점 역할을 합니다.`
+      `${topic} A/B 판단에서 비교 기준을 고정하는 핵심 자리입니다.`,
+      `${positionName} 포지션은 선택지별 단기 반응과 중기 지속성을 가르는 분기점입니다.`
     ],
     'relationship-recovery': [
       `${topic} 관계 회복 대화 순서를 정하는 핵심 자리입니다.`,
