@@ -18,11 +18,14 @@ export function LibraryPage() {
   const cards = useMemo(() => cardsQuery.data ?? [], [cardsQuery.data]);
 
   return (
-    <section className="stack">
-      <article className="panel">
-        <h2>카드 도감</h2>
-        <p>카드별 이미지와 3줄 이상 학습 설명을 제공합니다. 관점을 바꿔 차이를 비교하세요.</p>
-        <ImageAttributionNotice attribution={cards[0]?.imageAttribution} />
+    <section className="page-shell">
+      <article className="hero-card page-hero">
+        <div>
+          <p className="eyebrow">Library</p>
+          <h2>카드 도감</h2>
+          <p>카드별 이미지와 3줄 이상 학습 설명을 제공합니다. 관점을 바꿔 차이를 비교하세요.</p>
+          <ImageAttributionNotice attribution={cards[0]?.imageAttribution} />
+        </div>
         <div className="filters">
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="카드명/키워드 검색" />
           <select value={arcana} onChange={(e) => setArcana(e.target.value)}>
@@ -41,6 +44,21 @@ export function LibraryPage() {
           </select>
         </div>
       </article>
+
+      <section className="kpi-row">
+        <article className="kpi-card">
+          <p className="sub">검색 결과</p>
+          <h3>{cards.length}</h3>
+        </article>
+        <article className="kpi-card">
+          <p className="sub">설명 관점</p>
+          <h3>{viewLevel === 'beginner' ? '입문' : '중급'}</h3>
+        </article>
+        <article className="kpi-card">
+          <p className="sub">필터 상태</p>
+          <h3>{arcana || '전체'} · {difficulty || '전체'}</h3>
+        </article>
+      </section>
 
       {cardsQuery.isLoading && <p>카드 로딩 중...</p>}
       {cardsQuery.isError && <p>카드를 불러오지 못했습니다.</p>}

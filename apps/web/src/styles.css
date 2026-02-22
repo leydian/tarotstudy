@@ -84,6 +84,13 @@ body {
   min-height: 100vh;
 }
 
+button,
+input,
+select,
+textarea {
+  color: var(--ink-0);
+}
+
 a {
   color: inherit;
   text-decoration: none;
@@ -138,7 +145,7 @@ nav {
   border: 1px solid var(--line);
   border-radius: 999px;
   padding: 8px 12px;
-  background: #fff;
+  background: var(--reading-bg);
 }
 
 .nav-link.on {
@@ -159,6 +166,50 @@ nav {
   gap: 12px;
 }
 
+.page-shell {
+  display: grid;
+  gap: 16px;
+}
+
+.page-hero {
+  display: grid;
+  gap: 14px;
+}
+
+.page-hero .hero-actions {
+  margin-top: 0;
+}
+
+.kpi-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.kpi-card {
+  border: 1px solid var(--reading-line);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--reading-bg) 88%, var(--accent-soft));
+  padding: 12px 14px;
+}
+
+.kpi-card h3 {
+  margin: 2px 0 0;
+  font-size: clamp(1.1rem, 1.03rem + 0.4vw, 1.45rem);
+  letter-spacing: -0.01em;
+}
+
+.content-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 0.65fr);
+  gap: 14px;
+}
+
+.content-main,
+.content-side {
+  min-width: 0;
+}
+
 .panel,
 .hero-card {
   background: var(--panel);
@@ -170,8 +221,8 @@ nav {
 }
 
 .alert-panel {
-  border-color: #f0b56a;
-  background: linear-gradient(135deg, #fff7eb, #fff2dd);
+  border-color: color-mix(in srgb, var(--warn-ink) 40%, var(--line));
+  background: linear-gradient(135deg, var(--warn-bg), color-mix(in srgb, var(--warn-bg) 70%, var(--panel)));
 }
 
 .hero-card h2 {
@@ -242,6 +293,11 @@ select {
   color: var(--ink-0);
 }
 
+select option {
+  background: var(--reading-bg);
+  color: var(--ink-0);
+}
+
 input {
   min-width: 220px;
 }
@@ -271,16 +327,18 @@ input {
 
 .chip-link {
   border: 1px solid var(--line);
-  background: #fff;
+  background: var(--reading-bg);
   border-radius: 999px;
   padding: 7px 12px;
   display: inline-block;
   cursor: pointer;
+  color: var(--ink-0);
 }
 
 .chip-link.chip-on {
-  background: #dce7ff;
-  border-color: #8ea8ff;
+  background: color-mix(in srgb, var(--brand-1) 18%, var(--reading-bg));
+  border-color: color-mix(in srgb, var(--brand-1) 44%, var(--line));
+  color: var(--ink-0);
 }
 
 .choice {
@@ -290,7 +348,7 @@ input {
   display: flex;
   align-items: center;
   gap: 10px;
-  background: #fff;
+  background: var(--reading-bg);
 }
 
 .result-item {
@@ -354,14 +412,14 @@ input {
   border-radius: 10px;
   border: 1px solid var(--line);
   object-fit: contain;
-  background: #fff;
+  background: var(--reading-bg);
 }
 
 .description-box {
   border: 1px dashed var(--line);
   border-radius: 12px;
   padding: 10px;
-  background: rgba(255, 255, 255, 0.7);
+  background: color-mix(in srgb, var(--reading-bg) 82%, var(--accent-soft));
 }
 
 .description-box p {
@@ -380,7 +438,7 @@ input {
   padding: 10px;
   border: 1px dashed var(--line);
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.68);
+  background: color-mix(in srgb, var(--reading-bg) 76%, var(--accent-soft));
 }
 
 .spread-card {
@@ -909,8 +967,17 @@ input {
 
 :root[data-theme='dark'] .nav-link.on,
 :root[data-theme='dark'] .btn.primary {
-  color: #1a1127;
+  color: #fff;
   font-weight: 700;
+}
+
+:root[data-theme='dark'] button,
+:root[data-theme='dark'] input,
+:root[data-theme='dark'] select,
+:root[data-theme='dark'] textarea,
+:root[data-theme='dark'] .chip-link,
+:root[data-theme='dark'] .chip-link.chip-on {
+  color: var(--ink-0);
 }
 
 :root[data-theme='dark'] .line-tag-coach,
@@ -953,6 +1020,14 @@ input {
   }
 
   .card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .kpi-row {
+    grid-template-columns: 1fr;
+  }
+
+  .content-grid {
     grid-template-columns: 1fr;
   }
 
