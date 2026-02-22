@@ -581,21 +581,20 @@ function summarizeSpread({ spreadId = '', spreadName, items, context = '', level
     const keyword = lead?.card?.keywords?.[0] || '흐름';
     const direction = lead?.orientation === 'upright' ? '정방향' : '역방향';
     const analysis = analyzeSpreadSignal(items, oneCardAnalysis?.intent || 'general');
-    const conclusion = analysis.label === '우세'
-      ? '결론: 예. 지금 진행해도 됩니다.'
-      : analysis.label === '박빙'
-        ? '결론: 조건부 예. 강도를 낮추면 가능합니다.'
-        : '결론: 아니오. 지금은 멈추고 정비가 먼저입니다.';
+    const conclusion = buildOneCardSummaryConclusion({
+      orientation: lead?.orientation || 'upright',
+      analysisLabel: analysis.label
+    });
     const action = analysis.label === '우세'
-      ? '지금 할 행동 1개만 정해서 바로 실행하세요.'
+      ? '지금 할 행동 1개만 정해서 가볍게 해보세요.'
       : analysis.label === '박빙'
-        ? '강도를 낮춰 행동 1개만 실행하고 반응을 확인하세요.'
-        : '10분 정리 후 다시 판단하세요.';
+        ? '강도를 조금 낮춰서 행동 1개만 해보고 반응을 확인해보세요.'
+        : '10분만 정리하고 다시 판단해보세요.';
     return [
       conclusion,
-      `판정: ${analysis.label} · ${keyword} 신호(${direction}) 기준으로 속도 조절이 핵심입니다.`,
+      `판정: ${analysis.label} · ${keyword} 신호(${direction})를 보면, 지금은 속도 조절이 핵심이에요.`,
       `실행: ${action}`,
-      '복기: 실행 후 실제 체감 변화를 1줄로 기록하세요.'
+      '복기: 해본 뒤 체감 변화를 1줄만 남겨주세요.'
     ].join('\n');
   }
   let rawSummary = '';
@@ -659,6 +658,18 @@ function summarizeSpread({ spreadId = '', spreadName, items, context = '', level
   const themeLine = buildSummaryTheme({ spreadName, context: normalizedContext, items, topKeywords });
   rawSummary = polishSummary([leadLine, focusLine, polishedActionLine, themeLine].filter(Boolean).join(' '));
   return finalizeSpreadSummary({ spreadName, items, context: normalizedContext, rawSummary });
+}
+
+function buildOneCardSummaryConclusion({ orientation = 'upright', analysisLabel = '조건부' }) {
+  if (analysisLabel === '우세') {
+    return orientation === 'upright'
+      ? '결론: 예. 지금 진행해도 괜찮아요.'
+      : '결론: 조건부 예. 강도만 낮추면 가능해요.';
+  }
+  if (analysisLabel === '박빙') return '결론: 조건부 예. 속도 조절이 필요해요.';
+  return orientation === 'upright'
+    ? '결론: 조건부 예. 지금은 조절하면서 가는 쪽이 좋아요.'
+    : '결론: 아니오. 지금은 멈추고 정비부터 하는 게 좋아요.';
 }
 
 export function summarizeSpreadForQa(payload = {}) {

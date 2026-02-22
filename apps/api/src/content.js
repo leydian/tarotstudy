@@ -2292,11 +2292,11 @@ function buildOneCardInterpretation({ card, orientation, focus, context = '' }) 
       .join('. ')
       .trim();
     const reviewHint = shortHint.subIntent === 'sleep'
-      ? '복기: 20분 뒤 몸/마음 진정도가 좋아졌는지 1줄로 기록하세요.'
-      : '복기: 실행 후 실제 반응을 1줄로 기록해 다음 판단 기준으로 쓰세요.';
+      ? '복기: 20분 뒤에 몸이 좀 가라앉았는지, 잠이 올 것 같은지 1줄만 남겨보세요.'
+      : '복기: 해보고 나서 실제 반응이 어땠는지 1줄만 적어두면 다음 판단이 쉬워져요.';
     const signalLine = risk >= 2 || orientation === 'reversed'
-      ? `핵심 키워드 '${main}' 신호가 예민해 ${sub} 기준으로 속도 조절이 필요합니다.`
-      : `핵심 키워드 '${main}' 신호가 열려 있어 ${sub} 기준으로 작게 실행하면 흐름을 살릴 수 있습니다.`;
+      ? `지금은 '${main}' 신호가 예민해서, ${sub} 쪽을 기준으로 속도를 좀 낮추는 게 좋아요.`
+      : `지금은 '${main}' 신호가 열려 있어서, ${sub} 기준으로 작게 시작하면 흐름을 살릴 수 있어요.`;
     return polishTarotInterpretation([
       conclusion,
       signalLine,
@@ -2376,7 +2376,7 @@ function buildOneCardCoreMessage({ card, orientation, context = '' }) {
     : '';
   if (shortHint) {
     const shortQuestion = normalizedContext || String(context || '').trim() || '지금 질문';
-    return `"${shortQuestion}" 질문이네요. 카드는 '${card.nameKo} ${cardDirection}'입니다. ${forcedConclusion}`;
+    return `"${shortQuestion}" 고민 중이시군요. 카드는 '${card.nameKo} ${cardDirection}'이고, ${forcedConclusion}`;
   }
   const empathy = group === 'daily'
     ? (normalizedContext ? `"${normalizedContext}"에 대한 오늘 흐름을 함께 보겠습니다.` : '오늘 흐름을 카드 기준으로 차분히 정리해보겠습니다.')
@@ -2394,34 +2394,34 @@ function buildOneCardYesNoConclusion({ group = 'general', card, orientation = 'u
   if (questionType !== 'yes_no' && group === 'daily') return '';
   const risk = scoreOneCardRiskLight({ card, orientation });
   if (group === 'caffeine') {
-    if (risk >= 2) return '결론: 아니오. 지금은 마시지 마세요.';
-    if (risk === 1) return '결론: 조건부 예. 한 잔까지만 가능합니다.';
-    return '결론: 예. 지금 마셔도 됩니다.';
+    if (risk >= 2) return '결론: 아니오. 지금은 마시지 않는 쪽이 더 좋아요.';
+    if (risk === 1) return '결론: 조건부 예. 한 잔까지만 가볍게 드세요.';
+    return '결론: 예. 지금 마셔도 괜찮아요.';
   }
   if (group === 'exercise') {
-    if (risk >= 2) return '결론: 아니오. 지금 강한 운동은 피하세요.';
-    if (risk === 1) return '결론: 조건부 예. 강도를 낮추면 가능합니다.';
-    return '결론: 예. 지금 시작해도 됩니다.';
+    if (risk >= 2) return '결론: 아니오. 지금은 강한 운동을 피하는 게 좋아요.';
+    if (risk === 1) return '결론: 조건부 예. 강도만 낮추면 할 수 있어요.';
+    return '결론: 예. 지금 시작해도 괜찮아요.';
   }
   if (group === 'contact') {
     const adjustedRisk = adjustContactRisk({ card, orientation, baseRisk: risk });
-    if (adjustedRisk >= 2) return '결론: 아니오. 지금은 바로 연락하지 마세요.';
-    if (adjustedRisk === 1) return '결론: 조건부 예. 1회 연락 후 반응을 보세요.';
-    return '결론: 예. 지금 연락해도 됩니다.';
+    if (adjustedRisk >= 2) return '결론: 아니오. 지금은 바로 연락하지 않는 게 좋아요.';
+    if (adjustedRisk === 1) return '결론: 조건부 예. 한 번만 보내고 반응을 보세요.';
+    return '결론: 예. 지금 연락해도 괜찮아요.';
   }
   if (group === 'payment') {
-    if (risk >= 2) return '결론: 아니오. 지금 결제는 미루세요.';
-    if (risk === 1) return '결론: 조건부 예. 소액·필수 결제만 하세요.';
-    return '결론: 예. 예산 범위 안에서 진행해도 됩니다.';
+    if (risk >= 2) return '결론: 아니오. 지금 결제는 잠깐 미루는 게 좋아요.';
+    if (risk === 1) return '결론: 조건부 예. 소액·필수 결제만 먼저 하세요.';
+    return '결론: 예. 예산 안이면 진행해도 괜찮아요.';
   }
   if (group === 'daily' && /(잠|수면|sleep)/i.test(String(context || ''))) {
-    if (risk >= 2 || orientation === 'reversed') return '결론: 아니오. 지금은 바로 자지 말고 10분 정리 후 다시 판단하세요.';
-    if (risk === 1) return '결론: 조건부 예. 10분 정리 후 자는 쪽이 좋습니다.';
-    return '결론: 예. 지금 자는 쪽이 좋습니다.';
+    if (risk >= 2 || orientation === 'reversed') return '결론: 아니오. 지금 바로 눕기보다 10분만 정리하고 다시 봐요.';
+    if (risk === 1) return '결론: 조건부 예. 10분 정리한 뒤 자는 쪽이 더 좋아요.';
+    return '결론: 예. 지금 자는 쪽이 좋아요.';
   }
-  if (risk >= 2 || orientation === 'reversed') return '결론: 아니오. 지금은 멈추고 정비가 먼저입니다.';
-  if (risk === 1) return '결론: 조건부 예. 속도 조절이 필요합니다.';
-  return '결론: 예. 진행해도 됩니다.';
+  if (risk >= 2 || orientation === 'reversed') return '결론: 아니오. 지금은 멈추고 정비부터 하는 게 좋아요.';
+  if (risk === 1) return '결론: 조건부 예. 속도만 조절하면 가능해요.';
+  return '결론: 예. 진행해도 괜찮아요.';
 }
 
 function buildOneCardExecutionHint({ context = '', group = 'general', card, orientation = 'upright' }) {
