@@ -726,9 +726,7 @@ function CoachSummaryView({
         <p className="coach-summary-title">핵심</p>
         <ul className="reading-lines coach-lines">
           {sections.core.map((line, idx) => (
-            <li key={`${scope}-core-${idx}`}>
-              <span className={`line-tag ${lineTagClass(line)}`}>{lineTagLabel(line)}</span> {cleanCoachPrefix(line)}
-            </li>
+            <CoachLineItem key={`${scope}-core-${idx}`} line={line} />
           ))}
         </ul>
       </article>
@@ -736,9 +734,7 @@ function CoachSummaryView({
         <p className="coach-summary-title">행동</p>
         <ul className="reading-lines coach-lines">
           {sections.action.map((line, idx) => (
-            <li key={`${scope}-action-${idx}`}>
-              <span className={`line-tag ${lineTagClass(line)}`}>{lineTagLabel(line)}</span> {cleanCoachPrefix(line)}
-            </li>
+            <CoachLineItem key={`${scope}-action-${idx}`} line={line} />
           ))}
         </ul>
       </article>
@@ -746,9 +742,7 @@ function CoachSummaryView({
         <p className="coach-summary-title">주의</p>
         <ul className="reading-lines coach-lines">
           {sections.caution.map((line, idx) => (
-            <li key={`${scope}-caution-${idx}`}>
-              <span className={`line-tag ${lineTagClass(line)}`}>{lineTagLabel(line)}</span> {cleanCoachPrefix(line)}
-            </li>
+            <CoachLineItem key={`${scope}-caution-${idx}`} line={line} />
           ))}
         </ul>
       </article>
@@ -756,14 +750,52 @@ function CoachSummaryView({
         <p className="coach-summary-title">복기 질문</p>
         <ul className="reading-lines coach-lines">
           {sections.question.map((line, idx) => (
-            <li key={`${scope}-question-${idx}`}>
-              <span className={`line-tag ${lineTagClass(line)}`}>{lineTagLabel(line)}</span> {cleanCoachPrefix(line)}
-            </li>
+            <CoachLineItem key={`${scope}-question-${idx}`} line={line} />
           ))}
         </ul>
       </article>
     </div>
   );
+}
+
+function CoachLineItem({ line }: { line: string }) {
+  const chunks = splitCoachLineForDisplay(cleanCoachPrefix(line));
+  return (
+    <li className="coach-line-item">
+      <span className={`line-tag ${lineTagClass(line)}`}>{lineTagLabel(line)}</span>
+      <div className="coach-line-text">
+        {chunks.map((chunk, idx) => (
+          <p key={`coach-line-${idx}`}>{chunk}</p>
+        ))}
+      </div>
+    </li>
+  );
+}
+
+function splitCoachLineForDisplay(text: string) {
+  const normalized = String(text || '').replace(/\s+/g, ' ').trim();
+  if (!normalized) return [];
+
+  const firstPass = normalized
+    .split(/(?<=[.!?])\s+|(?<=:)\s+| · /g)
+    .flatMap((piece) => piece.split(/,\s+| 그리고 | 하지만 | 다만 | 또한 | 및 /g))
+    .map((piece) => piece.trim())
+    .filter(Boolean);
+
+  const chunks: string[] = [];
+  let current = '';
+  for (const piece of firstPass) {
+    const next = current ? `${current} ${piece}` : piece;
+    if (next.length > 44 && current) {
+      chunks.push(current);
+      current = piece;
+      continue;
+    }
+    current = next;
+  }
+  if (current) chunks.push(current);
+
+  return chunks.length > 0 ? chunks : [normalized];
 }
 
 function groupCoachSummary(lines: string[]): CoachSummarySections {
@@ -776,26 +808,68 @@ function groupCoachSummary(lines: string[]): CoachSummarySections {
   };
 
   for (const line of cleaned) {
+    const split = splitQuestionSegment(line);
+    if (split.main) {
+      if (/주의|리스크|경고|피할|소모|병목|멈추|조절|금지|불안정/.test(split.main)) {
+        sections.caution.push(split.main);
+      } else if (/행동|실행|시도|적어|기록|루틴|오늘|이번 주|다음/.test(split.main)) {
+        sections.action.push(split.main);
+      } else {
+        sections.core.push(split.main);
+      }
+    }
+
+    if (split.question) {
+      sections.question.push(split.question);
+      continue;
+    }
+
     if (/복기 질문|체크 질문|점검 질문|검증 질문|질문/.test(line)) {
       sections.question.push(line);
-      continue;
     }
-    if (/주의|리스크|경고|피할|소모|병목|멈추|조절|금지|불안정/.test(line)) {
-      sections.caution.push(line);
-      continue;
-    }
-    if (/행동|실행|시도|적어|기록|루틴|오늘|이번 주|다음/.test(line)) {
-      sections.action.push(line);
-      continue;
-    }
-    sections.core.push(line);
   }
 
-  if (sections.core.length === 0 && cleaned.length) sections.core.push(cleaned[0]);
+  if (sections.core.length === 0) sections.core.push('카드의 핵심 신호 1개를 먼저 고정하고 해석 범위를 좁혀 읽어보세요.');
   if (sections.action.length === 0) sections.action.push('핵심 카드 근거 1개와 바로 할 행동 1개를 1문장으로 적어 실행하세요.');
   if (sections.caution.length === 0) sections.caution.push('과한 해석 확장보다 시간/감정/에너지 조건을 고정해 판단 흔들림을 줄이세요.');
   if (sections.question.length === 0) sections.question.push('이 포지션 리딩에서 실제 행동으로 바로 옮길 근거 1개는 무엇인가요?');
+  sections.core = uniqueCoachLines(sections.core, sections.question);
+  sections.action = uniqueCoachLines(sections.action, [...sections.core, ...sections.question]);
+  sections.caution = uniqueCoachLines(sections.caution, [...sections.core, ...sections.action, ...sections.question]);
+  sections.question = uniqueCoachLines(sections.question, []);
   return sections;
+}
+
+function splitQuestionSegment(line: string) {
+  const text = String(line || '').trim();
+  if (!text) return { main: '', question: '' };
+  const match = text.match(/^(.*?)(복기 질문|체크 질문|점검 질문|검증 질문|질문)\s*:?\s*(.*)$/);
+  if (!match) return { main: text, question: '' };
+
+  const main = (match[1] || '').trim().replace(/[·,:;\-]+$/, '').trim();
+  const questionBody = (match[3] || '').trim();
+  const question = questionBody ? `복기 질문: ${questionBody}` : '';
+  return { main, question };
+}
+
+function uniqueCoachLines(lines: string[], blacklist: string[]) {
+  const blocked = new Set(blacklist.map((line) => normalizeCoachLine(line)));
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const line of lines) {
+    const key = normalizeCoachLine(line);
+    if (!key || blocked.has(key) || seen.has(key)) continue;
+    seen.add(key);
+    result.push(line);
+  }
+  return result;
+}
+
+function normalizeCoachLine(line: string) {
+  return cleanCoachPrefix(String(line || ''))
+    .replace(/[^0-9a-zA-Z가-힣]+/g, ' ')
+    .trim()
+    .toLowerCase();
 }
 
 function YearlySummaryView({ summary }: { summary: string }) {

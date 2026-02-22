@@ -444,6 +444,27 @@
   line-height: 1.66;
 }
 
+.coach-line-item {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: start;
+  column-gap: 8px;
+}
+
+.coach-line-item .line-tag {
+  margin-right: 0;
+  margin-top: 2px;
+}
+
+.coach-line-text {
+  display: grid;
+  gap: 4px;
+}
+
+.coach-line-text p {
+  margin: 0;
+}
+
 .history-row {
   display: flex;
   justify-content: space-between;
@@ -699,5 +720,9 @@
 
   .coach-lines li {
     font-size: 0.94rem;
+  }
+
+  .coach-line-item {
+    column-gap: 6px;
   }
 }
