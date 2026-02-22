@@ -861,20 +861,19 @@ function getLessonProfile(lesson, domainGuide) {
 }
 
 function buildOnePassScript({ lesson, cardNames, lessonProfile }) {
-  const easyEvidence = '카드 신호 2개 + 지금 상황 1개';
-  const easyAction = '오늘 안에 할 행동 1개를 시간까지 적기';
-  const easyReview = '잘한 점 1줄 + 아쉬운 점 1줄';
+  const easyEvidence = '카드 신호 1개 + 내 상황 사실 1개';
+  const easyAction = '오늘 안에 할 행동 1개를 시간까지 고정';
+  const easyReview = '적중 1줄 + 오차 1줄';
   const a = cardNames[0] || '샘플 카드 A';
   const b = cardNames[1] || '샘플 카드 B';
   const c = cardNames[2] || '샘플 카드 C';
   return [
-    `1. 오늘 질문을 한 줄로 씁니다. 예: "${lessonProfile.questionTemplate}"`,
-    `2. 카드 ${a}, ${b}, ${c} 중 오늘 상황에 가장 먼저 떠오르는 카드 1장을 고릅니다.`,
-    '3. 결론 한 줄을 먼저 말합니다. "지금 무엇을 먼저 할지"가 보이면 됩니다.',
-    `4. 근거 한 줄을 붙입니다. "${easyEvidence}"만 넣으면 충분합니다.`,
-    `5. 실행 한 줄로 마무리합니다. "${easyAction}" 방식으로 씁니다.`,
-    '6. 리딩이 끝나면 복기 2줄을 남깁니다. 적중 1줄, 오차 1줄이면 충분합니다.',
-    `7. 마지막으로 "${easyReview}" 기준으로 내 문장이 실제 상황과 맞았는지 확인합니다.`
+    `미션 1: 질문을 한 줄로 씁니다. 예: "${lessonProfile.questionTemplate}"`,
+    `미션 2: 카드 ${a}, ${b}, ${c} 중 오늘 상황에 가장 가까운 카드 1장을 고릅니다.`,
+    '미션 3: 결론 한 줄을 씁니다. "지금 무엇을 먼저 할지"가 보이면 됩니다.',
+    `미션 4: 근거 한 줄을 붙입니다. "${easyEvidence}" 구조면 충분합니다.`,
+    `미션 5: 실행 한 줄로 닫습니다. "${easyAction}" 방식으로 씁니다.`,
+    `미션 6: 복기 2줄을 남깁니다. "${easyReview}"만 쓰면 완료입니다.`
   ];
 }
 
@@ -894,17 +893,17 @@ function buildFriendlyFz1Detail({ lesson, stageMeta, cardNames }) {
   const c = cardNames[2] || '여교황';
   const d = cardNames[3] || '여황제';
   const storyScript = [
-    `장면 1 - 시작: 민지는 아침부터 일이 밀려서 머리가 복잡합니다. 질문은 딱 한 줄로 정합니다. "오늘 뭐부터 하면 흐름이 살아날까?"`,
+    `장면 1 - 시작: 민지는 일이 밀려 머리가 복잡합니다. 질문을 딱 한 줄로 정합니다. "오늘 뭐부터 하면 흐름이 살아날까?"`,
     `장면 2 - 카드 선택: ${a}, ${b}, ${c}, ${d} 중에서 지금 마음에 가장 먼저 들어온 카드를 고릅니다.`,
     `장면 3 - 해석 한 줄: "${a} 신호가 강하니, 욕심 줄이고 가장 쉬운 일 1개부터 시작하자."`,
     `장면 4 - 근거 한 줄: "${a} 키워드는 시작/가벼움이라, 완벽하게 하려는 마음보다 착수가 맞다."`,
     '장면 5 - 실행 한 줄: "오늘 저녁 8시, 책상에서, 20분만 첫 작업 실행."',
     '장면 6 - 복기 두 줄: "적중: 시작이 쉬워졌다." / "오차: 끝내고 더 벌려서 피곤해졌다."',
-    '장면 7 - 다음 한 줄: "다음 리딩에서는 실행 시간을 20분으로 고정한다."'
+    '장면 7 - 다음 한 줄: "다음 리딩에서도 실행 시간을 20분으로 고정한다."'
   ];
 
   return {
-    intro: `${lesson.title}는 어려운 이론 암기가 아니라, 바로 써먹는 한 줄 리딩을 만드는 레슨입니다. 45분 안에 끝낼 수 있고, 처음 하는 사람도 따라올 수 있게 구성했습니다.`,
+    intro: `${lesson.title}는 읽고 바로 실행하는 실전 레슨입니다. 45분 안에 끝낼 수 있고, 카드 초보도 그대로 따라올 수 있게 구성했습니다.`,
     learningGoals: [
       '목표 1: 카드 뜻을 길게 설명하지 않고, 핵심 키워드 1개를 오늘 상황 1개와 연결한다.',
       '목표 2: 결론 1문장 + 근거 1문장 + 실행 1문장으로 리딩을 완성한다.',
@@ -982,9 +981,9 @@ function buildLessonDetail(course, lesson, lessonIndex) {
   const lessonProfile = getLessonProfile(lesson, domainGuide);
   const order = lessonIndex + 1;
   const onePassScript = buildOnePassScript({ lesson, cardNames, lessonProfile });
-  const easyEvidence = '카드 신호 2개 + 지금 상황 1개';
-  const easyAction = '오늘 안에 할 행동 1개를 시간까지 적기';
-  const easyReview = '잘한 점 1줄 + 아쉬운 점 1줄';
+  const easyEvidence = '카드 신호 1개 + 내 상황 사실 1개';
+  const easyAction = '오늘 안에 할 행동 1개를 시간까지 고정';
+  const easyReview = '적중 1줄 + 오차 1줄';
 
   if (lesson.id === 'fz-1') {
     return buildFriendlyFz1Detail({ lesson, stageMeta, cardNames });
@@ -996,12 +995,12 @@ function buildLessonDetail(course, lesson, lessonIndex) {
   const sampleCardD = cardNames[3] || '샘플 카드 D';
   const storyFlow = [
     `장면 1 - 시작: 학습자 한 명이 "${lessonProfile.questionTemplate}" 질문을 들고 들어옵니다.`,
-    `장면 2 - 카드 확인: ${cardPreview || '샘플 카드'} 중 오늘 이야기의 중심 카드 1장을 고릅니다.`,
-    `장면 3 - 결론: ${sampleCardA} 흐름으로 지금 가장 먼저 할 일 1개를 정합니다.`,
-    `장면 4 - 근거: ${sampleCardA}와 ${sampleCardB} 신호를 붙여 왜 그 결론인지 짧게 설명합니다.`,
+    `장면 2 - 카드 선택: ${cardPreview || '샘플 카드'} 중 오늘 이야기의 중심 카드 1장을 고릅니다.`,
+    `장면 3 - 결론: ${sampleCardA} 기준으로 지금 가장 먼저 할 일 1개를 정합니다.`,
+    `장면 4 - 근거: ${sampleCardA} 신호와 내 상황 사실 1가지를 붙여 결론 이유를 설명합니다.`,
     '장면 5 - 실행: 오늘 안에 가능한 행동 1개를 시간/장소와 함께 확정합니다.',
-    '장면 6 - 복기: 잘한 점 1줄, 아쉬운 점 1줄로 마무리합니다.',
-    '장면 7 - 다음 리딩: 바꿀 표현 1개를 정하고 종료합니다.'
+    '장면 6 - 복기: 적중 1줄, 오차 1줄로 마무리합니다.',
+    '장면 7 - 다음 리딩: 다음에 바꿀 표현 1개를 정하고 종료합니다.'
   ];
 
   return {
@@ -1036,7 +1035,7 @@ function buildLessonDetail(course, lesson, lessonIndex) {
         '예시 스크립트 A',
         `질문: ${lessonProfile.questionTemplate}`,
         `결론: ${sampleCardA} 흐름이 강하므로 오늘은 우선순위 1개만 먼저 끝낸다.`,
-        `근거: ${sampleCardA} 신호 + ${sampleCardB} 조정 신호를 함께 보면 분산보다 집중이 유리하다.`,
+        `근거: ${sampleCardA} 신호와 내 상황 사실 1가지를 붙이면 분산보다 집중이 유리하다.`,
         '실행: 오늘 19:30, 30분, 핵심 작업 1개 완료.',
         `복기: 잘한 점 1줄(${sampleCardC} 해석 적중) / 아쉬운 점 1줄`
       ].join('\n'),
@@ -1044,7 +1043,7 @@ function buildLessonDetail(course, lesson, lessonIndex) {
         '예시 스크립트 B',
         `질문: ${lessonProfile.questionTemplate}`,
         `결론: ${sampleCardB} 기준으로 속도를 낮추고 정확도를 먼저 올린다.`,
-        `근거: ${sampleCardB} 신호는 확장보다 정비가 유리하다는 근거가 된다.`,
+        `근거: ${sampleCardB} 신호는 확장보다 정비가 유리하다는 증거가 된다.`,
         '실행: 오늘 21:00, 20분, 보완 작업 1개만 진행.',
         `복기: 잘한 점 1줄(${sampleCardD} 연결 성공) / 아쉬운 점 1줄`
       ].join('\n'),

@@ -26,3 +26,25 @@ test('generateQuiz returns mixed archetypes and varied stems', () => {
   assert.ok(stems.size >= 8, `expected >=8 unique stems, got ${stems.size}`);
 });
 
+test('generateQuiz aligns archetypes to lesson scope when lessonMeta is provided', () => {
+  const lessonCards = cards.slice(0, 8);
+  const questions = generateQuiz({
+    lessonCards,
+    level: 'beginner',
+    count: 10,
+    lessonMeta: { lessonId: 'fz-1' }
+  });
+  assert.equal(questions.length, 10);
+
+  const allowed = new Set([
+    'keyword_primary',
+    'keyword_secondary',
+    'upright_action',
+    'reversed_guard',
+    'final_line'
+  ]);
+  const archetypes = questions.map((q) => String(q.id).split('-')[2]);
+  for (const archetype of archetypes) {
+    assert.ok(allowed.has(archetype), `unexpected archetype for fz-1: ${archetype}`);
+  }
+});
