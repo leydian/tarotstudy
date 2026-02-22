@@ -57,18 +57,10 @@ export function buildFallbackExplanation(card, level = 'beginner', context = '')
           : buildBeginnerReversedReviewLine(card)
       ].join('\n')),
       love: enforceMinLines([
-        '연애/관계에서는 상대를 통제하기보다 내 감정의 사실과 요청을 분리해 전달하는 것이 중요합니다.',
-        profile.loveFocus,
-        level === 'intermediate'
-          ? '중급 관점에서는 대화 패턴의 반복 지점(회피, 과잉반응, 침묵)을 기록해 관계 리듬을 점검하세요.'
-          : '입문 관점에서는 오늘 전할 한 문장과 피할 한 문장을 먼저 정해 대화의 흔들림을 줄이세요.'
+        ...buildLoveSectionLines({ card, level, profile, context })
       ].join('\n')),
       career: enforceMinLines([
-        '일/학업에서는 우선순위를 1~2개로 압축하고 실행 증거(기록/산출물)를 남기는 방식이 유리합니다.',
-        profile.careerFocus,
-        level === 'intermediate'
-          ? '중급 관점에서는 기대 성과와 리스크를 같은 기준표로 비교해 의사결정 오류를 줄이세요.'
-          : '입문 관점에서는 오늘 20분 안에 끝낼 수 있는 단위로 쪼개서 시작하는 것이 핵심입니다.'
+        ...buildCareerSectionLines({ card, level, profile, context })
       ].join('\n')),
       advice: enforceMinLines([
         level === 'intermediate'
@@ -81,6 +73,110 @@ export function buildFallbackExplanation(card, level = 'beginner', context = '')
       ].join('\n'))
     }
   };
+}
+
+function buildLoveSectionLines({ card, level, profile, context = '' }) {
+  const contextTag = detectRelationshipContext(context);
+  const openersBeginner = [
+    '연애/관계에서는 상대를 통제하기보다 내 감정의 사실과 요청을 분리해 전달하는 것이 중요합니다.',
+    '연애/관계 해석에서는 상대 의도를 추측하기보다 내 표현 방식과 경계를 먼저 점검하는 편이 정확합니다.',
+    '관계 리딩은 감정 강도보다 전달 순서가 결과를 크게 바꿉니다.'
+  ];
+  const openersIntermediate = [
+    '중급 관계 해석에서는 대화 패턴(회피·과잉반응·침묵)의 반복 지점을 먼저 추적해야 합니다.',
+    '중급 관점의 연애/관계 리딩은 감정 사실, 관계 구조, 타이밍 변수를 분리해 읽는 것이 핵심입니다.',
+    '관계 카드 해석에서는 긍정 신호와 경고 신호를 같은 기준표로 기록해야 오판을 줄일 수 있습니다.'
+  ];
+
+  const suitNuance = card.arcana === 'minor'
+    ? ({
+      Wands: '완드 계열은 감정 온도는 빠르게 오르지만 속도 차이로 마찰이 생기기 쉬우니 진도 합의가 중요합니다.',
+      Cups: '컵 계열은 공감이 강점이지만 경계가 흐려지기 쉬워 요청 문장을 반드시 분리해 두는 편이 좋습니다.',
+      Swords: '소드 계열은 말의 정확도가 높아지는 대신 차갑게 들릴 수 있어 톤 조절과 확인 질문이 중요합니다.',
+      Pentacles: '펜타클 계열은 안정감은 높지만 표현이 부족해질 수 있어 행동 기반 애정 표현을 의도적으로 넣어야 합니다.'
+    }[card.suit] ?? '관계 해석에서는 카드 특성을 대화 패턴으로 번역해 보는 것이 효과적입니다.')
+    : '메이저 계열은 관계의 큰 전환 신호를 담는 경우가 많아 단기 감정보다 장기 방향을 함께 확인해야 합니다.';
+
+  const contextAction = ({
+    reconnect: level === 'intermediate'
+      ? '재회/회복 맥락이라면 과거 이슈를 전부 다루기보다 이번 대화의 목표 1개만 먼저 합의하세요.'
+      : '재회/회복 맥락이라면 먼저 사과/요청 중 무엇을 전달할지 한 문장으로 정해보세요.',
+    conflict: level === 'intermediate'
+      ? '갈등 맥락이라면 감정 표현과 해결 요청을 분리한 뒤, 합의 가능한 최소 행동을 먼저 도출하세요.'
+      : '갈등 맥락이라면 비난 문장 1개를 요청 문장 1개로 바꿔서 말해보세요.',
+    default: level === 'intermediate'
+      ? '중급 관점에서는 대화 전 가설 1개와 확인 질문 1개를 준비해 관계 리듬을 검증하세요.'
+      : '입문 관점에서는 오늘 전할 한 문장과 피할 한 문장을 먼저 정해 대화 흔들림을 줄이세요.'
+  }[contextTag] ?? (level === 'intermediate'
+    ? '중급 관점에서는 대화 전 가설 1개와 확인 질문 1개를 준비해 관계 리듬을 검증하세요.'
+    : '입문 관점에서는 오늘 전할 한 문장과 피할 한 문장을 먼저 정해 대화 흔들림을 줄이세요.'));
+
+  return [
+    pickCardVariant(card.id, `love-opener-${level}`, level === 'intermediate' ? openersIntermediate : openersBeginner),
+    `${profile.loveFocus} ${suitNuance}`,
+    contextAction
+  ];
+}
+
+function buildCareerSectionLines({ card, level, profile, context = '' }) {
+  const contextTag = detectCareerContext(context);
+  const openersBeginner = [
+    '일/학업에서는 우선순위를 1~2개로 압축하고 실행 증거(기록/산출물)를 남기는 방식이 유리합니다.',
+    '일/학업 해석은 의욕보다 운영 기준(시간·완료·품질)을 먼저 고정할 때 정확도가 올라갑니다.',
+    '커리어/학습 카드 해석에서는 "무엇을 할지"보다 "어떻게 검증할지"를 먼저 정하는 것이 중요합니다.'
+  ];
+  const openersIntermediate = [
+    '중급 일/학업 해석에서는 기대 성과와 리스크를 같은 기준표로 비교해야 의사결정 오류를 줄일 수 있습니다.',
+    '중급 관점에서는 실행 전략과 운영 전략을 분리해 기록해야 재현 가능한 성과를 만들기 쉽습니다.',
+    '업무/학습 카드의 중급 해석은 단기 성과와 장기 지속 조건을 동시에 점검할 때 품질이 올라갑니다.'
+  ];
+
+  const suitNuance = card.arcana === 'minor'
+    ? ({
+      Wands: '완드 계열은 착수 속도는 빠르지만 과열/분산 리스크가 커서 범위 통제가 필수입니다.',
+      Cups: '컵 계열은 협업 분위기와 커뮤니케이션 품질이 성과 변동의 핵심 변수입니다.',
+      Swords: '소드 계열은 문제 정의와 기준 정밀도가 결과 품질을 좌우하므로 근거 관리가 중요합니다.',
+      Pentacles: '펜타클 계열은 운영 안정성이 강점이라 누적 지표(완료율·오류율·비용)를 함께 추적해야 효과가 큽니다.'
+    }[card.suit] ?? '카드 특성을 운영 지표와 연결하면 실전 정확도가 높아집니다.')
+    : '메이저 계열은 커리어 방향 전환 신호를 다루는 경우가 많아 단기 결과보다 전략 축을 먼저 점검해야 합니다.';
+
+  const contextAction = ({
+    interview: level === 'intermediate'
+      ? '면접/지원 맥락이라면 핵심 경험 2개를 STAR 구조로 정리하고, 질문 대비 반례 답변까지 준비하세요.'
+      : '면접/지원 맥락이라면 강점 1개와 근거 사례 1개를 먼저 정리해 말해보세요.',
+    project: level === 'intermediate'
+      ? '프로젝트 맥락이라면 일정·범위·리스크를 분리해 주간 검증 루틴으로 운영하세요.'
+      : '프로젝트 맥락이라면 오늘 완료할 작업 1개를 명확히 정하고 체크하세요.',
+    study: level === 'intermediate'
+      ? '학습 맥락이라면 회상 정확도와 적용 정확도를 따로 기록해 학습 전략을 조정하세요.'
+      : '학습 맥락이라면 25분 학습 + 5분 복기 1세트를 먼저 실행해 보세요.',
+    default: level === 'intermediate'
+      ? '중급 관점에서는 실행 후 결과 편차 원인을 일정·자원·협업 변수로 나눠 기록하세요.'
+      : '입문 관점에서는 오늘 20분 안에 끝낼 수 있는 단위로 쪼개서 시작하는 것이 핵심입니다.'
+  }[contextTag] ?? (level === 'intermediate'
+    ? '중급 관점에서는 실행 후 결과 편차 원인을 일정·자원·협업 변수로 나눠 기록하세요.'
+    : '입문 관점에서는 오늘 20분 안에 끝낼 수 있는 단위로 쪼개서 시작하는 것이 핵심입니다.'));
+
+  return [
+    pickCardVariant(card.id, `career-opener-${level}`, level === 'intermediate' ? openersIntermediate : openersBeginner),
+    `${profile.careerFocus} ${suitNuance}`,
+    contextAction
+  ];
+}
+
+function detectRelationshipContext(context = '') {
+  const text = String(context || '').toLowerCase();
+  if (['재회', '회복', '다시', '연락'].some((k) => text.includes(k))) return 'reconnect';
+  if (['갈등', '싸움', '다툼', '서운'].some((k) => text.includes(k))) return 'conflict';
+  return 'default';
+}
+
+function detectCareerContext(context = '') {
+  const text = String(context || '').toLowerCase();
+  if (['면접', '지원', '이력서', '자소서'].some((k) => text.includes(k))) return 'interview';
+  if (['프로젝트', '업무', '직장', '회사'].some((k) => text.includes(k))) return 'project';
+  if (['공부', '시험', '학습', '자격증'].some((k) => text.includes(k))) return 'study';
+  return 'default';
 }
 
 function buildBeginnerUprightActionLine(card) {
