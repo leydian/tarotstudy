@@ -1280,18 +1280,20 @@ function buildNovelConclusionByLesson(lessonId, blueprint) {
   return '결론은 "오늘 20:00, 책상에서 핵심 작업 1개를 20분 실행한다"로 정했습니다.';
 }
 
-function buildConcreteFactPairByLesson(lessonId) {
+function buildConcreteFactPairByLesson(lessonId, blueprint = {}) {
   const id = String(lessonId || '');
+  const q = blueprint.question || '질문';
+  const action = blueprint.action || '행동 1개';
   if (id.startsWith('fz-') || id.startsWith('bd-')) {
     return [
-      '질문을 줄이기 전엔 할 일이 5개로 퍼져 있었습니다.',
-      '질문을 한 줄로 고친 뒤 바로 시작한 일은 1개로 줄었습니다.'
+      `"${q}"를 적기 전에는 해야 할 일이 여러 갈래로 흩어져 있었습니다.`,
+      `${withObjectParticle(action)} 실행 기준으로 정한 뒤에는 첫 행동 1개부터 바로 시작할 수 있었습니다.`
     ];
   }
   if (id.startsWith('fm-')) {
     return [
-      '작업을 미루는 시간이 하루 2시간 이상 반복됐습니다.',
-      '단계를 정하고 20분 착수했을 때 실제 시작 시간이 앞당겨졌습니다.'
+      `"${q}"를 정리하기 전에는 시작을 미루는 시간이 반복됐습니다.`,
+      `단계를 정하고 ${withObjectParticle(action)} 옮기자 실제 시작 시간이 앞당겨졌습니다.`
     ];
   }
   if (id.startsWith('ich-')) {
@@ -1302,32 +1304,32 @@ function buildConcreteFactPairByLesson(lessonId) {
   }
   if (id.startsWith('icb-')) {
     return [
-      '같은 질문을 감정/업무/돈 문제로 섞어 써 결론이 흔들렸습니다.',
-      '핵심 주제를 1개로 고정하자 문장 길이가 절반으로 줄었습니다.'
+      `"${q}"를 여러 주제로 섞어 쓰다 보니 결론이 흔들렸습니다.`,
+      `${withObjectParticle(action)} 핵심 기준으로 고정하자 문장 길이가 짧아졌습니다.`
     ];
   }
   if (id.startsWith('icv-')) {
     return [
       '역할을 정하지 않으면 말이 길어지고 핵심 전달이 늦어졌습니다.',
-      '역할 1개를 고정한 날에는 필요한 말만 3번으로 끝났습니다.'
+      `${withObjectParticle(action)} 고정한 날에는 필요한 말만 짧게 정리됐습니다.`
     ];
   }
   if (id.startsWith('uis-')) {
     return [
-      '카드 3장을 따로 해석할 때 결론이 서로 충돌했습니다.',
-      '원인-전환-결과 순서로 붙이자 행동 문장이 하나로 정리됐습니다.'
+      `"${q}"에 카드 3장을 따로 붙일 때는 결론이 충돌했습니다.`,
+      `${withObjectParticle(action)} 기준으로 연결하자 행동 문장이 하나로 정리됐습니다.`
     ];
   }
   if (id.startsWith('uip-')) {
     return [
-      '가설만 적었을 때는 해석이 맞았는지 틀렸는지 확인이 어려웠습니다.',
-      '반례를 같이 적자 오판 원인을 바로 찾을 수 있었습니다.'
+      `"${q}"를 가설만으로 쓰면 맞고 틀림을 확인하기 어려웠습니다.`,
+      `${withObjectParticle(action)} 함께 남기자 오판 원인을 바로 찾을 수 있었습니다.`
     ];
   }
   if (id.startsWith('acs-')) {
     return [
-      '복합 질문을 한 문단으로 쓰자 핵심이 뒤섞였습니다.',
-      '질문을 요소 3개로 나누자 각 요소별 근거가 선명해졌습니다.'
+      `"${q}"를 한 문단으로 쓰자 핵심이 뒤섞였습니다.`,
+      `${withObjectParticle(action)} 나누자 각 요소별 근거가 선명해졌습니다.`
     ];
   }
   if (id.startsWith('eql-')) {
@@ -1339,30 +1341,30 @@ function buildConcreteFactPairByLesson(lessonId) {
   if (id.startsWith('ubs-')) {
     return [
       '감정이 올라간 직후 답장해 대화가 길어졌습니다.',
-      '속도를 낮췄을 때 같은 주제 대화 시간이 15분 줄었습니다.'
+      `${withObjectParticle(action)} 순서로 진행했을 때 같은 주제 대화 시간이 줄었습니다.`
     ];
   }
   if (id.startsWith('bt-')) {
     return [
-      '해야 할 항목 5개 중 오늘 마감은 1개였습니다.',
-      '지난 3일 동안 첫 20분 착수에 성공한 날은 1일뿐이었습니다.'
+      `"${q}"를 기준으로 분류하니 해야 할 항목 중 오늘 마감은 1개였습니다.`,
+      `${withObjectParticle(action)} 적은 날에는 첫 착수가 더 빨라졌습니다.`
     ];
   }
   if (id.startsWith('ubr-')) {
     return [
-      '같은 작업을 3번 미뤄 실제 착수가 오후 11시로 밀렸습니다.',
-      '방해 알림 4개가 켜져 있을 때 집중이 10분을 넘기지 못했습니다.'
+      `"${q}"를 쓰기 전에는 같은 작업을 반복해서 미뤘습니다.`,
+      `${withObjectParticle(action)} 고정하자 방해를 줄이고 집중 시간을 늘릴 수 있었습니다.`
     ];
   }
   if (id.startsWith('ayc-')) {
     return [
-      '지난주 계획 7개 중 완료는 3개였습니다.',
-      '고정 시간 없이 작성한 할 일은 절반 이상 미뤄졌습니다.'
+      '지난주 계획은 적었지만 고정 시간 없이 적어 실행 누락이 많았습니다.',
+      `${withObjectParticle(action)} 시간을 먼저 고정하자 미루는 항목이 줄었습니다.`
     ];
   }
   return [
-    '오늘 일정표에서 미뤄진 항목 2개를 먼저 표시했습니다.',
-    '완료 항목은 1개뿐이라 우선순위 재정렬이 필요했습니다.'
+    `"${q}"를 쓰기 전에는 일정표에서 미뤄진 항목이 여러 개였습니다.`,
+    `${withObjectParticle(action)} 고정한 뒤에는 오늘 끝낼 항목을 분명하게 정할 수 있었습니다.`
   ];
 }
 
@@ -1505,7 +1507,7 @@ function buildStoryNovelByType({ lessonId, type, blueprint, cardPreview, a, b, c
   const checkCard = c || b || a;
   const characterTopic = withTopicParticle(blueprint.character);
   const aSubject = withSubjectParticle(a);
-  const [factA, factB] = buildConcreteFactPairByLesson(lessonId);
+  const [factA, factB] = buildConcreteFactPairByLesson(lessonId, blueprint);
   const keywordEvidenceA = buildKeywordEvidence(a, factA);
   const keywordEvidenceB = buildKeywordEvidence(supportCard, factB);
   const conclusion = normalizeNovelLanguage(

@@ -380,7 +380,8 @@ function toQuizQuestion(question, index) {
 
 export function generateQuiz({ lessonCards, lessonMeta = null, level = 'beginner', count = 5 }) {
   const basePool = lessonCards.length ? lessonCards : cards;
-  const expandedPool = expandQuizPool(basePool);
+  const hasLessonScope = Boolean(lessonMeta && lessonMeta.lessonId && lessonCards.length);
+  const expandedPool = hasLessonScope ? basePool : expandQuizPool(basePool);
   const bank = buildQuestionBankFromPool(expandedPool, level);
   const allowedArchetypes = resolveLessonArchetypes(lessonMeta || {});
   const alignedBank = allowedArchetypes.size
