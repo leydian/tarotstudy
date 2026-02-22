@@ -36,6 +36,27 @@
   - 텔레메트리 수집 API(`spread_drawn`, `spread_review_saved`) 및 롤업 스크립트 추가
 
 ## 3) 금일 추가 반영 (최신)
+- 코스 목록 UX/성능/탐색성 10개 개선 일괄 반영
+  - 파일:
+    - `apps/api/src/data/courses.js`
+    - `apps/api/src/index.js`
+    - `apps/api/test/courses-metadata.test.js`
+    - `apps/web/src/pages/CoursesPage.tsx`
+    - `apps/web/src/types.ts`
+    - `apps/web/src/styles.css`
+  - 변경:
+    - `/api/courses`에 `order`, `stageOrder`, `nextCourseId`, `lessonOutline` 메타를 추가해 초기 목록 렌더를 단일 요청으로 고정
+    - 코스 목록에서 다중 레슨 선요청(N+1) 구조를 제거하고, 레슨 상세는 카드 펼침 시점에만 로딩
+    - 단계 정렬을 개수순에서 학습순(기초→입문→중급→고급→랩)으로 고정
+    - 추천 다음 레슨/코스 카드 CTA를 완료 상태에 맞게 보정(`학습 시작`/`복습하기`)
+    - 레슨 로딩 실패 시 코스별 에러/재시도 UI 추가
+    - 단계 필터, 미완료 필터, 코스·레슨 검색을 추가해 14코스 탐색 효율 개선
+    - 단계 현황 패널에 `완료 레슨/전체 레슨`과 다음 코스 이동 액션을 추가
+  - 검증:
+    - `npm run test:api` 통과(신규 `courses-metadata.test.js` 포함)
+    - `npm run typecheck:web` 통과
+    - `npm run build:web` 통과
+
 - 퀴즈 출제 유형 다각화 + 문제은행 1,000+ + 레슨 정렬 강화
   - 파일:
     - `apps/api/src/quiz.js`

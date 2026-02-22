@@ -450,6 +450,16 @@ input {
   color: var(--brand-1);
 }
 
+.text-link-btn {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: var(--brand-1);
+  cursor: pointer;
+  text-decoration: underline;
+  font: inherit;
+}
+
 .card-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

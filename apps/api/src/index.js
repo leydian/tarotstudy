@@ -210,9 +210,15 @@ app.post('/api/spreads/:spreadId/draw', async (request, reply) => {
 });
 
 app.get('/api/courses', async () => {
-  return courses.map((course) => ({
+  const ordered = [...courses].sort((a, b) => (a.order ?? 99) - (b.order ?? 99));
+  return ordered.map((course, index) => ({
     ...course,
-    lessonCount: lessonsByCourse[course.id]?.length ?? 0
+    lessonCount: lessonsByCourse[course.id]?.length ?? 0,
+    lessonOutline: (lessonsByCourse[course.id] || []).map((lesson) => ({
+      id: lesson.id,
+      title: lesson.title
+    })),
+    nextCourseId: ordered[index + 1]?.id ?? null
   }));
 });
 

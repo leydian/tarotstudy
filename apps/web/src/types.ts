@@ -39,10 +39,17 @@ export interface Course {
   id: string;
   track: string;
   stage?: string;
+  stageOrder: number;
+  order: number;
+  nextCourseId: string | null;
   title: string;
   description: string;
   level: string;
   lessonCount: number;
+  lessonOutline: Array<{
+    id: string;
+    title: string;
+  }>;
 }
 
 export interface Lesson {

@@ -140,7 +140,19 @@ export const courses = [
     description: '판정 문장, 행동 가이드, 복기 품질을 체크리스트로 검증합니다.',
     level: 'intermediate'
   }
-];
+].map((course, index) => ({
+  ...course,
+  order: index + 1,
+  stageOrder: ({
+    '기초 입문': 1,
+    '입문 실전': 2,
+    '입문 심화': 3,
+    '중급 코어': 4,
+    '중급 심화': 5,
+    '고급 운영': 6,
+    '전문가 랩': 7
+  }[course.stage] ?? 99)
+}));
 
 export const lessonsByCourse = {
   'foundation-zero-to-one': [
