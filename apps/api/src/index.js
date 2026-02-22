@@ -308,7 +308,16 @@ app.post('/api/quiz/generate', async (request, reply) => {
   }
 
   const lessonCards = lesson.cardIds.map((cardId) => getCardById(cardId)).filter(Boolean);
-  const questions = generateQuiz({ lessonCards, level, count: Number(count) || 5 });
+  const questions = generateQuiz({
+    lessonCards,
+    lessonMeta: {
+      lessonId: lesson.id,
+      title: lesson.title,
+      summary: lesson.summary
+    },
+    level,
+    count: Number(count) || 5
+  });
 
   return {
     lessonId,

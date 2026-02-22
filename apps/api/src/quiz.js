@@ -224,6 +224,28 @@ function buildQuestionFamilies(level) {
   ];
 }
 
+function resolveLessonArchetypes(lessonMeta = {}) {
+  const lessonId = String(lessonMeta.lessonId || '');
+  const [series] = lessonId.split('-');
+  const map = {
+    fz: ['keyword_primary', 'keyword_secondary', 'upright_action', 'reversed_guard', 'final_line'],
+    fm: ['arcana_type', 'keyword_context', 'upright_action', 'reversed_guard', 'evidence_structure'],
+    bd: ['keyword_primary', 'keyword_context', 'final_line', 'study_context', 'evidence_structure'],
+    bt: ['keyword_context', 'upright_action', 'reversed_guard', 'evidence_structure', 'final_line'],
+    ubr: ['reversed_guard', 'upright_action', 'evidence_structure', 'final_line', 'keyword_secondary'],
+    ubs: ['suit_domain', 'rank_stage', 'keyword_context', 'evidence_structure', 'final_line'],
+    icb: ['relationship_context', 'career_context', 'study_context', 'evidence_structure', 'final_line'],
+    icv: ['rank_stage', 'suit_domain', 'keyword_secondary', 'evidence_structure', 'final_line'],
+    ich: ['evidence_structure', 'career_context', 'relationship_context', 'final_line', 'keyword_context'],
+    uis: ['keyword_context', 'evidence_structure', 'upright_action', 'reversed_guard', 'final_line'],
+    uip: ['evidence_structure', 'keyword_secondary', 'reversed_guard', 'final_line', 'keyword_context'],
+    acs: ['arcana_type', 'keyword_context', 'evidence_structure', 'final_line', 'reversed_guard'],
+    ayc: ['keyword_context', 'career_context', 'study_context', 'final_line', 'evidence_structure'],
+    eql: ['evidence_structure', 'final_line', 'keyword_context', 'reversed_guard', 'upright_action']
+  };
+  return new Set(map[series] || []);
+}
+
 function buildQuestionBankFromPool(pool, level) {
   const families = buildQuestionFamilies(level);
   const fallbackCandidates = [
@@ -356,12 +378,17 @@ function toQuizQuestion(question, index) {
   };
 }
 
-export function generateQuiz({ lessonCards, level = 'beginner', count = 5 }) {
+export function generateQuiz({ lessonCards, lessonMeta = null, level = 'beginner', count = 5 }) {
   const basePool = lessonCards.length ? lessonCards : cards;
   const expandedPool = expandQuizPool(basePool);
   const bank = buildQuestionBankFromPool(expandedPool, level);
+  const allowedArchetypes = resolveLessonArchetypes(lessonMeta || {});
+  const alignedBank = allowedArchetypes.size
+    ? bank.filter((item) => allowedArchetypes.has(item.archetypeId))
+    : bank;
   const safeCount = Math.max(1, Math.min(Number(count) || 5, 30));
-  const selected = pickDiverseQuestions(bank, Math.min(safeCount, bank.length));
+  const sourceBank = alignedBank.length >= Math.min(safeCount, 5) ? alignedBank : bank;
+  const selected = pickDiverseQuestions(sourceBank, Math.min(safeCount, sourceBank.length));
   return selected.map((question, index) => toQuizQuestion(question, index));
 }
 
