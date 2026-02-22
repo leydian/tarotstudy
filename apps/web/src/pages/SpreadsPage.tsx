@@ -31,15 +31,15 @@ type SpreadVisualPreset = {
 };
 
 const SPREAD_VISUAL_PRESETS: Record<string, SpreadVisualPreset> = {
-  'one-card': { scale: 'xl', rowHeight: 164, minColWidth: 138 },
-  'three-card': { scale: 'xl', rowHeight: 138, minColWidth: 98 },
-  'daily-fortune': { scale: 'xl', rowHeight: 136, minColWidth: 96 },
-  'choice-a-b': { scale: 'xl', rowHeight: 132, minColWidth: 94 },
-  'monthly-fortune': { scale: 'lg', rowHeight: 126, minColWidth: 90 },
-  'relationship-recovery': { scale: 'lg', rowHeight: 126, minColWidth: 90 },
-  'weekly-fortune': { scale: 'md', rowHeight: 114, minColWidth: 76 },
-  'yearly-fortune': { scale: 'md', rowHeight: 108, minColWidth: 72 },
-  'celtic-cross': { scale: 'md', rowHeight: 112, minColWidth: 74 }
+  'one-card': { scale: 'xl', rowHeight: 246, minColWidth: 196 },
+  'three-card': { scale: 'xl', rowHeight: 222, minColWidth: 162 },
+  'daily-fortune': { scale: 'xl', rowHeight: 220, minColWidth: 160 },
+  'choice-a-b': { scale: 'xl', rowHeight: 212, minColWidth: 154 },
+  'monthly-fortune': { scale: 'lg', rowHeight: 198, minColWidth: 144 },
+  'relationship-recovery': { scale: 'lg', rowHeight: 198, minColWidth: 144 },
+  'weekly-fortune': { scale: 'md', rowHeight: 184, minColWidth: 130 },
+  'yearly-fortune': { scale: 'md', rowHeight: 178, minColWidth: 124 },
+  'celtic-cross': { scale: 'md', rowHeight: 184, minColWidth: 128 }
 };
 
 export function SpreadsPage() {
@@ -124,10 +124,10 @@ export function SpreadsPage() {
   const spreadVisualPreset =
     (selected ? SPREAD_VISUAL_PRESETS[selected.id] : null) ??
     ((selected?.cardCount ?? 1) <= 5
-      ? { scale: 'xl', rowHeight: 132, minColWidth: 94 }
+      ? { scale: 'xl', rowHeight: 210, minColWidth: 150 }
       : (selected?.cardCount ?? 1) <= 8
-        ? { scale: 'lg', rowHeight: 120, minColWidth: 86 }
-        : { scale: 'md', rowHeight: 110, minColWidth: 74 });
+        ? { scale: 'lg', rowHeight: 194, minColWidth: 140 }
+        : { scale: 'md', rowHeight: 180, minColWidth: 126 });
   const choiceComparison = useMemo(() => {
     if (!drawMutation.data || selected?.id !== 'choice-a-b') return null;
     return buildChoiceComparison(drawMutation.data);
@@ -228,7 +228,7 @@ export function SpreadsPage() {
         )}
 
         <h4>실전 드로우</h4>
-        <div className="filters">
+        <div className="filters spread-draw-controls">
           <select value={readingLevel} onChange={(e) => setReadingLevel(e.target.value as 'beginner' | 'intermediate')}>
             <option value="beginner">입문 리딩</option>
             <option value="intermediate">중급 리딩</option>
