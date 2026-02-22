@@ -6,6 +6,7 @@ import {
   inferQuestionIntentEnhanced,
   parseChoiceOptions
 } from '../src/question-understanding/index.js';
+import { SHORT_QUESTION_TYPE_BANK, inferShortUtterance } from '../src/question-understanding/short-utterance-rules.js';
 
 test('analyzeQuestionContextSync classifies core intents', () => {
   assert.equal(analyzeQuestionContextSync('헤어진 사람에게 다시 연락해도 될까?').intent, 'relationship-repair');
@@ -50,4 +51,10 @@ test('analyzeQuestionContextV2Sync provides enriched fields for short utterances
   assert.equal(result.subIntent, 'sleep');
   assert.equal(typeof result.riskClass, 'string');
   assert.equal(result.templateVersion, 'question-understanding-v2.5');
+});
+
+test('short question type bank includes at least 100 utterance types', () => {
+  assert.equal(SHORT_QUESTION_TYPE_BANK.length >= 100, true);
+  const hit = inferShortUtterance('A안 B안 뭐가 나아?');
+  assert.equal(hit?.questionType, 'choice_ab');
 });
