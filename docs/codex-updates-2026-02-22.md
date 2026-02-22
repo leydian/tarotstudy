@@ -533,3 +533,114 @@
 - `ccda0bb` Customize lesson intros and polish novel wording
 - `adb7e9d` Replace abstract novel lines with concrete decisions
 - `f01068e` Constrain quiz card scope and diversify lesson novel evidence
+
+---
+
+## 추가 업데이트 6 (2026-02-23: 스프레드 UI 대규모 개선 + 학습 코치 포맷 전면 개편)
+
+### 1) 스프레드 입력/카드 가독성 대폭 개선 (웹)
+- 파일:
+  - `apps/web/src/pages/SpreadsPage.tsx`
+  - `apps/web/src/styles/spreads.css`
+- 변경:
+  - 실전 드로우 입력 영역 전용 클래스(`spread-draw-controls`) 도입
+    - 입력/셀렉트/버튼 높이 확대, 질문 입력 폭 확장
+  - 스프레드 프리셋(`rowHeight`, `minColWidth`) 전면 상향
+    - 원카드/3카드/A-B/주간/연간/켈틱 포함 전체 레이아웃 확대
+  - 카드 슬롯 썸네일/번호칩/텍스트 스케일 확대
+  - 슬롯 내부를 세로 정렬에서 가로 정렬로 전환
+    - 이미지 + 우측 메타(포지션/카드명/정역방향) 구조로 재배치
+  - 모바일에서 다시 세로 전환되도록 반응형 보정
+
+### 2) 역방향 카드 시각 표현 추가 (웹)
+- 파일:
+  - `apps/web/src/pages/SpreadsPage.tsx`
+  - `apps/web/src/styles/spreads.css`
+- 변경:
+  - `orientation === 'reversed'`일 때 `card-reversed` 클래스 적용
+  - 카드 썸네일 180도 회전으로 실제 역방향 시각화
+
+### 3) 리딩/코치 패널 타이포/구조 재설계 (웹)
+- 파일:
+  - `apps/web/src/pages/SpreadsPage.tsx`
+  - `apps/web/src/styles/spreads.css`
+  - `apps/web/src/pages/spreads-helpers.ts`
+- 변경:
+  - 본문 폭 제한(`max-width`) 및 타이포 스케일 상향
+  - 리딩/코치 배경 대비 강화(카드 분리감 상승)
+  - 코치 요약을 4블록(`핵심/행동/주의/복기 질문`)으로 구조화
+  - 장문 문단 자동 분절 로직 강화(긴 문장 다단 분리)
+  - 이후 요구사항 반영으로 코치 요약을 불릿형에서 자연어 문단형으로 재구성
+    - “리딩=교과서 지문, 학습 코치=답안지” 톤으로 통일
+
+### 4) 학습 코치 생성 포맷 전면 개편 (API)
+- 파일: `apps/api/src/content.js`
+- 변경:
+  - 스프레드 학습 코치 문장을 새 포맷으로 통합:
+    - `관찰 근거` → `타로 리더 추론` → `결론 기준` → `학습 코칭` → `복기 질문`
+  - short utterance(one-card 초단문)도 동일 톤으로 통일
+  - 카드/포지션/정역방향/질문 맥락 기반 문장으로 교체
+
+### 5) 학습 코치 중복/모호성 제거 (웹)
+- 파일: `apps/web/src/pages/SpreadsPage.tsx`
+- 변경:
+  - 코치 문장에서 `복기 질문` 구간 분리 파싱
+  - `핵심`과 `복기 질문` 중복 문장 제거
+  - 기본 코칭 문구를 카드/포지션/정역방향 기반 예시로 치환
+  - 질문 맥락 연동 축(관계/커리어/재정/건강/선택형/일반) 도입
+
+### 6) 코칭 답안의 구체성 강화 (웹)
+- 파일: `apps/web/src/pages/SpreadsPage.tsx`
+- 변경:
+  - 학습 요약 문단에 타로 리더 문장 근거를 직접 인용/요약해 연결
+  - “행동 근거 기준”을 질문 유형별 구체 지시로 확장
+  - “시간/감정/에너지 조건”을 정방향/역방향별로 세부 가이드화
+  - 조사 어색함 보정(`로/으로`) 처리
+
+### 7) 중요 단어 강조(하이라이트) 확장 (웹)
+- 파일:
+  - `apps/web/src/pages/SpreadsPage.tsx`
+  - `apps/web/src/styles/spreads.css`
+- 변경:
+  - 키워드 강조 토큰 렌더러 도입
+  - 강조 톤 분리:
+    - `signal`(카드 핵심 키워드)
+    - `action`(실행/행동/기록)
+    - `caution`(주의/리스크)
+    - `evidence`(근거/질문/결론)
+  - 카드별 리딩/학습 코치뿐 아니라
+    - `타로 리더 종합 리딩`
+    - `종합 학습 내역`
+    - `판정 이유/경고/액션 카드`
+    영역까지 적용 확대
+
+### 8) 표현 일상화(병목/추상 키워드) 정제 (API + 웹)
+- 파일:
+  - `apps/api/src/content.js`
+  - `apps/web/src/pages/SpreadsPage.tsx`
+  - `apps/web/src/pages/spreads-helpers.ts`
+- 변경:
+  - `병목` → `막히는 지점`으로 통일 치환
+    - API 리딩 정제(`polishCoreMessage`, `polishTarotInterpretation`)
+    - 웹 표시 정규화 및 인사이트 문구
+  - 생소한 키워드 생활어 치환 로직 도입
+    - 예: `각성` → `정신이 또렷해지는 흐름`
+  - 키워드 기반 문장(테마/근거/핵심 메시지)에도 치환 적용
+
+### 9) 검증 결과
+- 웹:
+  - `npm --prefix apps/web run build` 반복 검증 통과
+- API:
+  - `node --test apps/api/test/content-fallback.test.js apps/api/test/relationship-recovery-spread.test.js apps/api/test/choice-a-b-reading.test.js` 통과
+
+### 10) 관련 커밋 (UI/코치 개선 구간)
+- `51b19c9` Improve spread draw form and card visibility
+- `3bf94c1` Improve reading and coach panel readability
+- `4e9605d` Rotate reversed tarot cards in spreads
+- `637edc1` Refine spread slot layout scale and card title emphasis
+- `23b6e5b` Improve coach readability and remove duplicated summary lines
+- `023ea24` Refresh learning coach narratives for spread readings
+- `e11b89f` Link coach guidance to question context in spread results
+- `4d5efdf` Make coach summaries concrete and question-aware
+- `98c17df` Highlight key coaching terms in spread reading panels
+- `8326ed3` Emphasize key terms in summary panels and simplify bottleneck wording
