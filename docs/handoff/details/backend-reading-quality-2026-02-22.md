@@ -76,9 +76,26 @@
 - 문단 간 중복 문장 제거로 반복 노출 억제
 - 판정 블록 + 본문 결합 후 리듬 정리로 가독성 개선
 
+9. 카드 도감 `입문` 해설 실전형 재개편
+- 대상 파일:
+  - `apps/api/src/content.js`
+- 핵심 변경:
+  - `beginner` 카드 해설을 전용 템플릿으로 재정의
+  - 7개 섹션(`coreMeaning/symbolism/upright/reversed/love/career/advice`)을 **섹션당 최소 5줄**로 고정
+  - 문장 톤을 쉬운 표현 + 행동 중심으로 통일
+  - 섹션 라벨(`핵심/현재 상황/오늘 할 일/복기`)을 넣어 가독성 강화
+  - 맥락 분기(관계/커리어/학습/재정/건강/일상)는 유지하되 입문 사용자 기준으로 단순화
+  - `beginner`는 외부 생성 텍스트보다 내부 실전 템플릿을 우선 적용
+  - 캐시 키를 `explain:v6`로 상향해 이전 텍스트 재사용 방지
+- 품질 효과:
+  - 입문 사용자의 이해 난이도 하향
+  - 카드별 해설 형식 편차 축소
+  - 실전 적용 문장 비율 증가로 “읽고 바로 실행” 가능한 구조 확보
+
 ## 관련 테스트
 - `apps/api/test/content-fallback.test.js`
   - 다중 카드/다중 맥락(커리어/재회/재정) 분기 회귀 검증
+  - 입문 해설 섹션 구조/맥락 분기 회귀 검증
 - `apps/api/test/weekly-fortune-spread.test.js`
   - 주별 운세 포지션 회귀 테스트
 - `apps/api/test/choice-a-b-reading.test.js`
@@ -92,6 +109,7 @@
 - `node --check apps/api/src/content.js`
 
 ## 최근 관련 커밋
+- `c07de49` Rewrite beginner card explanations in plain practical language
 - `cd445be` Refine choice A/B reading for clarity and work-location context
 - `389fa59` Improve purchase-focused A/B reading tone and decision clarity
 - `6135a1b` Apply verdict-and-evidence summary policy across all spreads

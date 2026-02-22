@@ -36,6 +36,23 @@
   - 텔레메트리 수집 API(`spread_drawn`, `spread_review_saved`) 및 롤업 스크립트 추가
 
 ## 3) 금일 추가 반영 (최신)
+- 카드 도감 입문 해설 전면 개편 (쉬운 문장 + 실전형 + 5줄 고정)
+  - 파일: `apps/api/src/content.js`
+  - 변경:
+    - `beginner` 레벨 카드 해설을 전용 실전 템플릿으로 재구성
+    - 7개 섹션(`coreMeaning/symbolism/upright/reversed/love/career/advice`)을 모두 **최소 5줄**로 고정
+    - 문장 구조를 `핵심/현재 상황/오늘 할 일/복기` 중심으로 단순화
+    - 어려운 용어(추상적 방법론/분석 용어) 비중을 낮추고 즉시 행동 가능한 문장으로 교체
+    - 관계/커리어/학습/재정/건강/일상 맥락 분기를 유지하면서도 입문 톤으로 통일
+    - `beginner`는 외부 생성 결과보다 내부 실전 템플릿을 우선 적용하도록 변경
+    - 캐시 키를 `explain:v6`로 상향해 이전 입문 해설 캐시의 재사용을 차단
+  - 효과:
+    - 입문 사용자가 읽고 바로 실행할 수 있는 형태로 카드 도감 체감 난이도 완화
+    - 카드별 해설 길이/형식의 일관성 확보로 가독성과 복기 품질 개선
+  - 검증:
+    - `node --check apps/api/src/content.js` 통과
+    - `npm run test:api` 통과
+
 - 품질 게이트/CI/운영 안정화
   - 파일:
     - `package.json`, `apps/web/package.json`
@@ -131,6 +148,9 @@
     - `apps/api/test/choice-a-b-reading.test.js`에 도시 선택 케이스 추가
 
 ## 4) 최근 커밋 타임라인 (최신 우선)
+- `c07de49` Rewrite beginner card explanations in plain practical language
+- `49326ec` Fix spreads page crash on initial render before selection
+- `baf9079` Stabilize quality gates, telemetry persistence, and CI workflow
 - `ba9e199` Differentiate beginner/intermediate coaching with practical execution flows
 - `edaf90a` Improve choice spread branching and simplify learning digest output
 - `fb90f37` Refine relationship-reading tone and stabilize spread view UX
@@ -153,6 +173,9 @@
   - `node --check apps/api/src/content.js` 통과
   - `node --check apps/api/src/index.js` 통과
   - `npm run test:api` 통과
+  - `npm run lint` 통과
+  - `npm run typecheck:web` 통과
+  - `npm run test:web` 통과
   - `npm run build:web` 통과
 
 ## 6) 즉시 참조 링크
