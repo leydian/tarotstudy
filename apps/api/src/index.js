@@ -1291,6 +1291,8 @@ function summarizeYearlyFortune({ items, context = '', level = 'beginner' }) {
 
   const timingClose = isJobTimingQuestion
     ? `취직 시기 관점으로 정리하면, 언제 무엇을 할지 기준은 분명합니다. ${strongest.label}에는 지원서 제출과 면접 일정을 본격적으로 열고, ${weakest.label}에는 이력서·포트폴리오 보완과 직무 정합성 점검에 집중해 주세요. ${levelHint}`
+    : yearlyIntent === 'finance'
+      ? `재물운 관점에서는 두 갈래로 운영하시면 됩니다. 확장 구간인 ${strongest.label}에는 계획형 집행 1~2개만 기준 안에서 실행하고, 조정 구간인 ${weakest.label}에는 신규 지출을 줄이며 누수 점검과 현금 보존을 우선해 주세요. ${levelHint}`
     : `마지막으로 ${strongest.label}은 확장 구간, ${weakest.label}은 정비 구간으로 나눠 운영하시면 올해 리딩을 실제 행동으로 옮기기가 훨씬 수월해집니다. ${levelHint}`;
 
   return [
@@ -1742,13 +1744,6 @@ function pickTopKeywords(items, count = 3) {
 
 function inferSummaryContextTone(context = '') {
   const text = String(context || '').toLowerCase();
-  if (['오늘', '운세', '하루', '금일', '오늘의'].some((k) => text.includes(k))) {
-    return {
-      mainHint: '오늘은 크게 벌리기보다 바로 체감되는 선택 하나에 집중해 보세요.',
-      beginnerHint: '지금 할 일 하나와 줄일 일 하나만 나눠 정하면 마음이 훨씬 가벼워집니다.',
-      intermediateHint: '오전/오후 페이스만 구분해도 오늘 흐름을 안정적으로 가져갈 수 있습니다.'
-    };
-  }
   if (['이직', '직장', '회사', '업무', '커리어', '면접', '승진'].some((k) => text.includes(k))) {
     return {
       mainHint: '이직/업무 이슈는 기대보다 내 체력과 일정이 버티는지부터 확인하는 게 안전합니다.',
@@ -1763,11 +1758,18 @@ function inferSummaryContextTone(context = '') {
       intermediateHint: '원하는 것과 불편한 것을 분리해서 말하면 갈등이 줄어듭니다.'
     };
   }
-  if (['돈', '재정', '투자', '지출', '저축', '수입', '대출'].some((k) => text.includes(k))) {
+  if (['돈', '재정', '재물', '투자', '지출', '저축', '수입', '대출', '자산', '현금흐름'].some((k) => text.includes(k))) {
     return {
       mainHint: '돈 문제는 수익 기대보다 지출 통제부터 잡을 때 마음이 안정됩니다.',
       beginnerHint: '오늘 줄일 지출 하나만 정해도 흐름이 바로 달라집니다.',
       intermediateHint: '유지 가능한 소비 리듬을 먼저 만들고 확장은 그다음에 보세요.'
+    };
+  }
+  if (['오늘', '운세', '하루', '금일', '오늘의'].some((k) => text.includes(k))) {
+    return {
+      mainHint: '오늘은 크게 벌리기보다 바로 체감되는 선택 하나에 집중해 보세요.',
+      beginnerHint: '지금 할 일 하나와 줄일 일 하나만 나눠 정하면 마음이 훨씬 가벼워집니다.',
+      intermediateHint: '오전/오후 페이스만 구분해도 오늘 흐름을 안정적으로 가져갈 수 있습니다.'
     };
   }
   if (['공부', '시험', '학습', '자격증', '과제', '집중'].some((k) => text.includes(k))) {
@@ -1821,6 +1823,10 @@ function buildSummaryLead({
     ? (uprightCount >= reversedCount
         ? '전반적으로는 대화의 문이 열릴 여지가 있어도, 감정 속도 조절이 함께 필요합니다.'
         : '전반적으로는 결론을 서두르기보다 감정 온도를 맞추며 오해를 줄이는 쪽이 더 유리합니다.')
+    : intent === 'finance'
+      ? (uprightCount >= reversedCount
+          ? '전반적으로는 수익 기회가 보이더라도 지출 상한과 통제 규칙을 함께 두는 편이 유리합니다.'
+          : '전반적으로는 확장보다 손실 방어와 현금흐름 점검을 먼저 두는 쪽이 더 안전합니다.')
     : uprightCount >= reversedCount
       ? '전반적으로는 밀어도 되는 흐름이 조금 더 강합니다.'
       : '전반적으로는 속도를 조절하고 정리하는 쪽이 더 유리합니다.';
@@ -1835,46 +1841,70 @@ function buildSummaryFocus({ spreadName, firstItem, lastItem, context = '', cont
   const intent = inferYearlyIntent(context);
   if (!firstItem || !lastItem) return contextTone.mainHint;
   if (spreadName === '원카드' || firstItem.position.name === '핵심 메시지') {
+    if (intent === 'finance') {
+      return '재물 질문에서는 카드 한 장을 크게 확장하기보다, 오늘 지출 통제 1개와 확인할 숫자 1개를 같이 정하는 방식이 가장 실용적입니다. 기대 수익보다 현금흐름을 먼저 읽으면 판단이 훨씬 안정됩니다.';
+    }
     if (intent === 'relationship') {
       return '연애 질문에서는 카드 한 장을 크게 해석하기보다, 오늘 내 감정 1개와 전달할 요청 1개를 분리해 읽는 방식이 가장 안정적입니다. 상대 마음을 단정하기보다 실제 반응을 확인하는 대화 한 번에 집중해보세요.';
     }
     return `실행: ${buildOneCardActionLine({ context, firstItem })}`;
   }
   if (spreadName === '양자택일 (A/B)') {
+    if (intent === 'finance') {
+      return '재정 양자택일은 높은 기대수익보다 손실 가능성과 유지 비용이 낮은 쪽을 우선 봐야 정확합니다. 두 선택지에서 초기 비용 1개와 숨은 고정비 1개를 나눠 비교해보세요.';
+    }
     if (intent === 'relationship') {
       return '연애 양자택일은 누가 더 맞는지보다, 내 감정 소모가 덜하고 대화가 오래 유지되는 쪽을 기준으로 보셔야 정확합니다. 각 선택지에서 마음이 편해지는 순간과 불편해지는 순간을 한 가지씩 비교해보세요.';
     }
     return `양자택일에서는 현재 상황 카드로 판단 기준을 먼저 고정하고, A/B 결과 카드에서 내가 오래 유지할 수 있는 쪽을 우선 보세요. ${contextTone.mainHint}`;
   }
   if (spreadName === '일별 운세') {
+    if (intent === 'finance') {
+      return '일간 재물운은 오늘의 흐름 카드로 자금 온도를 먼저 읽고, 주의할 점 카드로 누수 신호를 확인한 뒤, 행동 조언 카드에서 통제 행동 1개를 고정하는 순서가 가장 안정적입니다.';
+    }
     if (intent === 'relationship') {
       return `일간 연애운은 오늘의 흐름 카드로 감정 온도를 먼저 읽고, 주의할 점 카드로 오해 신호를 확인한 뒤, 행동 조언 카드에서 대화 문장 1개를 정하는 순서가 가장 안정적입니다. 상대 반응을 해석하려 하기보다 내 감정 1개와 요청 1개를 분리해 전달하면 흐름이 훨씬 자연스러워집니다.`;
     }
     return `일별 운세는 오늘의 흐름 카드로 페이스를 잡고, 행동 조언 카드 한 줄만 실제 일정에 반영하면 충분합니다. ${contextTone.mainHint}`;
   }
   if (spreadName === '주별 운세') {
+    if (intent === 'finance') {
+      return '주간 재물운은 힘이 실리는 날에 핵심 집행을 두고, 조심할 날에는 결제 통제와 점검을 배치하는 방식이 좋습니다. 한 주를 통틀어 수익 확대보다 누수 차단을 먼저 두면 손실을 줄이기 쉽습니다.';
+    }
     if (intent === 'relationship') {
       return '주간 연애운은 힘이 실리는 날에 대화를 열고, 조심할 날에는 감정 템포를 낮추는 운영이 핵심입니다. 하루에 결론을 내기보다 관계 온도를 안정적으로 맞추는 흐름으로 보시면 좋습니다.';
     }
     return `주별 운세는 월요일 시동 카드에서 시작해 일요일 복기 카드까지 일자별 흐름으로 연결해서 보면 판단이 안정됩니다. ${contextTone.mainHint}`;
   }
   if (spreadName === '월별 운세') {
+    if (intent === 'finance') {
+      return '월간 재물운에서는 초반 공격적 집행보다 중후반 유지력이 더 중요합니다. 월간 테마를 기준으로 고정비와 변동비를 나눠 관리하면 흐름이 훨씬 안정됩니다.';
+    }
     if (intent === 'relationship') {
       return '월간 연애운에서는 초반 감정 반응보다 중후반의 일관된 태도가 더 중요합니다. 월간 테마를 기준으로 대화 빈도와 거리 조절을 맞추면 관계 피로를 크게 줄일 수 있습니다.';
     }
     return `월별 운세는 월간 테마로 방향을 세우고 1~4주차 카드로 강약만 조절하면 됩니다. ${contextTone.mainHint}`;
   }
   if (spreadName === '연간 운세 (12개월)') {
+    if (intent === 'finance') {
+      return '연간 재물운은 월별 수익보다 분기별 리스크 관리와 현금흐름 안정화를 먼저 보는 방식이 현실적입니다. 확장 구간과 방어 구간을 나눠 운영하면 연간 변동성을 줄일 수 있습니다.';
+    }
     if (intent === 'relationship') {
       return '연간 연애운은 월별 사건보다 분기별 감정 흐름을 읽는 방식이 더 현실적입니다. 가까워지는 시기와 숨 고르는 시기를 나눠 잡으면 관계 안정성이 높아집니다.';
     }
     return `연간 운세는 월별 사건에 매달리기보다 분기별 공통 흐름을 잡을 때 훨씬 선명해집니다. ${contextTone.mainHint}`;
   }
   if (spreadName === '켈틱 크로스') {
+    if (intent === 'finance') {
+      return '켈틱 재물 리딩은 현재 재정 상태, 핵심 장애, 결과 흐름을 한 줄로 연결해 읽을 때 정확도가 높습니다. 분위기 해석보다 반복되는 지출 패턴과 손실 신호를 먼저 특정해보세요.';
+    }
     if (intent === 'relationship') {
       return '켈틱 연애 리딩은 현재 감정, 갈등 지점, 결과 흐름을 한 줄로 연결해 읽을 때 정확도가 올라갑니다. 상대 의도 추측보다 반복되는 대화 패턴을 먼저 확인해보세요.';
     }
     return `켈틱 크로스는 현재/교차 카드로 중심 갈등을 확인하고 결과 카드로 연결하면 흐름이 깔끔해집니다. ${contextTone.mainHint}`;
+  }
+  if (intent === 'finance') {
+    return '이 재물 흐름은 큰 결론보다 현재 신호와 다음 통제 행동을 짧게 연결해 읽는 방식이 가장 실용적입니다. 오늘은 지출 상한 1개와 보류 항목 1개를 먼저 정해보세요.';
   }
   if (intent === 'relationship') {
     return '이 연애 흐름은 카드별 결론을 서두르기보다 현재 신호와 다음 행동을 짧게 연결해 읽는 방식이 안정적입니다. 오늘은 감정 1개와 요청 1개를 분리해 전달하는 연습에 집중해보세요.';
@@ -1886,6 +1916,9 @@ function buildSummaryAction({ spreadName, level, context = '', firstItem = null,
   const intent = inferYearlyIntent(context);
   const levelLine = level === 'intermediate' ? contextTone.intermediateHint : contextTone.beginnerHint;
   if (spreadName === '원카드') {
+    if (intent === 'finance') {
+      return `오늘 재물운 조언은 두 갈래로 보시면 됩니다. 기회를 잡고 싶다면 예산 상한 안에서 작은 집행 1건만 실행하세요. 방어가 필요하다면 비필수 결제 1건을 보류하고 현금흐름부터 점검하세요. ${levelLine}`;
+    }
     if (intent === 'relationship') {
       return `오늘 연애운 조언은 두 갈래로 보시면 됩니다. 관계를 더 깊게 이어가고 싶다면 짧고 분명한 감정 표현을 먼저 건네보세요. 반대로 마음이 버겁다면 대화 간격을 잠시 넓히고 내 리듬을 회복한 뒤 다시 이어가는 편이 좋습니다. ${levelLine}`;
     }
@@ -1893,46 +1926,70 @@ function buildSummaryAction({ spreadName, level, context = '', firstItem = null,
     return `복기: ${reviewLine} ${levelLine}`;
   }
   if (spreadName === '일별 운세') {
+    if (intent === 'finance') {
+      return `오늘 재물운 조언은 두 갈래로 보시면 됩니다. 흐름이 괜찮다면 필요한 집행 1건만 기준 안에서 처리해 리듬을 유지하세요. 불안하면 결제 전 10분 유예를 두고 비필수 지출 1건을 보류하는 편이 안전합니다. ${levelLine}`;
+    }
     if (intent === 'relationship') {
       return `오늘 연애운 조언은 두 갈래로 보시면 됩니다. 관계를 더 깊게 이어가고 싶다면 짧고 진솔한 확인 대화를 먼저 열어 감정의 접점을 넓혀보세요. 반대로 지금 조금 버겁다면 감정적 거리를 잠시 두고, 내 마음을 회복한 뒤 천천히 대화 속도를 맞추는 편이 좋습니다. ${levelLine}`;
     }
     return `오늘은 맞추려 하기보다 리듬을 지키는 쪽이 더 좋습니다. ${levelLine}`;
   }
   if (spreadName === '주별 운세') {
+    if (intent === 'finance') {
+      return `이번 주 재물운은 두 갈래로 정리됩니다. 확장을 원하면 강한 날에 핵심 집행 1개만 실행하세요. 방어가 우선이면 약한 날에는 신규 결제를 줄이고 누수 점검을 먼저 두는 편이 좋습니다. ${levelLine}`;
+    }
     if (intent === 'relationship') {
       return `이번 주 연애운은 두 갈래 조언으로 정리됩니다. 가까워지고 싶다면 힘이 실리는 날에 확인 대화를 먼저 열어보세요. 거리 조절이 필요하다면 조심할 날에는 결론 대신 감정 정리에 집중하는 편이 좋습니다. ${levelLine}`;
     }
     return `한 주를 한 번에 바꾸려 하지 말고, 중반부터 천천히 페이스를 맞춰 보세요. ${levelLine}`;
   }
   if (spreadName === '월별 운세') {
+    if (intent === 'finance') {
+      return `이번 달 재물운은 두 갈래 운영이 좋습니다. 성장 쪽을 택하면 계획형 집행과 기록 루틴을 함께 가져가세요. 안정 쪽을 택하면 지출 상한을 낮추고 고정비 재점검을 먼저 하는 편이 좋습니다. ${levelLine}`;
+    }
     if (intent === 'relationship') {
       return `이번 달 연애운은 두 갈래 운영이 좋습니다. 관계 진전을 원하면 짧고 일관된 배려 행동을 반복해 신뢰를 쌓아보세요. 부담이 크다면 대화 강도를 낮추고 오해를 줄이는 확인 질문 중심으로 흐름을 조정하세요. ${levelLine}`;
     }
     return `월간 리딩은 초반 스퍼트보다 후반 유지력이 더 중요합니다. ${levelLine}`;
   }
   if (spreadName === '연간 운세 (12개월)') {
+    if (intent === 'finance') {
+      return `연간 재물운도 두 갈래로 보시면 됩니다. 기회를 넓히려면 상승 구간에만 확장 집행을 배치하세요. 안정이 우선이면 조정 구간에는 손실 방어와 현금 보존을 먼저 두는 편이 좋습니다. ${levelLine}`;
+    }
     if (intent === 'relationship') {
       return `연간 연애운도 두 갈래로 보시면 됩니다. 관계를 깊게 가져가고 싶다면 상승 구간에 약속과 계획을 구체화하세요. 숨 고르기가 필요하다면 조정 구간에 감정 소모를 줄이고 경계를 분명히 세우는 편이 좋습니다. ${levelLine}`;
     }
     return `연간 리딩은 월별 성과보다 분기별 균형을 먼저 챙기면 덜 흔들립니다. ${levelLine}`;
   }
   if (spreadName === '양자택일 (A/B)') {
+    if (intent === 'finance') {
+      return `선택형 재물운 조언도 두 갈래입니다. 수익을 노린다면 유지 비용이 감당되는 선택지를 고르세요. 손실 방어가 우선이면 초기 지출과 변동성이 낮은 선택지를 우선하는 편이 좋습니다. ${levelLine}`;
+    }
     if (intent === 'relationship') {
       return `선택형 연애운 조언도 두 갈래입니다. 더 가까워지고 싶다면 대화가 편안하게 이어지는 쪽을 고르세요. 안정이 우선이라면 감정 소모가 적고 경계가 지켜지는 선택지를 우선하는 편이 좋습니다. ${levelLine}`;
     }
     return `결정 전에는 시간, 비용, 마음 소모 이 세 가지만 두 선택지에 대입해 보세요. ${levelLine}`;
   }
   if (spreadName === '3카드 스프레드') {
+    if (intent === 'finance') {
+      return `3카드 재물운은 두 갈래 실행으로 마무리하면 좋습니다. 확장을 원하면 집행 1개를 기준 안에서 실행하세요. 방어가 필요하면 지출 1개를 줄이고 구독/자동결제 1개를 점검하는 편이 안전합니다. ${levelLine}`;
+    }
     if (intent === 'relationship') {
       return `3카드 연애운은 두 갈래 실행으로 마무리하면 좋습니다. 관계를 열고 싶다면 오늘 감정 1개를 먼저 솔직하게 말해보세요. 부담이 크다면 판단을 미루고 확인 질문 1개만 남기는 방식이 안전합니다. ${levelLine}`;
     }
     return `세 장의 공통 키워드 하나를 잡아 오늘 행동 한 줄로 바꾸면 충분합니다. ${levelLine}`;
   }
   if (spreadName === '켈틱 크로스') {
+    if (intent === 'finance') {
+      return `켈틱 재물운 조언은 두 갈래입니다. 전진을 원하면 핵심 집행 1개만 정해 실행하세요. 불안이 크면 지출 속도를 늦추고 손실 요인부터 정리한 뒤 다음 결정을 여는 편이 안정적입니다. ${levelLine}`;
+    }
     if (intent === 'relationship') {
       return `켈틱 연애운 조언은 두 갈래입니다. 회복과 진전을 원하면 사실-감정-요청 순서로 대화를 짧게 여세요. 소모가 크다면 감정 과열 구간을 먼저 줄이고, 결론은 다음 대화로 넘기는 편이 안정적입니다. ${levelLine}`;
     }
     return `복합 이슈일수록 중심 흐름과 외부 환경을 분리해서 천천히 정리해 보세요. ${levelLine}`;
+  }
+  if (intent === 'finance') {
+    return `재물운 조언은 두 갈래로 정리됩니다. 기회를 잡고 싶다면 집행 기준을 먼저 세운 뒤 작은 실행을 하세요. 방어가 우선이면 신규 결제를 줄이고 누수 점검부터 시작하는 편이 좋습니다. ${levelLine}`;
   }
   if (intent === 'relationship') {
     return `연애운 조언은 두 갈래로 정리됩니다. 가까워지고 싶다면 확인 대화를 짧고 꾸준하게 이어가세요. 거리 조절이 필요하다면 감정 소모를 낮추고 경계를 분명히 하며 속도를 늦추는 편이 좋습니다. ${levelLine}`;

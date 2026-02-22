@@ -1316,7 +1316,7 @@ function inferContextProfile(context = '') {
     },
     {
       id: 'finance',
-      keywords: ['돈', '재정', '투자', '지출', '소비', '수입', '저축', '부채', '대출'],
+      keywords: ['돈', '재정', '재물', '투자', '지출', '소비', '수입', '저축', '부채', '대출', '자산', '현금흐름'],
       anchor: '현금흐름과 고정비를 먼저 확인해야 판단이 흔들리지 않습니다.',
       interpretationHint: '기대수익보다 손실 가능성과 유동성 리스크를 함께 읽어야 안전합니다.',
       actionHint: '지출 우선순위를 3단계로 나눠 즉시 조정하세요.',
@@ -1369,6 +1369,9 @@ function buildNaturalCoreMessage({
   if (spreadId === 'yearly-fortune' && isYearlyMonthPosition(position.name)) {
     return buildYearlyMonthCoreMessage({ card, position, orientation, context, seed });
   }
+  if (contextProfile.id === 'finance') {
+    return buildFinanceBenchmarkCoreMessage({ card, position, orientation, spreadId });
+  }
   if (contextProfile.id === 'relationship') {
     return buildRelationshipBenchmarkCoreMessage({ card, position, orientation, spreadId });
   }
@@ -1408,6 +1411,9 @@ function buildTarotConsultingInterpretation({
 }) {
   if (spreadId === 'yearly-fortune' && isYearlyMonthPosition(position.name)) {
     return buildYearlyMonthInterpretation({ card, position, orientation, context, seed });
+  }
+  if (contextProfile.id === 'finance') {
+    return buildFinanceBenchmarkInterpretation({ card, position, orientation, spreadId });
   }
   if (contextProfile.id === 'relationship') {
     return buildRelationshipBenchmarkInterpretation({ card, position, orientation, spreadId });
@@ -1498,6 +1504,70 @@ function buildRelationshipBenchmarkInterpretation({ card, position, orientation,
     ? '실행 문장: "내 마음은 이렇고, 나는 이렇게 맞춰가고 싶어"처럼 짧고 분명하게 전달해보세요.'
     : '실행 문장: 오늘 대화에서는 결론을 내리기보다 확인 질문 1개만 먼저 건네보세요.';
   return polishTarotInterpretation([relationshipLine, realityLine, actionLine].join(' '));
+}
+
+function buildFinanceBenchmarkCoreMessage({ card, position, orientation, spreadId = 'default' }) {
+  const cardDirection = orientation === 'upright' ? '정방향' : '역방향';
+  const keyword = card.keywords?.[0] ?? '재물 흐름';
+  const positionTopic = withKoreanParticle(position.name, '은', '는');
+  const spreadOpeners = {
+    'daily-fortune': `${position.name} 카드로 오늘 재물 흐름을 조심스럽게 살펴보겠습니다.`,
+    'weekly-fortune': `${position.name} 카드로 이번 주 재물 흐름의 결을 읽어보겠습니다.`,
+    'monthly-fortune': `${position.name} 카드로 이번 달 자금 리듬을 점검해보겠습니다.`,
+    'yearly-fortune': `${position.name} 카드로 올해 재정 흐름의 방향을 살펴보겠습니다.`,
+    'choice-a-b': `${position.name} 카드로 두 선택의 비용과 유지력을 비교해보겠습니다.`,
+    'celtic-cross': `${position.name} 카드가 재정 서사에서 주는 신호를 먼저 확인해보겠습니다.`,
+    default: `${position.name} 카드로 현재 재물 흐름을 차분히 확인해보겠습니다.`
+  };
+  const signalLine = orientation === 'upright'
+    ? `${card.nameKo}의 "${keyword}" 신호가 열려 있어, 오늘은 무리하지 않는 선에서 관리형 실행을 붙이기 좋습니다.`
+    : `${card.nameKo}의 "${keyword}" 신호가 예민해 보여, 오늘은 확장보다 손실 방어를 먼저 두는 편이 안전합니다.`;
+  const closeLine = /(조언|결과)/.test(position.name)
+    ? '한 번의 큰 결정보다 작은 통제 1개를 먼저 고정하면 체감 안정성이 올라갑니다.'
+    : `${positionTopic} 수익 기대보다 실제 현금흐름을 기준으로 읽을 때 판단 오차가 줄어듭니다.`;
+  return polishCoreMessage([
+    spreadOpeners[spreadId] ?? spreadOpeners.default,
+    `뽑으신 카드는 '${card.nameKo} ${cardDirection}'입니다.`,
+    signalLine,
+    closeLine
+  ].join(' '));
+}
+
+function buildFinanceBenchmarkInterpretation({ card, position, orientation, spreadId = 'default' }) {
+  const main = card.keywords?.[0] ?? '재물 흐름';
+  const sub = card.keywords?.[1] ?? main;
+  const open = orientation === 'upright';
+  const positionLabel = position.name || '이 자리';
+  const financeLine = (() => {
+    if (positionLabel === '오늘의 흐름') {
+      return open
+        ? `오늘은 '${main}'에서 '${sub}'으로 흐름이 이어질 가능성이 있어, 계획형 지출과 점검을 병행하기 좋은 구간입니다.`
+        : `오늘은 '${main}' 신호가 흔들릴 수 있어, 수익 확대보다 결제 통제와 보류 판단이 더 유리합니다.`;
+    }
+    if (positionLabel === '주의할 점') {
+      return open
+        ? `좋아 보이는 조건도 '${main}' 구간에서 과신하면 지출이 커질 수 있으니, 상한 금액을 먼저 정하는 편이 좋습니다.`
+        : `'${main}' 신호가 예민해 충동 결제나 낙관 추정이 커질 수 있으니, 결제 전 10분 유예 규칙을 두는 것이 안전합니다.`;
+    }
+    if (positionLabel === '행동 조언' || /(조언|결과)/.test(positionLabel)) {
+      return open
+        ? `'${main}' 흐름이 열려 있어도 공격적 확장보다 지출 통제 1개와 실행 1개를 짝으로 두는 방식이 안정적입니다.`
+        : `'${main}' 흐름이 조정 구간이라, 신규 집행보다 누수 차단 1개를 먼저 실행하는 편이 손실을 줄입니다.`;
+    }
+    if (spreadId === 'choice-a-b') {
+      return open
+        ? `선택 비교에서는 '${main}' 신호가 살아 있어도, 기대수익보다 유지 비용이 낮은 쪽이 실제 만족도가 높을 가능성이 큽니다.`
+        : `선택 비교에서는 '${main}' 신호가 흔들려 보이니, 초기 비용과 손실 가능성을 먼저 비교하는 편이 좋습니다.`;
+    }
+    return open
+      ? `${positionLabel}에서는 '${main}'에서 '${sub}'으로 이어지는 흐름이 살아 있어 관리형 실행을 붙이기 좋은 구간입니다.`
+      : `${positionLabel}에서는 '${main}' 신호가 흔들릴 수 있어 확장보다 방어 중심 운영이 더 안정적입니다.`;
+  })();
+  const realityLine = '재물 해석은 분위기보다 숫자 단서가 중요하니, 금액 상한과 결제 횟수 같은 측정 가능한 기준을 먼저 고정해보세요.';
+  const actionLine = open
+    ? '실행 문장: 오늘은 비필수 지출 1건만 보류하고, 꼭 필요한 집행 1건만 기준 안에서 처리하세요.'
+    : '실행 문장: 오늘은 신규 결제를 미루고, 자동결제/구독 항목 1개를 점검해 누수를 먼저 막아보세요.';
+  return polishTarotInterpretation([financeLine, realityLine, actionLine].join(' '));
 }
 
 function buildCelticCrossInterpretation({
