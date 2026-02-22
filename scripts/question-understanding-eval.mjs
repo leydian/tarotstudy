@@ -71,7 +71,9 @@ try {
     typeAccuracy: pct(typeOk, set.length),
     choiceModeAccuracy: pct(choiceOk, set.length)
   };
-  summary.pass = summary.intentAccuracy >= 95 && summary.choiceModeAccuracy >= 93;
+  summary.pass = summary.intentAccuracy >= 95
+    && summary.typeAccuracy >= 95
+    && summary.choiceModeAccuracy >= 93;
 
   ensureDir(outPath);
   fs.writeFileSync(outPath, buildReport(rows, summary), 'utf-8');

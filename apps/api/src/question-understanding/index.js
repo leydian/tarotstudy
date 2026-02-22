@@ -31,8 +31,8 @@ function fallbackRulesIntent(context = '') {
 function buildQuestionType(context = '', choice = null, legacyIntent = 'general') {
   const text = String(context || '').toLowerCase();
   if (choice?.hasChoice) return 'choice_ab';
-  if (/(할까|될까|말까|괜찮을까|가능할까|맞을까|좋을까|나을까|될지|수\s*있을까)/.test(text)) return 'yes_no';
-  if (/(운세|흐름|리딩|해석|전망)/.test(text) || legacyIntent === 'daily') return 'forecast';
+  if (/(할까|될까|말까|괜찮을까|가능할까|맞을까|좋을까|나을까|될지|있을까|수\s*있을까|가능성(?:이|은)?\s*있을까|can\s*i|should\s*i|is\s*it\s*okay)/i.test(text)) return 'yes_no';
+  if (/(운세|흐름|리딩|해석|전망|luck|fortune|horoscope|today\s*luck|weekly\s*luck|monthly\s*luck|yearly\s*luck)/i.test(text) || legacyIntent === 'daily') return 'forecast';
   return 'open';
 }
 

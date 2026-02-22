@@ -25,8 +25,8 @@ function normalize(text = '') {
 function detectQuestionType(text = '', choice = null) {
   const normalized = normalize(text);
   if (choice?.hasChoice) return 'choice_ab';
-  if (/(할까|될까|말까|괜찮을까|맞을까|좋을까|나을까|가능할까|될지|수\s*있을까)/.test(normalized)) return 'yes_no';
-  if (/(운세|흐름|전망|리딩|해석)/.test(normalized)) return 'forecast';
+  if (/(할까|될까|말까|괜찮을까|맞을까|좋을까|나을까|가능할까|될지|있을까|수\s*있을까|가능성(?:이|은)?\s*있을까|can\s*i|should\s*i|is\s*it\s*okay)/i.test(normalized)) return 'yes_no';
+  if (/(운세|흐름|전망|리딩|해석|luck|fortune|horoscope|today\s*luck|weekly\s*luck|monthly\s*luck|yearly\s*luck)/i.test(normalized)) return 'forecast';
   return 'open';
 }
 
@@ -45,6 +45,10 @@ export function classifyQuestionLocal(context = '') {
     for (const token of tokens) {
       if (includesWord(text, token)) scores[intent] += token.length > 2 ? 1.2 : 0.9;
     }
+  }
+
+  if (/(luck|fortune|horoscope)/.test(text) && /(today|weekly|monthly|yearly|this week|this month|this year)/.test(text)) {
+    scores.daily += 1.4;
   }
 
   if (choice.isPurchaseChoice) scores.finance += 2.2;

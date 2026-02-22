@@ -14,7 +14,8 @@ function normalizeOption(raw = '') {
 function parseExplicitByDelimiters(raw = '') {
   const text = String(raw || '');
   const markers = [
-    /(.+?)\s*(?:vs|versus|\/|또는|혹은|or)\s*(.+)/i,
+    /(.+?)\s*(?:\bvs\b|\bversus\b|\/|또는|혹은|\bor\b)\s*(.+)/i,
+    /(.+?)\s*(?:이랑|랑|and)\s*(.+?)\s*중\s*(?:무엇|뭐|어느)\s*(?:을|를)?\s*(?:우선|고를|선택|좋|나)/i,
     /(.+?)\s*(?:와|과)\s*(.+?)\s*중\s*(?:무엇|뭐|어느)\s*(?:을|를)?\s*(?:우선|고를|선택)/i,
     /(.+?)\s*(?:중|중에|중에서)\s*(.+?)\s*(?:어떤|어느)\s*(?:게|것|쪽)/i,
     /(.+?)\s*(?:할까|갈까|살까)\s*(.+?)\s*(?:할까|갈까|살까)/i
@@ -47,12 +48,16 @@ export function parseChoiceOptions(context = '') {
   const actions = uniq([...raw.matchAll(actionPattern)].map((m) => normalizeOption(m[1])));
 
   const explicitByDelimiter = parseExplicitByDelimiters(raw);
+  const explicitABPair = /A\s*안.*B\s*안|B\s*안.*A\s*안/i.test(raw);
   const isPurchaseChoice = /(살까|구매|브랜드|명품|bag|coat|wallet|buy)/i.test(lowered) && purchases.length >= 2;
   const isWorkChoice = /(일하|일할|근무|출퇴근|통근|직장|회사|오피스|사무실|출근|office|commute|job)/i.test(lowered);
   const isLocationChoice = !isPurchaseChoice && (places.length >= 2 || moves.length >= 2 || workOptions.length >= 2);
 
-  const explicitMarker = /(a\s*\/?\s*b|vs|versus|둘\s*중|어느\s*쪽|또는|혹은|or)/i.test(raw);
-  const hasExplicitChoice = isPurchaseChoice || isLocationChoice || actions.length >= 2 || explicitMarker || Boolean(explicitByDelimiter);
+  const hasExplicitChoice = isPurchaseChoice
+    || isLocationChoice
+    || actions.length >= 2
+    || Boolean(explicitByDelimiter)
+    || explicitABPair;
 
   const inferredA = explicitByDelimiter?.optionA
     || (isPurchaseChoice ? purchases[0] : (moves[0] || places[0] || workOptions[0] || actions[0] || 'A안'));

@@ -562,3 +562,47 @@
   - API 자동기동형 QA는 실행 환경의 포트 바인딩 정책에 영향받을 수 있음
 - 롤백:
   - `legacy` 모드 전환으로 즉시 기존 규칙 기반 분기로 복귀 가능
+
+## 17) 질문 이해 엔진 2차 고도화 착수 (정밀 분류 + 평가셋 확장)
+
+### 17.1 질문형 분류 보정
+- 변경 파일:
+  - `apps/api/src/question-understanding/local-classifier.js`
+  - `apps/api/src/question-understanding/index.js`
+- 핵심:
+  - `yes_no` 정규식 확장:
+    - `가능성이 있을까`, `있을까` 패턴 추가
+    - 영문 질문(`can i`, `should i`, `is it okay`) 대응
+  - `forecast` 정규식 확장:
+    - `luck`, `fortune`, `horoscope`, `monthly/weekly/yearly luck` 대응
+  - 영문 운세 표현(`monthly luck for me`)의 경계값 fallback을 줄이기 위해 `daily` 가중치 보강
+
+### 17.2 선택지 파서 오탐 축소
+- 변경 파일:
+  - `apps/api/src/question-understanding/choice-parser.js`
+- 핵심:
+  - `or` 매칭을 단어 경계(`\\bor\\b`) 기반으로 보정해 `for` 오탐 제거
+  - `어느 쪽이 더 나을까?`처럼 옵션이 없는 질문에서 가짜 `A안/B안` 생성 차단
+  - `A안이랑 B안 중` 표현을 명시적 A/B로 인식하도록 패턴 추가
+
+### 17.3 평가/게이트 강화
+- 변경 파일:
+  - `scripts/question-understanding-eval-set.json`
+  - `scripts/question-understanding-eval.mjs`
+  - `apps/api/test/question-understanding.test.js`
+- 핵심:
+  - 평가셋: `20 -> 25` 문장 확장(영문 운세/가능성/가짜 A/B/명시 A안-B안 포함)
+  - QA 통과 기준 강화:
+    - intent 정확도 `>=95`
+    - questionType 정확도 `>=95` (신규 반영)
+    - choiceMode 정확도 `>=93`
+  - 단위 테스트에 누락 케이스 회귀 검증 추가
+
+### 17.4 결과
+- `npm run qa:question-understanding`
+  - total: `25`
+  - intentAccuracy: `100%`
+  - typeAccuracy: `100%`
+  - choiceModeAccuracy: `100%`
+  - pass: `true`
+- `npm run test:api` 통과

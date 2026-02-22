@@ -18,5 +18,10 @@
   {"id":"q17","text":"job offer 받았는데 지금 옮겨도 될까?","intent":"career","questionType":"yes_no","choiceMode":"single"},
   {"id":"q18","text":"부산을 갈까 광주를 갈까?","intent":"general","questionType":"choice_ab","choiceMode":"explicit_ab"},
   {"id":"q19","text":"관계를 정리할까 유지할까?","intent":"relationship","questionType":"choice_ab","choiceMode":"explicit_ab"},
-  {"id":"q20","text":"이번 주 흐름을 알고 싶어","intent":"daily","questionType":"forecast","choiceMode":"single"}
+  {"id":"q20","text":"이번 주 흐름을 알고 싶어","intent":"daily","questionType":"forecast","choiceMode":"single"},
+  {"id":"q21","text":"이번 달에 고백하면 가능성이 있을까?","intent":"relationship","questionType":"yes_no","choiceMode":"single"},
+  {"id":"q22","text":"어느 쪽이 더 나을까?","intent":"general","questionType":"yes_no","choiceMode":"single"},
+  {"id":"q23","text":"A안이랑 B안 중 뭐가 좋을까?","intent":"general","questionType":"choice_ab","choiceMode":"explicit_ab"},
+  {"id":"q24","text":"should I move now?","intent":"general","questionType":"yes_no","choiceMode":"single"},
+  {"id":"q25","text":"monthly luck for me","intent":"daily","questionType":"forecast","choiceMode":"single"}
 ]

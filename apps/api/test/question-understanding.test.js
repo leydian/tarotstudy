@@ -28,8 +28,16 @@ test('parseChoiceOptions extracts explicit A/B choices', () => {
 test('question type detects forecast and yes/no', () => {
   assert.equal(analyzeQuestionContextSync('오늘 운세는 전반적으로 어떤 흐름일까?').questionType, 'forecast');
   assert.equal(analyzeQuestionContextSync('지금 연락해도 될까?').questionType, 'yes_no');
+  assert.equal(analyzeQuestionContextSync('이번 달에 고백하면 가능성이 있을까?').questionType, 'yes_no');
+  assert.equal(analyzeQuestionContextSync('today luck?').questionType, 'forecast');
 });
 
 test('inferQuestionIntentEnhanced keeps legacy-safe fallback', () => {
   assert.equal(inferQuestionIntentEnhanced('무슨 질문을 해야 할지 모르겠어').length > 0, true);
+});
+
+test('choice parser avoids fake explicit A/B when options are missing', () => {
+  const parsed = parseChoiceOptions('어느 쪽이 더 나을까?');
+  assert.equal(parsed.hasChoice, false);
+  assert.equal(parsed.mode, 'single');
 });
