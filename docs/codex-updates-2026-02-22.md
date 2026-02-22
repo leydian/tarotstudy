@@ -277,3 +277,66 @@
 
 ### 6) 관련 커밋
 - `dc49a35` Enhance celtic-cross narrative and add relationship QA gate
+
+---
+
+## 추가 업데이트 4 (벤치마크 문체 전역 적용 + 질문의도 분기 고도화)
+
+### 1) 반영 배경
+- 사용자 피드백 기준 주요 문제:
+  - 연애/대인/갈등 질문에 업무형 문체가 섞여 어색함
+  - 카드가 달라도 같은 문장이 반복되어 템플릿 티가 강함
+  - `친구와 싸움` 질문이 평판(social) 톤으로 해석되는 분기 오류
+  - 원카드/3카드/5카드 간 결과 문체 일관성 부족
+
+### 2) 요약 로직 개선 (`apps/api/src/index.js`)
+- 주간/일간 문장 자연화:
+  - 연애운에서 업무형 표현 제거 및 관계 맥락 행동 문장으로 교체
+- 종합 리딩 도메인 분기 확장:
+  - `relationship`, `finance`, `social`, `relationship-repair`를 전 스프레드에 적용
+  - 도메인별 `두 갈래 조언`(확장 vs 조절) 구조로 일관화
+- 원카드 품질 보정:
+  - social 질문의 결론을 인식형 문장으로 전환
+  - 충돌 키워드(예: 갈등)와 긍정 총평의 부조화 완화
+  - yes/no 이유 문장에 카드 방향(정/역) 명시
+- 관계 회복 5카드 요약 고도화:
+  - 고긴장 카드군 감지(`minor-swords-three/five/six/nine/ten`, `major-15/16/18` 등)
+  - `열림 신호` 과다 출력 방지
+  - 리스크 문장을 감정 과속 중심에서 오해 타이밍 중심으로 보정
+
+### 3) 상세 리딩 개선 (`apps/api/src/content.js`)
+- 벤치마크 스타일 전역 확장:
+  - relationship/finance/social 전용 코어/해석 빌더 도입 및 전 스프레드 적용
+- social 전용 개선:
+  - 3카드(과거/현재/미래) 포지션별 역할 분리
+  - 같은 실행 문장 반복 축소 및 카드 성향별 실행 문장 차별화
+- relationship-repair 전용 분기 추가:
+  - `싸움/갈등/화해` 질문을 social보다 우선 인식
+  - 갈등 회복 전용 코어/해석 빌더 추가
+  - 관계 회복 5카드 포지션별 문장 역할 분리:
+    - 문제: 트리거 규명
+    - 해결방법: 대화 안전장치
+    - 상대 관점 신호: 추측 금지 + 단서 수집
+    - 회복 행동: 즉시 실행 1문장
+    - 다음 7일 흐름: 리스크 타이밍 운영
+  - 조사 어색함 보정(`...로/으로`)
+
+### 4) 체감 개선 결과
+- 질문 의도와 출력 문체 불일치 문제 완화
+  - 예: `친구와 싸웠는데...`가 평판 해석으로 흐르던 현상 해소
+- 카드별/포지션별 문장 차별화 강화
+- 반복 고정 문장 축소로 가독성 및 자연스러움 개선
+- 실행 지시가 “실제로 오늘 할 수 있는 행동” 단위로 구체화
+
+### 5) 관련 커밋
+- `4aaa67a` Refine weekly relationship reading tone and reduce template awkwardness
+- `610748d` Improve daily relationship reading tone and expand summary guidance
+- `6253394` Apply benchmark relationship style across all love readings
+- `5345963` Apply benchmark finance style across all fortune spreads
+- `6f392b0` Apply benchmark social style across all fortune spreads
+- `66e6b3f` Reduce repetition and diversify social reading by position
+- `c79a522` Polish one-card social reading tone and reduce awkward phrasing
+- `4ca642c` Tune one-card social summary wording and keyword handling
+- `c7cf5bb` Prioritize conflict-repair context over social perception tone
+- `3b1d965` Refine one-card conflict-repair wording consistency
+- `3a96405` Diversify relationship-recovery readings by position and card tension
