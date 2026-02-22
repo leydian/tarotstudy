@@ -266,9 +266,7 @@ function buildIntermediateDescription(card, { context = '' } = {}) {
   const contextProfile = inferBasicContextProfile(context);
   const keyword = card.keywords?.[0] || '핵심';
   const keyword2 = card.keywords?.[1] || keyword;
-  const rankLine = card.rank
-    ? `${card.rankKo} 단계는 ${rankStage(card.rank)} 맥락을 덧붙입니다.`
-    : '원형 카드이므로 개인 심리·상황 구조·타이밍의 3축으로 분해해 해석합니다.';
+  const rankLine = buildIntermediateRankLine(card);
 
   const leadMajor = [
     `${card.nameKo}를 중급 관점에서 볼 때, 키워드(${card.keywords.join(', ')}) 자체보다 카드 위치와 연결 흐름을 먼저 확정해야 해석 오차가 줄어듭니다.`,
@@ -366,6 +364,20 @@ function buildIntermediateDescription(card, { context = '' } = {}) {
       contextProfile.learningHint
     )
   ].join('\n');
+}
+
+function buildIntermediateRankLine(card) {
+  if (card.rank) {
+    return `${card.rankKo} 단계는 ${rankStage(card.rank)} 맥락을 덧붙입니다.`;
+  }
+
+  const majorRankVariants = [
+    `${card.nameKo} 카드는 원형 카드이므로 개인 심리·상황 구조·타이밍 축을 나눠 읽을수록 해석 오차가 줄어듭니다.`,
+    `${card.nameKo} 카드는 단일 의미 카드가 아니라 층위가 많은 원형입니다. 중급에서는 내면 신호와 외부 조건을 분리해 보세요.`,
+    `${card.nameKo} 카드는 사건 예측보다 구조 해석에 강한 카드입니다. 심리 흐름, 상황 제약, 시점을 따로 기록하는 방식이 유효합니다.`,
+    `${card.nameKo} 카드의 원형 에너지는 고정된 답보다 방향 신호에 가깝습니다. 맥락별로 의미 강도를 나눠 기록해 보세요.`
+  ];
+  return pickCardVariant(card.id, 'intermediate-rank-line', majorRankVariants);
 }
 
 function inferBasicContextProfile(context = '') {
