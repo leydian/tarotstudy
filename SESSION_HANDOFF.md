@@ -428,6 +428,24 @@
     - `npm run test:api` 통과 (신규 `summary-regression.test.js` 포함)
     - `npm run qa:summary-regression` 통과
 
+- 질문 이해도 엔진 1차 고도화(의도분기 + 선택지 파싱)
+  - 파일:
+    - `apps/api/src/question-understanding/index.js`
+    - `apps/api/src/question-understanding/local-classifier.js`
+    - `apps/api/src/question-understanding/external-classifier.js`
+    - `apps/api/src/question-understanding/choice-parser.js`
+    - `apps/api/src/index.js`
+    - `apps/api/src/content.js`
+    - `apps/api/test/question-understanding.test.js`
+    - `scripts/question-understanding-eval-set.json`
+    - `scripts/question-understanding-eval.mjs`
+  - 변경:
+    - 하이브리드 모드(`legacy|hybrid|shadow`) 기반 질문 이해 파이프라인 추가
+    - 로컬 분류기(가중치 기반) + 외부 분류기 폴백 구조 도입
+    - 선택지 파서 모듈 분리 및 `vs`, `A/B`, `할까/갈까/살까` 패턴 강화
+    - `POST /api/question-understanding` 진단 엔드포인트 추가
+    - 기존 의도/선택지 분기 로직을 신모듈 기반으로 교체
+
 ## 4) 최근 커밋 타임라인 (최신 우선)
 - `cf7642a` Refocus intermediate guide text for tarot-reader training
 - `45ffe13` Expand course tracks and harden card-guide quality gates

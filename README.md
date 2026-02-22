@@ -152,6 +152,10 @@ npm run qa:refresh-cases
 ```bash
 npm run qa:relationship-recovery
 ```
+- 질문 이해도(의도/질문형/선택지 파싱) 평가:
+```bash
+npm run qa:question-understanding
+```
 - 전 스프레드 요약 회귀 점검(판정/근거/테마 + 구조 규칙):
 ```bash
 npm run qa:summary-regression

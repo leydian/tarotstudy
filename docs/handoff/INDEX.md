@@ -44,6 +44,7 @@
 - 레슨 소설 선배치 + 소설/레슨 패널 분리: `docs/session-handoff-2026-02-23-details.md`
 - 리드모델 API(`next-actions`/`review-inbox`/`funnel`) + 배치 이벤트 수집: `docs/session-handoff-2026-02-23-details.md`
 - 전 스프레드 요약 회귀 차단 QA(`qa:summary-regression`) + 케이스셋(18): `docs/session-handoff-2026-02-23-details.md`
+- 질문 이해 엔진 1차(의도분기+선택지 파싱+hybrid 모드): `docs/session-handoff-2026-02-23-details.md`
 - 스타일 분리(`theme/layout/spreads`) + 공통 컴포넌트(`PageHero`/`KpiRow`): `docs/session-handoff-2026-02-23-details.md`
 - QA 케이스셋 자동 갱신 + 문서 무결성 검사 자동화: `docs/session-handoff-2026-02-23-details.md`
 - 질문 뱅크 `100,000/1,000` 확장: `docs/codex-updates-2026-02-22.md`

@@ -1,5 +1,8 @@
 import { getCardById } from './data/cards.js';
-import { inferQuestionIntent } from './data/question-intents.js';
+import {
+  analyzeQuestionContextSync,
+  parseChoiceOptions as parseChoiceOptionsEnhanced
+} from './question-understanding/index.js';
 
 const TTL_FALLBACK_SOURCE = 'fallback';
 
@@ -1589,11 +1592,7 @@ function inferContextProfile(context = '') {
     }
   };
 
-  const inferred = inferQuestionIntent(context, {
-    includeDaily: true,
-    includeStudy: true,
-    includeHealth: true
-  });
+  const inferred = analyzeQuestionContextSync(context).intent;
   if (profilesById[inferred]) return profilesById[inferred];
 
   return {
@@ -1686,7 +1685,7 @@ function buildTarotConsultingInterpretation({
     return buildSocialBenchmarkInterpretation({ card, position, orientation, spreadId });
   }
   if (contextProfile.id === 'finance') {
-    return buildFinanceBenchmarkInterpretation({ card, position, orientation, spreadId });
+    return buildFinanceBenchmarkInterpretation({ card, position, orientation, spreadId, context });
   }
   if (contextProfile.id === 'relationship') {
     return buildRelationshipBenchmarkInterpretation({ card, position, orientation, spreadId });
@@ -2215,11 +2214,13 @@ function buildFinanceBenchmarkCoreMessage({ card, position, orientation, spreadI
   ].join(' '));
 }
 
-function buildFinanceBenchmarkInterpretation({ card, position, orientation, spreadId = 'default' }) {
+function buildFinanceBenchmarkInterpretation({ card, position, orientation, spreadId = 'default', context = '' }) {
   const main = card.keywords?.[0] ?? '재물 흐름';
   const sub = card.keywords?.[1] ?? main;
   const open = orientation === 'upright';
   const positionLabel = position.name || '이 자리';
+  const choiceMeta = inferChoiceContextMeta(context);
+  const isPurchaseChoice = spreadId === 'choice-a-b' && choiceMeta.isPurchaseChoice;
   const financeLine = (() => {
     if (positionLabel === '오늘의 흐름') {
       return open
@@ -2231,21 +2232,23 @@ function buildFinanceBenchmarkInterpretation({ card, position, orientation, spre
         ? `좋아 보이는 조건도 '${main}' 구간에서 과신하면 지출이 커질 수 있으니, 상한 금액을 먼저 정하는 편이 좋습니다.`
         : `'${main}' 신호가 예민해 충동 결제나 낙관 추정이 커질 수 있으니, 결제 전 10분 유예 규칙을 두는 것이 안전합니다.`;
     }
+    if (spreadId === 'choice-a-b') {
+      return open
+        ? `선택 비교에서는 '${main}' 신호가 살아 있어도, 유혹/과열을 경계하며 기대수익보다 유지 비용이 낮은 쪽이 실제 만족도가 높을 가능성이 큽니다.`
+        : `선택 비교에서는 '${main}' 신호가 흔들려 보이니, 과열을 경계하고 초기 비용과 손실 가능성을 먼저 비교하는 편이 좋습니다.`;
+    }
     if (positionLabel === '행동 조언' || /(조언|결과)/.test(positionLabel)) {
       return open
         ? `'${main}' 흐름이 열려 있어도 공격적 확장보다 지출 통제 1개와 실행 1개를 짝으로 두는 방식이 안정적입니다.`
         : `'${main}' 흐름이 조정 구간이라, 신규 집행보다 누수 차단 1개를 먼저 실행하는 편이 손실을 줄입니다.`;
     }
-    if (spreadId === 'choice-a-b') {
-      return open
-        ? `선택 비교에서는 '${main}' 신호가 살아 있어도, 기대수익보다 유지 비용이 낮은 쪽이 실제 만족도가 높을 가능성이 큽니다.`
-        : `선택 비교에서는 '${main}' 신호가 흔들려 보이니, 초기 비용과 손실 가능성을 먼저 비교하는 편이 좋습니다.`;
-    }
     return open
       ? `${positionLabel}에서는 '${main}'에서 '${sub}'으로 이어지는 흐름이 살아 있어 관리형 실행을 붙이기 좋은 구간입니다.`
       : `${positionLabel}에서는 '${main}' 신호가 흔들릴 수 있어 확장보다 방어 중심 운영이 더 안정적입니다.`;
   })();
-  const realityLine = '재물 해석은 분위기보다 숫자 단서가 중요하니, 금액 상한과 결제 횟수 같은 측정 가능한 기준을 먼저 고정해보세요.';
+  const realityLine = isPurchaseChoice
+    ? `재물 해석은 분위기보다 숫자 단서가 중요하니, ${choiceMeta.axes[0]}·${choiceMeta.axes[2]}·${choiceMeta.axes[3]}을 같은 포맷으로 먼저 비교해보세요.`
+    : '재물 해석은 분위기보다 숫자 단서가 중요하니, 금액 상한과 결제 횟수 같은 측정 가능한 기준을 먼저 고정해보세요.';
   const actionLine = open
     ? '실행 문장: 오늘은 비필수 지출 1건만 보류하고, 꼭 필요한 집행 1건만 기준 안에서 처리하세요.'
     : '실행 문장: 오늘은 신규 결제를 미루고, 자동결제/구독 항목 1개를 점검해 누수를 먼저 막아보세요.';
@@ -2686,11 +2689,8 @@ function buildYearlyMonthInterpretation({ card, position, orientation, context =
 }
 
 function inferYearlyIntent(context = '') {
-  const inferred = inferQuestionIntent(context, {
-    includeDaily: false,
-    includeStudy: false,
-    includeHealth: false
-  });
+  const inferred = analyzeQuestionContextSync(context).intent;
+  if (inferred === 'daily' || inferred === 'study' || inferred === 'health') return 'general';
   return inferred === 'general' ? 'general' : inferred;
 }
 
@@ -3435,55 +3435,15 @@ function buildCoreContextLine({ spreadId, positionName, contextProfile, context 
 }
 
 function inferChoiceContextMeta(context = '') {
-  const raw = String(context || '').trim();
-  const lowered = raw.toLowerCase();
-  const purchasePattern = /([가-힣A-Za-z0-9]{2,20})(?:을|를)?\s*살까/g;
-  const purchaseOptions = [...raw.matchAll(purchasePattern)]
-    .map((m) => m[1])
-    .filter(Boolean);
-  const movePattern = /([가-힣A-Za-z0-9]{2,20})(?:으로|로|을|를)?\s*갈까/g;
-  const moveOptions = [...raw.matchAll(movePattern)]
-    .map((m) => m[1])
-    .filter(Boolean)
-    .filter((name) => !/(어디|여기|저기|거기|이곳|그곳|저곳)$/.test(name));
-  const places = [...raw.matchAll(/([가-힣A-Za-z0-9]{2,20})\s*에서/g)]
-    .map((m) => m[1])
-    .filter(Boolean);
-  const uniquePlaces = [...new Set(places)].filter((name) => !/(게|곳|데)$/.test(name));
-  const uniqueMoveOptions = [...new Set(moveOptions)];
-  const uniquePurchaseOptions = [...new Set(purchaseOptions)];
-  const isWorkChoice = /(일하|근무|출퇴근|통근|직장|회사|오피스|사무실|출근)/.test(lowered);
-  const isPurchaseChoice = /(살까|구매|브랜드|가방|지갑|코트|옷|패션|명품)/.test(lowered) && uniquePurchaseOptions.length >= 2;
-  const isLocationChoice = !isPurchaseChoice && (uniquePlaces.length >= 2 || uniqueMoveOptions.length >= 2);
-
-  const optionA = isPurchaseChoice
-    ? uniquePurchaseOptions[0]
-    : (uniqueMoveOptions[0] || uniquePlaces[0] || 'A안');
-  const optionB = isPurchaseChoice
-    ? uniquePurchaseOptions[1]
-    : (uniqueMoveOptions[1] || uniquePlaces[1] || 'B안');
-  const axes = isPurchaseChoice
-    ? ['예산 압박', '즉시 만족도', '활용도', '스타일 적합성', '3개월 후 만족도']
-    : isLocationChoice
-    ? ['이동 거리', '정착 난이도', '생활비', '관계망/지원망', '지속 가능성']
-    : isWorkChoice
-    ? ['통근 시간', '교통 피로', '생활비', '성장 기회', '지속 가능성']
-    : ['시간', '비용', '감정 소모', '성장 여지', '지속 가능성'];
-  const choiceTypeLabel = isPurchaseChoice
-    ? '브랜드/구매'
-    : isLocationChoice
-      ? '지역/거점'
-      : isWorkChoice
-      ? '근무지'
-      : 'A/B';
+  const parsed = parseChoiceOptionsEnhanced(context);
   return {
-    optionA,
-    optionB,
-    isLocationChoice,
-    isWorkChoice,
-    isPurchaseChoice,
-    choiceTypeLabel,
-    axes
+    optionA: parsed.optionA,
+    optionB: parsed.optionB,
+    isLocationChoice: parsed.isLocationChoice,
+    isWorkChoice: parsed.isWorkChoice,
+    isPurchaseChoice: parsed.isPurchaseChoice,
+    choiceTypeLabel: parsed.choiceTypeLabel,
+    axes: parsed.axes
   };
 }
 
@@ -3594,11 +3554,7 @@ function isOutcomePosition(positionName = '') {
 }
 
 function inferCelticQuestionIntent(context = '') {
-  const inferred = inferQuestionIntent(context, {
-    includeDaily: false,
-    includeStudy: false,
-    includeHealth: false
-  });
+  const inferred = analyzeQuestionContextSync(context).intent;
   if (['relationship-repair', 'relationship', 'career', 'finance'].includes(inferred)) return inferred;
   return 'general';
 }

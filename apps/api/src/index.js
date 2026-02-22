@@ -13,10 +13,14 @@ import { createProgressStore } from './progress-store.js';
 import { buildLearningKpi } from './learning-kpi.js';
 import { buildLearningFunnel, buildNextActions, buildReviewInbox } from './learning-read-models.js';
 import {
-  inferQuestionIntent,
   getTarotPredictedQuestions,
   getTarotPredictedQuestionsByTopic
 } from './data/question-intents.js';
+import {
+  analyzeQuestionContext,
+  analyzeQuestionContextSync,
+  parseChoiceOptions as parseChoiceOptionsEnhanced
+} from './question-understanding/index.js';
 
 dotenv.config();
 
@@ -61,6 +65,19 @@ app.get('/api/questions/predicted', async (request) => {
     questions: questions.slice(0, safeLimit),
     byTopic: getTarotPredictedQuestionsByTopic()
   };
+});
+app.post('/api/question-understanding', async (request, reply) => {
+  const text = String(request.body?.text || '').trim();
+  if (!text) {
+    reply.code(400);
+    return { message: 'text is required' };
+  }
+
+  const mode = String(request.body?.mode || process.env.QUESTION_UNDERSTANDING_MODE || 'hybrid');
+  if (mode === 'hybrid') {
+    return analyzeQuestionContext(text, { mode, flag: true });
+  }
+  return analyzeQuestionContextSync(text, { mode, flag: true });
 });
 app.get('/api/telemetry/image-fallback', async () => telemetryStore.getImageFallbackStats());
 app.get('/api/telemetry/spread-events', async () => telemetryStore.getSpreadTelemetryStats());
@@ -832,11 +849,7 @@ function summarizeThreeCard({ items, context = '', level = 'beginner' }) {
 }
 
 function inferThreeCardIntent(context = '') {
-  const inferred = inferQuestionIntent(context, {
-    includeDaily: false,
-    includeStudy: true,
-    includeHealth: false
-  });
+  const inferred = analyzeQuestionContextSync(context).intent;
   if (inferred === 'study') return 'study';
   if (inferred === 'relationship' || inferred === 'relationship-repair') return 'relationship';
   if (inferred === 'career') return 'career';
@@ -1744,11 +1757,7 @@ function summarizeCelticCross({ items, context = '', level = 'beginner' }) {
 }
 
 function inferCelticIntent(context = '') {
-  const inferred = inferQuestionIntent(context, {
-    includeDaily: false,
-    includeStudy: false,
-    includeHealth: false
-  });
+  const inferred = analyzeQuestionContextSync(context).intent;
   if (['relationship-repair', 'relationship', 'career', 'finance'].includes(inferred)) return inferred;
   return 'general';
 }
@@ -2004,11 +2013,7 @@ function summarizeYearlyFortune({ items, context = '', level = 'beginner' }) {
 }
 
 function inferYearlyIntent(context = '') {
-  const inferred = inferQuestionIntent(context, {
-    includeDaily: true,
-    includeStudy: true,
-    includeHealth: true
-  });
+  const inferred = analyzeQuestionContextSync(context).intent;
   if (inferred === 'career' && !isCareerTimingContext(context)) {
     return 'general';
   }
@@ -2530,11 +2535,7 @@ function pickTopKeywords(items, count = 3) {
 }
 
 function inferSummaryContextTone(context = '') {
-  const intent = inferQuestionIntent(context, {
-    includeDaily: true,
-    includeStudy: true,
-    includeHealth: true
-  });
+  const intent = analyzeQuestionContextSync(context).intent;
   if (intent === 'career') {
     return {
       mainHint: '이직/업무 이슈는 기대보다 내 체력과 일정이 버티는지부터 확인하는 게 안전합니다.',
@@ -2875,41 +2876,14 @@ function buildChoiceABSnapshot({ items = [], context = '' }) {
 }
 
 function parseChoiceOptions(context = '') {
-  const raw = String(context || '').trim();
-  const lowered = raw.toLowerCase();
-  const purchasePattern = /([가-힣A-Za-z0-9]{2,20})(?:을|를)?\s*살까/g;
-  const purchaseOptions = [...raw.matchAll(purchasePattern)]
-    .map((m) => m[1])
-    .filter(Boolean);
-  const movePattern = /([가-힣A-Za-z0-9]{2,20})(?:으로|로|을|를)?\s*갈까/g;
-  const moveOptions = [...raw.matchAll(movePattern)]
-    .map((m) => m[1])
-    .filter(Boolean)
-    .filter((name) => !/(어디|여기|저기|거기|이곳|그곳|저곳)$/.test(name));
-  const places = [...raw.matchAll(/([가-힣A-Za-z0-9]{2,20})\s*에서/g)]
-    .map((m) => m[1])
-    .filter(Boolean);
-  const uniqueMove = [...new Set(moveOptions)];
-  const uniquePlaces = [...new Set(places)].filter((name) => !/(게|곳|데)$/.test(name));
-  const uniquePurchase = [...new Set(purchaseOptions)];
-  const actionOptions = [...new Set(
-    [...raw.matchAll(/([가-힣A-Za-z0-9]{1,16})\s*할까/g)].map((m) => m[1]).filter(Boolean)
-  )];
-  const isPurchaseChoice = /(살까|구매|브랜드|가방|지갑|코트|옷|패션|명품)/.test(lowered) && uniquePurchase.length >= 2;
-  const isLocationChoice = !isPurchaseChoice && (uniquePlaces.length >= 2 || uniqueMove.length >= 2);
-  const hasExplicitChoiceMarker = /(a\s*\/?\s*b|vs|versus|둘 중|둘중|어느 쪽|어느쪽|또는|혹은|중에|중에서)/i.test(raw);
-  const hasExplicitChoice = isPurchaseChoice || isLocationChoice || actionOptions.length >= 2 || hasExplicitChoiceMarker;
-  const optionA = isPurchaseChoice ? uniquePurchase[0] : (uniquePlaces[0] || 'A');
-  const optionB = isPurchaseChoice ? uniquePurchase[1] : (uniquePlaces[1] || 'B');
-  const normalizedOptionA = isPurchaseChoice ? optionA : (uniqueMove[0] || optionA);
-  const normalizedOptionB = isPurchaseChoice ? optionB : (uniqueMove[1] || optionB);
+  const parsed = parseChoiceOptionsEnhanced(context);
   return {
-    optionA: normalizedOptionA,
-    optionB: normalizedOptionB,
-    isPurchaseChoice,
-    isLocationChoice,
-    hasExplicitChoice,
-    isWorkChoice: !isPurchaseChoice && /(일하|근무|출퇴근|통근|직장|회사|오피스|사무실|출근)/.test(lowered)
+    optionA: parsed.optionA,
+    optionB: parsed.optionB,
+    isPurchaseChoice: parsed.isPurchaseChoice,
+    isLocationChoice: parsed.isLocationChoice,
+    hasExplicitChoice: parsed.hasChoice,
+    isWorkChoice: parsed.isWorkChoice
   };
 }
 

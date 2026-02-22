@@ -1,0 +1,22 @@
+[
+  {"id":"q1","text":"헤어진 사람에게 다시 연락해도 될까?","intent":"relationship-repair","questionType":"yes_no","choiceMode":"single"},
+  {"id":"q2","text":"최근 싸운 친구와 화해할 수 있을까?","intent":"relationship-repair","questionType":"yes_no","choiceMode":"single"},
+  {"id":"q3","text":"주변 사람들이 요즘 나를 어떻게 볼까?","intent":"social","questionType":"open","choiceMode":"single"},
+  {"id":"q4","text":"올해 이직 타이밍은 언제가 좋을까?","intent":"career","questionType":"yes_no","choiceMode":"single"},
+  {"id":"q5","text":"A회사 vs B회사 어디가 나을까?","intent":"career","questionType":"choice_ab","choiceMode":"explicit_ab"},
+  {"id":"q6","text":"강남에서 일할까 용인에서 일할까?","intent":"career","questionType":"choice_ab","choiceMode":"explicit_ab"},
+  {"id":"q7","text":"지금 상대와 관계를 이어가도 괜찮을까?","intent":"relationship","questionType":"yes_no","choiceMode":"single"},
+  {"id":"q8","text":"이번 달에 고백하면 가능성이 있을까?","intent":"relationship","questionType":"yes_no","choiceMode":"single"},
+  {"id":"q9","text":"지금 큰 금액 결제를 진행해도 될까?","intent":"finance","questionType":"yes_no","choiceMode":"single"},
+  {"id":"q10","text":"샤넬을 살까 버버리를 살까?","intent":"finance","questionType":"choice_ab","choiceMode":"explicit_ab"},
+  {"id":"q11","text":"이번 시험 준비 방향이 맞을까?","intent":"study","questionType":"yes_no","choiceMode":"single"},
+  {"id":"q12","text":"기출 회독과 개념 정리 중 무엇을 우선할까?","intent":"study","questionType":"choice_ab","choiceMode":"explicit_ab"},
+  {"id":"q13","text":"요즘 컨디션이 떨어지는데 무리해서 운동해도 될까?","intent":"health","questionType":"yes_no","choiceMode":"single"},
+  {"id":"q14","text":"수면 루틴을 먼저 회복하는 게 맞을까?","intent":"health","questionType":"yes_no","choiceMode":"single"},
+  {"id":"q15","text":"오늘 운세는 어때?","intent":"daily","questionType":"forecast","choiceMode":"single"},
+  {"id":"q16","text":"today luck?","intent":"daily","questionType":"forecast","choiceMode":"single"},
+  {"id":"q17","text":"job offer 받았는데 지금 옮겨도 될까?","intent":"career","questionType":"yes_no","choiceMode":"single"},
+  {"id":"q18","text":"부산을 갈까 광주를 갈까?","intent":"general","questionType":"choice_ab","choiceMode":"explicit_ab"},
+  {"id":"q19","text":"관계를 정리할까 유지할까?","intent":"relationship","questionType":"choice_ab","choiceMode":"explicit_ab"},
+  {"id":"q20","text":"이번 주 흐름을 알고 싶어","intent":"daily","questionType":"forecast","choiceMode":"single"}
+]

@@ -484,3 +484,35 @@
 ### 15.4 검증 로그 (추가)
 - `npm run test:api` 통과
 - `npm run qa:summary-regression` 통과
+
+## 16) 2026-02-23 추가 후속 8 (질문 이해 엔진 1차 개선)
+
+### 16.1 question-understanding 모듈 신설
+- 변경 파일:
+  - `apps/api/src/question-understanding/index.js`
+  - `apps/api/src/question-understanding/local-classifier.js`
+  - `apps/api/src/question-understanding/external-classifier.js`
+  - `apps/api/src/question-understanding/choice-parser.js`
+- 핵심:
+  - `legacy|hybrid|shadow` 모드 기반 질문 이해 파이프라인 도입
+  - 로컬 분류기 점수 기반 intent/questionType 판별
+  - 저신뢰 케이스 외부 분류기 폴백 인터페이스 추가
+  - 선택지 파싱(`vs`, `A/B`, `할까/갈까/살까`) 강화
+
+### 16.2 API/콘텐츠 연동
+- 변경 파일:
+  - `apps/api/src/index.js`
+  - `apps/api/src/content.js`
+- 핵심:
+  - `inferYearlyIntent`/choice 파싱 로직을 신모듈 기반으로 교체
+  - `POST /api/question-understanding` 진단 엔드포인트 추가
+
+### 16.3 평가/테스트 추가
+- 변경 파일:
+  - `apps/api/test/question-understanding.test.js`
+  - `scripts/question-understanding-eval-set.json`
+  - `scripts/question-understanding-eval.mjs`
+  - `package.json`
+- 핵심:
+  - QA 명령 추가: `npm run qa:question-understanding`
+  - 평가 기준: intent/질문형/choice-mode 정확도 리포트 생성
