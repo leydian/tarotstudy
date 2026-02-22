@@ -3222,29 +3222,39 @@ function inferChoiceContextMeta(context = '') {
   const purchaseOptions = [...raw.matchAll(purchasePattern)]
     .map((m) => m[1])
     .filter(Boolean);
+  const movePattern = /([가-힣A-Za-z0-9]{2,20})(?:으로|로|을|를)?\s*갈까/g;
+  const moveOptions = [...raw.matchAll(movePattern)]
+    .map((m) => m[1])
+    .filter(Boolean)
+    .filter((name) => !/(어디|여기|저기|거기|이곳|그곳|저곳)$/.test(name));
   const places = [...raw.matchAll(/([가-힣A-Za-z0-9]{2,20})\s*에서/g)]
     .map((m) => m[1])
     .filter(Boolean);
   const uniquePlaces = [...new Set(places)].filter((name) => !/(게|곳|데)$/.test(name));
+  const uniqueMoveOptions = [...new Set(moveOptions)];
   const uniquePurchaseOptions = [...new Set(purchaseOptions)];
   const isWorkChoice = /(일하|근무|출퇴근|통근|직장|회사|오피스|사무실|출근)/.test(lowered);
   const isPurchaseChoice = /(살까|구매|브랜드|가방|지갑|코트|옷|패션|명품)/.test(lowered) && uniquePurchaseOptions.length >= 2;
+  const isLocationChoice = !isPurchaseChoice && (uniquePlaces.length >= 2 || uniqueMoveOptions.length >= 2);
 
   const optionA = isPurchaseChoice
     ? uniquePurchaseOptions[0]
-    : (uniquePlaces[0] || 'A안');
+    : (uniqueMoveOptions[0] || uniquePlaces[0] || 'A안');
   const optionB = isPurchaseChoice
     ? uniquePurchaseOptions[1]
-    : (uniquePlaces[1] || 'B안');
-  const isLocationChoice = !isPurchaseChoice && uniquePlaces.length >= 2;
+    : (uniqueMoveOptions[1] || uniquePlaces[1] || 'B안');
   const axes = isPurchaseChoice
     ? ['예산 압박', '즉시 만족도', '활용도', '스타일 적합성', '3개월 후 만족도']
-    : (isLocationChoice || isWorkChoice)
+    : isLocationChoice
+    ? ['이동 거리', '정착 난이도', '생활비', '관계망/지원망', '지속 가능성']
+    : isWorkChoice
     ? ['통근 시간', '교통 피로', '생활비', '성장 기회', '지속 가능성']
     : ['시간', '비용', '감정 소모', '성장 여지', '지속 가능성'];
   const choiceTypeLabel = isPurchaseChoice
     ? '브랜드/구매'
-    : isWorkChoice || isLocationChoice
+    : isLocationChoice
+      ? '지역/거점'
+      : isWorkChoice
       ? '근무지'
       : 'A/B';
   return {

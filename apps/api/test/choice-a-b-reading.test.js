@@ -82,3 +82,32 @@ test('choice-a-b reading maps purchase context to budget/usability axes and avoi
   assert.match(bNear.interpretation, /(유혹|과열|경계|통제)/);
   assert.doesNotMatch(aResult.interpretation, /'[^']+'는/);
 });
+
+test('choice-a-b reading treats go-to-city question as location choice and uses location axes', () => {
+  const moon = getCardById('major-18');
+  const empress = getCardById('major-3');
+  assert.ok(moon && empress, 'cards should exist');
+
+  const locationContext = '부산을 갈까 광주를 갈까?';
+  const current = buildSpreadReading({
+    card: moon,
+    spreadId: 'choice-a-b',
+    position: { name: '현재 상황' },
+    orientation: 'upright',
+    level: 'beginner',
+    context: locationContext,
+    experimentVariant: 'A'
+  });
+  const aResult = buildSpreadReading({
+    card: empress,
+    spreadId: 'choice-a-b',
+    position: { name: 'A 선택 시 결과' },
+    orientation: 'upright',
+    level: 'beginner',
+    context: locationContext,
+    experimentVariant: 'A'
+  });
+
+  assert.match(current.interpretation, /(이동 거리|정착 난이도|생활비|관계망\/지원망|지속 가능성)/);
+  assert.match(aResult.interpretation, /(이동 거리|정착 난이도|생활비|관계망\/지원망|지속 가능성)/);
+});
