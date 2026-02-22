@@ -2027,7 +2027,7 @@ function buildTarotAdviceLine({ spreadId, positionName, contextProfile, tone, or
           ? '결과 신호는 열려 있으니 실행 문장을 짧고 분명하게 고정해보시는 편이 좋겠습니다.'
           : '결과 신호의 마찰이 있어 속도보다 전달 방식을 먼저 정리하시는 편이 좋겠습니다.')
       : orientation === 'upright'
-        ? '지금은 핵심 기준 한 줄을 먼저 고정해보셔도 괜찮습니다.'
+        ? '지금은 핵심을 하나만 정해 차분하게 확인해보시는 편이 좋겠습니다.'
         : '지금은 무리하게 밀기보다 컨디션과 리듬을 먼저 회복하시는 편이 좋겠습니다.';
   const clientActionHint = buildClientActionHint(contextProfile);
   const clientAnchorHint = buildClientAnchorHint(contextProfile);
@@ -2062,7 +2062,7 @@ function buildSpreadConsultingGuide({ spreadId, positionName, positionPrompt, se
   const defaultOptions = [
     positionPrompt,
     `${positionTopic} 이 포지션의 핵심 역할을 먼저 짚는 구간입니다.`,
-    `${positionName} 자리는 앞뒤 카드와 연결해 해석할 때 정확도가 올라갑니다.`
+    `${positionName} 자리는 앞뒤 카드와 함께 읽으면 포인트가 더 또렷해집니다.`
   ];
   const options = spreadId === 'celtic-cross'
     ? map[spreadId]
@@ -2097,7 +2097,7 @@ function buildOrientationCounselLine({ spreadId, positionName, cardName, orienta
     ]
     : [
       `${lineByPosition} ${toneLine}`,
-      `${cardName} 역방향은 '멈춤 후 정리'가 먼저라는 메시지에 가깝습니다. ${toneLine}`
+      `${cardName} 역방향은 서두르기보다 한 박자 쉬고 정리하라는 메시지에 가깝습니다. ${toneLine}`
     ];
   return pickVariant(`${seed}:${spreadId}:orientation-counsel`, lines);
 }
@@ -2111,7 +2111,7 @@ function buildKeywordCounselLine({ card, focus, seed }) {
   const subSubject = withKoreanParticle(sub, '이', '가');
   const lines = [
     `${cardNameTopic} '${main}'에서 '${sub}'으로 넘어가는 과정을 보여주니, 지금은 ${focusWithParticle} 선명하게 잡는 게 중요합니다.`,
-    `카드 키워드를 풀어보면 ${mainSubject} 출발점이고 ${subSubject} 다음 단계입니다. ${focusWithParticle} 한 문장으로 정리하면 흐름이 분명해집니다.`
+    `카드 키워드를 풀어보면 ${mainSubject} 출발점이고 ${subSubject} 다음 단계입니다. 오늘은 ${focusWithParticle} 중심으로 우선순위를 정하면 흐름이 더 선명해집니다.`
   ];
   return pickVariant(`${seed}:keyword-counsel`, lines);
 }
@@ -2198,7 +2198,7 @@ function buildWeeklyContextLine({ positionName, seed = '' }) {
   const topic = withKoreanParticle(positionName, '은', '는');
   const lines = [
     `${topic} 이번 주 전체 리듬에서 해당 요일의 조정 포인트를 확인하는 구간입니다.`,
-    `${positionName}은 앞뒤 요일 카드와 연결해서 실행 강도를 맞추는 기준이 됩니다.`,
+    `${positionName}은 앞뒤 요일 카드와 연결해서 대화 강도를 맞추는 기준이 됩니다.`,
     `${topic} 단독 해석보다 주간 흐름과 연결해서 읽을 때 정확도가 올라갑니다.`
   ];
   return pickVariant(`${seed}:weekly-context:${positionName}`, lines);
@@ -2220,8 +2220,8 @@ function buildSpreadCoreLead({ spreadId = 'default', positionName = '', seed = '
       `${positionName} 자리에서 회복 흐름의 기준 신호를 짚어보겠습니다.`
     ],
     'weekly-fortune': [
-      `${topic} 주간 흐름에서 해당 요일의 핵심 조정 구간입니다.`,
-      `${positionName} 카드로 오늘 리듬의 강약을 먼저 확인해보겠습니다.`
+      `${topic} 이번 주 감정 흐름 안에서 해당 요일의 포인트를 확인하는 구간입니다.`,
+      `${positionName} 카드로 오늘 관계 리듬의 강약을 먼저 살펴보겠습니다.`
     ],
     default: [
       `${topic} 전체 리딩의 연결 고리 역할을 합니다.`,

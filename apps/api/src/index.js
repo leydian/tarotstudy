@@ -509,14 +509,21 @@ function summarizeWeeklyFortune({ items, context = '', level = 'beginner' }) {
 
   const mondayKeyword = monday?.card?.keywords?.[0] || '주간 흐름';
   const mondayLabel = monday?.card?.nameKo ? `${monday.card.nameKo} ${monday?.orientation === 'reversed' ? '역방향' : '정방향'}` : '신호 확인 필요';
-  const overallFlow = riskTotal >= 8 || reversedCount >= 3
-    ? '기회는 있으나 방어를 우선해야 하는 주간'
-    : uprightCount >= reversedCount
-      ? '전개가 열려 있는 주간'
-      : '속도 조절이 필요한 주간';
+  const unstableWeek = riskTotal >= 8 || reversedCount >= 3;
+  const overallFlow = intent === 'relationship'
+    ? (unstableWeek
+        ? '호감은 남아 있지만 오해 관리가 더 중요한 주간'
+        : uprightCount >= reversedCount
+          ? '대화의 문이 조금씩 열리는 주간'
+          : '감정 거리 조절이 필요한 주간')
+    : unstableWeek
+      ? '기회는 있으나 방어를 우선해야 하는 주간'
+      : uprightCount >= reversedCount
+        ? '전개가 열려 있는 주간'
+        : '속도 조절이 필요한 주간';
   const overallIntentLine = buildWeeklyIntentLine({ intent, orientation: monday?.orientation || 'upright', keyword: mondayKeyword });
   const strongestHint = strongestDay?.item?.card?.nameKo
-    ? `강한 축은 ${strongestDay.dayLabel}(${strongestDay.item.card.nameKo})이고, 취약 축은 ${weakestDay.dayLabel}(${weakestDay?.item?.card?.nameKo || '-'})입니다.`
+    ? `이번 주 힘이 실리는 날은 ${strongestDay.dayLabel}(${strongestDay.item.card.nameKo})이고, 조심할 날은 ${weakestDay.dayLabel}(${weakestDay?.item?.card?.nameKo || '-'})입니다.`
     : '';
 
   const overall = [
@@ -530,50 +537,70 @@ function summarizeWeeklyFortune({ items, context = '', level = 'beginner' }) {
   const mondayLine = buildWeeklyDayLine({
     item: monday,
     dayLabel: '월요일',
-    roleHint: '주간 시동',
+    roleHint: intent === 'relationship' ? '관계 시동' : '주간 시동',
     intent,
-    openHint: '월요일에는 일정과 우선순위를 빠르게 고정하면 흐름을 선점하기 좋습니다.',
-    adjustHint: '월요일에는 무리한 확장보다 속도 조절과 기준 정리가 먼저입니다.',
+    openHint: intent === 'relationship'
+      ? '월요일에는 답을 내리기보다 서로의 현재 상태를 확인하는 짧은 대화가 좋습니다.'
+      : '월요일에는 일정과 우선순위를 빠르게 고정하면 흐름을 선점하기 좋습니다.',
+    adjustHint: intent === 'relationship'
+      ? '월요일에는 결론을 서두르지 말고 감정 온도를 먼저 맞추는 편이 안정적입니다.'
+      : '월요일에는 무리한 확장보다 속도 조절과 기준 정리가 먼저입니다.',
     seed: seed + 1,
     memory: phraseMemory
   });
   const tuesdayLine = buildWeeklyDayLine({
     item: tuesday,
     dayLabel: '화요일',
-    roleHint: '초반 안정화',
+    roleHint: intent === 'relationship' ? '대화 톤 조율' : '초반 안정화',
     intent,
-    openHint: '화요일에는 전날 정한 기준을 반복 실행하면 체감 안정성이 올라갑니다.',
-    adjustHint: '화요일에는 일정 과적재를 줄이고 실행 항목을 하나로 줄이는 편이 좋겠습니다.',
+    openHint: intent === 'relationship'
+      ? '화요일에는 어제 나온 반응을 바탕으로 메시지 톤을 부드럽게 다듬어보세요.'
+      : '화요일에는 전날 정한 기준을 반복 실행하면 체감 안정성이 올라갑니다.',
+    adjustHint: intent === 'relationship'
+      ? '화요일에는 단정 표현을 줄이고 질문형 문장으로 오해를 줄이는 편이 좋습니다.'
+      : '화요일에는 일정 과적재를 줄이고 실행 항목을 하나로 줄이는 편이 좋겠습니다.',
     seed: seed + 2,
     memory: phraseMemory
   });
   const wednesdayLine = buildWeeklyDayLine({
     item: wednesday,
     dayLabel: '수요일',
-    roleHint: '중반 전환',
+    roleHint: intent === 'relationship' ? '중반 감정 점검' : '중반 전환',
     intent,
-    openHint: '수요일에는 외부 변수 대응 여지가 있어 핵심 한 가지를 밀어붙이기 좋은 구간입니다.',
-    adjustHint: '수요일에는 해석 충돌이나 피로 누적을 먼저 줄여야 후반 흐름이 살아납니다.',
+    openHint: intent === 'relationship'
+      ? '수요일에는 감정이 쌓이기 전에 짧게 정리 대화를 해두면 후반이 편해집니다.'
+      : '수요일에는 외부 변수 대응 여지가 있어 핵심 한 가지를 밀어붙이기 좋은 구간입니다.',
+    adjustHint: intent === 'relationship'
+      ? '수요일에는 피로와 예민함을 먼저 낮춘 뒤 대화 강도를 조절하는 편이 좋습니다.'
+      : '수요일에는 해석 충돌이나 피로 누적을 먼저 줄여야 후반 흐름이 살아납니다.',
     seed: seed + 3,
     memory: phraseMemory
   });
   const thursdayLine = buildWeeklyDayLine({
     item: thursday,
     dayLabel: '목요일',
-    roleHint: '중반 마무리',
+    roleHint: intent === 'relationship' ? '관계 안정화' : '중반 마무리',
     intent,
-    openHint: '목요일에는 진행 중인 일을 정리해 금요일 마감 품질을 높이는 데 유리합니다.',
-    adjustHint: '목요일에는 진행 중인 이슈를 정리하고 충돌 요인을 줄이는 편이 좋겠습니다.',
+    openHint: intent === 'relationship'
+      ? '목요일에는 신뢰를 쌓는 현실적 배려 한 가지를 보여주기 좋은 날입니다.'
+      : '목요일에는 진행 중인 일을 정리해 금요일 마감 품질을 높이는 데 유리합니다.',
+    adjustHint: intent === 'relationship'
+      ? '목요일에는 해결보다 경청을 먼저 두면 불필요한 충돌을 줄일 수 있습니다.'
+      : '목요일에는 진행 중인 이슈를 정리하고 충돌 요인을 줄이는 편이 좋겠습니다.',
     seed: seed + 4,
     memory: phraseMemory
   });
   const fridayLine = buildWeeklyDayLine({
     item: friday,
     dayLabel: '금요일',
-    roleHint: '성과 점검',
+    roleHint: intent === 'relationship' ? '주 후반 조율' : '성과 점검',
     intent,
-    openHint: '금요일에는 결과 확인과 마감 정리를 함께 잡으면 주간 완성도가 올라갑니다.',
-    adjustHint: '금요일에는 성과 집착보다 누락 정리와 손실 방어를 먼저 두는 편이 안전합니다.',
+    openHint: intent === 'relationship'
+      ? '금요일에는 한 주 대화를 가볍게 복기하고 고마움을 짧게 전해보세요.'
+      : '금요일에는 결과 확인과 마감 정리를 함께 잡으면 주간 완성도가 올라갑니다.',
+    adjustHint: intent === 'relationship'
+      ? '금요일에는 서운함을 한 번에 쏟기보다 핵심 한 가지씩 나눠 말하는 편이 안전합니다.'
+      : '금요일에는 성과 집착보다 누락 정리와 손실 방어를 먼저 두는 편이 안전합니다.',
     seed: seed + 5,
     memory: phraseMemory
   });
@@ -583,8 +610,12 @@ function summarizeWeeklyFortune({ items, context = '', level = 'beginner' }) {
     dayLabel: '토요일',
     roleHint: '회복/정비',
     intent,
-    openHint: '토요일은 회복과 관계 정비를 균형 있게 가져가면 다음 주 체력이 남습니다.',
-    adjustHint: '토요일은 일정 과적재를 줄이고 회복 루틴을 먼저 고정하는 편이 좋겠습니다.',
+    openHint: intent === 'relationship'
+      ? '토요일은 함께 쉬는 리듬을 맞추면 관계 긴장이 자연스럽게 내려갑니다.'
+      : '토요일은 회복과 관계 정비를 균형 있게 가져가면 다음 주 체력이 남습니다.',
+    adjustHint: intent === 'relationship'
+      ? '토요일은 각자 회복 시간을 보장해 주며 대화 밀도를 낮추는 편이 좋겠습니다.'
+      : '토요일은 일정 과적재를 줄이고 회복 루틴을 먼저 고정하는 편이 좋겠습니다.',
     seed: seed + 6,
     memory: phraseMemory
   });
@@ -593,8 +624,12 @@ function summarizeWeeklyFortune({ items, context = '', level = 'beginner' }) {
     dayLabel: '일요일',
     roleHint: '복기/준비',
     intent,
-    openHint: '일요일은 복기와 다음 주 준비를 짧게 끝내면 월요일 진입이 훨씬 부드러워집니다.',
-    adjustHint: '일요일은 감정 소모를 줄이고 다음 주 우선순위 1개만 남기는 편이 안정적입니다.',
+    openHint: intent === 'relationship'
+      ? '일요일은 다음 주에 맞출 약속 한 가지만 정해두면 마음이 편해집니다.'
+      : '일요일은 복기와 다음 주 준비를 짧게 끝내면 월요일 진입이 훨씬 부드러워집니다.',
+    adjustHint: intent === 'relationship'
+      ? '일요일은 감정 소모를 줄이고 기대치를 한 단계 낮춰 정리하는 편이 안정적입니다.'
+      : '일요일은 감정 소모를 줄이고 다음 주 우선순위 1개만 남기는 편이 안정적입니다.',
     seed: seed + 7,
     memory: phraseMemory
   });
@@ -669,12 +704,12 @@ function buildWeeklyPositionLine({
     if (intent === 'relationship') {
       return open
         ? pickByNumber([
-          `"${keyword}" 신호가 열려 있어 짧은 확인 대화를 시도해보기 좋습니다.`,
-          `"${keyword}" 축에서는 요청과 감정을 분리해 말하면 오해를 줄일 수 있습니다.`
+          `"${keyword}" 기운이 열려 있어 가볍고 솔직한 확인 대화를 시도해보기 좋습니다.`,
+          `"${keyword}" 신호가 살아 있어 요청과 감정을 분리해 말하면 오해를 줄일 수 있습니다.`
         ], seed)
         : pickByNumber([
-          `"${keyword}" 구간에서는 해석 충돌이 생기기 쉬워 단정 문장을 줄이는 편이 좋습니다.`,
-          `"${keyword}" 축에서는 반응 확인 후 다음 대화를 여는 편이 안정적입니다.`
+          `"${keyword}" 해석이 엇갈릴 수 있어 단정 대신 확인 질문을 먼저 두는 편이 좋습니다.`,
+          `"${keyword}" 흐름이 예민해 반응을 확인한 뒤 다음 대화로 넘어가면 안정적입니다.`
         ], seed);
     }
     if (intent === 'career') {
@@ -720,12 +755,12 @@ function buildWeeklyDayLine({
     if (intent === 'relationship') {
       return open
         ? pickByNumber([
-          `"${keyword}" 흐름이 열려 있어 짧은 확인 대화를 시도해보기 좋습니다.`,
-          `"${keyword}" 신호가 살아 있어 요청과 감정을 분리해 전달하면 반응을 읽기 쉽습니다.`
+          `"${keyword}" 기운이 열려 있어 짧고 솔직한 확인 대화를 시도해보기 좋습니다.`,
+          `"${keyword}" 신호가 살아 있어 내 감정과 요청을 나눠 전달하면 반응을 읽기 쉽습니다.`
         ], seed)
         : pickByNumber([
-          `"${keyword}" 해석이 엇갈릴 수 있어 단정 문장을 줄이는 편이 좋겠습니다.`,
-          `"${keyword}" 구간에서는 반응 확인 후 다음 대화를 여는 편이 안정적입니다.`
+          `"${keyword}" 해석이 엇갈릴 수 있어 단정 문장을 줄이고 확인 질문을 먼저 두는 편이 좋겠습니다.`,
+          `"${keyword}" 흐름이 예민해 반응을 확인한 뒤 다음 대화를 여는 편이 안정적입니다.`
         ], seed);
     }
     if (intent === 'career') {
@@ -781,12 +816,12 @@ function buildWeeklyActionGuide({
   if (intent === 'relationship') {
     return unstable
       ? pickByNumber([
-        `이번 주는 "${key}" 구간에서 해석 충돌이 생기기 쉬우니, 확인 질문 1개 중심으로 대화 강도를 낮추세요.`,
-        `이번 주는 "${key}" 축이 예민해 단정 문장보다 사실 확인 문장을 우선해 관계 피로를 줄이세요.`
+        `이번 주는 "${key}" 흐름이 예민하니, 확인 질문 1개를 중심으로 대화 속도를 천천히 맞추세요.`,
+        `이번 주는 "${key}" 신호가 흔들릴 수 있어 단정 대신 사실 확인 문장으로 관계 피로를 줄이세요.`
       ], seed)
       : pickByNumber([
-        `이번 주는 "${key}" 흐름이 살아 있어 짧고 명확한 대화 시도를 하루 1회 기준으로 이어가면 좋겠습니다.`,
-        `이번 주는 "${key}" 축을 중심으로 요청 1개/감정 1개를 분리해 전달하면 반응을 읽기 쉽습니다.`
+        `이번 주는 "${key}" 흐름이 살아 있어 짧고 분명한 대화를 하루 한 번 정도 꾸준히 이어가면 좋겠습니다.`,
+        `이번 주는 "${key}" 기준으로 요청 1개와 감정 1개를 분리해 전달하면 반응을 읽기 쉽습니다.`
       ], seed);
   }
   if (intent === 'career') {
