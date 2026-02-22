@@ -1539,6 +1539,8 @@ function buildSocialBenchmarkCoreMessage({ card, position, orientation, spreadId
   const cardDirection = orientation === 'upright' ? '정방향' : '역방향';
   const keyword = card.keywords?.[0] ?? '인상';
   const positionTopic = withKoreanParticle(position.name, '은', '는');
+  const positionLabel = position.name || '이 자리';
+  const seed = `${spreadId}:${positionLabel}:${card.id}:${orientation}:social-core`;
   const spreadOpeners = {
     'three-card': `${position.name} 카드로 친구/동료가 보는 당신의 인상을 차분히 살펴보겠습니다.`,
     'daily-fortune': `${position.name} 카드로 오늘 대인 관계의 인상 흐름을 확인해보겠습니다.`,
@@ -1548,11 +1550,23 @@ function buildSocialBenchmarkCoreMessage({ card, position, orientation, spreadId
     default: `${position.name} 카드로 현재 대인관계 인상을 확인해보겠습니다.`
   };
   const signalLine = orientation === 'upright'
-    ? `${card.nameKo}의 "${keyword}" 신호가 열려 있어, 주변에서 당신을 신뢰 가능한 사람으로 볼 가능성이 큽니다.`
-    : `${card.nameKo}의 "${keyword}" 신호가 예민해 보여, 주변에서 당신의 피로감이나 거리감을 먼저 읽을 가능성이 있습니다.`;
-  const closeLine = /(결과|조언)/.test(position.name)
-    ? '주변 인식은 단번에 바꾸기보다 작은 태도 변화가 반복될 때 안정적으로 바뀝니다.'
-    : `${positionTopic} 의도 설명보다 일관된 반응과 말투를 유지하는 쪽이 더 효과적입니다.`;
+    ? pickVariant(`${seed}:signal:up`, [
+      `${card.nameKo}의 "${keyword}" 신호가 열려 있어, 주변에서 당신을 신뢰 가능한 사람으로 볼 가능성이 큽니다.`,
+      `${card.nameKo}가 "${keyword}" 기준에서 긍정 신호를 보여, 주변이 당신을 맡길 수 있는 사람으로 인식할 가능성이 큽니다.`
+    ])
+    : pickVariant(`${seed}:signal:rev`, [
+      `${card.nameKo}의 "${keyword}" 신호가 예민해 보여, 주변에서 당신의 피로감이나 거리감을 먼저 읽을 가능성이 있습니다.`,
+      `${card.nameKo}가 "${keyword}" 구간에서 조정 신호를 보여, 주변에서 당신을 조심스러운 상태로 볼 가능성이 있습니다.`
+    ]);
+  const closeLine = /(결과|조언)/.test(positionLabel)
+    ? pickVariant(`${seed}:close:result`, [
+      '주변 인식은 단번에 바꾸기보다 작은 태도 변화가 반복될 때 안정적으로 바뀝니다.',
+      '평판은 한 번의 설명보다 일관된 반응이 누적될 때 더 빠르게 바뀝니다.'
+    ])
+    : pickVariant(`${seed}:close:normal`, [
+      `${positionTopic} 의도 설명보다 일관된 반응과 말투를 유지하는 쪽이 더 효과적입니다.`,
+      `${positionTopic} 해석보다 실제 반응 패턴을 먼저 확인하면 인상 흐름이 더 정확하게 보입니다.`
+    ]);
   return polishCoreMessage([
     spreadOpeners[spreadId] ?? spreadOpeners.default,
     `뽑으신 카드는 '${card.nameKo} ${cardDirection}'입니다.`,
@@ -1566,21 +1580,40 @@ function buildSocialBenchmarkInterpretation({ card, position, orientation, sprea
   const sub = card.keywords?.[1] ?? main;
   const open = orientation === 'upright';
   const positionLabel = position.name || '이 자리';
+  const seed = `${spreadId}:${positionLabel}:${card.id}:${orientation}:social-int`;
   const socialLine = (() => {
     if (positionLabel === '과거') {
       return open
-        ? `과거 흐름에서는 '${main}'에서 '${sub}'으로 이어지는 신호가 살아 있어, 주변이 당신을 믿고 맡길 수 있는 사람으로 보기 시작했을 가능성이 큽니다.`
-        : `과거 흐름에서는 '${main}' 신호가 흔들려, 오해나 거리감이 쌓인 경험이 현재 인상에 남아 있을 수 있습니다.`;
+        ? pickVariant(`${seed}:past:up`, [
+          `과거 흐름에서는 '${main}'에서 '${sub}'으로 이어지는 신호가 살아 있어, 주변이 당신을 믿고 맡길 수 있는 사람으로 보기 시작했을 가능성이 큽니다.`,
+          `과거 구간의 '${main}' 신호는 당신의 명확한 대응이 신뢰의 출발점이 되었을 가능성을 보여줍니다.`
+        ])
+        : pickVariant(`${seed}:past:rev`, [
+          `과거 흐름에서는 '${main}' 신호가 흔들려, 오해나 거리감이 쌓인 경험이 현재 인상에 남아 있을 수 있습니다.`,
+          `과거 구간의 '${main}' 신호가 약해 보여, 당시의 피로나 소통 충돌이 지금 인상에 잔존할 가능성이 있습니다.`
+        ]);
     }
     if (positionLabel === '현재') {
       return open
-        ? `현재는 '${main}' 신호가 비교적 선명해, 친구/동료가 당신을 성실하고 믿음직한 사람으로 인식할 가능성이 큽니다.`
-        : `현재는 '${main}' 신호가 예민해 보여, 주변에서 당신을 지쳐 있거나 조심스러운 상태로 볼 수 있습니다.`;
+        ? pickVariant(`${seed}:now:up`, [
+          `현재는 '${main}' 신호가 비교적 선명해, 친구/동료가 당신을 성실하고 믿음직한 사람으로 인식할 가능성이 큽니다.`,
+          `지금은 '${main}' 흐름이 살아 있어, 주변에서 당신을 중심을 잡아주는 사람으로 볼 가능성이 큽니다.`
+        ])
+        : pickVariant(`${seed}:now:rev`, [
+          `현재는 '${main}' 신호가 예민해 보여, 주변에서 당신을 지쳐 있거나 조심스러운 상태로 볼 수 있습니다.`,
+          `지금은 '${main}' 구간이 흔들려, 주변에서 당신의 부담감이나 예민함을 먼저 체감할 가능성이 있습니다.`
+        ]);
     }
     if (positionLabel === '미래') {
       return open
-        ? `앞으로 '${main}' 흐름이 유지되면 당신은 책임감 있고 안정적인 사람으로 더 강하게 각인될 가능성이 있습니다.`
-        : `앞으로 '${main}' 신호가 계속 흔들리면, 성실함은 인정받더라도 부담이 커 보여 거리감이 생길 가능성이 있습니다.`;
+        ? pickVariant(`${seed}:future:up`, [
+          `앞으로 '${main}' 흐름이 유지되면 당신은 책임감 있고 안정적인 사람으로 더 강하게 각인될 가능성이 있습니다.`,
+          `앞으로 '${main}' 신호가 이어지면 주변에서 당신을 신뢰 가능한 핵심 인력으로 기억할 가능성이 큽니다.`
+        ])
+        : pickVariant(`${seed}:future:rev`, [
+          `앞으로 '${main}' 신호가 계속 흔들리면, 성실함은 인정받더라도 부담이 커 보여 거리감이 생길 가능성이 있습니다.`,
+          `앞으로 '${main}' 구간이 조정되지 않으면, 능력 평가는 유지돼도 정서적 거리감이 커질 가능성이 있습니다.`
+        ]);
     }
     if (spreadId === 'choice-a-b') {
       return open
@@ -1591,10 +1624,47 @@ function buildSocialBenchmarkInterpretation({ card, position, orientation, sprea
       ? `${positionLabel}에서는 '${main}'에서 '${sub}'으로 이어지는 흐름이 살아 있어, 주변 인식이 긍정적으로 정리될 가능성이 있습니다.`
       : `${positionLabel}에서는 '${main}' 신호가 예민해, 해명보다 태도 일관성을 먼저 회복하는 편이 더 효과적입니다.`;
   })();
-  const realityLine = '대인관계 해석은 내 의도보다 상대가 반복적으로 체감하는 반응이 기준이 되므로, 말투·속도·표정을 일정하게 유지하는 것이 중요합니다.';
-  const actionLine = open
-    ? '실행 문장: 오늘은 먼저 인사/확인/감사 중 1가지를 분명히 표현해 안정감을 보여주세요.'
-    : '실행 문장: 오늘은 설명을 길게 늘리기보다 핵심 한 문장만 말하고 반응을 확인해 오해를 줄여보세요.';
+  const realityLine = (() => {
+    if (positionLabel === '과거') {
+      return pickVariant(`${seed}:reality:past`, [
+        '과거 자리는 의도를 해명하기보다 당시 반복됐던 반응 패턴을 분리해 볼 때 의미가 선명해집니다.',
+        '과거 해석에서는 내 설명보다 주변이 실제로 기억하는 행동 신호를 기준으로 보는 편이 정확합니다.'
+      ]);
+    }
+    if (positionLabel === '현재') {
+      return pickVariant(`${seed}:reality:now`, [
+        '현재 인상은 말의 내용보다 전달 톤과 반응 속도에서 결정되므로, 짧고 일정한 응답 패턴이 중요합니다.',
+        '지금 평판은 설명의 양보다 표정·속도·말투의 일관성에 더 크게 좌우됩니다.'
+      ]);
+    }
+    if (positionLabel === '미래') {
+      return pickVariant(`${seed}:reality:future`, [
+        '미래 인식은 단일 이벤트보다 반복되는 태도 누적에서 굳어지므로, 작은 패턴 관리가 핵심입니다.',
+        '앞으로의 평판은 한 번의 만회보다 안정적인 반응 습관이 쌓일 때 더 강하게 바뀝니다.'
+      ]);
+    }
+    return '대인관계 해석은 내 의도보다 상대가 반복적으로 체감하는 반응이 기준이 되므로, 말투·속도·표정을 일정하게 유지하는 것이 중요합니다.';
+  })();
+  const actionLine = (() => {
+    if (positionLabel === '과거') {
+      return open
+        ? '실행 문장: 과거에 신뢰를 만들었던 행동 1가지를 오늘 대화에 다시 사용해보세요.'
+        : '실행 문장: 과거 오해를 만든 반응 1가지를 떠올려, 오늘은 같은 패턴을 피하는 데 집중해보세요.';
+    }
+    if (positionLabel === '현재') {
+      return open
+        ? '실행 문장: 오늘은 먼저 인사/확인/감사 중 1가지를 분명히 표현해 안정감을 보여주세요.'
+        : '실행 문장: 오늘은 설명을 길게 늘리기보다 핵심 한 문장만 말하고 반응을 확인해 오해를 줄여보세요.';
+    }
+    if (positionLabel === '미래') {
+      return open
+        ? '실행 문장: 앞으로 1주일은 같은 톤의 짧은 피드백을 유지해 "일관된 사람" 인상을 고정해보세요.'
+        : '실행 문장: 앞으로 1주일은 즉답보다 한 박자 늦춘 응답으로 감정 과열 신호를 먼저 낮춰보세요.';
+    }
+    return open
+      ? '실행 문장: 오늘은 먼저 인사/확인/감사 중 1가지를 분명히 표현해 안정감을 보여주세요.'
+      : '실행 문장: 오늘은 설명을 길게 늘리기보다 핵심 한 문장만 말하고 반응을 확인해 오해를 줄여보세요.';
+  })();
   return polishTarotInterpretation([socialLine, realityLine, actionLine].join(' '));
 }
 
