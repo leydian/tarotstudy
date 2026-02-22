@@ -2028,7 +2028,7 @@ function buildSummaryFocus({ spreadName, firstItem, lastItem, context = '', cont
   if (!firstItem || !lastItem) return contextTone.mainHint;
   if (spreadName === '원카드' || firstItem.position.name === '핵심 메시지') {
     if (intent === 'relationship-repair') {
-      return '갈등 회복 질문에서는 카드 의미를 넓히기보다, 대화 순서와 감정 온도 조절 신호를 먼저 읽는 편이 정확합니다. 오늘은 사실 1개, 감정 1개, 요청 1개만 짧게 준비해 충돌을 줄이는 데 집중해보세요.';
+      return '갈등 회복 질문에서는 카드 의미를 과하게 넓히기보다, 대화 순서와 감정 속도 조절 신호를 먼저 읽는 편이 정확합니다. 오늘은 사실 1개, 감정 1개, 요청 1개만 짧게 준비해 충돌을 줄이는 데 집중해보세요.';
     }
     if (intent === 'social') {
       const cardName = firstItem.card?.nameKo || '이 카드';
@@ -2331,6 +2331,7 @@ function buildYesNoVerdict({ contextLabel = '', firstItem = null, topKeywords = 
   if (!q || !isYesNoQuestion(q)) return null;
 
   const group = detectYesNoQuestionGroup(q);
+  const intent = inferYearlyIntent(q);
   const risk = scoreOneCardRisk({ firstItem, topKeywords, uprightCount, reversedCount });
   if (group === 'caffeine') {
     if (risk >= 2) {
@@ -2420,8 +2421,14 @@ function buildYesNoVerdict({ contextLabel = '', firstItem = null, topKeywords = 
       reason: buildYesNoReasonLine({ firstItem, topKeywords, tone: 'mid' })
     };
   }
+  if (intent === 'relationship-repair' || intent === 'relationship') {
+    return {
+      verdict: '한 줄 답: 가능해요. 다만 속도보다 대화 순서를 먼저 정하면 더 안전합니다.',
+      reason: buildYesNoReasonLine({ firstItem, topKeywords, tone: 'low' })
+    };
+  }
   return {
-    verdict: '한 줄 답: 네, 지금은 해도 괜찮습니다.',
+    verdict: '한 줄 답: 가능해요. 다만 무리하지 않는 선에서 시작하세요.',
     reason: buildYesNoReasonLine({ firstItem, topKeywords, tone: 'low' })
   };
 }
@@ -2468,15 +2475,15 @@ function buildYesNoReasonLine({ firstItem = null, topKeywords = [], tone = 'mid'
   const cardName = firstItem?.card?.nameKo || '이 카드';
   const orientation = firstItem?.orientation === 'reversed' ? '역방향' : '정방향';
   const keyList = (topKeywords.length ? topKeywords : firstItem?.card?.keywords || []).slice(0, 3);
-  const keywordText = keyList.length ? keyList.join(', ') : '현재 카드 흐름';
+  const keywordText = keyList.length ? keyList[0] : '현재 카드 흐름';
   const cardSubject = `${cardName} ${orientation} 카드는`;
   if (tone === 'high') {
-    return `${cardSubject} ${keywordText} 신호가 강해 과하게 밀면 리듬이 쉽게 흔들릴 수 있습니다.`;
+    return `${cardSubject} "${keywordText}" 신호가 예민해 보여, 지금은 강하게 밀기보다 속도를 낮춰야 안정적입니다.`;
   }
   if (tone === 'low') {
-    return `${cardSubject} ${keywordText} 흐름이 비교적 안정적이라 무리만 피하면 진행이 가능합니다.`;
+    return `${cardSubject} "${keywordText}" 축이 살아 있어, 짧고 분명하게 시도하면 흐름을 살릴 수 있습니다.`;
   }
-  return `${cardSubject} ${keywordText} 흐름이 있어 가능은 하지만 강도를 낮춰 조절하는 편이 안전합니다.`;
+  return `${cardSubject} "${keywordText}" 흐름이 있어 가능은 하지만, 강도를 낮춰 조절하는 편이 안전합니다.`;
 }
 
 function buildOneCardActionLine({ context = '', firstItem = null }) {

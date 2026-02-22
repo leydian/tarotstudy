@@ -1778,8 +1778,8 @@ function buildRepairBenchmarkInterpretation({ card, position, orientation, sprea
   const repairLine = (() => {
     if (positionLabel === '핵심 메시지') {
       return open
-        ? `핵심 메시지에서는 '${main}' 신호가 살아 있어, 대화 문을 다시 열 여지는 분명히 남아 있습니다.`
-        : `핵심 메시지에서는 '${main}' 신호가 조정 구간이라, 화해 결론보다 재충돌을 막는 대화 순서가 더 중요합니다.`;
+        ? `지금 핵심은 '${main}' 신호가 살아 있어, 대화 문을 다시 열 여지는 분명히 남아 있다는 점입니다.`
+        : `지금 핵심은 '${main}' 신호가 조정 구간이라, 화해 결론보다 재충돌을 막는 대화 순서가 더 중요하다는 점입니다.`;
     }
     if (positionLabel === '문제' || /문제|갈등/.test(positionLabel)) {
       return open
@@ -1821,7 +1821,7 @@ function buildRepairBenchmarkInterpretation({ card, position, orientation, sprea
   const realityLine = (() => {
     if (positionLabel === '핵심 메시지') {
       return pickVariant(`${seed}:reality:core`, [
-        '핵심 메시지에서는 감정을 길게 해석하기보다, 다음 대화를 어떤 순서로 열지 먼저 정하는 편이 실제 회복에 더 도움이 됩니다.',
+        '이 카드는 감정을 길게 해석하기보다, 다음 대화를 어떤 순서로 열지 먼저 정하는 편이 실제 회복에 더 도움이 된다는 신호를 줍니다.',
         '지금 단계에서는 누가 옳았는지 정리하기보다, 대화가 다시 끊기지 않게 만드는 최소 문장을 먼저 확보하는 것이 중요합니다.'
       ]);
     }
@@ -2979,10 +2979,10 @@ function splitSentences(text = '') {
 function buildLearningCoachOpening({ positionName, seed }) {
   const topic = withKoreanParticle(positionName, '은', '는');
   const lines = [
-    `${positionName} 학습은 카드 해석보다 근거 기록이 먼저입니다.`,
-    `${topic} 감으로 읽지 말고 증거 기반으로 훈련하세요.`,
-    `${positionName} 복기에서는 맞고 틀림보다 판단 근거의 질을 보겠습니다.`,
-    `${positionName} 학습 목표는 화려한 문장보다 재현 가능한 해석입니다.`
+    `${positionName} 복기는 정답 여부보다, 판단 근거를 분명히 남기는 데 집중해봅시다.`,
+    `${topic} 감으로 단정하기보다 관찰 가능한 증거를 먼저 붙여 훈련해보세요.`,
+    `${positionName} 학습 목표는 화려한 문장보다 재현 가능한 해석 루틴입니다.`,
+    `${positionName} 학습은 카드 해석 확장보다 근거 기록 습관을 만드는 데 초점을 맞추세요.`
   ];
   return pickVariant(`${seed}:coach-open`, lines);
 }
@@ -2999,7 +2999,7 @@ function buildLearningCoachFrame({ style, seed }) {
 
 function buildLearningCoachReview({ positionName, contextProfile, style, seed }) {
   const lines = [
-    `복기 질문: "${positionName} 판단을 ${contextProfile.trackMetric}로 점검했는가?"`,
+    `복기 질문: "${positionName} 판단을 ${contextProfile.trackMetric} 기준으로 점검했는가?"`,
     `체크 질문: "${positionName} 해석이 ${contextProfile.trackMetric} 변화로 확인됐는가?"`,
     `검증 질문: "${positionName} 리딩이 실제 ${contextProfile.trackMetric}에 어떤 차이를 만들었는가?"`
   ];
