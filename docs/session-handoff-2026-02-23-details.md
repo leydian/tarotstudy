@@ -816,3 +816,82 @@
 - `4843efb` Unify tarot reading tone into honorific narrative style
 - `8c3bbf3` Fix one-card short yes/no to lead with direct sleep answer
 - `e4f2a41` Unify all tarot interpretation outputs into one narrative format
+
+## 21) 하이브리드 QA 대규모화 + 공감형 리딩 정교화 + 시험/커리어 템플릿 확장 (추가)
+
+### 21.1 질문 이해 QA셋 3,000건 확장 및 게이트 강화
+- 변경 파일:
+  - `scripts/refresh-qa-cases.mjs`
+  - `scripts/question-understanding-eval.mjs`
+  - `scripts/question-understanding-eval-set.json`
+  - `scripts/qa-cases-registry.json`
+  - `docs/question-understanding-labeling-guide.md`
+  - `README.md`
+- 핵심:
+  - question-understanding 평가셋을 기본 3,000건으로 생성(환경변수로 1,000~10,000 조정)
+  - 후보셋(`tmp/question-understanding-candidate-set.json`) 별도 생성
+  - 의도 균형 샘플링 + short utterance bank 합류
+  - 평가 게이트를 98% 기준(intent/type/choice/domainFloor)으로 상향
+  - 버킷 리포트(intent/style/length/risk) + 실패 패턴 리포트 추가
+  - 수동 라벨링 가이드 문서 추가
+
+### 21.2 공감형+설명형 리딩 프레임 도입
+- 변경 파일:
+  - `apps/api/src/content.js`
+- 핵심:
+  - one-card를 포함한 공통 내러티브 경로(`buildUnifiedInterpretationNarrative`)를 공감형 구조로 보정
+    - 공감 완충(negative/conditional 중심)
+    - 답변 결론
+    - 테마
+    - 실행
+    - 카드 근거+의미 해설
+    - 재점검/복기
+  - 결론 톤 분류 함수 추가:
+    - `detectConclusionTone`
+  - 문장 구성 헬퍼 추가:
+    - `buildEmpathyLeadLine`
+    - `buildCardMeaningDetailLine`
+    - `buildRecheckGuideLine`
+
+### 21.3 어색함 교정(시험 질문 실사례 기반)
+- 변경 파일:
+  - `apps/api/src/content.js`
+  - `apps/web/src/pages/spreads-helpers.ts`
+  - `apps/web/src/pages/SpreadsPage.tsx`
+- 핵심:
+  - 카드명 불일치 방지:
+    - 리딩 본문에 다른 카드명이 섞이면 현재 카드명으로 정규화(`sanitizeCardNameConsistency`)
+  - 시험 질문 전용 실행 템플릿 보강:
+    - `기출 1세트 + 오답 복기` 중심으로 실행 문구 재설계
+  - 메타형 코치 문구 완화:
+    - `결론 1문장/근거 1문장/실행 1문장` 문구를 자연형으로 보정
+  - UI 라벨 개선:
+    - `학습 리더 코치 내역` → `학습 코치 요약`
+  - one-card 판정문 보정:
+    - 종합 인사이트에서 one-card는 별도 기준으로 `go/conditional/hold` 판정
+    - 시험 질문에서는 `합격 가능성 + 조건` 문구로 이유를 구체화
+
+### 21.4 동일 템플릿 확장(시험 → 커리어 의사결정)
+- 변경 파일:
+  - `apps/api/src/content.js`
+- 핵심:
+  - 시험/학습 템플릿과 동일한 방식으로 커리어 질문(면접/지원/이직/오퍼)까지 확장
+  - 커리어 질문에서도 동일 프레임 사용:
+    - 공감 완충
+    - 결론
+    - 준비 품질 기준
+    - 1-step 실행
+    - 재평가 기준
+
+### 21.5 검증 로그
+- `npm run qa:refresh-cases` 통과
+- `npm run qa:question-understanding` 통과
+  - total: 3000
+  - intent/type/choice/domainFloor: 모두 100%
+- `npm run test:api` 통과
+- `npm run test:web` 통과
+- `npm run qa:summary-regression` 통과
+
+### 21.6 관련 커밋
+- `8717a27` Expand question-understanding QA set to 3k with stronger eval gates
+- `f888b88` Refine reading narrative with empathy-first explanatory flow

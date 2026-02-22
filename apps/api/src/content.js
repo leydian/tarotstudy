@@ -1,4 +1,4 @@
-import { getCardById } from './data/cards.js';
+import { cards, getCardById } from './data/cards.js';
 import {
   analyzeQuestionContextSync,
   parseChoiceOptions as parseChoiceOptionsEnhanced
@@ -6,6 +6,7 @@ import {
 import { inferShortUtterance } from './question-understanding/short-utterance-rules.js';
 
 const TTL_FALLBACK_SOURCE = 'fallback';
+const CARD_NAME_KO_SET = new Set(cards.map((item) => String(item?.nameKo || '').trim()).filter(Boolean));
 
 export function buildFallbackExplanation(card, level = 'beginner', context = '') {
   const explanationContext = inferExplanationContext(context);
@@ -1456,7 +1457,7 @@ export function buildSpreadReading({
   });
 
   const learningPointRaw = shortHint
-    ? `[학습 리더] 오늘 질문(${normalizeClientQuestion(context) || '초간단 질문'})은 결론 1문장, 근거 1문장, 실행 1문장으로 짧게 정리하세요. [학습 리더] 복기 질문: 지금 행동 1개를 실행한 뒤 실제 체감이 카드 방향과 일치했는가?`
+    ? `[학습 리더] 오늘 질문(${normalizeClientQuestion(context) || '초간단 질문'})은 핵심 판단 1문장과 근거 1문장만 짧게 정리하세요. [학습 리더] 복기 질문: 실행 후 실제 체감에서 카드 방향과 맞은 점/어긋난 점은 무엇이었는가?`
     : joinUniqueParts([
       `[학습 리더] ${buildLearningCoachOpening({ positionName: position.name, spreadId, level, contextProfile, seed })}`,
       `[학습 리더] ${buildLearningCoachFrame({ style, spreadId, positionName: position.name, level, seed })}`,
@@ -1475,7 +1476,10 @@ export function buildSpreadReading({
     positionName: position.name
   });
 
-  return { interpretation, coreMessage, learningPoint };
+  const coreMessageSafe = sanitizeCardNameConsistency(coreMessage, card?.nameKo || '');
+  const interpretationSafe = sanitizeCardNameConsistency(interpretation, card?.nameKo || '');
+
+  return { interpretation: interpretationSafe, coreMessage: coreMessageSafe, learningPoint };
 }
 
 export function buildSpreadInterpretation(args) {
@@ -1534,6 +1538,26 @@ function compactLearningPoint({ text = '', positionName = '' }) {
   }
 
   return `[학습 리더] ${selected.slice(0, 5).join(' ')}`;
+}
+
+function escapeRegex(text = '') {
+  return String(text || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function sanitizeCardNameConsistency(text = '', currentCardName = '') {
+  const normalized = String(text || '');
+  const cardName = String(currentCardName || '').trim();
+  if (!normalized || !cardName) return normalized;
+
+  let out = normalized;
+  for (const other of CARD_NAME_KO_SET) {
+    if (!other || other === cardName) continue;
+    const pattern = new RegExp(`\\b${escapeRegex(other)}\\b`, 'g');
+    if (pattern.test(out)) {
+      out = out.replace(pattern, cardName);
+    }
+  }
+  return out;
 }
 
 function inferContextProfile(context = '') {
@@ -2506,16 +2530,18 @@ function detectConclusionTone(conclusion = '') {
 }
 
 function buildEmpathyLeadLine({ conclusionTone = 'neutral', group = 'general', context = '' }) {
+  const domain = inferExecutionDomainFromContext(context);
   if (conclusionTone === 'negative') {
     if (group === 'caffeine') return '아니오에 가까운 결론이라 실망하실 수 있어요. 하지만 지금 결정이 틀렸다는 뜻은 아니고, 몸 리듬을 먼저 지키라는 신호에 가깝습니다.';
     if (isSleepQuestion(context)) return '바로 자라는 답이 아니라서 답답하실 수 있어요. 다만 지금 카드는 잠을 포기하라는 뜻이 아니라, 먼저 머리를 비우는 순서를 잡으라는 신호입니다.';
+    if (domain === 'study') return '원하신 답이 아니라 답답하실 수 있어요. 다만 이 신호는 합격 가능성을 부정하기보다, 준비 순서를 다시 맞추면 결과를 살릴 수 있다는 의미에 가깝습니다.';
+    if (domain === 'career') return '결론이 보수적으로 들려 실망하실 수 있어요. 하지만 커리어 선택이 틀렸다는 뜻이 아니라, 타이밍과 준비 강도를 조정하라는 신호에 가깝습니다.';
     return '원하신 방향과 다른 결론이라 실망하실 수 있어요. 지금 카드는 선택 자체를 막기보다 타이밍과 강도를 조절하라는 메시지에 가깝습니다.';
   }
   if (conclusionTone === 'conditional') {
+    if (domain === 'study') return '가능성은 열려 있습니다. 핵심은 더 많이 하는 것이 아니라 반복 가능한 학습 리듬을 고정하는 데 있습니다.';
+    if (domain === 'career') return '가능성은 있습니다. 다만 준비 기준과 실행 시점을 같이 맞춰야 결과가 안정됩니다.';
     return '가능성은 열려 있지만 조건이 붙는 흐름이라, 기준을 잡고 움직이실 때 결과가 안정됩니다.';
-  }
-  if (conclusionTone === 'positive') {
-    return '진행 가능 신호가 보이지만, 무리한 확장보다 균형을 지켜야 카드 흐름이 오래 유지됩니다.';
   }
   return '';
 }
@@ -2547,7 +2573,14 @@ function buildRecheckGuideLine({ group = 'general', conclusionTone = 'neutral', 
   }
   if (conclusionTone === 'negative') return '재점검 기준은 “지금 꼭 해야 하는가” 한 문장입니다. 그 문장에 확신이 없으면 오늘은 보류가 더 정확합니다.';
   if (conclusionTone === 'conditional') return '재점검 기준은 실행 후 체감 변화 1개입니다. 기준이 개선되지 않으면 강도를 더 낮추는 쪽으로 조정하세요.';
-  return '재점검 기준은 실행 후 체감 변화 1개만 기록하는 것입니다. 이 기록이 다음 판단의 정확도를 높여줍니다.';
+  return '재점검 기준은 실행 후 체감 변화 1개만 기록하는 것입니다.';
+}
+
+function inferExecutionDomainFromContext(context = '') {
+  const text = String(context || '').toLowerCase();
+  if (/(시험|합격|공부|학습|자격증|기출|회독|모의고사|오답)/i.test(text)) return 'study';
+  if (/(면접|지원|이력서|자소서|오퍼|취업|이직|퇴사|직무|커리어)/i.test(text)) return 'career';
+  return 'general';
 }
 
 function buildOneCardYesNoConclusion({ group = 'general', card, orientation = 'upright', questionType = 'open', context = '' }) {
@@ -2611,10 +2644,29 @@ function buildOneCardYesNoConclusion({ group = 'general', card, orientation = 'u
 
 function buildOneCardExecutionHint({ context = '', group = 'general', card, orientation = 'upright' }) {
   const risk = scoreOneCardRiskLight({ card, orientation });
+  const executionDomain = inferExecutionDomainFromContext(context);
   if (isSleepQuestion(context)) {
     if (risk >= 2 || orientation === 'reversed') return '지금은 바로 눕기보다 해야 할 것 1개만 10분 정리하고 다시 수면 여부를 확인해보세요.';
     if (risk === 1) return '10분만 가볍게 정리한 뒤 바로 주무시면 마음이 덜 걸릴 가능성이 높습니다.';
     return '지금은 화면을 끄고 바로 주무시는 편이 회복에 더 유리합니다.';
+  }
+  if (/(시험|합격|공부|학습|자격증|기출|회독|모의고사)/i.test(String(context || ''))) {
+    if (risk >= 2 || orientation === 'reversed') {
+      return '오늘은 범위를 늘리지 말고 취약 유형 1개만 정리하세요. 기출 10문항으로 감을 확인한 뒤, 틀린 이유 1줄만 남기고 마무리하는 편이 안전합니다.';
+    }
+    if (risk === 1) {
+      return '합격 가능성은 열려 있지만 조건이 필요합니다. 취약 파트 1개 + 기출 1세트 + 오답 20분만 고정해 루틴을 지키세요.';
+    }
+    return '지금은 루틴을 밀어도 괜찮은 흐름입니다. 오늘은 기출 1세트와 오답 복기 20분을 마친 뒤 종료 시간을 고정하세요.';
+  }
+  if (executionDomain === 'career') {
+    if (risk >= 2 || orientation === 'reversed') {
+      return '오늘은 지원·결정 확장을 멈추고 준비 품질부터 정리하세요. 이력서/경험 사례 1개를 보완한 뒤 내일 같은 기준으로 다시 판단하는 편이 안전합니다.';
+    }
+    if (risk === 1) {
+      return '가능성은 열려 있지만 조건이 필요합니다. 지원서 1건 또는 면접 답변 1개만 고정해 완성한 뒤, 반응을 보고 다음 행동을 정하세요.';
+    }
+    return '지금은 실행해도 괜찮은 흐름입니다. 지원 1건 또는 면접 답변 1개를 오늘 완료하고, 내일 피드백 기준으로 다음 단계를 정하세요.';
   }
   if (group === 'caffeine') {
     if (risk >= 2) return '오늘은 커피를 미루거나 디카페인으로 바꿔보세요. 물 먼저 마시고 컨디션을 체크한 뒤, 내일 다시 판단해도 늦지 않아요.';

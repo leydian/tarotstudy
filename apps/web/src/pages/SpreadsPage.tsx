@@ -445,7 +445,7 @@ export function SpreadsPage() {
                       </div>
                     </div>
                     <div className="learning-point">
-                      <p><strong>학습 리더 코치 내역</strong></p>
+                      <p><strong>학습 코치 요약</strong></p>
                       <ul className="reading-lines">
                         {toCoachBlocks(item.learningPoint || '카드 키워드 1개와 행동 1개를 짝지어 복기하세요.').map((line, idx) => (
                           <li key={`item-learning-${item.position.name}-${idx}`}>

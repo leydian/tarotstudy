@@ -46,7 +46,7 @@ export function buildLearningDigest(items: SpreadDrawResult['items']) {
     || '24시간 뒤 맞음/부분맞음/다름으로 점검하고 이유를 1줄로 남겨 다음 리딩 기준으로 사용하세요.';
 
   return [
-    `오늘 할 일: ${positionCount}개 포지션 중 핵심 1개만 골라 카드 근거 1문장과 실행 1문장을 적어보세요.`,
+    `오늘 할 일: ${positionCount}개 포지션 중 핵심 1개만 골라 카드 근거 1문장과 바로 할 행동 1문장을 적어보세요.`,
     `복기 기준: ${verifyLine}`,
     `다음 리딩에서 바꿀 점 1개: ${questionLine || frameLine}`
   ];
@@ -208,14 +208,21 @@ export function buildReadingInsights({
   const domain = inferQuestionDomain(context);
   const openCount = items.filter((item) => item.orientation === 'upright').length;
   const riskTotal = items.reduce((acc, item) => acc + scoreItemRisk(item), 0);
-  const verdict: 'go' | 'conditional' | 'hold' =
-    openCount >= 2 && riskTotal <= 2 ? 'go' : openCount >= 1 ? 'conditional' : 'hold';
+  const isOneCard = spreadId === 'one-card' || items.length <= 1;
+  const verdict: 'go' | 'conditional' | 'hold' = isOneCard
+    ? (openCount >= 1 && riskTotal <= 1 ? 'go' : openCount >= 1 ? 'conditional' : 'hold')
+    : (openCount >= 2 && riskTotal <= 2 ? 'go' : openCount >= 1 ? 'conditional' : 'hold');
   const verdictLabel = verdict === 'go' ? '진행 권장' : verdict === 'conditional' ? '조건부 진행' : '보류 후 정비';
-  const verdictReason = verdict === 'go'
-    ? '결과 카드가 열려 있어 실행 가능성이 있습니다. 다만 과속보다 루틴 유지가 핵심입니다.'
-    : verdict === 'conditional'
-      ? '가능성은 있으나 병목 신호가 있어 실행 조건을 좁혀야 결과가 안정됩니다.'
-      : '지금은 확장보다 정비가 우선입니다. 병목을 먼저 줄인 뒤 재시도하는 편이 안전합니다.';
+  const verdictReason = (() => {
+    if (domain === 'study' && isOneCard) {
+      if (verdict === 'go') return '합격 가능성은 열려 있습니다. 분량 확대보다 루틴 고정(기출+오답 복기)을 지키면 결과 안정성이 높아집니다.';
+      if (verdict === 'conditional') return '가능성은 있으나 조건이 필요합니다. 취약 유형 1개를 고정해 반복률을 올릴 때 합격 신호가 선명해집니다.';
+      return '지금은 확장보다 정비가 우선입니다. 막히는 유형 1개를 정리한 뒤 같은 기준으로 재도전하는 편이 안전합니다.';
+    }
+    if (verdict === 'go') return '결과 카드가 열려 있어 실행 가능성이 있습니다. 다만 과속보다 루틴 유지가 핵심입니다.';
+    if (verdict === 'conditional') return '가능성은 있으나 병목 신호가 있어 실행 조건을 좁혀야 결과가 안정됩니다.';
+    return '지금은 확장보다 정비가 우선입니다. 병목을 먼저 줄인 뒤 재시도하는 편이 안전합니다.';
+  })();
   const conflictWarning = first?.orientation === 'reversed' && verdict === 'go'
     ? '초반 카드 경고와 결론이 충돌할 수 있습니다. 즉시 확장 대신 리스크 관리형 실행으로 조정하세요.'
     : '';

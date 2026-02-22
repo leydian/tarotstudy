@@ -34,6 +34,9 @@
 - 운영/품질 게이트 체계화
   - `test:api`, `qa:learning-leader`, `qa:relationship-recovery`, `qa:yearly-fortune`, `verify:quality` 체계 정비
   - 텔레메트리 수집 API(`spread_drawn`, `spread_review_saved`) 및 롤업 스크립트 추가
+  - question-understanding 평가셋을 3,000건 기본으로 확장하고 98% 품질 게이트로 상향
+  - one-card 공감형+설명형 내러티브(공감/결론/근거/실행/재점검)로 문장 품질 보정
+  - 시험/합격 템플릿을 면접/지원/이직/오퍼 질문까지 동일 프레임으로 확장
 
 ## 3) 금일 추가 반영 (최신)
 - 리드모델 기반 학습 API 확장 + 퍼널/인박스 화면 연동 (사용자/기획/개발 페르소나 후속 2차)
@@ -514,3 +517,4 @@
   - `docs/session-handoff-2026-02-22-details.md`
   - `docs/session-handoff-2026-02-23-details.md`
   - `docs/codex-updates-2026-02-22.md`
+  - 최신 추가 내역은 `docs/session-handoff-2026-02-23-details.md`의 `21)` 섹션 참조
