@@ -94,15 +94,90 @@ function enrichCard(card) {
 }
 
 function buildBeginnerDescription(card) {
-  const suitLine = card.arcana === 'major'
-    ? '메이저 카드는 삶의 큰 주제와 태도 변화를 먼저 읽습니다.'
-    : `${card.suitKo} 수트의 기본 테마(${suitTheme(card.suit)})를 먼저 고정합니다.`;
-
   return [
     `${card.nameKo}의 핵심 키워드는 ${card.keywords.join(', ')}입니다. 먼저 키워드 1개를 오늘 상황과 연결해 보세요.`,
-    `${suitLine} 정방향은 흐름이 자연스러운 상태, 역방향은 지연/과잉/회피 가능성을 뜻합니다.`,
-    `입문 학습 포인트: 카드 의미를 외우기보다 "왜 이 키워드가 나왔는지"를 질문하고, 하루 1문장 해석 노트를 남기세요.`
+    buildBeginnerFlowLine(card),
+    buildBeginnerLearningPoint(card)
   ].join('\n');
+}
+
+function buildBeginnerFlowLine(card) {
+  const majorVariants = [
+    `${card.nameKo} 카드는 인생의 큰 전환을 다루므로 정방향에서는 흐름이 열리고, 역방향에서는 멈춤 신호가 먼저 드러날 수 있습니다.`,
+    `${card.nameKo} 카드는 태도와 선택의 축을 보여줍니다. 정방향은 전개가 비교적 자연스럽고, 역방향은 지연·과잉·회피를 점검해야 합니다.`,
+    `${card.nameKo} 카드는 사건보다 방향을 읽는 카드입니다. 정방향은 추진 타이밍이 맞는 편이고, 역방향은 리듬 조정이 우선입니다.`,
+    `${card.nameKo} 카드는 큰 주제의 흐름을 비추므로 정방향은 확장 신호, 역방향은 정비 신호로 읽으면 입문 해석이 안정됩니다.`
+  ];
+
+  const minorBySuit = {
+    Wands: [
+      `${card.suitKo}는 행동력 영역을 다룹니다. 정방향은 추진이 붙는 상태, 역방향은 과열/소진/지연을 조정해야 하는 상태입니다.`,
+      `${card.suitKo} 카드에서는 실행 속도가 핵심입니다. 정방향은 에너지 흐름이 살아 있고, 역방향은 목표 분산 여부를 먼저 확인해야 합니다.`
+    ],
+    Cups: [
+      `${card.suitKo} 수트는 감정과 관계를 다룹니다. 정방향은 정서 흐름이 비교적 안정적이고, 역방향은 감정 과잉/회피를 점검해야 합니다.`,
+      `${card.suitKo} 카드에서는 관계 온도 읽기가 중요합니다. 정방향은 교감이 쉬운 상태, 역방향은 표현 방식 조정이 필요한 상태입니다.`
+    ],
+    Swords: [
+      `${card.suitKo}는 사고와 판단을 다룹니다. 정방향은 기준이 선명해지는 상태, 역방향은 과해석/단정/혼선을 점검해야 합니다.`,
+      `${card.suitKo} 카드에서는 의사결정 정확도가 핵심입니다. 정방향은 판단이 정리된 흐름, 역방향은 정보 정제가 먼저 필요한 흐름입니다.`
+    ],
+    Pentacles: [
+      `${card.suitKo}는 현실 운영과 성과를 다룹니다. 정방향은 누적이 붙는 상태, 역방향은 비효율/지연/과부하를 조정해야 하는 상태입니다.`,
+      `${card.suitKo} 카드에서는 자원 관리가 중요합니다. 정방향은 실행 결과가 남기 쉬운 흐름, 역방향은 기준 재정비가 필요한 흐름입니다.`
+    ]
+  };
+
+  const variants = card.arcana === 'major'
+    ? majorVariants
+    : (minorBySuit[card.suit] || majorVariants);
+  return pickCardVariant(card.id, 'beginner-flow-line', variants);
+}
+
+function buildBeginnerLearningPoint(card) {
+  const keyword = card.keywords?.[0] || '핵심';
+  const keyword2 = card.keywords?.[1] || keyword;
+
+  const majorVariants = [
+    `입문 학습 포인트: 오늘 있었던 선택 1개를 떠올리고 "${keyword}"이 강화된 순간/약해진 순간을 한 줄씩 기록하세요.`,
+    `입문 학습 포인트: "${keyword}" 키워드를 기준으로 오늘 행동 1개를 고르고, 결과를 짧게 메모해 보세요.`,
+    '입문 학습 포인트: 같은 상황을 정방향/역방향 두 관점으로 각각 1문장씩 써보면 카드 감각이 빨리 붙습니다.',
+    `입문 학습 포인트: "${keyword2}" 키워드가 대화/일정/감정 중 어디에서 가장 크게 드러났는지 체크해 보세요.`
+  ];
+
+  const minorBySuit = {
+    Wands: [
+      `입문 학습 포인트: 추진 에너지가 분산되지 않게 오늘 우선순위 1개를 정하고 "${keyword}" 실행 여부를 체크하세요.`,
+      `입문 학습 포인트: 시작 속도와 완주율을 같이 적어보세요. ${card.nameKo}는 '착수'와 '완료' 균형을 볼 때 정확해집니다.`
+    ],
+    Cups: [
+      `입문 학습 포인트: 감정 표현 1개와 요청 1개를 분리해 기록해 보세요. ${card.nameKo}는 관계 온도 변화를 읽는 데 강합니다.`,
+      `입문 학습 포인트: 오늘 대화에서 "${keyword2}"가 높아진 장면 1개를 적고, 그때 사용한 표현을 함께 남겨보세요.`
+    ],
+    Swords: [
+      `입문 학습 포인트: 판단 기준 1개를 먼저 정한 뒤 결정을 내려보세요. ${card.nameKo} 카드는 기준 명확화 연습에 적합합니다.`,
+      `입문 학습 포인트: 추측 대신 확인 질문 1개를 실행하고 결과를 기록하세요. "${keyword}" 키워드의 정확도가 빠르게 올라갑니다.`
+    ],
+    Pentacles: [
+      `입문 학습 포인트: 눈에 보이는 결과물 1개를 남기는 습관을 들여보세요. ${card.nameKo}는 현실 성과와 연결할 때 해석이 안정됩니다.`,
+      `입문 학습 포인트: 시간/비용/완료 여부 중 1개를 숫자로 기록해 보세요. "${keyword}" 키워드를 실전 기준으로 바꿀 수 있습니다.`
+    ]
+  };
+
+  const variants = card.arcana === 'major'
+    ? majorVariants
+    : (minorBySuit[card.suit] || majorVariants);
+  return pickCardVariant(card.id, 'beginner-learning-point', variants);
+}
+
+function pickCardVariant(cardId, salt, variants) {
+  if (!Array.isArray(variants) || variants.length === 0) return '';
+  const seed = `${cardId}:${salt}`;
+  let hash = 0;
+  for (let i = 0; i < seed.length; i += 1) {
+    hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
+  }
+  return variants[hash % variants.length];
 }
 
 function buildIntermediateDescription(card) {
