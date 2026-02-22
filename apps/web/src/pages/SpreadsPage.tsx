@@ -277,21 +277,24 @@ export function SpreadsPage() {
                   title={slot.position}
                 >
                   <span className="spread-slot-index">{idx + 1}</span>
-                  <span>{slot.position}</span>
-                  {drawn && (
-                    <>
-                      <Link to={`/cards/${drawn.card.id}`} className="spread-slot-link" title={`${drawn.card.nameKo} 상세 보기`}>
-                        <TarotImage
-                          src={drawn.card.imageUrl}
-                          sources={drawn.card.imageSources}
-                          cardId={drawn.card.id}
-                          alt={drawn.card.nameKo}
-                          className={`spread-slot-thumb ${drawn.orientation === 'reversed' ? 'card-reversed' : ''}`}
-                          loading="lazy"
-                        />
+                  {drawn ? (
+                    <Link to={`/cards/${drawn.card.id}`} className="spread-slot-link spread-slot-link-drawn" title={`${drawn.card.nameKo} 상세 보기`}>
+                      <TarotImage
+                        src={drawn.card.imageUrl}
+                        sources={drawn.card.imageSources}
+                        cardId={drawn.card.id}
+                        alt={drawn.card.nameKo}
+                        className={`spread-slot-thumb ${drawn.orientation === 'reversed' ? 'card-reversed' : ''}`}
+                        loading="lazy"
+                      />
+                      <span className="spread-slot-meta">
+                        <span className="spread-slot-position">{slot.position}</span>
                         <strong className="spread-slot-name">{drawn.card.nameKo}</strong>
-                      </Link>
-                    </>
+                        <span className="spread-slot-orientation">{drawn.orientation === 'reversed' ? '역방향' : '정방향'}</span>
+                      </span>
+                    </Link>
+                  ) : (
+                    <span className="spread-slot-position spread-slot-position-empty">{slot.position}</span>
                   )}
                 </div>
               );
