@@ -1459,6 +1459,24 @@ function buildReviewExampleByLesson(lessonId) {
   };
 }
 
+function buildConcreteDirectionByLesson(lessonId) {
+  const id = String(lessonId || '');
+  if (id.startsWith('fz-') || id.startsWith('bd-')) return '그래서 오늘은 할 일을 1개만 남기고 나머지는 내일 목록으로 옮겼습니다.';
+  if (id.startsWith('fm-')) return '그래서 지금 단계를 하나로 정하고 첫 20분 착수를 바로 시작했습니다.';
+  if (id.startsWith('bt-')) return '그래서 마감이 가까운 항목 1개만 먼저 처리하고 나머지는 순서를 뒤로 미뤘습니다.';
+  if (id.startsWith('ubr-')) return '그래서 방해 요소를 먼저 끄고 막히는 지점 1개만 집중해서 처리했습니다.';
+  if (id.startsWith('ubs-')) return '그래서 감정 정리 시간을 먼저 두고 실행 시간을 뒤에 붙여 순서를 고정했습니다.';
+  if (id.startsWith('icb-')) return '그래서 질문 기준을 1개로 고정해 근거 문장을 2개만 남겼습니다.';
+  if (id.startsWith('icv-')) return '그래서 오늘 맡을 역할 1개를 정하고 말할 문장을 짧게 줄였습니다.';
+  if (id.startsWith('ich-')) return '그래서 A/B 중 1개를 먼저 선택하고 비교표로 선택 이유를 확인했습니다.';
+  if (id.startsWith('uis-')) return '그래서 카드 3장을 한 흐름으로 묶어 실행 문장을 1개로 정리했습니다.';
+  if (id.startsWith('uip-')) return '그래서 가설과 반례를 같은 칸에 적어 오판 원인을 바로 확인했습니다.';
+  if (id.startsWith('acs-')) return '그래서 질문을 요소별로 나눠 요소마다 근거 1줄씩만 남겼습니다.';
+  if (id.startsWith('ayc-')) return '그래서 주간 일정에 실행 시간부터 먼저 고정했습니다.';
+  if (id.startsWith('eql-')) return '그래서 판정 이름 1개와 근거 2줄을 바로 대조해 어긋난 문장을 수정했습니다.';
+  return '그래서 오늘 해야 할 행동 1개를 먼저 확정하고 바로 실행했습니다.';
+}
+
 function normalizeNovelLanguage(text = '') {
   const replacements = [
     ['라벨 정합성', '판정 일치 정도'],
@@ -1495,6 +1513,7 @@ function buildStoryNovelByType({ lessonId, type, blueprint, cardPreview, a, b, c
   );
   const execution = normalizeNovelLanguage(buildConcreteExecutionByLesson(lessonId, blueprint.action));
   const reviewExample = buildReviewExampleByLesson(lessonId);
+  const directionExample = buildConcreteDirectionByLesson(lessonId);
   const everydaySituation = normalizeNovelLanguage(blueprint.situation);
   const everydayQuestion = normalizeNovelLanguage(blueprint.question);
   const everydayReview = normalizeNovelLanguage(blueprint.review);
@@ -1502,7 +1521,7 @@ function buildStoryNovelByType({ lessonId, type, blueprint, cardPreview, a, b, c
     `${characterTopic} 오늘 리딩이 어렵게 느껴졌습니다. 이유는 ${everydaySituation} 때문이었습니다.`,
     `노트 첫 줄에 "${everydayQuestion}"를 쓰자, 지금 다룰 핵심이 선명해졌습니다.`,
     `${cards} 중에서는 ${aSubject} 가장 먼저 눈에 들어왔고, ${conclusion}.`,
-    `${keywordEvidenceA} ${keywordEvidenceB} 이 두 근거를 붙이자 해석이 길어지지 않고 방향이 또렷해졌습니다.`,
+    `${keywordEvidenceA} ${keywordEvidenceB} ${directionExample}`,
     `${characterTopic} ${execution}`,
     `마지막에는 ${withObjectParticle(everydayReview)} 기준으로 기록을 남겼습니다. 먼저 "${reviewExample.hit}"라는 성과를 확인했고, 이어서 "${reviewExample.miss}"라는 고칠 점을 적었습니다. 그리고 ${checkCard} 카드는 다음 리딩 시작 전에 먼저 확인할 카드로 메모해 두었습니다.`
   ];
