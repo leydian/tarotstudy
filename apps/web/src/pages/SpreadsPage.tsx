@@ -10,8 +10,6 @@ import {
   buildLearningDigest,
   buildReadingInsights,
   cleanCoachPrefix,
-  lineTagClass,
-  lineTagLabel,
   mergeReviewNoteAndChecklist,
   mergeTarotMessage,
   parseChecklistFromNote,
@@ -43,6 +41,7 @@ type CoachSummaryContext = {
   orientation: 'upright' | 'reversed';
   keywords: string[];
   questionContext: string;
+  tarotNarrative: string;
 };
 
 const SPREAD_VISUAL_PRESETS: Record<string, SpreadVisualPreset> = {
@@ -466,13 +465,13 @@ export function SpreadsPage() {
                       <h5 className="reading-block-title">학습 코치 요약</h5>
                       <CoachSummaryView
                         lines={toCoachBlocks(item.learningPoint || '카드 키워드 1개와 행동 1개를 짝지어 복기하세요.')}
-                        scope={item.position.name}
                         context={{
                           positionName: item.position.name,
                           cardName: item.card.nameKo,
                           orientation: item.orientation,
                           keywords: item.card.keywords || [],
-                          questionContext: drawMutation.data.context || ''
+                          questionContext: drawMutation.data.context || '',
+                          tarotNarrative: mergeTarotMessage(item.coreMessage, item.interpretation)
                         }}
                       />
                     </div>
@@ -729,63 +728,19 @@ export function SpreadsPage() {
 
 function CoachSummaryView({
   lines,
-  scope,
   context
 }: {
   lines: string[];
-  scope: string;
   context: CoachSummaryContext;
 }) {
   const sections = groupCoachSummary(lines, context);
+  const paragraphs = buildCoachNarrativeParagraphs(sections, context);
   return (
-    <div className="coach-summary-grid">
-      <article className="coach-summary-block">
-        <p className="coach-summary-title">핵심</p>
-        <ul className="reading-lines coach-lines">
-          {sections.core.map((line, idx) => (
-            <CoachLineItem key={`${scope}-core-${idx}`} line={line} />
-          ))}
-        </ul>
-      </article>
-      <article className="coach-summary-block">
-        <p className="coach-summary-title">행동</p>
-        <ul className="reading-lines coach-lines">
-          {sections.action.map((line, idx) => (
-            <CoachLineItem key={`${scope}-action-${idx}`} line={line} />
-          ))}
-        </ul>
-      </article>
-      <article className="coach-summary-block">
-        <p className="coach-summary-title">주의</p>
-        <ul className="reading-lines coach-lines">
-          {sections.caution.map((line, idx) => (
-            <CoachLineItem key={`${scope}-caution-${idx}`} line={line} />
-          ))}
-        </ul>
-      </article>
-      <article className="coach-summary-block">
-        <p className="coach-summary-title">복기 질문</p>
-        <ul className="reading-lines coach-lines">
-          {sections.question.map((line, idx) => (
-            <CoachLineItem key={`${scope}-question-${idx}`} line={line} />
-          ))}
-        </ul>
-      </article>
+    <div className="coach-narrative-wrap">
+      {paragraphs.map((text, idx) => (
+        <p key={`coach-narrative-${idx}`} className="coach-narrative-paragraph">{text}</p>
+      ))}
     </div>
-  );
-}
-
-function CoachLineItem({ line }: { line: string }) {
-  const chunks = splitCoachLineForDisplay(cleanCoachPrefix(line));
-  return (
-    <li className="coach-line-item">
-      <span className={`line-tag ${lineTagClass(line)}`}>{lineTagLabel(line)}</span>
-      <div className="coach-line-text">
-        {chunks.map((chunk, idx) => (
-          <p key={`coach-line-${idx}`}>{chunk}</p>
-        ))}
-      </div>
-    </li>
   );
 }
 
@@ -891,19 +846,21 @@ function normalizeCoachLine(line: string) {
 
 function buildCoreSignalGuidance(context: CoachSummaryContext) {
   const keyword = context.keywords[0] || '핵심 흐름';
+  const keywordWithParticle = withRoParticle(keyword);
   const direction = context.orientation === 'reversed' ? '역방향' : '정방향';
   const directionHint = context.orientation === 'reversed'
     ? '지연/과잉 가능성'
     : '진행/확장 가능성';
-  const questionHint = buildQuestionLinkedHint(context.questionContext, keyword);
-  return `핵심 신호를 "${keyword}"로 고정하세요. 예시: ${context.positionName}에서 ${context.cardName} ${direction}이면 ${directionHint}을 1차 근거로 두고 해석 범위를 좁혀 읽습니다. ${questionHint}`;
+  const questionHint = buildQuestionLinkedHint(context.questionContext, keyword, context);
+  return `핵심 신호를 "${keyword}"${keywordWithParticle} 고정하세요. 예시: ${context.positionName}에서 ${context.cardName} ${direction}이면 ${directionHint}을 1차 근거로 두고 해석 범위를 좁혀 읽습니다. ${questionHint}`;
 }
 
-function buildQuestionLinkedHint(questionContext: string, keyword: string) {
+function buildQuestionLinkedHint(questionContext: string, keyword: string, context: CoachSummaryContext) {
   const question = String(questionContext || '').trim();
   const preview = question ? summarizeText(question, 34) : '현재 질문';
   const axis = inferQuestionAxis(question);
-  return `질문 연동: "${preview}" 질문에서는 "${keyword}"를 ${axis} 기준으로 해석하면 이해도가 올라갑니다.`;
+  const concrete = buildQuestionConcreteGuidance({ axis, context, keyword });
+  return `질문 연동: "${preview}" 질문에서는 "${keyword}"를 ${axis} 기준으로 해석하세요. 예시: ${concrete}`;
 }
 
 function inferQuestionAxis(questionContext: string) {
@@ -914,6 +871,125 @@ function inferQuestionAxis(questionContext: string) {
   if (/건강|수면|컨디션|회복/.test(text)) return '회복 리듬/무리 신호';
   if (/A|B|선택|둘 중|비교/.test(text)) return '판단 기준(시간/비용/감정 소모)';
   return '오늘 바로 검증 가능한 행동 근거';
+}
+
+function buildCoachNarrativeParagraphs(sections: CoachSummarySections, context: CoachSummaryContext) {
+  const question = String(context.questionContext || '').trim();
+  const questionPreview = question ? summarizeText(question, 36) : '현재 질문';
+  const axis = inferQuestionAxis(question);
+  const keyword = context.keywords[0] || '핵심 흐름';
+  const core = selectCoachSentence(
+    sections.core,
+    /핵심|신호|근거|키워드/,
+    buildCoreSignalGuidance(context)
+  );
+  const action = selectCoachSentence(
+    sections.action,
+    /실행|행동|기록|루틴|정하고|고르고|번역|연결/,
+    '핵심 카드 근거 1개와 실행 행동 1개를 연결해 오늘 바로 실행하세요.'
+  );
+  const caution = selectCoachSentence(
+    sections.caution,
+    /시간|감정|에너지|소모|리스크|주의|조절|고정/,
+    '과해석보다 시간/감정/에너지 조건을 먼저 고정하세요.'
+  );
+  const review = selectCoachSentence(
+    sections.question,
+    /복기|질문|근거|검증|어긋|무엇/,
+    '복기에서 가장 잘 맞은 근거 1개와 어긋난 근거 1개를 분리해 적어보세요.'
+  );
+  const tarotEvidence = extractTarotEvidence(context.tarotNarrative, context);
+  const axisConcrete = buildQuestionConcreteGuidance({ axis, context, keyword });
+  const cautionConcrete = buildConditionControlGuidance(context);
+
+  return [
+    `이번 리딩의 답안 핵심은 ${toNarrativeSentence(core)} 타로 리더 근거는 "${tarotEvidence}"입니다.`,
+    `"${questionPreview}" 질문에서는 "${keyword}" 신호를 ${axis} 기준으로 좁혀 읽으세요. 실행은 ${toNarrativeSentence(action)} 구체적으로는 ${axisConcrete}`,
+    `해석 범위를 유지하려면 ${toNarrativeSentence(caution)} 이번 카드 기준으로는 ${cautionConcrete}`,
+    `마지막 복기는 ${toNarrativeSentence(review)}`
+  ];
+}
+
+function selectCoachSentence(lines: string[], preferredPattern: RegExp, fallback: string) {
+  const chunks = lines
+    .flatMap((line) => splitCoachLineForDisplay(cleanCoachPrefix(line)))
+    .map((line) => stripCoachLabel(line))
+    .filter((line) => line.length >= 8);
+  if (!chunks.length) return fallback;
+  return chunks.find((line) => preferredPattern.test(line)) || chunks[0] || fallback;
+}
+
+function toNarrativeSentence(text: string) {
+  const trimmed = String(text || '').trim();
+  if (!trimmed) return '';
+  const clean = stripCoachLabel(trimmed).trim();
+  if (!clean) return '';
+  return /[.!?]$/.test(clean) ? clean : `${clean}.`;
+}
+
+function stripCoachLabel(text: string) {
+  return String(text || '')
+    .replace(/^(관찰 근거|타로 리더 추론|결론 기준|포지션 기준|학습 코칭|리딩 검증|복기 질문|점검 질문)\s*:\s*/g, '')
+    .trim();
+}
+
+function extractTarotEvidence(narrative: string, context: CoachSummaryContext) {
+  const sentences = String(narrative || '')
+    .split(/(?<=[.!?])\s+/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const keyword = context.keywords[0] || '';
+  const byKeyword = sentences.find((line) => keyword && line.includes(keyword));
+  const byPosition = sentences.find((line) => line.includes(context.positionName));
+  const pick = byKeyword || byPosition || sentences[0] || `${context.positionName}에서 ${context.cardName} 카드가 핵심 신호를 보여줍니다`;
+  return summarizeText(pick, 92);
+}
+
+function buildQuestionConcreteGuidance({
+  axis,
+  context,
+  keyword
+}: {
+  axis: string;
+  context: CoachSummaryContext;
+  keyword: string;
+}) {
+  if (axis === '관계 반응/대화 순서') {
+    return `"${keyword}"를 기준으로 오늘 대화에서 사실 1문장-감정 1문장-요청 1문장 순서를 지키고, 상대 반응 변화를 저녁에 기록하세요.`;
+  }
+  if (axis === '실행 우선순위/지속 가능성') {
+    return `"${keyword}"를 기준으로 오늘 완료할 일 1개만 고정하고, 완료 여부와 소요 시간을 바로 체크해 지속 가능성을 판단하세요.`;
+  }
+  if (axis === '손실 통제/현금흐름 안정성') {
+    return `"${keyword}"를 기준으로 오늘 줄일 지출 1개와 유지할 지출 1개를 나눠 적고, 실제 소비와 차이를 밤에 점검하세요.`;
+  }
+  if (axis === '회복 리듬/무리 신호') {
+    return `"${keyword}"를 기준으로 무리 신호(피로/집중저하) 1개를 먼저 체크하고, 회복 행동 1개를 실행한 뒤 컨디션 변화를 기록하세요.`;
+  }
+  if (axis === '판단 기준(시간/비용/감정 소모)') {
+    return `"${keyword}"를 기준으로 A/B를 시간·비용·감정 소모 3항목으로 같은 기준에서 비교한 뒤 1개만 선택하세요.`;
+  }
+  return `"${keyword}"를 기준으로 오늘 실행 행동 1개를 정하고, 저녁에 체감 변화(맞음/부분맞음/다름)를 1줄로 검증하세요.`;
+}
+
+function buildConditionControlGuidance(context: CoachSummaryContext) {
+  const keyword = context.keywords[0] || '핵심 흐름';
+  if (context.orientation === 'reversed') {
+    return `"${keyword}" 역방향이므로 시간은 10~20분 단위로 짧게 끊고, 감정은 과열 반응을 한 템포 늦추며, 에너지는 소모 큰 일정 1개를 줄이는 방식이 안전합니다.`;
+  }
+  return `"${keyword}" 정방향이므로 시간은 핵심 행동 1개에 먼저 배정하고, 감정은 확신 과속을 막기 위해 중간 점검 1회를 넣고, 에너지는 과투입을 피하며 지속 가능한 강도로 유지하세요.`;
+}
+
+function withRoParticle(word: string) {
+  const text = String(word || '').trim();
+  if (!text) return '으로';
+  const ch = text.charCodeAt(text.length - 1);
+  const HANGUL_START = 0xac00;
+  const HANGUL_END = 0xd7a3;
+  if (ch < HANGUL_START || ch > HANGUL_END) return '로';
+  const jong = (ch - HANGUL_START) % 28;
+  if (jong === 0 || jong === 8) return '로';
+  return '으로';
 }
 
 function YearlySummaryView({ summary }: { summary: string }) {
