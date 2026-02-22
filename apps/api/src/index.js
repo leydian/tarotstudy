@@ -8,6 +8,11 @@ import { buildCardExplanation, buildSpreadReading, chooseReadingExperimentVarian
 import { makeExternalGenerator } from './external-ai.js';
 import { TTLCache } from './cache.js';
 import { generateQuiz, gradeQuiz } from './quiz.js';
+import {
+  inferQuestionIntent,
+  getTarotPredictedQuestions,
+  getTarotPredictedQuestionsByTopic
+} from './data/question-intents.js';
 
 dotenv.config();
 
@@ -49,6 +54,17 @@ await app.register(cors, {
 
 app.get('/api/health', async () => ({ ok: true }));
 app.get('/api/spreads', async () => spreads);
+app.get('/api/questions/predicted', async (request) => {
+  const rawLimit = Number(request.query?.limit || 5000);
+  const safeLimit = Number.isFinite(rawLimit) ? Math.max(1, Math.min(10000, Math.floor(rawLimit))) : 5000;
+  const questions = getTarotPredictedQuestions();
+  return {
+    total: questions.length,
+    returned: Math.min(questions.length, safeLimit),
+    questions: questions.slice(0, safeLimit),
+    byTopic: getTarotPredictedQuestionsByTopic()
+  };
+});
 app.get('/api/telemetry/image-fallback', async () => imageFallbackStats);
 app.get('/api/telemetry/spread-events', async () => spreadTelemetryStats);
 
@@ -596,11 +612,15 @@ function summarizeThreeCard({ items, context = '', level = 'beginner' }) {
 }
 
 function inferThreeCardIntent(context = '') {
-  const text = String(context || '').toLowerCase();
-  if (/(한능검|시험|공부|학습|자격증|수능|토익|ncs|준비|합격)/.test(text)) return 'study';
-  if (/(연애|재회|갈등|화해|관계|상대)/.test(text)) return 'relationship';
-  if (/(이직|취업|면접|직장|프로젝트|업무|커리어)/.test(text)) return 'career';
-  if (/(돈|재정|지출|투자|수입|저축)/.test(text)) return 'finance';
+  const inferred = inferQuestionIntent(context, {
+    includeDaily: false,
+    includeStudy: true,
+    includeHealth: false
+  });
+  if (inferred === 'study') return 'study';
+  if (inferred === 'relationship' || inferred === 'relationship-repair') return 'relationship';
+  if (inferred === 'career') return 'career';
+  if (inferred === 'finance') return 'finance';
   return 'general';
 }
 
@@ -1423,11 +1443,12 @@ function summarizeCelticCross({ items, context = '', level = 'beginner' }) {
 }
 
 function inferCelticIntent(context = '') {
-  const text = String(context || '').toLowerCase();
-  if (/(화해|친구|싸웠|싸움|다툼|갈등|서운|오해|관계 회복)/.test(text)) return 'relationship-repair';
-  if (/(연애|재회|상대|썸|결혼|이별)/.test(text)) return 'relationship';
-  if (/(이직|취업|커리어|업무|면접|회사|직장)/.test(text)) return 'career';
-  if (/(재정|돈|지출|수입|저축|투자|소비|자산)/.test(text)) return 'finance';
+  const inferred = inferQuestionIntent(context, {
+    includeDaily: false,
+    includeStudy: false,
+    includeHealth: false
+  });
+  if (['relationship-repair', 'relationship', 'career', 'finance'].includes(inferred)) return inferred;
   return 'general';
 }
 
@@ -1682,14 +1703,13 @@ function summarizeYearlyFortune({ items, context = '', level = 'beginner' }) {
 }
 
 function inferYearlyIntent(context = '') {
-  const text = String(context || '').toLowerCase();
-  if (/(취직|취업|이직|입사|지원|면접|커리어|직장|회사|오퍼|협상|이력서|포트폴리오|직무|근무|일하는|출퇴근|통근|강남|용인)/.test(text)) return 'career';
-  if (/(싸웠|싸움|다툼|갈등|서운|오해|화해|관계 회복)/.test(text)) return 'relationship-repair';
-  if (/(친구|동료|사람들이|어떻게 생각|평판|인상|인간관계)/.test(text)) return 'social';
-  if (/(연애|관계|재회|결혼|상대|썸)/.test(text)) return 'relationship';
-  if (/(재정|재물|돈|지출|수입|저축|투자|소비|자산|현금흐름|가계부)/.test(text)) return 'finance';
-  if (/(오늘|운세|하루|금일|오늘의)/.test(text)) return 'daily';
-  return 'general';
+  const inferred = inferQuestionIntent(context, {
+    includeDaily: true,
+    includeStudy: true,
+    includeHealth: true
+  });
+  if (inferred === 'health') return 'daily';
+  return inferred;
 }
 
 function buildNonCareerMonthlyAction({ intent, orientation }) {
@@ -2186,43 +2206,47 @@ function pickTopKeywords(items, count = 3) {
 }
 
 function inferSummaryContextTone(context = '') {
-  const text = String(context || '').toLowerCase();
-  if (['이직', '직장', '회사', '업무', '커리어', '면접', '승진', '근무', '일하는', '출퇴근', '통근', '강남', '용인'].some((k) => text.includes(k))) {
+  const intent = inferQuestionIntent(context, {
+    includeDaily: true,
+    includeStudy: true,
+    includeHealth: true
+  });
+  if (intent === 'career') {
     return {
       mainHint: '이직/업무 이슈는 기대보다 내 체력과 일정이 버티는지부터 확인하는 게 안전합니다.',
       beginnerHint: '지금 당장 붙잡을 일 하나와 내려놓을 일 하나를 먼저 정해 보세요.',
       intermediateHint: '단기 성과와 장기 방향이 충돌하면, 지금 더 급한 쪽부터 순서를 정하세요.'
     };
   }
-  if (['연애', '관계', '재회', '결혼', '갈등', '상대', '감정'].some((k) => text.includes(k))) {
+  if (intent === 'relationship' || intent === 'relationship-repair') {
     return {
       mainHint: '관계 이슈는 상대 마음을 추측하기보다 내 감정과 요청을 분명히 말할 때 흐름이 풀립니다.',
       beginnerHint: '상대에게 전할 한 문장을 먼저 정해두면 대화가 훨씬 덜 흔들립니다.',
       intermediateHint: '원하는 것과 불편한 것을 분리해서 말하면 갈등이 줄어듭니다.'
     };
   }
-  if (['친구', '동료', '평판', '인상', '인간관계', '어떻게 생각'].some((k) => text.includes(k))) {
+  if (intent === 'social') {
     return {
       mainHint: '대인 이슈는 의도 설명보다 반복되는 태도와 반응이 인상을 만듭니다.',
       beginnerHint: '오늘은 말투 하나와 반응 하나만 정돈해도 체감이 달라집니다.',
       intermediateHint: '상황별 대응 문장을 1개씩 고정하면 평판 변동성이 줄어듭니다.'
     };
   }
-  if (['돈', '재정', '재물', '투자', '지출', '저축', '수입', '대출', '자산', '현금흐름', '살까', '구매', '브랜드', '명품', '가방', '패션'].some((k) => text.includes(k))) {
+  if (intent === 'finance') {
     return {
       mainHint: '돈 문제는 수익 기대보다 지출 통제부터 잡을 때 마음이 안정됩니다.',
       beginnerHint: '오늘 줄일 지출 하나만 정해도 흐름이 바로 달라집니다.',
       intermediateHint: '유지 가능한 소비 리듬을 먼저 만들고 확장은 그다음에 보세요.'
     };
   }
-  if (['오늘', '운세', '하루', '금일', '오늘의'].some((k) => text.includes(k))) {
+  if (intent === 'daily' || intent === 'health') {
     return {
       mainHint: '오늘은 크게 벌리기보다 바로 체감되는 선택 하나에 집중해 보세요.',
       beginnerHint: '지금 할 일 하나와 줄일 일 하나만 나눠 정하면 마음이 훨씬 가벼워집니다.',
       intermediateHint: '오전/오후 페이스만 구분해도 오늘 흐름을 안정적으로 가져갈 수 있습니다.'
     };
   }
-  if (['공부', '시험', '학습', '자격증', '과제', '집중'].some((k) => text.includes(k))) {
+  if (intent === 'study') {
     return {
       mainHint: '지금은 완벽한 계획보다 오늘 끝낼 분량 하나를 정하는 편이 훨씬 효과적입니다.',
       beginnerHint: '지금 할 수 있는 가장 작은 단위부터 시작해 보세요.',

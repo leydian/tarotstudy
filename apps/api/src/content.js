@@ -1,4 +1,5 @@
 import { getCardById } from './data/cards.js';
+import { inferQuestionIntent } from './data/question-intents.js';
 
 const TTL_FALLBACK_SOURCE = 'fallback';
 
@@ -1310,79 +1311,71 @@ function joinUniqueParts(parts) {
 }
 
 function inferContextProfile(context = '') {
-  const text = String(context || '').toLowerCase();
-  const profiles = [
-    {
+  const profilesById = {
+    'relationship-repair': {
       id: 'relationship-repair',
-      keywords: ['싸웠', '싸움', '다툼', '갈등', '서운', '오해', '화해', '관계 회복'],
       anchor: '갈등 상황에서는 누가 맞는지보다 감정 과열을 먼저 낮추는 순서가 중요합니다.',
       interpretationHint: '관계 회복 해석은 의도 추측보다 실제 반응과 대화 순서를 기준으로 읽을 때 정확합니다.',
       actionHint: '사실 1개, 감정 1개, 요청 1개를 짧게 분리해 전달해보세요.',
       trackMetric: '카드 키워드와 대화 반응의 일치도'
     },
-    {
+    social: {
       id: 'social',
-      keywords: ['친구', '동료', '사람들이', '어떻게 생각', '평판', '인상', '인간관계'],
       anchor: '상대의 반응을 단정하기보다 반복해서 보이는 인상 단서를 먼저 확인해야 합니다.',
       interpretationHint: '대인 해석은 의도 추측보다 실제 말투/거리감/반응 패턴을 기준으로 읽을 때 정확합니다.',
       actionHint: '주변과의 대화에서 유지할 태도 1개와 줄일 반응 1개를 정해보세요.',
       trackMetric: '포지션 해석과 관찰 단서의 일치도'
     },
-    {
+    career: {
       id: 'career',
-      keywords: ['이직', '직장', '회사', '업무', '승진', '프로젝트', '커리어', '창업', '면접', '근무', '일하는', '출퇴근', '통근', '오피스', '출근'],
       anchor: '현실 제약(시간/성과/역할)을 먼저 고정해야 합니다.',
       interpretationHint: '성과와 리스크를 같은 기준으로 비교해야 의사결정 오류를 줄일 수 있습니다.',
       actionHint: '일정과 책임 범위를 명확히 써서 실행하세요.',
       trackMetric: '카드 신호와 업무 징후의 일치도'
     },
-    {
+    relationship: {
       id: 'relationship',
-      keywords: ['연애', '관계', '재회', '결혼', '갈등', '썸', '감정', '소통', '상대'],
       anchor: '감정 사실과 기대를 분리해 표현 순서를 정해야 합니다.',
       interpretationHint: '상대 반응을 추정하기보다 관찰 가능한 대화 패턴을 기준으로 읽어야 정확합니다.',
       actionHint: '요청 1개와 경계 1개를 분명히 말하는 방식이 좋습니다.',
       trackMetric: '카드 방향성과 관계 흐름의 일치도'
     },
-    {
+    daily: {
       id: 'daily',
-      keywords: ['오늘', '운세', '하루', '금일', '오늘의'],
       anchor: '오늘 가장 소모가 큰 구간 1개와 집중할 행동 1개를 먼저 정해야 합니다.',
       interpretationHint: '넓은 인생 해석보다 오늘 실제 일정에 바로 적용되는 조언을 우선해야 효과가 큽니다.',
       actionHint: '오늘 할 일 1개와 피할 소모 1개를 짝으로 정해 실천하세요.',
       trackMetric: '카드 키워드와 실제 사건 매칭 정확도'
     },
-    {
+    finance: {
       id: 'finance',
-      keywords: ['돈', '재정', '재물', '투자', '지출', '소비', '수입', '저축', '부채', '대출', '자산', '현금흐름'],
       anchor: '현금흐름과 고정비를 먼저 확인해야 판단이 흔들리지 않습니다.',
       interpretationHint: '기대수익보다 손실 가능성과 유동성 리스크를 함께 읽어야 안전합니다.',
       actionHint: '지출 우선순위를 3단계로 나눠 즉시 조정하세요.',
       trackMetric: '카드 해석과 금전 흐름 단서의 일치도'
     },
-    {
+    study: {
       id: 'study',
-      keywords: ['공부', '시험', '학습', '자격증', '준비', '과제', '집중', '습관'],
       anchor: '학습량보다 반복 주기와 복기 품질을 먼저 고정해야 합니다.',
       interpretationHint: '지식 습득과 실전 적용을 분리해 읽으면 실행력이 올라갑니다.',
       actionHint: '25분 학습 1회와 5분 복기 1회를 묶어 수행하세요.',
       trackMetric: '카드 메시지와 학습 리듬 변화의 일치도'
     },
-    {
+    health: {
       id: 'health',
-      keywords: ['건강', '컨디션', '수면', '운동', '다이어트', '피로', '회복'],
       anchor: '강도보다 회복 리듬을 우선 관리해야 반등 폭이 커집니다.',
       interpretationHint: '단기 의욕보다 지속 가능한 루틴 관점으로 해석해야 변동성이 줄어듭니다.',
       actionHint: '수면/활동/식사 중 하나만 먼저 안정화하세요.',
       trackMetric: '카드 해석과 컨디션 신호의 일치도'
     }
-  ];
+  };
 
-  for (const profile of profiles) {
-    if (profile.keywords.some((keyword) => text.includes(keyword))) {
-      return profile;
-    }
-  }
+  const inferred = inferQuestionIntent(context, {
+    includeDaily: true,
+    includeStudy: true,
+    includeHealth: true
+  });
+  if (profilesById[inferred]) return profilesById[inferred];
 
   return {
     id: 'general',
@@ -2474,13 +2467,12 @@ function buildYearlyMonthInterpretation({ card, position, orientation, context =
 }
 
 function inferYearlyIntent(context = '') {
-  const text = String(context || '').toLowerCase();
-  if (/(취직|취업|이직|입사|지원|면접|커리어|직장|회사|근무|일하는|출퇴근|통근|강남|용인)/.test(text)) return 'career';
-  if (/(싸웠|싸움|다툼|갈등|서운|오해|화해|관계 회복)/.test(text)) return 'relationship-repair';
-  if (/(친구|동료|사람들이|어떻게 생각|평판|인상|인간관계)/.test(text)) return 'social';
-  if (/(연애|관계|재회|결혼|상대|썸)/.test(text)) return 'relationship';
-  if (/(재정|재물|돈|지출|수입|저축|투자|소비|자산|현금흐름|가계부)/.test(text)) return 'finance';
-  return 'general';
+  const inferred = inferQuestionIntent(context, {
+    includeDaily: false,
+    includeStudy: false,
+    includeHealth: false
+  });
+  return inferred === 'general' ? 'general' : inferred;
 }
 
 function buildYearlyMonthInsight({ month, card, orientation, yearlyIntent }) {
@@ -3373,11 +3365,12 @@ function isOutcomePosition(positionName = '') {
 }
 
 function inferCelticQuestionIntent(context = '') {
-  const text = String(context || '').toLowerCase();
-  if (/(화해|친구|싸웠|싸움|다툼|갈등|서운|오해|관계 회복)/.test(text)) return 'relationship-repair';
-  if (/(연애|재회|상대|썸|결혼|이별)/.test(text)) return 'relationship';
-  if (/(이직|취업|커리어|업무|면접|회사|직장)/.test(text)) return 'career';
-  if (/(재정|돈|지출|수입|저축|투자|소비|자산)/.test(text)) return 'finance';
+  const inferred = inferQuestionIntent(context, {
+    includeDaily: false,
+    includeStudy: false,
+    includeHealth: false
+  });
+  if (['relationship-repair', 'relationship', 'career', 'finance'].includes(inferred)) return inferred;
   return 'general';
 }
 
