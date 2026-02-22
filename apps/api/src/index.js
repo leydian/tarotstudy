@@ -825,6 +825,21 @@ function quarterRoleByIndex(index) {
   return roles[index] ?? '운영';
 }
 
+const MONTH_ROLE_GUIDE = {
+  '1월': '출발 전에 기준과 방향을 세우는 자리',
+  '2월': '초기 적응 리듬을 맞추는 자리',
+  '3월': '초기 실행의 반응을 확인하는 자리',
+  '4월': '실행 범위를 조절해 확장 여부를 판단하는 자리',
+  '5월': '변수와 마찰을 조정하는 자리',
+  '6월': '상반기 성과와 보완점을 정리하는 자리',
+  '7월': '하반기 시작 전에 리듬을 재정비하는 자리',
+  '8월': '중반 추진력을 회복해 실행을 늘리는 자리',
+  '9월': '성과와 피로를 함께 조율하는 자리',
+  '10월': '리스크를 점검해 마무리 계획을 세우는 자리',
+  '11월': '수확 구간의 완성도를 높이는 자리',
+  '12월': '연말 정리와 다음 해 전환을 준비하는 자리'
+};
+
 function buildQuarterFocus({ index, role, intent, mode, isJobTimingQuestion }) {
   const roleObject = withKoreanParticle(role, '을', '를');
   if (role === '연말 정리') {
@@ -938,26 +953,36 @@ function buildQuarterAction({ index, role, intent, mode, isJobTimingQuestion }) 
 
 function buildYearlyMonthlyNarratives({ monthly, intent, isJobTimingQuestion }) {
   const lines = [];
-  let prevMode = '';
-  let streak = 0;
+  let prevSignature = '';
 
   for (const item of monthly) {
     const keyword = item.keywords?.[0] ?? '흐름';
-    let mode = selectMonthlyMode({ intent, orientation: item.orientation, isJobTimingQuestion });
-    if (mode === prevMode) {
-      streak += 1;
-    } else {
-      streak = 1;
-    }
-    if (streak >= 3) {
-      mode = mode === 'advance' ? 'balanced' : 'advance';
-      streak = 1;
-    }
+    const monthLabel = `${item.month}월`;
+    const monthRole = MONTH_ROLE_GUIDE[monthLabel] ?? '해당 달 역할';
+    const mode = selectMonthlyMode({ intent, orientation: item.orientation, isJobTimingQuestion });
+    const toneLine = buildMonthlyToneLine({
+      intent,
+      mode,
+      keyword,
+      cardName: item.cardName,
+      month: item.month,
+      monthRole
+    });
+    const actionLine = buildMonthlyActionLine({
+      intent,
+      mode,
+      month: item.month,
+      cardName: item.cardName,
+      monthRole
+    });
 
-    const toneLine = buildMonthlyToneLine({ intent, mode, keyword });
-    const actionLine = buildMonthlyActionLine({ intent, mode, month: item.month });
-    lines.push(`${item.month}월(${item.cardName})은 ${toneLine} ${actionLine}`);
-    prevMode = mode;
+    const signature = `${mode}:${item.cardName}:${toneLine.slice(0, 18)}:${actionLine.slice(0, 18)}`;
+    const adjustedAction = signature === prevSignature
+      ? buildMonthlyFallbackAction({ intent, mode, month: item.month, cardName: item.cardName })
+      : actionLine;
+
+    lines.push(`${item.month}월(${item.cardName})은 ${toneLine} ${adjustedAction}`);
+    prevSignature = signature;
   }
 
   return lines;
@@ -988,85 +1013,171 @@ function hashText(text = '') {
   return score;
 }
 
-function buildMonthlyToneLine({ intent, mode, keyword }) {
-  if (intent === 'career') {
-    if (mode === 'advance') {
-      return `카드의 ${keyword} 신호가 살아 있어서 외부 접점을 넓히기에 비교적 편안한 결입니다.`;
-    }
-    if (mode === 'balanced') {
-      return `카드가 말하는 ${keyword} 흐름이 크지는 않아서, 준비와 실행의 비중을 반반으로 두는 편이 좋겠습니다.`;
-    }
-    return `카드의 ${keyword} 흐름이 조정 구간에 있어 결과를 서두르기보다 준비 밀도를 올리는 쪽이 맞겠습니다.`;
-  }
-  if (intent === 'relationship') {
-    if (mode === 'open') return `카드의 ${keyword} 기운이 열려 있어 대화를 먼저 꺼내기 좋은 분위기입니다.`;
-    return `카드의 ${keyword} 기운이 예민할 수 있어 감정 속도를 낮추는 편이 관계에 도움이 됩니다.`;
-  }
-  if (intent === 'finance') {
-    if (mode === 'stabilize') return `카드의 ${keyword} 흐름이 안정 쪽에 있어 계획형 운영이 잘 맞는 달입니다.`;
-    return `카드의 ${keyword} 흐름이 흔들릴 수 있어 지출 통제와 점검을 먼저 두는 편이 좋겠습니다.`;
-  }
-  return mode === 'advance'
-    ? `카드의 ${keyword} 흐름이 비교적 열려 있어 계획한 일을 진행하기 좋은 달입니다.`
-    : `카드의 ${keyword} 흐름이 고르지 않아 속도를 조금 늦추는 편이 좋겠습니다.`;
-}
+function buildMonthlyToneLine({ intent, mode, keyword, cardName, month, monthRole }) {
+  const role = normalizeYearlyMonthRole(monthRole);
+  const baseSeed = hashText(`${intent}:${mode}:${month}:${cardName}:${keyword}`);
 
-function buildMonthlyActionLine({ intent, mode, month }) {
   if (intent === 'career') {
     if (mode === 'advance') {
       return pickByNumber([
-        '지원서 제출 수를 조금 늘리고 면접 일정을 부드럽게 확장해보세요.',
-        '관심 공고 탐색을 넓히고, 연락 가능한 채널을 한두 개 더 열어두시면 좋겠습니다.',
-        '작은 지원부터 꾸준히 넣으면서 면접 감각을 유지하는 방식이 잘 맞겠습니다.'
-      ], month);
+        `${cardName}의 ${keyword} 신호가 살아 있어 ${role}에서 외부 접점을 넓히기 좋은 결입니다.`,
+        `${cardName} 기준으로 보면 ${keyword} 흐름이 열려 있어 ${role}의 실행 탄력이 붙기 쉽습니다.`,
+        `${cardName} 카드가 ${keyword} 축을 밀어주고 있어 ${role} 구간에서 행동 반경을 조금 넓혀도 무리가 적습니다.`
+      ], baseSeed);
     }
     if (mode === 'balanced') {
       return pickByNumber([
-        '지원과 보완을 1:1로 두고, 제출 전 점검 체크리스트를 짧게 돌려보세요.',
-        '지원은 유지하되 포트폴리오 문장 다듬기를 함께 가져가시면 안정적입니다.',
-        '바깥 움직임은 작게 유지하면서 면접 답변 완성도를 같이 올려보세요.'
-      ], month);
+        `${cardName}의 ${keyword} 흐름이 중간값이라 ${role}에서는 준비와 실행의 비중을 균형 있게 두는 편이 좋겠습니다.`,
+        `${cardName} 신호가 강하게 치우치지 않아 ${role}에서는 확장과 점검을 함께 가져가는 구성이 맞습니다.`,
+        `${cardName} 흐름상 ${role}에서 속도를 크게 올리기보다 품질 점검을 병행하는 방식이 안정적입니다.`
+      ], baseSeed);
     }
     return pickByNumber([
-      '이력서 핵심 문장과 포트폴리오 흐름을 먼저 정리해두시면 다음 달이 훨씬 수월합니다.',
-      '지원 수를 늘리기보다 면접 답변과 경력 서사를 보완하는 데 시간을 쓰는 편이 좋겠습니다.',
-      '직무 정합성 점검과 서류 완성도 보강을 우선해두시면 부담이 줄어듭니다.'
-    ], month);
+      `${cardName}의 ${keyword} 흐름이 조정 구간이라 ${role}에서는 결과를 서두르기보다 준비 밀도를 높이는 편이 맞겠습니다.`,
+      `${cardName} 신호는 ${role}에서 병목 점검이 우선임을 보여주며, 실행 폭을 잠시 줄이는 편이 안전합니다.`,
+      `${cardName} 카드가 ${keyword} 변동성을 시사하므로 ${role}에서는 보완 중심 운영이 더 유리합니다.`
+    ], baseSeed);
   }
 
   if (intent === 'relationship') {
     if (mode === 'open') {
       return pickByNumber([
-        '짧고 솔직한 대화를 먼저 열어보시면 관계 흐름이 자연스럽게 이어질 수 있습니다.',
-        '요청과 감정을 간단히 나눠 말해보는 시도가 도움이 되겠습니다.',
-        '상대 반응을 확인하는 가벼운 대화 제안을 해보기에 좋습니다.'
-      ], month);
+        `${cardName}의 ${keyword} 결이 열려 있어 ${role}에서 대화 접점을 늘리기 좋은 분위기입니다.`,
+        `${cardName} 흐름에서는 ${keyword} 신호가 비교적 부드러워 ${role} 구간의 관계 회복 시도가 유리합니다.`,
+        `${cardName} 카드 기준으로 ${role}에서는 감정 교류를 먼저 열어도 무리가 적겠습니다.`
+      ], baseSeed);
     }
     return pickByNumber([
-      '결론을 급히 내리기보다 오해를 줄이는 확인 대화를 먼저 가져가시면 좋겠습니다.',
-      '감정 표현 강도를 한 단계 낮추고 경계와 요청을 분리해서 전해보세요.',
-      '거리 조절과 대화 템포 조정을 우선하면 관계 피로가 줄어듭니다.'
-    ], month);
+      `${cardName}의 ${keyword} 결이 예민해 ${role}에서는 감정 속도를 낮추는 편이 관계에 도움이 됩니다.`,
+      `${cardName} 흐름상 ${role} 구간에서 해석 충돌이 생기기 쉬워 확인 대화를 먼저 두는 편이 좋겠습니다.`,
+      `${cardName} 카드가 ${keyword} 변동을 시사하므로 ${role}에서는 단정 대신 반응 확인이 우선입니다.`
+    ], baseSeed);
   }
 
   if (intent === 'finance') {
     if (mode === 'stabilize') {
       return pickByNumber([
-        '예산 범위 안에서 계획한 지출을 유지하면 안정적인 결과를 만들기 좋습니다.',
-        '고정비와 변동비를 나눠 관리해보면 체감 통제력이 올라갑니다.',
-        '작은 절약 습관을 유지하면서 필요한 지출만 선별해보세요.'
-      ], month);
+        `${cardName}의 ${keyword} 흐름이 안정 쪽이라 ${role}에서 계획형 운영이 잘 맞는 달입니다.`,
+        `${cardName} 신호를 보면 ${role}에서는 수입·지출 기준을 유지할수록 체감 안정성이 올라갑니다.`,
+        `${cardName} 카드가 ${keyword} 축을 받쳐줘 ${role} 구간에서 예산 운영을 확장해도 무리가 적습니다.`
+      ], baseSeed);
     }
     return pickByNumber([
-      '새로운 지출 확장보다 지출 항목 점검을 먼저 두는 편이 좋겠습니다.',
-      '손실 가능성이 있는 선택은 한 템포 늦추고, 현금흐름부터 확인해보세요.',
-      '고정비 정리와 소비 우선순위 재배치를 먼저 하시면 안정적입니다.'
-    ], month);
+      `${cardName}의 ${keyword} 흐름이 흔들릴 수 있어 ${role}에서는 지출 통제와 점검을 먼저 두는 편이 좋겠습니다.`,
+      `${cardName} 신호는 ${role} 구간에서 손실 방어를 우선하라는 메시지에 가깝습니다.`,
+      `${cardName} 카드상 ${keyword} 변동성이 있어 ${role}에서는 보수적 운영이 더 안전합니다.`
+    ], baseSeed);
+  }
+
+  if (mode === 'advance') {
+    return pickByNumber([
+      `${cardName}의 ${keyword} 흐름이 열려 있어 ${role}에서 계획한 일을 진행하기 좋은 달입니다.`,
+      `${cardName} 기준으로 ${keyword} 신호가 살아 있어 ${role} 구간의 실행을 이어가기 수월합니다.`,
+      `${cardName} 카드가 ${role} 단계의 추진력을 받쳐줘 작은 확장을 시도해보기 좋겠습니다.`
+    ], baseSeed);
+  }
+
+  return pickByNumber([
+    `${cardName}의 ${keyword} 흐름이 고르지 않아 ${role}에서는 속도를 조금 늦추는 편이 좋겠습니다.`,
+    `${cardName} 신호는 ${role} 구간에서 정비가 우선이라는 의미에 가깝습니다.`,
+    `${cardName} 카드 기준으로 ${keyword} 변동이 있어 ${role}에서는 실행 폭을 줄여 운영하는 편이 안정적입니다.`
+  ], baseSeed);
+}
+
+function buildMonthlyActionLine({ intent, mode, month, cardName, monthRole }) {
+  const role = normalizeYearlyMonthRole(monthRole);
+  const seed = hashText(`${intent}:${mode}:${month}:${cardName}`);
+
+  if (intent === 'career') {
+    if (mode === 'advance') {
+      return pickByNumber([
+        `${role}에서는 지원서 제출 수를 조금 늘리고 면접 일정을 부드럽게 확장해보세요.`,
+        `${role} 기준으로 관심 공고 탐색을 넓히고 연락 채널을 한두 개 더 열어두시면 좋겠습니다.`,
+        `${role} 구간에서는 작은 지원을 꾸준히 넣으면서 면접 감각을 유지하는 방식이 잘 맞겠습니다.`
+      ], seed);
+    }
+    if (mode === 'balanced') {
+      return pickByNumber([
+        `${role}에서는 지원과 보완을 1:1로 두고 제출 전 점검 체크리스트를 짧게 돌려보세요.`,
+        `${role} 구간에서는 지원은 유지하되 포트폴리오 문장 다듬기를 함께 가져가시면 안정적입니다.`,
+        `${role}에서는 바깥 움직임을 작게 유지하면서 면접 답변 완성도를 같이 올려보세요.`
+      ], seed);
+    }
+    return pickByNumber([
+      `${role}에서는 이력서 핵심 문장과 포트폴리오 흐름을 먼저 정리해두시면 다음 달이 수월합니다.`,
+      `${role} 구간에서는 지원 수 확대보다 면접 답변과 경력 서사 보완에 시간을 쓰는 편이 좋겠습니다.`,
+      `${role}에서는 직무 정합성 점검과 서류 완성도 보강을 우선해두시면 부담이 줄어듭니다.`
+    ], seed);
+  }
+
+  if (intent === 'relationship') {
+    if (mode === 'open') {
+      return pickByNumber([
+        `${role}에서는 짧고 솔직한 대화를 먼저 열어보시면 관계 흐름이 자연스럽게 이어질 수 있습니다.`,
+        `${role} 구간에서는 요청과 감정을 간단히 나눠 말해보는 시도가 도움이 되겠습니다.`,
+        `${role}에서는 상대 반응을 확인하는 가벼운 대화 제안을 해보기에 좋습니다.`
+      ], seed);
+    }
+    return pickByNumber([
+      `${role}에서는 결론을 급히 내리기보다 오해를 줄이는 확인 대화를 먼저 가져가시면 좋겠습니다.`,
+      `${role} 구간에서는 감정 표현 강도를 한 단계 낮추고 경계와 요청을 분리해서 전해보세요.`,
+      `${role}에서는 거리 조절과 대화 템포 조정을 우선하면 관계 피로가 줄어듭니다.`
+    ], seed);
+  }
+
+  if (intent === 'finance') {
+    if (mode === 'stabilize') {
+      return pickByNumber([
+        `${role}에서는 예산 범위 안에서 계획한 지출을 유지하면 안정적인 결과를 만들기 좋습니다.`,
+        `${role} 구간에서는 고정비와 변동비를 나눠 관리해보면 체감 통제력이 올라갑니다.`,
+        `${role}에서는 작은 절약 습관을 유지하면서 필요한 지출만 선별해보세요.`
+      ], seed);
+    }
+    return pickByNumber([
+      `${role}에서는 새로운 지출 확장보다 지출 항목 점검을 먼저 두는 편이 좋겠습니다.`,
+      `${role} 구간에서는 손실 가능성이 있는 선택을 한 템포 늦추고 현금흐름부터 확인해보세요.`,
+      `${role}에서는 고정비 정리와 소비 우선순위 재배치를 먼저 하시면 안정적입니다.`
+    ], seed);
   }
 
   return mode === 'advance'
-    ? '지금은 계획한 일을 한두 가지라도 꾸준히 진행해보시면 좋겠습니다.'
-    : '지금은 속도를 늦추고 정비를 먼저 해두시면 다음 흐름이 훨씬 편안합니다.';
+    ? `${role}에서는 계획한 일을 한두 가지라도 꾸준히 진행해보시면 좋겠습니다.`
+    : `${role}에서는 속도를 늦추고 정비를 먼저 해두시면 다음 흐름이 훨씬 편안합니다.`;
+}
+
+function buildMonthlyFallbackAction({ intent, mode, month, cardName }) {
+  const seed = hashText(`fallback:${intent}:${mode}:${month}:${cardName}`);
+  if (intent === 'relationship') {
+    return pickByNumber([
+      '이번 달은 해석보다 반응 확인을 우선해 대화 온도를 안정시키는 데 집중해보세요.',
+      '한 번에 많이 풀기보다 짧은 대화를 나눠 관계 리듬을 천천히 회복해보세요.'
+    ], seed);
+  }
+  if (intent === 'finance') {
+    return pickByNumber([
+      '이번 달은 지출 로그를 짧게 기록해 새는 비용을 먼저 잡아보세요.',
+      '확장 판단은 잠시 보류하고 고정비 구조를 먼저 정리해두는 편이 좋겠습니다.'
+    ], seed);
+  }
+  if (intent === 'career') {
+    return pickByNumber([
+      '이번 달은 외부 실행 1개와 보완 1개를 짝으로 고정해 리듬을 유지해보세요.',
+      '우선순위 1개를 명확히 정하고, 나머지는 다음 달로 넘기는 방식이 안정적입니다.'
+    ], seed);
+  }
+  return pickByNumber([
+    '이번 달은 실행 항목을 하나로 좁혀 결과를 확인하는 방식이 무리가 적습니다.',
+    '이번 달은 과속보다 유지 가능한 리듬을 만드는 데 집중해보세요.'
+  ], seed);
+}
+
+function normalizeYearlyMonthRole(monthRole = '') {
+  const text = String(monthRole || '').trim();
+  if (!text) return '해당 달 운영';
+  if (text.endsWith('하는 자리')) return text.replace(/하는 자리$/, '하는 단계');
+  if (text.endsWith('는 자리')) return text.replace(/는 자리$/, '는 구간');
+  if (text.endsWith('자리')) return text.replace(/자리$/, '구간');
+  return text;
 }
 
 function withKoreanParticle(word = '', consonantParticle = '이', vowelParticle = '가') {

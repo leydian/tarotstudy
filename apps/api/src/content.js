@@ -1762,14 +1762,11 @@ function isYearlyMonthPosition(positionName = '') {
 function buildYearlyMonthCoreMessage({ card, position, orientation, context = '', seed = '' }) {
   const month = position.name;
   const direction = orientation === 'upright' ? '정방향' : '역방향';
-  const keyword = card.keywords?.[0] ?? '흐름';
   const yearlyIntent = inferYearlyIntent(context);
   const jobTimingQuestion = yearlyIntent === 'career';
-  const intro = jobTimingQuestion
-    ? `${normalizeClientQuestion(context)}를 고민하고 계셔서 ${month} 흐름부터 차분히 살펴보겠습니다.`
-    : buildClientEmpathyLine({ context, seed });
+  const intro = buildYearlyMonthIntro({ month, yearlyIntent, seed });
   const cardLine = `${month} 카드로는 '${card.nameKo} ${direction}'이 나왔습니다.`;
-  const insight = buildYearlyMonthInsight({ month, orientation, keyword, yearlyIntent });
+  const insight = buildYearlyMonthInsight({ month, card, orientation, yearlyIntent });
   const timingLine = jobTimingQuestion
     ? (orientation === 'upright'
         ? `취직 시기를 묻는 질문이라면 ${month}은 비교적 편안하게 움직여볼 수 있는 달에 가깝습니다.`
@@ -1783,21 +1780,21 @@ function buildYearlyMonthInterpretation({ card, position, orientation, context =
   const yearlyIntent = inferYearlyIntent(context);
   const jobTimingQuestion = yearlyIntent === 'career';
   const monthRole = MONTH_ROLE_GUIDE[month] ?? '연간 흐름 안에서 해당 달의 체감 강약을 보여주는 포지션';
-  const keywordA = card.keywords?.[0] ?? '흐름';
-  const keywordB = card.keywords?.[1] ?? keywordA;
-  const keywordBWithParticle = withKoreanParticle(keywordB, '으로', '로');
   const orientationLine = buildYearlyMonthOrientationLine({
     month,
-    cardName: card.nameKo,
+    card,
     orientation,
     yearlyIntent
   });
-  const timingLine = jobTimingQuestion
-    ? (orientation === 'upright'
-        ? `취직 시기 관점에서는 ${month}을 지원이나 면접을 조금 더 늘려보는 달로 활용하시고, 부족한 부분은 직전 달에 미리 보완해 두시면 좋겠습니다.`
-        : `취직 시기 관점에서는 ${month}을 결과를 서두르는 달로 보기보다 이력서, 포트폴리오, 면접 답변을 차분히 다듬는 준비 달로 두시는 편이 좋겠습니다.`)
-    : `이 달은 ${keywordA}에서 ${keywordBWithParticle} 넘어가는 연결 구간이므로, 한 번에 크게 벌리기보다 우선순위를 좁혀 실행하시면 흔들림이 줄어듭니다.`;
-  const close = `요약하면 ${month}은 ${monthRole}로 보이고, 지금은 ${orientation === 'upright' ? '작게 시작해 흐름을 살리는 방식' : '정비를 먼저 하고 천천히 전진하는 방식'}이 가장 무리가 적은 선택입니다.`;
+  const timingLine = buildYearlyMonthTimingLine({
+    month,
+    monthRole,
+    card,
+    yearlyIntent,
+    orientation,
+    jobTimingQuestion
+  });
+  const close = buildYearlyMonthClose({ month, monthRole, orientation, yearlyIntent });
   return polishTarotInterpretation([orientationLine, timingLine, close].join(' '));
 }
 
@@ -1809,43 +1806,183 @@ function inferYearlyIntent(context = '') {
   return 'general';
 }
 
-function buildYearlyMonthInsight({ month, orientation, keyword, yearlyIntent }) {
-  const map = {
+function buildYearlyMonthInsight({ month, card, orientation, yearlyIntent }) {
+  const keyword = card.keywords?.[0] ?? '흐름';
+  const monthRole = MONTH_ROLE_GUIDE[month] ?? '해당 달 역할';
+  const roleShort = normalizeYearlyMonthRole(monthRole);
+  const roleObject = withKoreanParticle(roleShort, '을', '를');
+  const cardAxis = describeCardAxis(card, yearlyIntent);
+  const orientationLine = orientation === 'upright'
+    ? `${month}은 ${keyword} 흐름이 비교적 열려 ${roleObject} 진행하기 좋은 달입니다.`
+    : `${month}은 ${keyword} 흐름이 조정 구간이라 ${roleShort}에서는 속도보다 정비가 먼저입니다.`;
+
+  const intentHint = {
     career: orientation === 'upright'
-      ? `${month}은 ${keyword} 흐름이 비교적 열리는 달이라, 준비된 건은 실제 지원이나 면접 단계로 옮겨보셔도 좋겠습니다.`
-      : `${month}은 ${keyword} 흐름이 잠시 걸릴 수 있는 달이라, 서두르기보다 준비도를 높여두는 쪽이 결과적으로 더 좋겠습니다.`,
+      ? `${cardAxis} 관점에서 보면 준비된 건을 외부 검증(지원/면접)으로 옮기기 좋습니다.`
+      : `${cardAxis} 관점에서 보면 실행 폭을 줄이고 서류·답변 완성도를 먼저 끌어올리는 편이 안정적입니다.`,
     relationship: orientation === 'upright'
-      ? `${month}은 ${keyword} 흐름이 비교적 열리는 달이라, 마음을 전하는 대화가 생각보다 부드럽게 풀릴 가능성이 큽니다.`
-      : `${month}은 ${keyword} 흐름이 주춤할 수 있어, 감정 표현의 속도를 조금 낮추고 오해를 줄이는 대화가 더 중요하겠습니다.`,
+      ? `${cardAxis} 관점에서는 대화의 문을 여는 시도가 관계 회복에 실제 도움이 될 가능성이 큽니다.`
+      : `${cardAxis} 관점에서는 감정 해석을 늦추고 확인 대화를 먼저 두는 편이 오해를 줄입니다.`,
     finance: orientation === 'upright'
-      ? `${month}은 ${keyword} 흐름이 비교적 열리는 달이라, 계획한 지출과 수입 관리를 차분히 실행하기 좋은 시기입니다.`
-      : `${month}은 ${keyword} 흐름이 흔들릴 수 있어, 지출 통제와 우선순위 재정비를 먼저 하시는 편이 좋겠습니다.`,
+      ? `${cardAxis} 관점에서는 수입·지출을 같은 표로 관리할수록 체감 안정성이 올라갑니다.`
+      : `${cardAxis} 관점에서는 신규 지출 확대보다 손실 방어와 우선순위 재배치가 먼저입니다.`,
     general: orientation === 'upright'
-      ? `${month}은 ${keyword} 흐름이 비교적 열리는 달이라, 계획해둔 일을 조금 더 진행해보셔도 괜찮습니다.`
-      : `${month}은 ${keyword} 흐름이 잠시 걸리는 달이라, 속도를 낮추고 정비 후 움직이시는 편이 안정적입니다.`
+      ? `${cardAxis} 관점에서 실행 반경을 조금 넓혀도 무리가 적겠습니다.`
+      : `${cardAxis} 관점에서 계획을 줄이고 핵심 기준만 남기는 편이 더 안전합니다.`
   };
-  return map[yearlyIntent] ?? map.general;
+  return `${orientationLine} ${intentHint[yearlyIntent] ?? intentHint.general}`;
 }
 
-function buildYearlyMonthOrientationLine({ month, cardName, orientation, yearlyIntent }) {
+function buildYearlyMonthOrientationLine({ month, card, orientation, yearlyIntent }) {
+  const cardName = card.nameKo;
+  const cardAxis = describeCardAxis(card, yearlyIntent);
   if (yearlyIntent === 'career') {
     return orientation === 'upright'
-      ? `${month}의 ${cardName} 정방향은 흐름이 비교적 열리는 구간이라는 뜻이라, 준비된 일은 실제 행동으로 옮겼을 때 반응이 따라올 가능성이 큽니다.`
-      : `${month}의 ${cardName} 역방향은 진행 중인 선택의 마찰을 점검하라는 신호라, 먼저 정리하고 보완해둘수록 다음 달 전개가 더 편안해집니다.`;
+      ? `${month}의 ${cardName} 정방향은 ${cardAxis} 강점을 실행으로 옮길 여지가 크다는 신호입니다.`
+      : `${month}의 ${cardName} 역방향은 ${cardAxis} 구간의 마찰을 먼저 줄여야 다음 달 전개가 편해진다는 신호입니다.`;
   }
   if (yearlyIntent === 'relationship') {
     return orientation === 'upright'
-      ? `${month}의 ${cardName} 정방향은 관계 흐름이 열리는 신호라, 솔직한 대화가 관계를 앞으로 밀어줄 가능성이 큽니다.`
-      : `${month}의 ${cardName} 역방향은 감정 해석이 엇갈리기 쉬운 구간이라, 단정하기보다 확인 대화를 먼저 거치는 편이 좋습니다.`;
+      ? `${month}의 ${cardName} 정방향은 ${cardAxis}을 살린 대화가 관계 흐름을 앞으로 밀 수 있다는 신호입니다.`
+      : `${month}의 ${cardName} 역방향은 ${cardAxis} 해석이 엇갈릴 수 있어 확인 대화를 먼저 두라는 신호입니다.`;
   }
   if (yearlyIntent === 'finance') {
     return orientation === 'upright'
-      ? `${month}의 ${cardName} 정방향은 재정 운영이 비교적 안정되는 구간이라, 계획 기반 실행이 효과를 내기 좋습니다.`
-      : `${month}의 ${cardName} 역방향은 지출/판단 흔들림을 경고하는 신호라, 확장보다 손실 방어를 먼저 두는 편이 좋겠습니다.`;
+      ? `${month}의 ${cardName} 정방향은 ${cardAxis}을 기반으로 재정 운영을 구조화하기 좋은 구간입니다.`
+      : `${month}의 ${cardName} 역방향은 ${cardAxis}에서 새는 비용을 점검하라는 경고 신호입니다.`;
   }
   return orientation === 'upright'
-    ? `${month}의 ${cardName} 정방향은 흐름이 상대적으로 열리는 구간이라, 실행 반경을 조금 넓혀도 괜찮습니다.`
-    : `${month}의 ${cardName} 역방향은 속도 조절과 정비가 먼저라는 신호라, 마찰 요인을 줄이고 움직이는 편이 좋습니다.`;
+    ? `${month}의 ${cardName} 정방향은 ${cardAxis}을 실제 행동으로 연결하기 좋은 구간입니다.`
+    : `${month}의 ${cardName} 역방향은 ${cardAxis} 구간에서 속도 조절과 정비가 먼저라는 신호입니다.`;
+}
+
+function buildYearlyMonthIntro({ month, yearlyIntent, seed = '' }) {
+  const byIntent = {
+    career: [
+      `${month} 흐름을 먼저 보면, 실행과 보완의 비중을 정하기가 훨씬 쉬워집니다.`,
+      `${month}은 커리어 리듬의 강약을 조정하는 구간이라, 핵심 신호부터 짚어보겠습니다.`
+    ],
+    relationship: [
+      `${month} 관계 흐름은 대화 속도와 표현 강도를 맞추는 데 핵심이 됩니다.`,
+      `${month}은 관계 리듬의 변화를 확인하는 달이라, 카드 신호를 먼저 보겠습니다.`
+    ],
+    finance: [
+      `${month} 재정 흐름은 지출 통제와 확장 판단의 기준이 되는 달입니다.`,
+      `${month}은 돈의 흐름을 정비할지 확장할지 가르는 구간이라, 핵심 신호를 먼저 보겠습니다.`
+    ],
+    general: [
+      `${month} 흐름을 먼저 점검하면 연간 리듬에서 무리 없는 선택이 쉬워집니다.`,
+      `${month}은 연간 전개의 강약을 조정하는 구간이라, 핵심 신호부터 확인해보겠습니다.`
+    ]
+  };
+  const lines = byIntent[yearlyIntent] ?? byIntent.general;
+  return pickVariant(`${seed}:yearly-month-intro:${month}:${yearlyIntent}`, lines);
+}
+
+function buildYearlyMonthTimingLine({ month, monthRole, card, yearlyIntent, orientation, jobTimingQuestion }) {
+  if (jobTimingQuestion) {
+    return orientation === 'upright'
+      ? `취직 시기 관점에서는 ${month}을 외부 접점을 늘리는 달로 활용하고, ${monthRole.replace(/ 자리$/, '')} 기준으로 우선순위를 좁혀 실행해보세요.`
+      : `취직 시기 관점에서는 ${month}을 결과를 서두르기보다 서류·포트폴리오·면접 문장을 정비하는 달로 두는 편이 좋겠습니다.`;
+  }
+  const cardAxis = describeCardAxis(card, yearlyIntent);
+  const roleShort = normalizeYearlyMonthRole(monthRole);
+  const roleWithAnd = withKoreanParticle(roleShort, '과', '와');
+  const intentAction = {
+    relationship: orientation === 'upright'
+      ? '요청 1개와 감정 1개를 분리해 짧게 전달하면 반응을 읽기 쉽습니다.'
+      : '단정 문장은 줄이고 확인 질문 1개만 남기면 관계 피로를 줄일 수 있습니다.',
+    finance: orientation === 'upright'
+      ? '고정비/변동비를 분리해 관리하면 흐름을 안정적으로 유지할 수 있습니다.'
+      : '고정 지출부터 줄이고 신규 지출은 한 템포 늦추는 편이 손실을 줄입니다.',
+    career: orientation === 'upright'
+      ? '작은 지원·제안이라도 꾸준히 내보내면 다음 달 반응이 붙기 쉽습니다.'
+      : '실행 수를 줄이고 자료 완성도와 답변 구조를 먼저 보완하는 편이 좋습니다.',
+    general: orientation === 'upright'
+      ? '한 번에 크게 벌리기보다 한 가지 실행 기준을 고정하면 흔들림이 줄어듭니다.'
+      : '속도를 낮추고 병목 요인 하나를 먼저 줄이면 다음 달이 편해집니다.'
+  };
+  return `이 달은 ${roleWithAnd} ${cardAxis}이 만나는 구간입니다. ${intentAction[yearlyIntent] ?? intentAction.general}`;
+}
+
+function buildYearlyMonthClose({ month, monthRole, orientation, yearlyIntent }) {
+  const roleShort = normalizeYearlyMonthRole(monthRole);
+  const roleObject = withKoreanParticle(roleShort, '을', '를');
+  const mode = orientation === 'upright' ? '확장 가능 구간' : '정비 우선 구간';
+  const action = {
+    relationship: orientation === 'upright'
+      ? '대화는 짧고 명확하게, 해석은 천천히 가져가세요.'
+      : '감정 강도를 낮추고 확인 대화를 먼저 두는 편이 무리가 적습니다.',
+    finance: orientation === 'upright'
+      ? '계획형 지출을 유지하며 소액 실험만 추가하는 방식이 안전합니다.'
+      : '손실 방어와 우선순위 재배치를 먼저 마치고 확장을 검토하세요.',
+    career: orientation === 'upright'
+      ? '작은 지원/접점을 유지하며 실행 리듬을 끊지 않는 편이 좋습니다.'
+      : '준비 밀도를 높여 다음 달 실행 효율을 올리는 편이 좋겠습니다.',
+    general: orientation === 'upright'
+      ? '작은 실행을 이어가며 흐름을 살리는 방식이 무리가 적습니다.'
+      : '정비를 먼저 하고 천천히 전진하는 방식이 무리가 적습니다.'
+  };
+  return `요약하면 ${month}은 ${roleObject} 점검하는 ${mode}입니다. ${action[yearlyIntent] ?? action.general}`;
+}
+
+function describeCardAxis(card, yearlyIntent = 'general') {
+  if (!card) return '핵심 축';
+  if (card.arcana === 'major') {
+    const majorMap = {
+      '바보': '탐색·시도 축',
+      '마법사': '주도권·실행 축',
+      '여사제': '관찰·보류 축',
+      '여황제': '회복·증가 축',
+      '황제': '규칙·통제 축',
+      '교황': '기준·원칙 축',
+      '연인': '선택·정렬 축',
+      '전차': '추진·집중 축',
+      '정의': '균형·판단 축',
+      '악마': '의존·소모 관리 축',
+      '심판': '평가·전환 축'
+    };
+    return majorMap[card.nameKo] ?? `${card.nameKo} 카드의 핵심 축`;
+  }
+  const suitMapByIntent = {
+    relationship: {
+      Cups: '감정 교류 축',
+      Swords: '대화 조율 축',
+      Wands: '관계 추진 축',
+      Pentacles: '신뢰 회복 축'
+    },
+    finance: {
+      Cups: '소비 감정 관리 축',
+      Swords: '지출 판단 축',
+      Wands: '수입 확장 시도 축',
+      Pentacles: '자산·현금흐름 축'
+    },
+    career: {
+      Cups: '협업 감정 관리 축',
+      Swords: '의사결정·커뮤니케이션 축',
+      Wands: '추진·성과 확장 축',
+      Pentacles: '실무·지속성 축'
+    },
+    general: {
+      Cups: '감정 균형 축',
+      Swords: '판단·정리 축',
+      Wands: '행동 추진 축',
+      Pentacles: '현실 운영 축'
+    }
+  };
+  const suitMap = suitMapByIntent[yearlyIntent] ?? suitMapByIntent.general;
+  const rank = card.rankKo ? `${card.rankKo} 단계` : '현재 단계';
+  const suitAxis = suitMap[card.suit] ?? '핵심 운영 축';
+  return `${suitAxis}의 ${rank}`;
+}
+
+function normalizeYearlyMonthRole(monthRole = '') {
+  const text = String(monthRole || '').trim();
+  if (!text) return '해당 달 운영';
+  if (text.endsWith('하는 자리')) return text.replace(/하는 자리$/, '하는 단계');
+  if (text.endsWith('는 자리')) return text.replace(/는 자리$/, '는 구간');
+  if (text.endsWith('자리')) return text.replace(/자리$/, '구간');
+  return text;
 }
 
 const MONTH_ROLE_GUIDE = {
