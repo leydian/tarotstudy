@@ -471,6 +471,28 @@ function getCardNames(cardIds = [], limit = 6) {
     .map((id) => cardNameById.get(id) || id);
 }
 
+function buildNovelExampleCardNamesByLessonId() {
+  const lessonIds = courses.flatMap((course) => (lessonsByCourse[course.id] || []).map((lesson) => lesson.id));
+  const allCardNames = cards.map((card) => card.nameKo);
+  const deckSize = allCardNames.length;
+  const offsetB = 17;
+  const offsetC = 31;
+  const map = new Map();
+
+  lessonIds.forEach((lessonId, index) => {
+    const base = index % deckSize;
+    map.set(lessonId, [
+      allCardNames[base],
+      allCardNames[(base + offsetB) % deckSize],
+      allCardNames[(base + offsetC) % deckSize]
+    ]);
+  });
+
+  return map;
+}
+
+const novelExampleCardNamesByLessonId = buildNovelExampleCardNamesByLessonId();
+
 function inferLessonDomain(lesson, course) {
   const id = String(lesson.id || '');
   if (id.startsWith('fz-') || id.startsWith('fm-') || id.startsWith('bd-') || id.startsWith('bt-')) return 'general';
@@ -1118,6 +1140,106 @@ const lessonStoryBlueprints = {
   'eql-3': { character: '민채', situation: '복기 리포트가 끊김', question: '복기 데이터로 다음 리딩을 어떻게 개선할까?', action: '주간 리포트 1회', review: '개선 적용률' }
 };
 
+function selectStoryNovelType(lessonId, order) {
+  let hash = 0;
+  for (const ch of lessonId) {
+    hash = ((hash * 33) + ch.charCodeAt(0)) >>> 0;
+  }
+  return (hash + order) % 8;
+}
+
+function buildStoryNovelByType({ type, blueprint, cardPreview, a, b, c }) {
+  const cards = cardPreview || '카드';
+  const supportCard = b || a;
+  const checkCard = c || b || a;
+
+  if (type === 0) {
+    return [
+      `${blueprint.character}는 ${blueprint.situation} 때문에 리딩 시작 전에 숨을 길게 고르고 메모장을 펼쳤습니다.`,
+      `첫 줄에는 "${blueprint.question}"를 적고, 질문에서 군더더기 단어를 지웠습니다.`,
+      `${cards} 중에서는 ${a}가 가장 빠르게 반응했습니다. 결론은 짧게 적었습니다. "이번엔 이 한 가지를 먼저 끝낸다."`,
+      `${a}의 신호를 오늘 일정표와 대조하자 우선순위가 또렷해졌고, ${supportCard}는 과한 확장을 멈추라는 보조 근거가 됐습니다.`,
+      `${blueprint.character}는 "${blueprint.action}"을 캘린더에 고정한 뒤 시작 시간을 알림으로 걸었습니다.`,
+      `마감 전에는 ${blueprint.review}만 확인하며 적중 1줄과 오차 1줄을 남겼고, ${checkCard}는 다음 점검 포인트로 표시했습니다.`
+    ];
+  }
+
+  if (type === 1) {
+    return [
+      `코치: "지금 상태를 한 줄로 말해봐." ${blueprint.character}: "${blueprint.situation}이라 해석이 퍼집니다."`,
+      `코치: "좋아, 질문을 줄이자." 두 사람은 노트 상단에 "${blueprint.question}"를 고정했습니다.`,
+      `${cards} 중 ${a}가 중심 카드로 뽑히자, ${blueprint.character}는 "핵심 하나만 밀자"라고 결론을 정리했습니다.`,
+      `코치: "${a} 근거에 상황 사실 1개를 붙여." 그러자 문장이 짧아졌고 실행 판단이 흔들리지 않았습니다.`,
+      `${blueprint.character}: "오늘은 ${blueprint.action}으로 닫겠습니다." 코치는 시간/장소를 덧붙여 확정하게 했습니다.`,
+      `종료 체크에서는 ${blueprint.review}만 봤습니다. 적중 1줄, 오차 1줄을 남기고 다음 리딩 규칙 1개를 적었습니다.`
+    ];
+  }
+
+  if (type === 2) {
+    return [
+      `[리딩 로그 00:00] 상태 요약: ${blueprint.character}, ${blueprint.situation}.`,
+      `[리딩 로그 00:02] 질문 압축 완료: "${blueprint.question}".`,
+      `[리딩 로그 00:04] 카드 선택: ${cards} 중 ${a} 채택. 결론: 지금은 우선순위 1개 집중.`,
+      `[리딩 로그 00:06] 근거 정리: ${a} 신호 + 현실 사실 1개 연결, ${supportCard}로 리스크 문장 보완.`,
+      `[리딩 로그 00:08] 실행 고정: ${blueprint.action} (시간/장소 확정).`,
+      `[리딩 로그 00:12] 복기 종료: ${blueprint.review} 점검, 적중 1줄/오차 1줄 기록.`
+    ];
+  }
+
+  if (type === 3) {
+    return [
+      `관찰 노트: ${blueprint.character}는 ${blueprint.situation} 때문에 시작 직후 판단 속도가 느렸습니다.`,
+      `개입 1: 질문을 "${blueprint.question}"로 축약하자 해석 범위가 좁혀졌습니다.`,
+      `개입 2: ${cards} 중 ${a}를 중심 카드로 지정하자 결론 문장이 즉시 생성됐습니다.`,
+      `근거 품질: ${a} 신호와 상황 사실을 결합한 문장이 가장 명확했고, ${supportCard}는 보완 근거로 안정적이었습니다.`,
+      `실행 전환: ${blueprint.action}을 일정에 넣은 시점부터 망설임이 유의미하게 감소했습니다.`,
+      `회고 결과: ${blueprint.review} 기준으로 적중/오차를 분리 기록했고, 다음 리딩 교정 포인트가 확보됐습니다.`
+    ];
+  }
+
+  if (type === 4) {
+    return [
+      `${blueprint.character}의 오늘 목표는 길게 해석하지 않는 것이었습니다. 출발 조건은 ${blueprint.situation}.`,
+      `그래서 첫 문장을 "${blueprint.question}"로 못 박고, 질문을 벗어나는 문장은 바로 지웠습니다.`,
+      `${cards}를 훑는 동안 ${a}가 유독 또렷했고, 결론은 "지금 필요한 행동 1개만 선택"으로 정리됐습니다.`,
+      `${a} 근거 뒤에 현실 증거를 붙이자 문장이 짧아졌고, ${supportCard}는 속도 조절 기준을 제공했습니다.`,
+      `실행 단계에서 ${blueprint.character}는 ${blueprint.action}을 구체 시간으로 잠갔습니다.`,
+      `마지막 체크는 단순했습니다. ${blueprint.review}만 보고 적중 1줄, 오차 1줄을 남겨 다음 리딩에 넘겼습니다.`
+    ];
+  }
+
+  if (type === 5) {
+    return [
+      `체크리스트 시작: [상태] ${blueprint.character} / ${blueprint.situation}.`,
+      `체크리스트 1: [질문] "${blueprint.question}" 한 줄 고정.`,
+      `체크리스트 2: [카드] ${cards} 중 중심은 ${a}. [결론] 우선 행동 1개 먼저.`,
+      `체크리스트 3: [근거] ${a} 신호 + 현실 사실 1개. [보완] ${supportCard}로 과잉 해석 차단.`,
+      `체크리스트 4: [실행] ${blueprint.action}을 시간/장소와 함께 등록.`,
+      `체크리스트 종료: [복기] ${blueprint.review} 점검 후 적중 1줄, 오차 1줄 기록.`
+    ];
+  }
+
+  if (type === 6) {
+    return [
+      `오늘 리딩은 "복잡함을 줄이는 실험"으로 시작했습니다. ${blueprint.character}의 현재 이슈는 ${blueprint.situation}였습니다.`,
+      `실험 규칙은 단 하나였습니다. 질문은 "${blueprint.question}" 한 줄만 사용하기.`,
+      `${cards} 중 ${a}를 선택하자 결론이 빨리 나왔고, 방향은 "바로 실행할 1개를 고정"으로 모였습니다.`,
+      `해석 단계에서는 ${a}의 신호를 사실 문장에만 연결했습니다. ${supportCard}는 반례 점검 용도로 붙였습니다.`,
+      `실행 단계에서 ${blueprint.character}는 ${blueprint.action}을 오늘 스케줄의 첫 고정 항목으로 배치했습니다.`,
+      `종료 단계에서 ${blueprint.review}를 확인하며 적중/오차를 각 1줄씩 남겼고, 다음 시도 조건을 짧게 정의했습니다.`
+    ];
+  }
+
+  return [
+    `${blueprint.character}가 노트를 연 이유는 단순했습니다. ${blueprint.situation}을 오늘 안에 정리해야 했기 때문입니다.`,
+    `첫 행동은 질문 축소였습니다. "${blueprint.question}"를 쓰고, 핵심에서 벗어난 표현을 삭제했습니다.`,
+    `${cards}에서 중심 카드로 ${a}를 고른 뒤 결론을 먼저 확정했습니다. "이 일부터 처리한다."`,
+    `${a}의 신호에 현실 근거를 붙이자 해석이 안정됐고, ${supportCard}는 실행 강도를 조절하는 기준이 됐습니다.`,
+    `${blueprint.character}는 ${blueprint.action}을 즉시 일정에 반영해 시작 조건을 명확히 했습니다.`,
+    `마무리는 ${blueprint.review} 확인으로 끝냈습니다. 적중 1줄과 오차 1줄이 다음 리딩의 시작점이 됐습니다.`
+  ];
+}
+
 function buildDedicatedLessonDetail({ lesson, stageMeta, cardNames, lessonProfile, order }) {
   const blueprint = lessonStoryBlueprints[lesson.id] || {
     character: '학습자',
@@ -1126,10 +1248,12 @@ function buildDedicatedLessonDetail({ lesson, stageMeta, cardNames, lessonProfil
     action: '오늘 실행 행동 1개 고정',
     review: '복기 정확도'
   };
-  const cardPreview = cardNames.slice(0, 4).join(', ');
-  const a = cardNames[0] || '샘플 카드 A';
-  const b = cardNames[1] || '샘플 카드 B';
-  const c = cardNames[2] || '샘플 카드 C';
+  const novelCards = novelExampleCardNamesByLessonId.get(lesson.id) || cardNames.slice(0, 3);
+  const cardPreview = novelCards.slice(0, 3).join(', ');
+  const a = novelCards[0] || '샘플 카드 A';
+  const b = novelCards[1] || '샘플 카드 B';
+  const c = novelCards[2] || '샘플 카드 C';
+  const storyType = selectStoryNovelType(lesson.id, order);
   const onePassScript = [
     `미션 1: 질문 한 줄 작성 - "${blueprint.question}"`,
     `미션 2: ${cardPreview || '샘플 카드'} 중 중심 카드 1장 선택`,
@@ -1147,14 +1271,7 @@ function buildDedicatedLessonDetail({ lesson, stageMeta, cardNames, lessonProfil
     `장면 6 - 실행: ${blueprint.action} 문장으로 오늘 행동을 고정합니다.`,
     `장면 7 - 복기: ${blueprint.review}를 확인하며 적중 1줄/오차 1줄로 마무리합니다.`
   ];
-  const storyNovel = [
-    `${blueprint.character}는 오늘도 평소처럼 카드를 펼쳤지만, 마음은 평소보다 더 복잡했습니다. ${blueprint.situation} 상태였기 때문입니다.`,
-    `노트 첫 줄에 "${blueprint.question}"를 적는 순간, 흩어지던 생각이 한 방향으로 모이기 시작했습니다.`,
-    `${cardPreview || '카드'} 중 가장 눈에 들어온 카드는 ${a}였습니다. ${blueprint.character}는 오래 고민하지 않고 결론을 한 줄로 적었습니다. "지금은 이것부터 한다."`,
-    `${a}의 신호를 현재 상황 사실과 붙이자, 해석은 길어지지 않았고 오히려 더 선명해졌습니다. 오늘 필요한 건 완벽한 문장이 아니라 실행 가능한 문장이었습니다.`,
-    `${blueprint.character}는 "${blueprint.action}"을 오늘 일정에 박아 넣었습니다. 시간과 장소를 정하자 망설임이 줄었습니다.`,
-    `하루를 마칠 때는 ${blueprint.review}만 확인하며 복기 두 줄을 남겼습니다. 적중 한 줄, 오차 한 줄. 그 짧은 기록이 다음 리딩의 기준이 되었습니다.`
-  ];
+  const storyNovel = buildStoryNovelByType({ type: storyType, blueprint, cardPreview, a, b, c });
 
   return {
     intro: `${lesson.title}는 스토리 한 편을 따라가며 바로 실행하는 전용 실전 레슨입니다.`,
