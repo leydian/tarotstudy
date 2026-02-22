@@ -450,16 +450,41 @@ function buildSpreadDecisionBlock({ spreadName = '', items = [], context = '' })
   if (!Array.isArray(items) || !items.length) return '';
   const intent = inferYearlyIntent(context);
   const analysis = analyzeSpreadSignal(items, intent);
+  const evidenceSource = spreadName === '양자택일 (A/B)'
+    ? prioritizeChoiceEvidence(items, analysis.topEvidence, intent)
+    : analysis.topEvidence;
   const lexicon = pickSpreadLexicon(spreadName, intent);
   const lead = analysis.label === '우세'
     ? `${lexicon.main} 기준으로 전개 여지가 비교적 선명합니다.`
     : analysis.label === '박빙'
       ? `${lexicon.main} 기준이 비슷해 미세 조정이 결과를 가를 가능성이 큽니다.`
       : `${lexicon.main} 구간의 마찰 신호가 있어 조건부 접근이 맞습니다.`;
-  const evidence = analysis.topEvidence.slice(0, 3).map((entry, idx) =>
+  const evidence = evidenceSource.slice(0, 3).map((entry, idx) =>
     `근거 ${idx + 1}: ${entry.position}(${entry.card}, ${entry.orientation}, '${entry.keyword}') · ${entry.reason}`
   );
   return [`판정: ${analysis.label} · ${lead}`, ...evidence].join('\n');
+}
+
+function prioritizeChoiceEvidence(items = [], fallbackEvidence = [], intent = 'general') {
+  const priorityPositions = ['현재 상황', 'A 선택 시 결과', 'B 선택 시 결과', 'A 선택 시 가까운 미래', 'B 선택 시 가까운 미래'];
+  const itemByPosition = new Map(items.map((item) => [item?.position?.name || '', item]));
+  const prioritized = [];
+  for (const position of priorityPositions) {
+    const item = itemByPosition.get(position);
+    if (!item) continue;
+    const keyword = item?.card?.keywords?.[0] || '핵심';
+    const score = (item?.orientation === 'upright' ? 1.1 : -1.0) - (scoreCardRisk(item) * 0.35);
+    prioritized.push({
+      position,
+      card: item?.card?.nameKo || '카드',
+      keyword,
+      orientation: item?.orientation === 'upright' ? '정방향' : '역방향',
+      reason: buildSpreadEvidenceReason({ position, keyword, score, intent })
+    });
+    if (prioritized.length >= 3) break;
+  }
+  if (prioritized.length >= 3) return prioritized;
+  return [...prioritized, ...fallbackEvidence].slice(0, 3);
 }
 
 function analyzeSpreadSignal(items = [], intent = 'general') {
@@ -2638,28 +2663,55 @@ function buildChoiceABSnapshot({ items = [], context = '' }) {
   const bScore = score(bNear, 1) + score(bResult, 1.4);
   const gap = aScore - bScore;
   const options = parseChoiceOptions(context);
-  const axis = options.isPurchaseChoice
+  const intent = inferYearlyIntent(context);
+  const relationshipAxis = '감정 소모·대화 안정성·오해 가능성·지속 가능성';
+  const axis = (intent === 'relationship' || intent === 'relationship-repair')
+    ? relationshipAxis
+    : options.isPurchaseChoice
     ? '예산 압박·활용도·3개월 후 만족도'
     : options.isLocationChoice
       ? '이동 거리·정착 난이도·생활비·관계망·지속 가능성'
-    : options.isWorkChoice
-      ? '통근·생활비·지속 가능성'
-      : '시간·비용·감정 소모';
+      : options.isWorkChoice
+        ? '통근·생활비·지속 가능성'
+        : '시간·비용·감정 소모';
   const axisObject = withKoreanParticle(axis, '을', '를');
   const currentKeyword = current?.card?.keywords?.[0] || '현재 신호';
+  const implicitPaths = inferImplicitChoicePaths({ context, intent });
+
+  if (!options.hasExplicitChoice) {
+    if (Math.abs(gap) < 0.65) {
+      return {
+        mode: 'single',
+        recommendationLine: `카드 흐름은 단정형 결론보다 조건부 접근이 맞습니다. "${currentKeyword}" 신호를 기준으로 ${axisObject} 먼저 정리하고, 연락 강도는 낮게 시작하는 편이 안전합니다.`
+      };
+    }
+    if (gap > 0) {
+      return {
+        mode: 'single',
+        recommendationLine: `카드 흐름은 "${implicitPaths.pathA}" 쪽이 조금 더 유리합니다. 조건은 저강도 1회 연락 후 반응을 기다리는 운영입니다. 결론을 서두르기보다 ${axisObject} 먼저 점검하며 속도를 조절해 주세요.`
+      };
+    }
+    return {
+      mode: 'single',
+      recommendationLine: `카드 흐름은 "${implicitPaths.pathB}" 쪽이 조금 더 유리합니다. 조건은 대화 재개보다 감정 리듬 회복을 먼저 두는 운영입니다. 단기 만족보다 3개월 유지 기준으로 ${axisObject} 확인하고 결정하는 편이 안전합니다.`
+    };
+  }
 
   if (Math.abs(gap) < 0.65) {
     return {
+      mode: 'explicit',
       recommendationLine: `A/B 점수는 박빙입니다. "${currentKeyword}"를 기준으로 ${axis} 체크리스트를 같은 포맷으로 비교한 뒤, 3개월 유지가 더 쉬운 쪽을 최종 선택하세요.`
     };
   }
   if (gap > 0) {
     return {
+      mode: 'explicit',
       recommendationLine: `카드 흐름은 ${options.optionA} 쪽이 조금 더 우세합니다. 단기 반응보다 3개월 유지 기준으로 ${axisObject} 점검하면 선택 정확도가 높아집니다.`
     };
   }
   return {
-    recommendationLine: `카드 흐름은 ${options.optionB} 쪽이 조금 더 우세합니다. 단기 만족보다 3개월 유지 기준으로 ${axis}을 확인하고 결정하는 편이 안전합니다.`
+    mode: 'explicit',
+    recommendationLine: `카드 흐름은 ${options.optionB} 쪽이 조금 더 우세합니다. 단기 만족보다 3개월 유지 기준으로 ${axisObject} 확인하고 결정하는 편이 안전합니다.`
   };
 }
 
@@ -2681,8 +2733,13 @@ function parseChoiceOptions(context = '') {
   const uniqueMove = [...new Set(moveOptions)];
   const uniquePlaces = [...new Set(places)].filter((name) => !/(게|곳|데)$/.test(name));
   const uniquePurchase = [...new Set(purchaseOptions)];
+  const actionOptions = [...new Set(
+    [...raw.matchAll(/([가-힣A-Za-z0-9]{1,16})\s*할까/g)].map((m) => m[1]).filter(Boolean)
+  )];
   const isPurchaseChoice = /(살까|구매|브랜드|가방|지갑|코트|옷|패션|명품)/.test(lowered) && uniquePurchase.length >= 2;
   const isLocationChoice = !isPurchaseChoice && (uniquePlaces.length >= 2 || uniqueMove.length >= 2);
+  const hasExplicitChoiceMarker = /(a\s*\/?\s*b|vs|versus|둘 중|둘중|어느 쪽|어느쪽|또는|혹은|중에|중에서)/i.test(raw);
+  const hasExplicitChoice = isPurchaseChoice || isLocationChoice || actionOptions.length >= 2 || hasExplicitChoiceMarker;
   const optionA = isPurchaseChoice ? uniquePurchase[0] : (uniquePlaces[0] || 'A');
   const optionB = isPurchaseChoice ? uniquePurchase[1] : (uniquePlaces[1] || 'B');
   const normalizedOptionA = isPurchaseChoice ? optionA : (uniqueMove[0] || optionA);
@@ -2692,7 +2749,28 @@ function parseChoiceOptions(context = '') {
     optionB: normalizedOptionB,
     isPurchaseChoice,
     isLocationChoice,
+    hasExplicitChoice,
     isWorkChoice: !isPurchaseChoice && /(일하|근무|출퇴근|통근|직장|회사|오피스|사무실|출근)/.test(lowered)
+  };
+}
+
+function inferImplicitChoicePaths({ context = '', intent = 'general' }) {
+  const text = String(context || '');
+  if (intent === 'relationship' || intent === 'relationship-repair' || /(재회|연락|애인|관계)/.test(text)) {
+    return {
+      pathA: '지금 바로 연락해 대화를 여는 선택',
+      pathB: '한 템포 쉬고 저강도 재접촉으로 가는 선택'
+    };
+  }
+  if (intent === 'finance') {
+    return {
+      pathA: '바로 집행하는 선택',
+      pathB: '점검 후 집행하는 선택'
+    };
+  }
+  return {
+    pathA: '즉시 실행하는 선택',
+    pathB: '한 템포 조정 후 실행하는 선택'
   };
 }
 
@@ -2713,6 +2791,9 @@ function buildSummaryTheme({ spreadName, context = '', items = [], topKeywords =
   }
   if (spreadName === '양자택일 (A/B)') {
     const choiceSnapshot = buildChoiceABSnapshot({ items, context });
+    if (choiceSnapshot.mode === 'single') {
+      return `한 줄 테마: '${leadKeyword}' 신호를 기준으로 관계 속도를 낮추고 유지 가능성을 먼저 확인하는 운영이 핵심입니다.`;
+    }
     if (choiceSnapshot.recommendationLine.includes('A 쪽이')) {
       return `한 줄 테마: '${leadKeyword}' 기준으로 보면 A축이 조금 우세하니, 단기 반응보다 3개월 지속성을 우선 비교하세요.`;
     }
@@ -2933,7 +3014,11 @@ function splitSentences(text = '') {
 }
 
 function normalizeContextText(context = '') {
-  return String(context || '').trim().replace(/[.!?]+$/g, '');
+  return String(context || '')
+    .trim()
+    .replace(/\s+([?？!.,])/g, '$1')
+    .replace(/\s{2,}/g, ' ')
+    .replace(/[.!?]+$/g, '');
 }
 
 function normalizeContextForSpread({ spreadName = '', context = '' }) {

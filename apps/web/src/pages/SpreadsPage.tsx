@@ -608,10 +608,9 @@ function buildLearningDigest(items: SpreadDrawResult['items']) {
     || '24시간 뒤 맞음/부분맞음/다름으로 점검하고 이유를 1줄로 남겨 다음 리딩 기준으로 사용하세요.';
 
   return [
-    `이번 리딩은 총 ${positionCount}개 포지션 기준으로 해석-복기 루틴을 정리했습니다.`,
-    `프레임: ${frameLine}`,
-    `핵심 질문: ${questionLine}`,
-    `검증: ${verifyLine}`
+    `오늘 할 일: ${positionCount}개 포지션 중 핵심 1개만 골라 카드 근거 1문장과 실행 1문장을 적어보세요.`,
+    `복기 기준: ${verifyLine}`,
+    `다음 리딩에서 바꿀 점 1개: ${questionLine || frameLine}`
   ];
 }
 
