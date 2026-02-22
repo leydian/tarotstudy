@@ -42,19 +42,19 @@ export function buildFallbackExplanation(card, level = 'beginner', context = '')
         `정방향은 "${primaryKeyword}" 에너지가 비교적 안정적으로 작동하는 흐름입니다.`,
         level === 'intermediate'
           ? `${profile.uprightIntermediate} 긍정 신호의 지속 조건(시간, 자원, 관계)을 같이 점검해야 과해석을 줄일 수 있습니다.`
-          : `${profile.uprightBeginner} 지금 바로 할 수 있는 작은 실행 1개를 정해 카드의 장점을 행동으로 옮기세요.`,
+          : `${profile.uprightBeginner} ${buildBeginnerUprightActionLine(card)}`,
         level === 'intermediate'
           ? '실행 뒤에는 가설이 맞았는지 근거 1개를 남겨 다음 해석의 기준으로 삼으세요.'
-          : '실행 뒤에는 체감 변화 1가지를 짧게 기록해 다음 리딩의 기준으로 삼으세요.'
+          : buildBeginnerUprightReviewLine(card)
       ].join('\n')),
       reversed: enforceMinLines([
         `역방향은 "${primaryKeyword}" 에너지가 지연되거나 과잉/결핍으로 나타날 가능성을 뜻합니다.`,
         level === 'intermediate'
           ? `${profile.reversedIntermediate} 원인을 내부 요인과 외부 제약으로 분리해 어디를 먼저 조정할지 우선순위를 정하세요.`
-          : `${profile.reversedBeginner} 원인을 한 번에 다 풀려 하지 말고, 가장 작은 교정 루틴 1개부터 시작하세요.`,
+          : `${profile.reversedBeginner} ${buildBeginnerReversedActionLine(card)}`,
         level === 'intermediate'
           ? '교정 후에는 같은 질문으로 재평가해 흐름 변화와 남은 리스크를 함께 확인하세요.'
-          : '교정 후에는 같은 질문으로 다시 확인해 흐름 변화가 생겼는지 점검하세요.'
+          : buildBeginnerReversedReviewLine(card)
       ].join('\n')),
       love: enforceMinLines([
         '연애/관계에서는 상대를 통제하기보다 내 감정의 사실과 요청을 분리해 전달하는 것이 중요합니다.',
@@ -76,11 +76,163 @@ export function buildFallbackExplanation(card, level = 'beginner', context = '')
           : '입문 관점에서는 카드의 핵심 키워드와 상황별 기본 의미를 먼저 고정합니다.',
         level === 'intermediate'
           ? '실천 과제: 사실(관찰) → 해석(가설) → 행동(검증) 3단계로 문장을 작성해 복기 정확도를 올리세요.'
-          : '실천 과제: 이 카드 키워드 중 가장 약한 항목 1개를 정해 바로 실행 가능한 행동으로 바꾸세요.',
-        '실행 결과를 짧게 남기면 다음 카드 해석에서 일관성과 신뢰도가 함께 올라갑니다.'
+          : buildBeginnerAdviceTaskLine(card),
+        buildAdviceReviewLine(card, level)
       ].join('\n'))
     }
   };
+}
+
+function buildBeginnerUprightActionLine(card) {
+  const majorLines = [
+    '오늘 15분만 투자해 카드가 제안한 방향으로 첫 행동을 시작해 보세요.',
+    '가볍게 시작하되 끝낼 기준 1개를 정해 행동으로 옮기세요.',
+    '오늘 안에 완료 가능한 단위 1개를 선택해 바로 실행해 보세요.',
+    '핵심 키워드를 눈에 보이는 행동 한 줄로 바꿔 실천해 보세요.'
+  ];
+  const minorBySuit = {
+    Wands: [
+      '열정이 분산되지 않게 우선순위 1개에만 에너지를 집중해 보세요.',
+      '아이디어를 메모로 끝내지 말고 10분 실행으로 전환해 보세요.'
+    ],
+    Cups: [
+      '감정 표현 1개를 구체적인 말 또는 행동으로 전달해 보세요.',
+      '공감과 요청을 한 문장씩 나눠 말하는 연습을 해보세요.'
+    ],
+    Swords: [
+      '판단 기준 1개를 먼저 적고 그 기준으로만 결정해 보세요.',
+      '추측 대신 확인 질문 1개를 바로 실행해 보세요.'
+    ],
+    Pentacles: [
+      '실행 증거가 남는 작은 결과물 1개를 오늘 완성해 보세요.',
+      '시간·돈·에너지 중 하나를 수치로 기록해 현실 기준을 세우세요.'
+    ]
+  };
+  const variants = card.arcana === 'major'
+    ? majorLines
+    : (minorBySuit[card.suit] ?? majorLines);
+  return pickCardVariant(card.id, 'upright-action', variants);
+}
+
+function buildBeginnerUprightReviewLine(card) {
+  const majorLines = [
+    '실행 후에는 전후 체감 차이 1가지를 기록해 다음 리딩의 기준으로 남겨두세요.',
+    '행동 전/후의 마음 변화와 결과를 한 줄씩 적어 해석 정확도를 높이세요.',
+    '작은 실행 결과를 기록해 다음 카드 해석 때 비교 기준으로 활용하세요.'
+  ];
+  const minorBySuit = {
+    Wands: [
+      '실행 속도와 완주 여부를 함께 기록하면 다음 판단이 쉬워집니다.',
+      '의욕 변화와 실제 결과를 같이 적어 추진 리듬을 점검하세요.'
+    ],
+    Cups: [
+      '대화 전후 감정 온도 변화를 적어 관계 흐름을 확인하세요.',
+      '감정 소모와 안정감을 각각 기록해 다음 선택의 기준으로 삼으세요.'
+    ],
+    Swords: [
+      '판단 근거가 맞았는지 틀렸는지 근거 1개를 남겨두세요.',
+      '확인 질문의 결과를 기록해 해석 오차를 줄이세요.'
+    ],
+    Pentacles: [
+      '시간/결과를 함께 기록해 실행 효율을 점검하세요.',
+      '완료 기준 충족 여부를 체크해 다음 계획 품질을 높이세요.'
+    ]
+  };
+  const variants = card.arcana === 'major'
+    ? majorLines
+    : (minorBySuit[card.suit] ?? majorLines);
+  return pickCardVariant(card.id, 'upright-review', variants);
+}
+
+function buildBeginnerReversedActionLine(card) {
+  const majorLines = [
+    '원인을 한 번에 다 풀기보다 가장 작은 교정 루틴 1개부터 시작하세요.',
+    '무리한 전환보다 실패 비용이 낮은 수정 행동 1개를 먼저 실행하세요.',
+    '지연 원인 하나만 고르고 오늘 가능한 보완 행동으로 바꿔보세요.'
+  ];
+  const minorBySuit = {
+    Wands: [
+      '과열된 목표를 줄이고 실행 범위를 절반으로 낮춰보세요.',
+      '의욕 변동이 큰 날에는 시작 기준만 지키는 방식으로 조정하세요.'
+    ],
+    Cups: [
+      '감정 반응이 커질 때는 표현 속도를 늦추고 사실부터 정리하세요.',
+      '관계 피로를 줄이기 위해 요청과 기대를 분리해 말해보세요.'
+    ],
+    Swords: [
+      '판단이 꼬일 때는 정보량을 줄이고 핵심 사실 3개만 남기세요.',
+      '즉흥 결론을 멈추고 확인 질문 1개를 우선 실행하세요.'
+    ],
+    Pentacles: [
+      '손실을 키우는 루틴 1개를 멈추고 대체 루틴을 넣어보세요.',
+      '완료 기준을 낮춰 재시작 비용을 줄이는 쪽으로 조정하세요.'
+    ]
+  };
+  const variants = card.arcana === 'major'
+    ? majorLines
+    : (minorBySuit[card.suit] ?? majorLines);
+  return pickCardVariant(card.id, 'reversed-action', variants);
+}
+
+function buildBeginnerReversedReviewLine(card) {
+  const majorLines = [
+    '교정 후에는 같은 질문으로 다시 확인해 흐름 변화가 생겼는지 점검하세요.',
+    '수정 전/후 차이를 기록해 같은 패턴 재발을 막으세요.',
+    '교정 결과를 짧게 남겨 다음 리딩에서 비교 근거로 활용하세요.'
+  ];
+  const minorBySuit = {
+    Wands: ['추진 강도 조절 결과를 기록해 과열 패턴을 관리하세요.'],
+    Cups: ['감정 소모가 줄었는지 확인해 관계 리듬 변화를 기록하세요.'],
+    Swords: ['판단 오류가 줄었는지 근거를 남겨 다음 해석 정밀도를 높이세요.'],
+    Pentacles: ['실행 비용/결과 변화를 기록해 현실 운영 기준을 업데이트하세요.']
+  };
+  const variants = card.arcana === 'major'
+    ? majorLines
+    : (minorBySuit[card.suit] ?? majorLines);
+  return pickCardVariant(card.id, 'reversed-review', variants);
+}
+
+function buildBeginnerAdviceTaskLine(card) {
+  const majorLines = [
+    '실천 과제: 오늘 가장 약한 키워드 1개를 골라 20분 실행 계획으로 바꿔보세요.',
+    '실천 과제: 키워드 1개를 선택해 시작 조건·중단 조건을 함께 적어 실행하세요.',
+    '실천 과제: 카드 메시지를 하루 행동 체크리스트 1개로 변환해 보세요.'
+  ];
+  const minorBySuit = {
+    Wands: ['실천 과제: 추진 과제 1개를 오늘 완료 가능한 크기로 쪼개 실행하세요.'],
+    Cups: ['실천 과제: 감정 표현 1개와 요청 1개를 분리해 전달해 보세요.'],
+    Swords: ['실천 과제: 판단 기준 1개를 정하고 그 기준으로만 의사결정을 해보세요.'],
+    Pentacles: ['실천 과제: 실행 증거가 남는 결과물 1개를 오늘 안에 완성해 보세요.']
+  };
+  const variants = card.arcana === 'major'
+    ? majorLines
+    : (minorBySuit[card.suit] ?? majorLines);
+  return pickCardVariant(card.id, 'advice-task', variants);
+}
+
+function buildAdviceReviewLine(card, level) {
+  if (level === 'intermediate') {
+    return pickCardVariant(card.id, 'advice-review-intermediate', [
+      '검증 결과를 기록하면 다음 리딩에서 가설 정확도를 훨씬 높일 수 있습니다.',
+      '결과 로그를 남기면 해석 일관성과 의사결정 신뢰도가 함께 올라갑니다.',
+      '행동-결과 연결 기록을 쌓아 다음 리딩의 검증 속도를 높이세요.'
+    ]);
+  }
+  return pickCardVariant(card.id, 'advice-review-beginner', [
+    '실행 결과를 짧게 남기면 다음 카드 해석에서 일관성과 신뢰도가 함께 올라갑니다.',
+    '행동 후 체감 메모 1줄을 남기면 다음 리딩이 훨씬 쉬워집니다.',
+    '작은 실행 기록이 쌓일수록 카드 해석이 생활 판단에 더 잘 연결됩니다.'
+  ]);
+}
+
+function pickCardVariant(cardId, salt, variants) {
+  if (!Array.isArray(variants) || variants.length === 0) return '';
+  const seed = `${cardId}:${salt}`;
+  let hash = 0;
+  for (let i = 0; i < seed.length; i += 1) {
+    hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
+  }
+  return variants[hash % variants.length];
 }
 
 function getFallbackCardProfile(card) {
@@ -748,7 +900,7 @@ export async function buildCardExplanation({ cardId, level, context, cache, exte
   const card = getCardById(cardId);
   if (!card) return null;
 
-  const cacheKey = `explain:v4:${cardId}:${level}:${context || ''}`;
+  const cacheKey = `explain:v5:${cardId}:${level}:${context || ''}`;
   const cached = cache.get(cacheKey);
   if (cached) return { ...cached, source: 'cache' };
   const fallback = buildFallbackExplanation(card, level, context);
