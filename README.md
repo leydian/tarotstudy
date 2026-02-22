@@ -148,6 +148,8 @@ npm run qa:yearly-fortune
 ```bash
 npm run qa:refresh-cases
 ```
+  - 기본값으로 question-understanding 평가셋을 3,000건 생성합니다.
+  - 크기 조정: `QA_QUESTION_UNDERSTANDING_SET_SIZE=5000 npm run qa:refresh-cases` (허용 1000~10000)
 - 관계 회복 스프레드 변주/반복률 정량 점검:
 ```bash
 npm run qa:relationship-recovery
@@ -156,6 +158,9 @@ npm run qa:relationship-recovery
 ```bash
 npm run qa:question-understanding
 ```
+  - 기본 통과 기준: intent/type/choice/domainFloor 모두 98% 이상
+  - 최소 케이스 기준: 1000건 이상(`QA_QUESTION_UNDERSTANDING_MIN_CASES`)
+  - 리포트: `tmp/question-understanding-eval-report.md`
 - 전 스프레드 요약 회귀 점검(판정/근거/테마 + 구조 규칙):
 ```bash
 npm run qa:summary-regression

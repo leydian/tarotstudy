@@ -1,10 +1,45 @@
 {
-  "generatedAt": "2026-02-22T21:02:14.681Z",
+  "generatedAt": "2026-02-22T22:47:18.648Z",
   "generatedDate": "2026-02-22",
   "offset": 5,
   "learningCases": 20,
   "yearlyCases": 14,
-  "questionUnderstandingCases": 20,
+  "questionUnderstandingCases": 3000,
+  "questionUnderstandingCoverage": {
+    "sourcePool": 100161,
+    "targetSize": 3000,
+    "candidateSize": 12000,
+    "locale": {
+      "ko": 2991,
+      "en": 7,
+      "ko-en-mixed": 2
+    },
+    "styleTag": {
+      "decision": 1728,
+      "narrative": 872,
+      "forecast": 380,
+      "short-utterance": 19,
+      "choice": 1
+    },
+    "lengthBucket": {
+      "m": 2712,
+      "l": 268,
+      "xs": 19,
+      "s": 1
+    },
+    "intent": {
+      "relationship-repair": 334,
+      "social": 334,
+      "relationship": 334,
+      "career": 333,
+      "finance": 394,
+      "study": 333,
+      "health": 585,
+      "daily": 333,
+      "general": 20
+    }
+  },
   "summaryCases": 18,
+  "labelingVersion": "question-understanding-v3.0",
   "source": "apps/api/src/data/question-intents.js"
 }
