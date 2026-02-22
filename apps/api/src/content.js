@@ -1743,6 +1743,11 @@ function buildRepairBenchmarkInterpretation({ card, position, orientation, sprea
   const seed = `${spreadId}:${positionLabel}:${card.id}:${orientation}:repair-int`;
 
   const repairLine = (() => {
+    if (positionLabel === '핵심 메시지') {
+      return open
+        ? `핵심 메시지에서는 '${main}' 신호가 살아 있어, 대화 문을 다시 열 여지는 분명히 남아 있습니다.`
+        : `핵심 메시지에서는 '${main}' 신호가 조정 구간이라, 화해 결론보다 재충돌을 막는 대화 순서가 더 중요합니다.`;
+    }
     if (positionLabel === '문제' || /문제|갈등/.test(positionLabel)) {
       return open
         ? `현재 갈등의 핵심은 '${main}'에서 '${sub}'로 이어지는 해석 차이일 가능성이 큽니다.`
@@ -1763,10 +1768,15 @@ function buildRepairBenchmarkInterpretation({ card, position, orientation, sprea
       : `'${main}' 신호가 조정 구간이라, 결론보다 감정 과열을 먼저 낮추는 편이 안정적입니다.`;
   })();
 
-  const realityLine = pickVariant(`${seed}:reality`, [
-    '회복 대화에서는 누가 맞는지보다 사실 1개, 감정 1개, 요청 1개를 분리해 말하는 순서가 중요합니다.',
-    '갈등 상황에서는 긴 설명보다 짧은 확인 문장이 오해를 줄이는 데 더 효과적입니다.'
-  ]);
+  const realityLine = positionLabel === '핵심 메시지'
+    ? pickVariant(`${seed}:reality:core`, [
+      '핵심 메시지에서는 감정을 길게 해석하기보다, 다음 대화를 어떤 순서로 열지 먼저 정하는 편이 실제 회복에 더 도움이 됩니다.',
+      '지금 단계에서는 누가 옳았는지 정리하기보다, 대화가 다시 끊기지 않게 만드는 최소 문장을 먼저 확보하는 것이 중요합니다.'
+    ])
+    : pickVariant(`${seed}:reality`, [
+      '회복 대화에서는 누가 맞는지보다 사실 1개, 감정 1개, 요청 1개를 분리해 말하는 순서가 중요합니다.',
+      '갈등 상황에서는 긴 설명보다 짧은 확인 문장이 오해를 줄이는 데 더 효과적입니다.'
+    ]);
 
   const actionLine = (() => {
     if (open) {

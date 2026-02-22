@@ -2372,9 +2372,10 @@ function scoreOneCardRisk({ firstItem = null, topKeywords = [], uprightCount = 0
 
 function buildYesNoReasonLine({ firstItem = null, topKeywords = [], tone = 'mid' }) {
   const cardName = firstItem?.card?.nameKo || '이 카드';
+  const orientation = firstItem?.orientation === 'reversed' ? '역방향' : '정방향';
   const keyList = (topKeywords.length ? topKeywords : firstItem?.card?.keywords || []).slice(0, 3);
   const keywordText = keyList.length ? keyList.join(', ') : '현재 카드 흐름';
-  const cardSubject = `${cardName} 카드는`;
+  const cardSubject = `${cardName} ${orientation} 카드는`;
   if (tone === 'high') {
     return `${cardSubject} ${keywordText} 신호가 강해 과하게 밀면 리듬이 쉽게 흔들릴 수 있습니다.`;
   }
