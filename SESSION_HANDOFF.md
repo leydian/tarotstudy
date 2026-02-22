@@ -36,6 +36,73 @@
   - 텔레메트리 수집 API(`spread_drawn`, `spread_review_saved`) 및 롤업 스크립트 추가
 
 ## 3) 금일 추가 반영 (최신)
+- 카드 도감 리더 양성 관점 전환(입문 + 중급)
+  - 파일:
+    - `apps/api/src/content.js`
+    - `apps/api/src/data/cards.js`
+  - 변경:
+    - 카드 도감 `입문` 템플릿을 내담자 행동 지시형에서 **타로 리더 해석 훈련형**으로 전환
+      - `리더 해석 기준`, `리더 읽기 방법`, `해석 체크`, `복기 기준` 중심 문장으로 개편
+    - 카드 도감 `중급` 기본 설명(카드 상세 기본 해설)도 동일하게 리더 관점으로 전환
+      - `해석 결론 1문장 + 근거 1문장` 분리
+      - `적중 근거/오차 근거` 복기 루프 중심
+    - 중급 fallback/generated 섹션(`core/symbolism/upright/reversed/love/career/advice`) 최소 줄수 기준을 5줄로 유지하고 리더 관점 문구로 통일
+  - 효과:
+    - 입문/중급 모두 “내담자에게 무엇을 시킬지”보다 “리더가 어떤 근거로 해석할지”에 초점 정렬
+    - 카드 도감 톤이 학습 리더 코치 정책과 일관되게 정합
+  - 검증:
+    - `npm run test:api` 통과
+
+- 코스 체계 대폭 확장 + 단계 세분화
+  - 파일:
+    - `apps/api/src/data/courses.js`
+    - `apps/web/src/pages/CoursesPage.tsx`
+    - `apps/web/src/types.ts`
+  - 변경:
+    - 코스 규모: 2개 → **14개**
+    - 단계 체계: `기초 입문`, `입문 실전`, `입문 심화`, `중급 코어`, `중급 심화`, `고급 운영`, `전문가 랩`
+    - 코스 목록 화면을 단계 집계/표시 방식으로 개편(단계별 개수, 단계 현황 패널)
+  - 효과:
+    - 학습 수준 구간이 촘촘해져 진입/심화 경로 설계가 쉬워짐
+    - 레슨 탐색 시 “입문→중급→고급”의 운영 의도가 화면에 명확히 노출
+
+- 카드 상세 가독성 개선
+  - 파일:
+    - `apps/web/src/pages/CardDetailPage.tsx`
+    - `apps/web/src/styles.css`
+  - 변경:
+    - 기본 해설/생성 해설을 줄 번호형(`1.` `2.` …)로 렌더링
+    - 생성 섹션을 카드형 박스로 분리해 스캔성 개선
+    - 문단 행간/마진 보정으로 장문 해설 읽기 피로 완화
+
+- 품질게이트/회귀 보정 완료
+  - 파일:
+    - `apps/api/src/content.js`
+    - `apps/api/src/index.js`
+  - 변경:
+    - `qa:learning-leader` 실패 원인(문장 수 과다) 해결
+      - 학습 리더 문장 압축(`compactLearningPoint`) 및 질문부호/문장분리 오탐 교정
+    - `qa:yearly-fortune` 실패 원인 해결
+      - 커리어 타이밍 문맥 판별 강화(`isCareerTimingContext`)
+      - `언제 + 무엇` 닫는 문단 규칙 및 비커리어 오탐 방지 보정
+  - 검증:
+    - `npm run verify:quality` **전체 통과**
+      - `lint`
+      - `typecheck:web`
+      - `test:web`
+      - `test:api`
+      - `qa:learning-leader`
+      - `qa:relationship-recovery`
+      - `qa:yearly-fortune`
+
+- 운영/문서 동기화
+  - 파일:
+    - `docs/handoff/INDEX.md`
+    - `.gitignore`
+  - 변경:
+    - 인덱스 최신 갱신일 동기화
+    - QA 산출물(`tmp/*-report.*`, `tmp/qa-sample-results-*`) ignore 정책 반영
+
 - 카드 도감 입문 해설 전면 개편 (쉬운 문장 + 실전형 + 5줄 고정)
   - 파일: `apps/api/src/content.js`
   - 변경:
@@ -148,6 +215,9 @@
     - `apps/api/test/choice-a-b-reading.test.js`에 도시 선택 케이스 추가
 
 ## 4) 최근 커밋 타임라인 (최신 우선)
+- `cf7642a` Refocus intermediate guide text for tarot-reader training
+- `45ffe13` Expand course tracks and harden card-guide quality gates
+- `b97a0f6` Refine beginner card guide readability and update handoff docs
 - `c07de49` Rewrite beginner card explanations in plain practical language
 - `49326ec` Fix spreads page crash on initial render before selection
 - `baf9079` Stabilize quality gates, telemetry persistence, and CI workflow
@@ -177,6 +247,10 @@
   - `npm run typecheck:web` 통과
   - `npm run test:web` 통과
   - `npm run build:web` 통과
+  - `npm run qa:learning-leader` 통과
+  - `npm run qa:relationship-recovery` 통과
+  - `npm run qa:yearly-fortune` 통과
+  - `npm run verify:quality` 통과
 
 ## 6) 즉시 참조 링크
 - 전체 인수인계 인덱스: `docs/handoff/INDEX.md`

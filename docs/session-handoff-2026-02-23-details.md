@@ -160,3 +160,78 @@
 - `fb90f37` Refine relationship-reading tone and stabilize spread view UX
 - `edaf90a` Improve choice spread branching and simplify learning digest output
 - `ba9e199` Differentiate beginner/intermediate coaching with practical execution flows
+
+## 10) 2026-02-23 추가 후속 2 (카드 도감 리더양성/코스확장/QA 마감)
+
+### 10.1 카드 도감 입문·중급 문체를 리더 양성 관점으로 재정렬
+- 변경 파일:
+  - `apps/api/src/content.js`
+  - `apps/api/src/data/cards.js`
+- 핵심:
+  - `입문` 카드 도감 문구를 내담자 행동 코칭형에서 리더 해석 훈련형으로 전환
+    - 해석 결론/근거 분리
+    - 포지션/카드/맥락 근거 체크
+    - 적중/오차 복기 문장 강화
+  - `중급` 카드 도감 기본 설명도 동일 관점으로 재작성
+    - "오늘 행동 지시" 중심 문장을 "리더 해석 기준" 중심으로 교체
+  - `중급` fallback/generated 섹션은 5줄 이상 정책 유지 + 리더 관점 문구 통일
+
+### 10.2 코스 체계 대폭 확장(2 -> 14) 및 단계 세분화
+- 변경 파일:
+  - `apps/api/src/data/courses.js`
+  - `apps/web/src/pages/CoursesPage.tsx`
+  - `apps/web/src/types.ts`
+- 핵심:
+  - 코스 수를 14개로 확장
+  - 학습 단계를 아래 7개로 세분화
+    - `기초 입문`
+    - `입문 실전`
+    - `입문 심화`
+    - `중급 코어`
+    - `중급 심화`
+    - `고급 운영`
+    - `전문가 랩`
+  - 코스 페이지에서 단계별 개수/현황을 노출하도록 UI 갱신
+
+### 10.3 카드 상세(도감) 가독성 보강
+- 변경 파일:
+  - `apps/web/src/pages/CardDetailPage.tsx`
+  - `apps/web/src/styles.css`
+- 핵심:
+  - 해설 문장을 번호형(`1.` `2.` …)으로 렌더링
+  - 생성 섹션을 박스 단위로 분리해 스캔성 향상
+  - 행간/마진 보정으로 장문 읽기 피로 완화
+
+### 10.4 품질 게이트 실패 원인 보정 및 최종 통과
+- 변경 파일:
+  - `apps/api/src/content.js`
+  - `apps/api/src/index.js`
+- 핵심:
+  - `qa:learning-leader`
+    - 실패 원인: 문장 길이 과다(5문장 초과)
+    - 조치: 학습 리더 문장 압축(`compactLearningPoint`) + 질문부호로 인한 문장 분리 오탐 교정
+  - `qa:yearly-fortune`
+    - 실패 원인: 커리어 타이밍 문맥 오탐/닫는 문단 규칙 누락
+    - 조치: `isCareerTimingContext()` 추가, 타이밍 문맥 판정 강화, 닫는 문단 규칙 정렬
+- 최종 검증:
+  - `npm run lint` 통과
+  - `npm run typecheck:web` 통과
+  - `npm run test:web` 통과
+  - `npm run test:api` 통과
+  - `npm run qa:learning-leader` 통과
+  - `npm run qa:relationship-recovery` 통과
+  - `npm run qa:yearly-fortune` 통과
+  - `npm run verify:quality` 통과
+
+### 10.5 운영 정리(문서/산출물 정책)
+- 변경 파일:
+  - `docs/handoff/INDEX.md`
+  - `.gitignore`
+- 핵심:
+  - 인수인계 인덱스 최신일 동기화
+  - `tmp` QA 산출물 ignore 정책 추가
+
+### 10.6 관련 커밋 (추가)
+- `cf7642a` Refocus intermediate guide text for tarot-reader training
+- `45ffe13` Expand course tracks and harden card-guide quality gates
+- `b97a0f6` Refine beginner card guide readability and update handoff docs

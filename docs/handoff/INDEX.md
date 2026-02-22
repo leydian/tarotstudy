@@ -25,6 +25,9 @@
 - `docs/handoff/details/docs-ops-structure-2026-02-22.md`
 
 ## 4) 주제별 빠른 이동
+- 카드 도감 리더 양성 관점(입문/중급) 전환: `docs/session-handoff-2026-02-23-details.md`
+- 코스 단계 세분화 및 대규모 확장(14코스): `docs/session-handoff-2026-02-23-details.md`
+- 품질게이트 최종 통과(`verify:quality`): `docs/session-handoff-2026-02-23-details.md`
 - 3카드 리딩 구조 개선: `docs/handoff/details/backend-reading-quality-2026-02-22.md`
 - 양자택일 맥락 분기(근무지/구매): `docs/handoff/details/backend-reading-quality-2026-02-22.md`
 - 양자택일 지역 선택 분기(부산/광주형): `docs/codex-updates-2026-02-22.md`
@@ -39,6 +42,9 @@
 - 문서 분리 기준/운영 규칙: `docs/handoff/details/docs-ops-structure-2026-02-22.md`
 
 ## 5) 최근 핵심 커밋
+- `cf7642a` Refocus intermediate guide text for tarot-reader training
+- `45ffe13` Expand course tracks and harden card-guide quality gates
+- `b97a0f6` Refine beginner card guide readability and update handoff docs
 - `ba9e199` Differentiate beginner/intermediate coaching with practical execution flows
 - `edaf90a` Improve choice spread branching and simplify learning digest output
 - `fb90f37` Refine relationship-reading tone and stabilize spread view UX
