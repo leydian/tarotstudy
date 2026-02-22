@@ -1282,15 +1282,57 @@ function buildNovelConclusionByLesson(lessonId, blueprint) {
 
 function buildConcreteFactPairByLesson(lessonId) {
   const id = String(lessonId || '');
+  if (id.startsWith('fz-') || id.startsWith('bd-')) {
+    return [
+      '질문을 줄이기 전엔 할 일이 5개로 퍼져 있었습니다.',
+      '질문을 한 줄로 고친 뒤 바로 시작한 일은 1개로 줄었습니다.'
+    ];
+  }
+  if (id.startsWith('fm-')) {
+    return [
+      '작업을 미루는 시간이 하루 2시간 이상 반복됐습니다.',
+      '단계를 정하고 20분 착수했을 때 실제 시작 시간이 앞당겨졌습니다.'
+    ];
+  }
   if (id.startsWith('ich-')) {
     return [
       'A안은 출퇴근 35분, B안은 70분으로 기록했습니다.',
       '이번 달 유지 비용은 A안 3만원, B안 7만원으로 비교했습니다.'
     ];
   }
+  if (id.startsWith('icb-')) {
+    return [
+      '같은 질문을 감정/업무/돈 문제로 섞어 써 결론이 흔들렸습니다.',
+      '핵심 주제를 1개로 고정하자 문장 길이가 절반으로 줄었습니다.'
+    ];
+  }
+  if (id.startsWith('icv-')) {
+    return [
+      '역할을 정하지 않으면 말이 길어지고 핵심 전달이 늦어졌습니다.',
+      '역할 1개를 고정한 날에는 필요한 말만 3번으로 끝났습니다.'
+    ];
+  }
+  if (id.startsWith('uis-')) {
+    return [
+      '카드 3장을 따로 해석할 때 결론이 서로 충돌했습니다.',
+      '원인-전환-결과 순서로 붙이자 행동 문장이 하나로 정리됐습니다.'
+    ];
+  }
+  if (id.startsWith('uip-')) {
+    return [
+      '가설만 적었을 때는 해석이 맞았는지 틀렸는지 확인이 어려웠습니다.',
+      '반례를 같이 적자 오판 원인을 바로 찾을 수 있었습니다.'
+    ];
+  }
+  if (id.startsWith('acs-')) {
+    return [
+      '복합 질문을 한 문단으로 쓰자 핵심이 뒤섞였습니다.',
+      '질문을 요소 3개로 나누자 각 요소별 근거가 선명해졌습니다.'
+    ];
+  }
   if (id.startsWith('eql-')) {
     return [
-      '어제 라벨은 우세였지만 실제 실행은 0회였습니다.',
+      '어제 판정 이름은 우세였지만 실제 실행은 0회였습니다.',
       '근거 2줄 중 1줄은 일정표 기록과 맞지 않았습니다.'
     ];
   }
@@ -1326,22 +1368,53 @@ function buildConcreteFactPairByLesson(lessonId) {
 
 function buildConcreteExecutionByLesson(lessonId, action) {
   const id = String(lessonId || '');
+  if (id.startsWith('fz-') || id.startsWith('bd-')) return '오늘 20:00, 책상에서 핵심 작업 1개를 20분 먼저 시작했습니다.';
+  if (id.startsWith('fm-')) return '오늘 19:30, 20분 타이머를 켜고 첫 작업 1개를 바로 착수했습니다.';
+  if (id.startsWith('icb-')) return '오늘 20:20, 질문 주제를 1개로 고정하고 근거 문장 2개만 적었습니다.';
+  if (id.startsWith('icv-')) return '오늘 18:40, 역할 1개를 정한 뒤 대화 핵심 문장 3개만 사용했습니다.';
   if (id.startsWith('ich-')) return '오늘 21:00, 노트 앱에서 A/B 비교표(비용·시간·피로) 3칸을 채우고 A안을 확정했습니다.';
   if (id.startsWith('eql-')) return '오늘 20:40, 복기 노트에서 라벨 1개와 근거 2줄을 대조해 어긋난 1줄을 바로 수정했습니다.';
   if (id.startsWith('ubs-')) return '오늘 19:50, 감정 정리 10분 후 핵심 작업 20분을 실행해 순서를 고정했습니다.';
   if (id.startsWith('bt-2')) return '오늘 20:30, 책상에서 보고서 첫 단락 5줄을 15분 안에 수정했습니다.';
+  if (id.startsWith('bt-')) return '오늘 20:10, 현재 마감 항목 1개를 먼저 20분 집중으로 처리했습니다.';
   if (id.startsWith('ubr-')) return '오늘 19:30, 방해 알림을 끄고 병목 작업 1개를 25분 집중으로 처리했습니다.';
   if (id.startsWith('acs-')) return '오늘 21:10, 질문을 변수 3개로 나누고 변수별 근거를 각 1줄씩 작성했습니다.';
+  if (id.startsWith('uis-')) return '오늘 20:50, 카드 3장을 원인-전환-결과 순서의 한 문단으로 연결했습니다.';
+  if (id.startsWith('uip-')) return '오늘 21:15, 가설 1개와 반례 1개를 같은 칸에 적고 근거 로그를 붙였습니다.';
   if (id.startsWith('ayc-')) return '오늘 21:00, 이번 주 계획표에 월·수·금 실행 슬롯 25분씩을 먼저 고정했습니다.';
   return `오늘 20:00, 책상에서 ${withObjectParticle(action)} 20분 안에 실행하도록 일정에 넣었습니다.`;
 }
 
 function buildReviewExampleByLesson(lessonId) {
   const id = String(lessonId || '');
+  if (id.startsWith('fz-') || id.startsWith('bd-')) {
+    return {
+      hit: '질문을 줄이자 첫 행동까지 걸린 시간이 줄었다.',
+      miss: '근거 문장 중 1줄은 여전히 느낌 표현이 많았다.'
+    };
+  }
+  if (id.startsWith('fm-')) {
+    return {
+      hit: '단계를 먼저 정하니 착수 속도가 빨라졌다.',
+      miss: '단계는 맞았지만 종료 기준을 적지 않아 길어졌다.'
+    };
+  }
   if (id.startsWith('bt-')) {
     return {
       hit: '20:30에 15분 수정을 완료해 실제로 작업이 시작됐다.',
       miss: '수정은 했지만 마감 전 최종 점검 1회를 빼먹었다.'
+    };
+  }
+  if (id.startsWith('icb-')) {
+    return {
+      hit: '질문 축을 1개로 고정하니 결론 문장이 바로 나왔다.',
+      miss: '보조 근거를 하나만 써서 설득력이 약했다.'
+    };
+  }
+  if (id.startsWith('icv-')) {
+    return {
+      hit: '역할을 먼저 정하니 대화 핵심이 흔들리지 않았다.',
+      miss: '역할은 정했지만 실행 장면 기록이 빠졌다.'
     };
   }
   if (id.startsWith('ich-')) {
@@ -1352,14 +1425,59 @@ function buildReviewExampleByLesson(lessonId) {
   }
   if (id.startsWith('eql-')) {
     return {
-      hit: '라벨과 근거를 대조해 어긋난 문장 1줄을 바로 고쳤다.',
+      hit: '판정 이름과 근거를 대조해 어긋난 문장 1줄을 바로 고쳤다.',
       miss: '근거 출처를 캡처로 남기지 않아 다음 확인에 시간이 걸렸다.'
+    };
+  }
+  if (id.startsWith('uis-')) {
+    return {
+      hit: '카드 3장을 한 흐름으로 묶자 실행 문장이 선명해졌다.',
+      miss: '전환 구간 근거 1개를 빠뜨려 설명이 짧게 끊겼다.'
+    };
+  }
+  if (id.startsWith('uip-')) {
+    return {
+      hit: '가설과 반례를 같이 적어 오판 원인을 바로 찾았다.',
+      miss: '반례 기록은 했지만 다음 확인 기준을 숫자로 못 남겼다.'
+    };
+  }
+  if (id.startsWith('acs-')) {
+    return {
+      hit: '질문을 요소로 나누자 해석 충돌이 줄었다.',
+      miss: '요소 중 1개에 실행 문장을 연결하지 못했다.'
+    };
+  }
+  if (id.startsWith('ayc-')) {
+    return {
+      hit: '주간 슬롯을 고정하니 실행 누락이 줄었다.',
+      miss: '고정 시간은 지켰지만 복기 기록을 하루 빼먹었다.'
     };
   }
   return {
     hit: '정한 시간에 핵심 행동 1개를 실제로 실행했다.',
     miss: '복기 문장 2줄 중 1줄이 추상적으로 남아 다음 기준이 흐려졌다.'
   };
+}
+
+function normalizeNovelLanguage(text = '') {
+  const replacements = [
+    ['라벨 정합성', '판정 일치 정도'],
+    ['판정 라벨', '판정 이름'],
+    ['라벨', '판정 이름'],
+    ['병목', '막히는 지점'],
+    ['정합성', '일치 정도'],
+    ['변수', '요소'],
+    ['보정점', '고칠 점'],
+    ['교정', '수정'],
+    ['검증 지표', '확인 기준'],
+    ['누수', '새는 지출'],
+    ['축', '기준'],
+    ['완충', '충돌 줄이기'],
+    ['리스크', '위험'],
+    ['루틴', '습관'],
+    ['지표', '확인 수치']
+  ];
+  return replacements.reduce((out, [from, to]) => out.replaceAll(from, to), text);
 }
 
 function buildStoryNovelByType({ lessonId, type, blueprint, cardPreview, a, b, c }) {
@@ -1372,17 +1490,23 @@ function buildStoryNovelByType({ lessonId, type, blueprint, cardPreview, a, b, c
   const [factA, factB] = buildConcreteFactPairByLesson(lessonId);
   const keywordEvidenceA = buildKeywordEvidence(a, factA);
   const keywordEvidenceB = buildKeywordEvidence(supportCard, factB);
-  const conclusion = buildNovelConclusionByLesson(lessonId, blueprint).replace(/[.?!\s]+$/u, '');
-  const execution = buildConcreteExecutionByLesson(lessonId, blueprint.action);
+  const conclusion = normalizeNovelLanguage(
+    buildNovelConclusionByLesson(lessonId, blueprint).replace(/[.?!\s]+$/u, '')
+  );
+  const execution = normalizeNovelLanguage(buildConcreteExecutionByLesson(lessonId, blueprint.action));
   const reviewExample = buildReviewExampleByLesson(lessonId);
-  return [
-    `${characterTopic} 오늘 리딩이 어렵게 느껴졌습니다. 이유는 ${blueprint.situation} 때문이었습니다.`,
-    `노트 첫 줄에 "${blueprint.question}"를 쓰자, 지금 다룰 핵심이 선명해졌습니다.`,
+  const everydaySituation = normalizeNovelLanguage(blueprint.situation);
+  const everydayQuestion = normalizeNovelLanguage(blueprint.question);
+  const everydayReview = normalizeNovelLanguage(blueprint.review);
+  const lines = [
+    `${characterTopic} 오늘 리딩이 어렵게 느껴졌습니다. 이유는 ${everydaySituation} 때문이었습니다.`,
+    `노트 첫 줄에 "${everydayQuestion}"를 쓰자, 지금 다룰 핵심이 선명해졌습니다.`,
     `${cards} 중에서는 ${aSubject} 가장 먼저 눈에 들어왔고, ${conclusion}.`,
     `${keywordEvidenceA} ${keywordEvidenceB} 이 두 근거를 붙이자 해석이 길어지지 않고 방향이 또렷해졌습니다.`,
     `${characterTopic} ${execution}`,
-    `마지막에는 ${withObjectParticle(blueprint.review)} 기준으로 기록을 남겼습니다. 먼저 "${reviewExample.hit}"라는 성과를 확인했고, 이어서 "${reviewExample.miss}"라는 보정점을 적었습니다. 그리고 ${checkCard} 카드는 다음 리딩 시작 전에 먼저 확인할 카드로 메모해 두었습니다.`
+    `마지막에는 ${withObjectParticle(everydayReview)} 기준으로 기록을 남겼습니다. 먼저 "${reviewExample.hit}"라는 성과를 확인했고, 이어서 "${reviewExample.miss}"라는 고칠 점을 적었습니다. 그리고 ${checkCard} 카드는 다음 리딩 시작 전에 먼저 확인할 카드로 메모해 두었습니다.`
   ];
+  return lines;
 }
 
 function buildDedicatedLessonDetail({ lesson, stageMeta, cardNames, lessonProfile, order }) {
