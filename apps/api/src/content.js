@@ -1218,6 +1218,7 @@ export function buildSpreadReading({
   const style = READING_STYLE_AB[level]?.[experimentVariant] ?? READING_STYLE_AB[level]?.A;
   const contextProfile = inferContextProfile(context);
   const isDailyRelationship = spreadId === 'daily-fortune' && contextProfile.id === 'relationship';
+  const isThreeCardSocial = spreadId === 'three-card' && contextProfile.id === 'social';
   const dailyRelationshipFocus = {
     '오늘의 흐름': '오늘 감정 온도와 대화 리듬',
     '주의할 점': '오해 신호와 감정 소모 관리',
@@ -1228,11 +1229,25 @@ export function buildSpreadReading({
     '주의할 점': '주의 카드는 오해가 커지기 쉬운 반응 패턴을 미리 알려주는 역할을 합니다.',
     '행동 조언': '행동 조언 카드는 오늘 바로 써볼 대화 문장이나 태도 1개를 정하는 기준입니다.'
   };
-  const focus = isDailyRelationship
+  const socialThreeCardFocus = {
+    과거: '주변 인식이 형성된 배경',
+    현재: '지금 보이는 인상과 분위기',
+    미래: '앞으로 굳어질 평가 흐름'
+  };
+  const socialThreeCardPrompt = {
+    과거: '과거 카드는 친구/동료가 나를 어떻게 보기 시작했는지의 배경을 보여줍니다.',
+    현재: '현재 카드는 요즘 주변 사람들이 체감하는 내 인상과 태도를 보여줍니다.',
+    미래: '미래 카드는 지금 흐름이 이어질 때 굳어질 가능성이 큰 평가를 알려줍니다.'
+  };
+  const focus = isThreeCardSocial
+    ? (socialThreeCardFocus[position.name] ?? tone.defaultFocus)
+    : isDailyRelationship
     ? (dailyRelationshipFocus[position.name] ?? tone.defaultFocus)
     : (tone.positionFocus[position.name] ?? tone.defaultFocus);
   const seed = `${spreadId}:${position.name}:${card.id}:${orientation}:${context}:${experimentVariant}:${level}`;
-  const positionPrompt = isDailyRelationship
+  const positionPrompt = isThreeCardSocial
+    ? (socialThreeCardPrompt[position.name] ?? tone.defaultPrompt)
+    : isDailyRelationship
     ? (dailyRelationshipPrompt[position.name] ?? tone.defaultPrompt)
     : (tone.positionPrompts[position.name] ?? tone.defaultPrompt);
   const coreMessage = buildNaturalCoreMessage({
@@ -1290,6 +1305,14 @@ function joinUniqueParts(parts) {
 function inferContextProfile(context = '') {
   const text = String(context || '').toLowerCase();
   const profiles = [
+    {
+      id: 'social',
+      keywords: ['친구', '동료', '사람들이', '어떻게 생각', '평판', '인상', '인간관계'],
+      anchor: '상대의 반응을 단정하기보다 반복해서 보이는 인상 단서를 먼저 확인해야 합니다.',
+      interpretationHint: '대인 해석은 의도 추측보다 실제 말투/거리감/반응 패턴을 기준으로 읽을 때 정확합니다.',
+      actionHint: '주변과의 대화에서 유지할 태도 1개와 줄일 반응 1개를 정해보세요.',
+      trackMetric: '관계 피로도와 대화 안정감'
+    },
     {
       id: 'career',
       keywords: ['이직', '직장', '회사', '업무', '승진', '프로젝트', '커리어', '창업', '면접'],
@@ -1369,6 +1392,9 @@ function buildNaturalCoreMessage({
   if (spreadId === 'yearly-fortune' && isYearlyMonthPosition(position.name)) {
     return buildYearlyMonthCoreMessage({ card, position, orientation, context, seed });
   }
+  if (contextProfile.id === 'social') {
+    return buildSocialBenchmarkCoreMessage({ card, position, orientation, spreadId });
+  }
   if (contextProfile.id === 'finance') {
     return buildFinanceBenchmarkCoreMessage({ card, position, orientation, spreadId });
   }
@@ -1411,6 +1437,9 @@ function buildTarotConsultingInterpretation({
 }) {
   if (spreadId === 'yearly-fortune' && isYearlyMonthPosition(position.name)) {
     return buildYearlyMonthInterpretation({ card, position, orientation, context, seed });
+  }
+  if (contextProfile.id === 'social') {
+    return buildSocialBenchmarkInterpretation({ card, position, orientation, spreadId });
   }
   if (contextProfile.id === 'finance') {
     return buildFinanceBenchmarkInterpretation({ card, position, orientation, spreadId });
@@ -1504,6 +1533,69 @@ function buildRelationshipBenchmarkInterpretation({ card, position, orientation,
     ? '실행 문장: "내 마음은 이렇고, 나는 이렇게 맞춰가고 싶어"처럼 짧고 분명하게 전달해보세요.'
     : '실행 문장: 오늘 대화에서는 결론을 내리기보다 확인 질문 1개만 먼저 건네보세요.';
   return polishTarotInterpretation([relationshipLine, realityLine, actionLine].join(' '));
+}
+
+function buildSocialBenchmarkCoreMessage({ card, position, orientation, spreadId = 'default' }) {
+  const cardDirection = orientation === 'upright' ? '정방향' : '역방향';
+  const keyword = card.keywords?.[0] ?? '인상';
+  const positionTopic = withKoreanParticle(position.name, '은', '는');
+  const spreadOpeners = {
+    'three-card': `${position.name} 카드로 친구/동료가 보는 당신의 인상을 차분히 살펴보겠습니다.`,
+    'daily-fortune': `${position.name} 카드로 오늘 대인 관계의 인상 흐름을 확인해보겠습니다.`,
+    'weekly-fortune': `${position.name} 카드로 이번 주 주변 평가의 흐름을 읽어보겠습니다.`,
+    'monthly-fortune': `${position.name} 카드로 이번 달 대인 이미지의 변화를 점검해보겠습니다.`,
+    'celtic-cross': `${position.name} 카드가 대인관계 서사에서 어떤 신호를 주는지 먼저 보겠습니다.`,
+    default: `${position.name} 카드로 현재 대인관계 인상을 확인해보겠습니다.`
+  };
+  const signalLine = orientation === 'upright'
+    ? `${card.nameKo}의 "${keyword}" 신호가 열려 있어, 주변에서 당신을 신뢰 가능한 사람으로 볼 가능성이 큽니다.`
+    : `${card.nameKo}의 "${keyword}" 신호가 예민해 보여, 주변에서 당신의 피로감이나 거리감을 먼저 읽을 가능성이 있습니다.`;
+  const closeLine = /(결과|조언)/.test(position.name)
+    ? '주변 인식은 단번에 바꾸기보다 작은 태도 변화가 반복될 때 안정적으로 바뀝니다.'
+    : `${positionTopic} 의도 설명보다 일관된 반응과 말투를 유지하는 쪽이 더 효과적입니다.`;
+  return polishCoreMessage([
+    spreadOpeners[spreadId] ?? spreadOpeners.default,
+    `뽑으신 카드는 '${card.nameKo} ${cardDirection}'입니다.`,
+    signalLine,
+    closeLine
+  ].join(' '));
+}
+
+function buildSocialBenchmarkInterpretation({ card, position, orientation, spreadId = 'default' }) {
+  const main = card.keywords?.[0] ?? '인상';
+  const sub = card.keywords?.[1] ?? main;
+  const open = orientation === 'upright';
+  const positionLabel = position.name || '이 자리';
+  const socialLine = (() => {
+    if (positionLabel === '과거') {
+      return open
+        ? `과거 흐름에서는 '${main}'에서 '${sub}'으로 이어지는 신호가 살아 있어, 주변이 당신을 믿고 맡길 수 있는 사람으로 보기 시작했을 가능성이 큽니다.`
+        : `과거 흐름에서는 '${main}' 신호가 흔들려, 오해나 거리감이 쌓인 경험이 현재 인상에 남아 있을 수 있습니다.`;
+    }
+    if (positionLabel === '현재') {
+      return open
+        ? `현재는 '${main}' 신호가 비교적 선명해, 친구/동료가 당신을 성실하고 믿음직한 사람으로 인식할 가능성이 큽니다.`
+        : `현재는 '${main}' 신호가 예민해 보여, 주변에서 당신을 지쳐 있거나 조심스러운 상태로 볼 수 있습니다.`;
+    }
+    if (positionLabel === '미래') {
+      return open
+        ? `앞으로 '${main}' 흐름이 유지되면 당신은 책임감 있고 안정적인 사람으로 더 강하게 각인될 가능성이 있습니다.`
+        : `앞으로 '${main}' 신호가 계속 흔들리면, 성실함은 인정받더라도 부담이 커 보여 거리감이 생길 가능성이 있습니다.`;
+    }
+    if (spreadId === 'choice-a-b') {
+      return open
+        ? `선택 비교에서는 '${main}' 신호가 열려 있어, 주변과 협업 신뢰를 유지하기 쉬운 선택지가 보입니다.`
+        : `선택 비교에서는 '${main}' 신호가 흔들려 보여, 피로를 줄이고 관계 긴장을 낮추는 선택을 우선하는 편이 좋습니다.`;
+    }
+    return open
+      ? `${positionLabel}에서는 '${main}'에서 '${sub}'으로 이어지는 흐름이 살아 있어, 주변 인식이 긍정적으로 정리될 가능성이 있습니다.`
+      : `${positionLabel}에서는 '${main}' 신호가 예민해, 해명보다 태도 일관성을 먼저 회복하는 편이 더 효과적입니다.`;
+  })();
+  const realityLine = '대인관계 해석은 내 의도보다 상대가 반복적으로 체감하는 반응이 기준이 되므로, 말투·속도·표정을 일정하게 유지하는 것이 중요합니다.';
+  const actionLine = open
+    ? '실행 문장: 오늘은 먼저 인사/확인/감사 중 1가지를 분명히 표현해 안정감을 보여주세요.'
+    : '실행 문장: 오늘은 설명을 길게 늘리기보다 핵심 한 문장만 말하고 반응을 확인해 오해를 줄여보세요.';
+  return polishTarotInterpretation([socialLine, realityLine, actionLine].join(' '));
 }
 
 function buildFinanceBenchmarkCoreMessage({ card, position, orientation, spreadId = 'default' }) {
@@ -1966,6 +2058,7 @@ function buildYearlyMonthInterpretation({ card, position, orientation, context =
 function inferYearlyIntent(context = '') {
   const text = String(context || '').toLowerCase();
   if (/(취직|취업|이직|입사|지원|면접|커리어|직장|회사)/.test(text)) return 'career';
+  if (/(친구|동료|사람들이|어떻게 생각|평판|인상|인간관계)/.test(text)) return 'social';
   if (/(연애|관계|재회|결혼|상대|썸)/.test(text)) return 'relationship';
   if (/(재정|재물|돈|지출|수입|저축|투자|소비|자산|현금흐름|가계부)/.test(text)) return 'finance';
   return 'general';
@@ -1985,6 +2078,9 @@ function buildYearlyMonthInsight({ month, card, orientation, yearlyIntent }) {
     career: orientation === 'upright'
       ? `${cardAxis} 관점에서 보면 준비된 건을 외부 검증(지원/면접)으로 옮기기 좋습니다.`
       : `${cardAxis} 관점에서 보면 실행 폭을 줄이고 서류·답변 완성도를 먼저 끌어올리는 편이 안정적입니다.`,
+    social: orientation === 'upright'
+      ? `${cardAxis} 관점에서는 말투와 반응의 일관성을 유지할수록 주변 신뢰가 붙기 쉬운 구간입니다.`
+      : `${cardAxis} 관점에서는 인상 변동이 커질 수 있어 해명보다 태도 정비를 먼저 두는 편이 좋겠습니다.`,
     relationship: orientation === 'upright'
       ? `${cardAxis} 관점에서는 대화의 문을 여는 시도가 관계 회복에 실제 도움이 될 가능성이 큽니다.`
       : `${cardAxis} 관점에서는 감정 해석을 늦추고 확인 대화를 먼저 두는 편이 오해를 줄입니다.`,
@@ -2016,6 +2112,11 @@ function buildYearlyMonthOrientationLine({ month, card, orientation, yearlyInten
       ? `${month}의 ${cardName} 정방향은 ${cardAxis}을 기반으로 재정 운영을 구조화하기 좋은 구간입니다.`
       : `${month}의 ${cardName} 역방향은 ${cardAxis}에서 새는 비용을 점검하라는 경고 신호입니다.`;
   }
+  if (yearlyIntent === 'social') {
+    return orientation === 'upright'
+      ? `${month}의 ${cardName} 정방향은 ${cardAxis}을 살린 소통이 주변 신뢰를 높이는 흐름입니다.`
+      : `${month}의 ${cardName} 역방향은 ${cardAxis} 해석이 엇갈릴 수 있어 인상 관리와 반응 조절이 먼저라는 신호입니다.`;
+  }
   return orientation === 'upright'
     ? `${month}의 ${cardName} 정방향은 ${cardAxis}을 실제 행동으로 연결하기 좋은 구간입니다.`
     : `${month}의 ${cardName} 역방향은 ${cardAxis} 구간에서 속도 조절과 정비가 먼저라는 신호입니다.`;
@@ -2030,6 +2131,10 @@ function buildYearlyMonthIntro({ month, yearlyIntent, seed = '' }) {
     relationship: [
       `${month} 관계 흐름은 대화 속도와 표현 강도를 맞추는 데 핵심이 됩니다.`,
       `${month}은 관계 리듬의 변화를 확인하는 달이라, 카드 신호를 먼저 보겠습니다.`
+    ],
+    social: [
+      `${month} 대인 흐름은 주변 인상이 어떻게 굳어지는지 확인하는 데 중요한 달입니다.`,
+      `${month}은 친구·동료 관계에서 보이는 태도 신호를 점검하는 구간입니다.`
     ],
     finance: [
       `${month} 재정 흐름은 지출 통제와 확장 판단의 기준이 되는 달입니다.`,
@@ -2054,6 +2159,9 @@ function buildYearlyMonthTimingLine({ month, monthRole, card, yearlyIntent, orie
   const roleShort = normalizeYearlyMonthRole(monthRole);
   const roleWithAnd = withKoreanParticle(roleShort, '과', '와');
   const intentAction = {
+    social: orientation === 'upright'
+      ? '짧고 명확한 소통을 유지하면 주변에서 신뢰 가능한 사람으로 읽힐 가능성이 큽니다.'
+      : '설명은 줄이고 반응을 천천히 확인하면 오해와 관계 피로를 줄일 수 있습니다.',
     relationship: orientation === 'upright'
       ? '요청 1개와 감정 1개를 분리해 짧게 전달하면 반응을 읽기 쉽습니다.'
       : '단정 문장은 줄이고 확인 질문 1개만 남기면 관계 피로를 줄일 수 있습니다.',
@@ -2075,6 +2183,9 @@ function buildYearlyMonthClose({ month, monthRole, orientation, yearlyIntent }) 
   const roleObject = withKoreanParticle(roleShort, '을', '를');
   const mode = orientation === 'upright' ? '확장 가능 구간' : '정비 우선 구간';
   const action = {
+    social: orientation === 'upright'
+      ? '짧은 확인 인사와 감사 표현을 꾸준히 유지해 인상을 안정적으로 쌓아보세요.'
+      : '해명보다 말투와 반응 템포를 먼저 정리해 관계 피로를 낮추는 편이 좋습니다.',
     relationship: orientation === 'upright'
       ? '대화는 짧고 명확하게, 해석은 천천히 가져가세요.'
       : '감정 강도를 낮추고 확인 대화를 먼저 두는 편이 무리가 적습니다.',

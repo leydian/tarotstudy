@@ -1306,12 +1306,18 @@ function summarizeYearlyFortune({ items, context = '', level = 'beginner' }) {
 function inferYearlyIntent(context = '') {
   const text = String(context || '').toLowerCase();
   if (/(취직|취업|이직|입사|지원|면접|커리어|직장|회사|오퍼|협상|이력서|포트폴리오|직무)/.test(text)) return 'career';
+  if (/(친구|동료|사람들이|어떻게 생각|평판|인상|인간관계)/.test(text)) return 'social';
   if (/(연애|관계|재회|결혼|상대|썸)/.test(text)) return 'relationship';
   if (/(재정|재물|돈|지출|수입|저축|투자|소비|자산|현금흐름|가계부)/.test(text)) return 'finance';
   return 'general';
 }
 
 function buildNonCareerMonthlyAction({ intent, orientation }) {
+  if (intent === 'social') {
+    return orientation === 'upright'
+      ? '주변과의 접점을 늘리되 짧고 일관된 태도를 유지하면 평판 안정에 도움이 됩니다.'
+      : '해명보다 말투와 반응 템포를 정리해 인상 피로를 먼저 줄이는 편이 좋습니다.';
+  }
   if (intent === 'relationship') {
     return orientation === 'upright'
       ? '관계를 조금 더 가까이 가져갈 대화나 제안을 해보기에 좋은 달입니다.'
@@ -1388,6 +1394,9 @@ function buildQuarterFocus({ index, role, intent, mode, isJobTimingQuestion }) {
     if (intent === 'finance') {
       return '연말 분기에서는 확장보다 결산과 위험 점검을 우선해 재정 리듬을 정리하는 편이 좋겠습니다.';
     }
+    if (intent === 'social') {
+      return '연말 분기에서는 관계를 무리하게 넓히기보다, 한 해 동안 쌓인 인상과 대화 패턴을 정리해 다음 해 기준을 세우는 편이 좋겠습니다.';
+    }
     return '연말 분기에서는 새로운 확장보다 올해 흐름을 정리하고 다음 해 운영 기준을 세우는 쪽이 맞겠습니다.';
   }
 
@@ -1425,6 +1434,12 @@ function buildQuarterFocus({ index, role, intent, mode, isJobTimingQuestion }) {
     return '공격적 확장보다 계획 유지에 초점을 두기 좋은 구간입니다.';
   }
 
+  if (intent === 'social') {
+    if (mode === 'open') return '주변 인식 흐름이 열려 있어 협업 접점을 넓히기 좋은 구간입니다.';
+    if (mode === 'adjust') return '피로감이 인상에 반영될 수 있어 말투와 반응 속도를 정리하는 편이 좋은 구간입니다.';
+    return '신뢰 확장과 거리 조절을 균형 있게 가져가기 좋은 구간입니다.';
+  }
+
   if (mode === 'open') return '흐름이 열려 있어 계획한 일을 무리 없이 이어가기 좋은 구간입니다.';
   if (mode === 'adjust') return '흐름 조정이 필요한 구간이라 정비를 먼저 두는 편이 좋겠습니다.';
   return '강약이 크지 않아 균형 운영이 잘 맞는 구간입니다.';
@@ -1444,6 +1459,9 @@ function buildQuarterAction({ index, role, intent, mode, isJobTimingQuestion }) 
     }
     if (intent === 'finance') {
       return '연간 지출·저축 흐름을 결산하고 내년 고정비/변동비 기준을 다시 세워두시면 안정적입니다.';
+    }
+    if (intent === 'social') {
+      return '올해 관계에서 반응이 좋았던 말투와 부담이 컸던 반응을 나눠 정리해 다음 해 대화 기준으로 고정해보세요.';
     }
     return '올해 실행과 결과를 짧게 결산해 다음 해의 우선순위를 미리 정리해두시면 흐름이 훨씬 편해집니다.';
   }
@@ -1480,6 +1498,12 @@ function buildQuarterAction({ index, role, intent, mode, isJobTimingQuestion }) 
     if (mode === 'open') return '예산 틀을 유지한 채 필요한 실행을 차분히 늘려보시면 좋겠습니다.';
     if (mode === 'adjust') return '고정비 점검과 소비 우선순위 재배치를 먼저 진행해보세요.';
     return '현금흐름 점검을 유지하면서 보수적으로 운영하시는 편이 좋겠습니다.';
+  }
+
+  if (intent === 'social') {
+    if (mode === 'open') return '짧은 확인 인사와 명확한 피드백을 유지해 신뢰 접점을 꾸준히 늘려보시면 좋겠습니다.';
+    if (mode === 'adjust') return '설명은 짧게 줄이고 반응을 천천히 확인해 오해와 피로를 먼저 낮춰보세요.';
+    return '관계 확장과 거리 조절을 반반으로 두고 태도 일관성을 유지해보시면 안정적입니다.';
   }
 
   if (mode === 'open') return '계획한 실행을 작게라도 이어가며 리듬을 유지해보시면 좋겠습니다.';
@@ -1533,6 +1557,9 @@ function selectMonthlyMode({ intent, orientation, isJobTimingQuestion }) {
   }
   if (intent === 'finance') {
     return orientation === 'upright' ? 'stabilize' : 'guard';
+  }
+  if (intent === 'social') {
+    return orientation === 'upright' ? 'connect' : 'calibrate';
   }
   return orientation === 'upright' ? 'advance' : 'prepare';
 }
@@ -1602,6 +1629,21 @@ function buildMonthlyToneLine({ intent, mode, keyword, cardName, month, monthRol
       `${cardName}의 ${keyword} 흐름이 흔들릴 수 있어 ${role}에서는 지출 통제와 점검을 먼저 두는 편이 좋겠습니다.`,
       `${cardName} 신호는 ${role}에서 손실 방어를 우선하라는 메시지에 가깝습니다.`,
       `${cardName} 카드상 ${keyword} 변동성이 있어 ${role}에서는 보수적 운영이 더 안전합니다.`
+    ], baseSeed);
+  }
+
+  if (intent === 'social') {
+    if (mode === 'connect') {
+      return pickByNumber([
+        `${cardName}의 ${keyword} 흐름이 열려 있어 ${role}에서 주변 신뢰를 쌓기 좋은 구간입니다.`,
+        `${cardName} 신호를 보면 ${role}에서는 말투와 반응이 긍정 인상으로 이어지기 쉬운 결입니다.`,
+        `${cardName} 카드 기준으로 ${role}에서 협업 접점을 넓혀도 무리가 적은 흐름입니다.`
+      ], baseSeed);
+    }
+    return pickByNumber([
+      `${cardName}의 ${keyword} 흐름이 예민해 ${role}에서는 해명보다 태도 일관성을 먼저 회복하는 편이 좋겠습니다.`,
+      `${cardName} 신호는 ${role}에서 피로감 관리와 거리 조절이 우선임을 보여줍니다.`,
+      `${cardName} 카드상 ${keyword} 변동이 있어 ${role}에서는 반응 속도를 낮춰 운영하는 편이 안정적입니다.`
     ], baseSeed);
   }
 
@@ -1676,6 +1718,21 @@ function buildMonthlyActionLine({ intent, mode, month, cardName, monthRole }) {
     ], seed);
   }
 
+  if (intent === 'social') {
+    if (mode === 'connect') {
+      return pickByNumber([
+        `${role}에서는 먼저 인사/확인/감사 중 1가지를 분명히 표현해 신뢰를 쌓아보세요.`,
+        `${role} 구간에서는 말투를 짧고 명확하게 유지해 주변의 오해 가능성을 낮춰보시면 좋겠습니다.`,
+        `${role}에서는 협업 접점을 한 번 더 만들되 반응 확인을 꼭 함께 가져가보세요.`
+      ], seed);
+    }
+    return pickByNumber([
+      `${role}에서는 설명을 길게 하기보다 핵심 한 문장으로 반응을 확인하는 편이 좋겠습니다.`,
+      `${role} 구간에서는 대화 강도를 낮추고 거리 조절을 먼저 두면 피로가 줄어듭니다.`,
+      `${role}에서는 경계와 요청을 분리해 말하는 방식으로 오해를 줄여보세요.`
+    ], seed);
+  }
+
   return mode === 'advance'
     ? `${role}에서는 계획한 일을 한두 가지라도 꾸준히 진행해보시면 좋겠습니다.`
     : `${role}에서는 속도를 늦추고 정비를 먼저 해두시면 다음 흐름이 훨씬 편안합니다.`;
@@ -1683,6 +1740,12 @@ function buildMonthlyActionLine({ intent, mode, month, cardName, monthRole }) {
 
 function buildMonthlyFallbackAction({ intent, mode, month, cardName }) {
   const seed = hashText(`fallback:${intent}:${mode}:${month}:${cardName}`);
+  if (intent === 'social') {
+    return pickByNumber([
+      '이번 달은 관계를 넓히기보다 일관된 말투와 반응을 유지해 인상 안정에 집중해보세요.',
+      '해명보다 확인 대화 1개를 먼저 두고 주변 반응을 천천히 점검해보시는 편이 좋겠습니다.'
+    ], seed);
+  }
   if (intent === 'relationship') {
     return pickByNumber([
       '이번 달은 해석보다 반응 확인을 우선해 대화 온도를 안정시키는 데 집중해보세요.',
@@ -1758,6 +1821,13 @@ function inferSummaryContextTone(context = '') {
       intermediateHint: '원하는 것과 불편한 것을 분리해서 말하면 갈등이 줄어듭니다.'
     };
   }
+  if (['친구', '동료', '평판', '인상', '인간관계', '어떻게 생각'].some((k) => text.includes(k))) {
+    return {
+      mainHint: '대인 이슈는 의도 설명보다 반복되는 태도와 반응이 인상을 만듭니다.',
+      beginnerHint: '오늘은 말투 하나와 반응 하나만 정돈해도 체감이 달라집니다.',
+      intermediateHint: '상황별 대응 문장을 1개씩 고정하면 평판 변동성이 줄어듭니다.'
+    };
+  }
   if (['돈', '재정', '재물', '투자', '지출', '저축', '수입', '대출', '자산', '현금흐름'].some((k) => text.includes(k))) {
     return {
       mainHint: '돈 문제는 수익 기대보다 지출 통제부터 잡을 때 마음이 안정됩니다.',
@@ -1823,6 +1893,10 @@ function buildSummaryLead({
     ? (uprightCount >= reversedCount
         ? '전반적으로는 대화의 문이 열릴 여지가 있어도, 감정 속도 조절이 함께 필요합니다.'
         : '전반적으로는 결론을 서두르기보다 감정 온도를 맞추며 오해를 줄이는 쪽이 더 유리합니다.')
+    : intent === 'social'
+      ? (uprightCount >= reversedCount
+          ? '전반적으로는 주변에서 당신을 믿음직하게 보는 흐름이 살아 있지만, 과한 책임감은 거리감을 만들 수 있어 강약 조절이 필요합니다.'
+          : '전반적으로는 당신의 피로감이 인상에 반영될 수 있어, 해명보다 태도 안정과 리듬 회복이 더 유리합니다.')
     : intent === 'finance'
       ? (uprightCount >= reversedCount
           ? '전반적으로는 수익 기회가 보이더라도 지출 상한과 통제 규칙을 함께 두는 편이 유리합니다.'
@@ -1841,6 +1915,9 @@ function buildSummaryFocus({ spreadName, firstItem, lastItem, context = '', cont
   const intent = inferYearlyIntent(context);
   if (!firstItem || !lastItem) return contextTone.mainHint;
   if (spreadName === '원카드' || firstItem.position.name === '핵심 메시지') {
+    if (intent === 'social') {
+      return '사람들이 나를 어떻게 보는지 묻는 질문에서는 카드 의미를 크게 확장하기보다, 실제로 보이는 태도 신호를 우선 읽는 게 정확합니다. 오늘은 내 강점 1개와 줄일 반응 1개를 정해 인상을 안정적으로 관리해보세요.';
+    }
     if (intent === 'finance') {
       return '재물 질문에서는 카드 한 장을 크게 확장하기보다, 오늘 지출 통제 1개와 확인할 숫자 1개를 같이 정하는 방식이 가장 실용적입니다. 기대 수익보다 현금흐름을 먼저 읽으면 판단이 훨씬 안정됩니다.';
     }
@@ -1850,6 +1927,9 @@ function buildSummaryFocus({ spreadName, firstItem, lastItem, context = '', cont
     return `실행: ${buildOneCardActionLine({ context, firstItem })}`;
   }
   if (spreadName === '양자택일 (A/B)') {
+    if (intent === 'social') {
+      return '대인관계 양자택일은 누가 맞는지보다, 주변 신뢰를 오래 유지할 수 있는 선택지를 기준으로 보는 편이 좋습니다. 두 선택지에서 피로도와 협업 안정감을 각각 한 가지씩 비교해보세요.';
+    }
     if (intent === 'finance') {
       return '재정 양자택일은 높은 기대수익보다 손실 가능성과 유지 비용이 낮은 쪽을 우선 봐야 정확합니다. 두 선택지에서 초기 비용 1개와 숨은 고정비 1개를 나눠 비교해보세요.';
     }
@@ -1859,6 +1939,9 @@ function buildSummaryFocus({ spreadName, firstItem, lastItem, context = '', cont
     return `양자택일에서는 현재 상황 카드로 판단 기준을 먼저 고정하고, A/B 결과 카드에서 내가 오래 유지할 수 있는 쪽을 우선 보세요. ${contextTone.mainHint}`;
   }
   if (spreadName === '일별 운세') {
+    if (intent === 'social') {
+      return '일간 대인운은 오늘의 흐름 카드로 내 인상 톤을 읽고, 주의할 점 카드로 오해 포인트를 확인한 뒤, 행동 조언 카드에서 말투/반응 1개를 고정하는 순서가 가장 안정적입니다.';
+    }
     if (intent === 'finance') {
       return '일간 재물운은 오늘의 흐름 카드로 자금 온도를 먼저 읽고, 주의할 점 카드로 누수 신호를 확인한 뒤, 행동 조언 카드에서 통제 행동 1개를 고정하는 순서가 가장 안정적입니다.';
     }
@@ -1868,6 +1951,9 @@ function buildSummaryFocus({ spreadName, firstItem, lastItem, context = '', cont
     return `일별 운세는 오늘의 흐름 카드로 페이스를 잡고, 행동 조언 카드 한 줄만 실제 일정에 반영하면 충분합니다. ${contextTone.mainHint}`;
   }
   if (spreadName === '주별 운세') {
+    if (intent === 'social') {
+      return '주간 대인운은 힘이 실리는 날에 협업 접점을 늘리고, 조심할 날에는 설명을 줄이며 태도 일관성을 유지하는 방식이 효과적입니다. 평판은 한 번의 해명보다 반복되는 반응 패턴에서 만들어집니다.';
+    }
     if (intent === 'finance') {
       return '주간 재물운은 힘이 실리는 날에 핵심 집행을 두고, 조심할 날에는 결제 통제와 점검을 배치하는 방식이 좋습니다. 한 주를 통틀어 수익 확대보다 누수 차단을 먼저 두면 손실을 줄이기 쉽습니다.';
     }
@@ -1877,6 +1963,9 @@ function buildSummaryFocus({ spreadName, firstItem, lastItem, context = '', cont
     return `주별 운세는 월요일 시동 카드에서 시작해 일요일 복기 카드까지 일자별 흐름으로 연결해서 보면 판단이 안정됩니다. ${contextTone.mainHint}`;
   }
   if (spreadName === '월별 운세') {
+    if (intent === 'social') {
+      return '월간 대인운에서는 순간 감정 대응보다 꾸준한 태도가 더 크게 보입니다. 월간 테마를 기준으로 소통 톤과 거리감을 조절하면 주변 신뢰를 안정적으로 유지할 수 있습니다.';
+    }
     if (intent === 'finance') {
       return '월간 재물운에서는 초반 공격적 집행보다 중후반 유지력이 더 중요합니다. 월간 테마를 기준으로 고정비와 변동비를 나눠 관리하면 흐름이 훨씬 안정됩니다.';
     }
@@ -1886,6 +1975,9 @@ function buildSummaryFocus({ spreadName, firstItem, lastItem, context = '', cont
     return `월별 운세는 월간 테마로 방향을 세우고 1~4주차 카드로 강약만 조절하면 됩니다. ${contextTone.mainHint}`;
   }
   if (spreadName === '연간 운세 (12개월)') {
+    if (intent === 'social') {
+      return '연간 대인운은 사건 하나보다 분기별 인상 흐름을 읽는 방식이 현실적입니다. 접점을 넓힐 시기와 숨 고를 시기를 나눠 운영하면 평판의 변동성을 줄일 수 있습니다.';
+    }
     if (intent === 'finance') {
       return '연간 재물운은 월별 수익보다 분기별 리스크 관리와 현금흐름 안정화를 먼저 보는 방식이 현실적입니다. 확장 구간과 방어 구간을 나눠 운영하면 연간 변동성을 줄일 수 있습니다.';
     }
@@ -1895,6 +1987,9 @@ function buildSummaryFocus({ spreadName, firstItem, lastItem, context = '', cont
     return `연간 운세는 월별 사건에 매달리기보다 분기별 공통 흐름을 잡을 때 훨씬 선명해집니다. ${contextTone.mainHint}`;
   }
   if (spreadName === '켈틱 크로스') {
+    if (intent === 'social') {
+      return '켈틱 대인 리딩은 현재 인상, 갈등 포인트, 결과 흐름을 한 줄로 연결해 읽을 때 정확도가 높습니다. 의도 설명보다 반복되는 반응 패턴을 먼저 확인해보세요.';
+    }
     if (intent === 'finance') {
       return '켈틱 재물 리딩은 현재 재정 상태, 핵심 장애, 결과 흐름을 한 줄로 연결해 읽을 때 정확도가 높습니다. 분위기 해석보다 반복되는 지출 패턴과 손실 신호를 먼저 특정해보세요.';
     }
@@ -1902,6 +1997,9 @@ function buildSummaryFocus({ spreadName, firstItem, lastItem, context = '', cont
       return '켈틱 연애 리딩은 현재 감정, 갈등 지점, 결과 흐름을 한 줄로 연결해 읽을 때 정확도가 올라갑니다. 상대 의도 추측보다 반복되는 대화 패턴을 먼저 확인해보세요.';
     }
     return `켈틱 크로스는 현재/교차 카드로 중심 갈등을 확인하고 결과 카드로 연결하면 흐름이 깔끔해집니다. ${contextTone.mainHint}`;
+  }
+  if (intent === 'social') {
+    return '이 대인 흐름은 큰 결론보다 현재 신호와 다음 반응을 짧게 연결해 읽는 방식이 가장 안정적입니다. 오늘은 말투 하나, 반응 하나만 정리해도 인상이 분명해집니다.';
   }
   if (intent === 'finance') {
     return '이 재물 흐름은 큰 결론보다 현재 신호와 다음 통제 행동을 짧게 연결해 읽는 방식이 가장 실용적입니다. 오늘은 지출 상한 1개와 보류 항목 1개를 먼저 정해보세요.';
@@ -1916,6 +2014,9 @@ function buildSummaryAction({ spreadName, level, context = '', firstItem = null,
   const intent = inferYearlyIntent(context);
   const levelLine = level === 'intermediate' ? contextTone.intermediateHint : contextTone.beginnerHint;
   if (spreadName === '원카드') {
+    if (intent === 'social') {
+      return `오늘 대인운 조언은 두 갈래로 보시면 됩니다. 신뢰를 더 쌓고 싶다면 짧고 분명한 소통을 먼저 여세요. 피로가 크다면 설명을 줄이고 반응 템포를 낮춰 인상을 안정시키는 편이 좋습니다. ${levelLine}`;
+    }
     if (intent === 'finance') {
       return `오늘 재물운 조언은 두 갈래로 보시면 됩니다. 기회를 잡고 싶다면 예산 상한 안에서 작은 집행 1건만 실행하세요. 방어가 필요하다면 비필수 결제 1건을 보류하고 현금흐름부터 점검하세요. ${levelLine}`;
     }
@@ -1926,6 +2027,9 @@ function buildSummaryAction({ spreadName, level, context = '', firstItem = null,
     return `복기: ${reviewLine} ${levelLine}`;
   }
   if (spreadName === '일별 운세') {
+    if (intent === 'social') {
+      return `오늘 대인운 조언은 두 갈래로 보시면 됩니다. 관계를 열고 싶다면 먼저 인사/확인/감사 중 1가지를 표현하세요. 조절이 필요하다면 말수를 줄이고 핵심 한 문장만 남겨 오해를 줄이는 편이 좋습니다. ${levelLine}`;
+    }
     if (intent === 'finance') {
       return `오늘 재물운 조언은 두 갈래로 보시면 됩니다. 흐름이 괜찮다면 필요한 집행 1건만 기준 안에서 처리해 리듬을 유지하세요. 불안하면 결제 전 10분 유예를 두고 비필수 지출 1건을 보류하는 편이 안전합니다. ${levelLine}`;
     }
@@ -1935,6 +2039,9 @@ function buildSummaryAction({ spreadName, level, context = '', firstItem = null,
     return `오늘은 맞추려 하기보다 리듬을 지키는 쪽이 더 좋습니다. ${levelLine}`;
   }
   if (spreadName === '주별 운세') {
+    if (intent === 'social') {
+      return `이번 주 대인운은 두 갈래로 정리됩니다. 신뢰를 넓히고 싶다면 강한 날에 협업 접점을 한 번 더 만드세요. 피로가 크다면 약한 날에는 대화 강도를 낮추고 경계를 분명히 하는 편이 좋습니다. ${levelLine}`;
+    }
     if (intent === 'finance') {
       return `이번 주 재물운은 두 갈래로 정리됩니다. 확장을 원하면 강한 날에 핵심 집행 1개만 실행하세요. 방어가 우선이면 약한 날에는 신규 결제를 줄이고 누수 점검을 먼저 두는 편이 좋습니다. ${levelLine}`;
     }
@@ -1944,6 +2051,9 @@ function buildSummaryAction({ spreadName, level, context = '', firstItem = null,
     return `한 주를 한 번에 바꾸려 하지 말고, 중반부터 천천히 페이스를 맞춰 보세요. ${levelLine}`;
   }
   if (spreadName === '월별 운세') {
+    if (intent === 'social') {
+      return `이번 달 대인운은 두 갈래 운영이 좋습니다. 관계 확장을 원하면 일관된 태도와 짧은 피드백을 유지하세요. 소모가 크다면 접촉 빈도를 조절하고 반응 속도를 낮추는 편이 좋습니다. ${levelLine}`;
+    }
     if (intent === 'finance') {
       return `이번 달 재물운은 두 갈래 운영이 좋습니다. 성장 쪽을 택하면 계획형 집행과 기록 루틴을 함께 가져가세요. 안정 쪽을 택하면 지출 상한을 낮추고 고정비 재점검을 먼저 하는 편이 좋습니다. ${levelLine}`;
     }
@@ -1953,6 +2063,9 @@ function buildSummaryAction({ spreadName, level, context = '', firstItem = null,
     return `월간 리딩은 초반 스퍼트보다 후반 유지력이 더 중요합니다. ${levelLine}`;
   }
   if (spreadName === '연간 운세 (12개월)') {
+    if (intent === 'social') {
+      return `연간 대인운도 두 갈래로 보시면 됩니다. 확장을 원하면 상승 구간에 협업/네트워킹을 늘리세요. 안정이 우선이면 조정 구간에는 갈등 소지를 줄이고 내 리듬을 지키는 편이 좋습니다. ${levelLine}`;
+    }
     if (intent === 'finance') {
       return `연간 재물운도 두 갈래로 보시면 됩니다. 기회를 넓히려면 상승 구간에만 확장 집행을 배치하세요. 안정이 우선이면 조정 구간에는 손실 방어와 현금 보존을 먼저 두는 편이 좋습니다. ${levelLine}`;
     }
@@ -1962,6 +2075,9 @@ function buildSummaryAction({ spreadName, level, context = '', firstItem = null,
     return `연간 리딩은 월별 성과보다 분기별 균형을 먼저 챙기면 덜 흔들립니다. ${levelLine}`;
   }
   if (spreadName === '양자택일 (A/B)') {
+    if (intent === 'social') {
+      return `선택형 대인운 조언도 두 갈래입니다. 신뢰를 원하면 관계가 오래 유지되는 선택지를 고르세요. 소모를 줄이려면 경계가 지켜지고 부담이 적은 선택지를 우선하는 편이 좋습니다. ${levelLine}`;
+    }
     if (intent === 'finance') {
       return `선택형 재물운 조언도 두 갈래입니다. 수익을 노린다면 유지 비용이 감당되는 선택지를 고르세요. 손실 방어가 우선이면 초기 지출과 변동성이 낮은 선택지를 우선하는 편이 좋습니다. ${levelLine}`;
     }
@@ -1971,6 +2087,9 @@ function buildSummaryAction({ spreadName, level, context = '', firstItem = null,
     return `결정 전에는 시간, 비용, 마음 소모 이 세 가지만 두 선택지에 대입해 보세요. ${levelLine}`;
   }
   if (spreadName === '3카드 스프레드') {
+    if (intent === 'social') {
+      return `3카드 대인운은 두 갈래 실행으로 마무리하면 좋습니다. 관계를 열고 싶다면 오늘 먼저 따뜻한 확인 한마디를 건네보세요. 부담이 크다면 설명을 줄이고 핵심 반응 1개만 확인하는 방식이 안전합니다. ${levelLine}`;
+    }
     if (intent === 'finance') {
       return `3카드 재물운은 두 갈래 실행으로 마무리하면 좋습니다. 확장을 원하면 집행 1개를 기준 안에서 실행하세요. 방어가 필요하면 지출 1개를 줄이고 구독/자동결제 1개를 점검하는 편이 안전합니다. ${levelLine}`;
     }
@@ -1980,6 +2099,9 @@ function buildSummaryAction({ spreadName, level, context = '', firstItem = null,
     return `세 장의 공통 키워드 하나를 잡아 오늘 행동 한 줄로 바꾸면 충분합니다. ${levelLine}`;
   }
   if (spreadName === '켈틱 크로스') {
+    if (intent === 'social') {
+      return `켈틱 대인운 조언은 두 갈래입니다. 회복과 확장을 원하면 사실 확인 후 짧게 소통을 여세요. 소모가 크면 대화 속도를 늦추고 갈등 신호를 먼저 정리한 뒤 다음 단계를 여는 편이 안정적입니다. ${levelLine}`;
+    }
     if (intent === 'finance') {
       return `켈틱 재물운 조언은 두 갈래입니다. 전진을 원하면 핵심 집행 1개만 정해 실행하세요. 불안이 크면 지출 속도를 늦추고 손실 요인부터 정리한 뒤 다음 결정을 여는 편이 안정적입니다. ${levelLine}`;
     }
@@ -1987,6 +2109,9 @@ function buildSummaryAction({ spreadName, level, context = '', firstItem = null,
       return `켈틱 연애운 조언은 두 갈래입니다. 회복과 진전을 원하면 사실-감정-요청 순서로 대화를 짧게 여세요. 소모가 크다면 감정 과열 구간을 먼저 줄이고, 결론은 다음 대화로 넘기는 편이 안정적입니다. ${levelLine}`;
     }
     return `복합 이슈일수록 중심 흐름과 외부 환경을 분리해서 천천히 정리해 보세요. ${levelLine}`;
+  }
+  if (intent === 'social') {
+    return `대인운 조언은 두 갈래로 정리됩니다. 관계를 넓히고 싶다면 짧고 분명한 소통을 이어가세요. 소모를 줄이고 싶다면 반응 템포를 늦추고 경계를 분명히 하며 리듬을 지키는 편이 좋습니다. ${levelLine}`;
   }
   if (intent === 'finance') {
     return `재물운 조언은 두 갈래로 정리됩니다. 기회를 잡고 싶다면 집행 기준을 먼저 세운 뒤 작은 실행을 하세요. 방어가 우선이면 신규 결제를 줄이고 누수 점검부터 시작하는 편이 좋습니다. ${levelLine}`;
