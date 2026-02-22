@@ -21,6 +21,7 @@
 - 품질 게이트를 자동화했습니다.
   - `npm run test:api`
   - `npm run qa:learning-leader`
+  - `npm run qa:relationship-recovery`
   - `npm run qa:yearly-fortune`
   - `npm run verify:quality`
   - CI 워크플로우(`.github/workflows/quality-gates.yml`) 연동
@@ -55,6 +56,7 @@
   - `apps/api/test/cards-descriptions.test.js`
   - `apps/api/test/content-fallback.test.js`
   - `apps/api/test/relationship-recovery-spread.test.js`
+  - `scripts/relationship-recovery-variation-check.mjs`
   - `scripts/run-learning-leader-qa.mjs`
   - `scripts/yearly-fortune-regression-check.mjs`
   - `scripts/yearly-fortune-regression-cases.json`
@@ -67,6 +69,9 @@
   - `docs/learning-leader-quality.md`
   - `docs/yearly-fortune-regression-checklist.md`
   - `docs/codex-updates-2026-02-22.md`
+  - `docs/relationship-recovery-manual-qa-2026-02-22.md`
+  - `docs/card-detail-context-branch-check-2026-02-22.md`
+  - `docs/spread-telemetry-baseline-2026-02-22.md`
 
 ## 4) 다음 세션 우선 확인 항목
 - 관계 회복 스프레드(`relationship-recovery`) 실사용 문장 품질 점검
@@ -113,3 +118,52 @@
   - `/api/cards/:cardId` 기본 설명은 `context` 쿼리 반영(고정 카드 문구 + 맥락 힌트)
   - `/api/cards/:cardId/explain` 심화 설명은 섹션별 최소 3줄 보장
   - 심화 설명 `love/career`는 맥락(재회/갈등/면접/프로젝트/학습 등)에 따라 문장 분기
+
+## 7) 추가 반영 (관계회복 품질 2차 + 켈틱 장문 리딩)
+- 관계회복 품질 2차(균형형) 적용
+  - 정량 QA 스크립트 추가: `scripts/relationship-recovery-variation-check.mjs`
+  - 품질 지표:
+    - 구조 실패 0건
+    - 행동문 실패 0건
+    - `exactPairRate`, `highSimilarityPairRate`, `distinctRatio`
+  - 품질 게이트 확장:
+    - `package.json`에 `qa:relationship-recovery` 추가
+    - `verify:quality`에 관계회복 정량 QA 포함
+  - 운영 산출물:
+    - `tmp/relationship-recovery-variation-report.json`
+    - `tmp/relationship-recovery-variation-report.md`
+
+- 연간운세 회귀 케이스 강화
+  - `scripts/yearly-fortune-regression-cases.json` 확장
+    - 총 18건(커리어 6, 관계 5, 재정 4, 일반 3)
+  - `scripts/yearly-fortune-regression-check.mjs` 검증 강화
+    - 시기 표현 검증
+    - 커리어 도메인 단어 검증
+    - `언제 + 무엇` 결론 문장 검증
+  - `docs/yearly-fortune-regression-checklist.md` 기준 동기화
+
+- 켈틱 크로스 장문 리딩 반영(벤치마킹 대응)
+  - `apps/api/src/index.js`에 켈틱 전용 요약 분기 추가
+    - `summarizeSpread()`에서 `celtic-cross`를 `summarizeCelticCross()`로 분기
+  - `summarizeCelticCross()` 신규 구현
+    - 10포지션(현재~결과) 각각 장문 문단 생성
+    - 질문 의도 감지(`relationship-repair` 등) 기반 감정형 문체 분기
+    - 마지막 결론에서 즉시 실행 문장 고정 출력
+      - `지금 실행할 한 문장: ...`
+  - 품질 보정:
+    - 한국어 조사 어색함 1건(`역방향로`) 교정
+
+- 문서/운영 정리
+  - `README.md` 품질 게이트 섹션에 `qa:relationship-recovery` 추가
+  - 관계회복 수동 QA 문서에 자동 QA 기준/임계값 명시
+  - 카드 상세 맥락 분기 점검 리포트, 텔레메트리 기준선 리포트 추가
+
+- 검증 결과(최신)
+  - `npm run test:api` 통과
+  - `npm run qa:learning-leader` 통과
+  - `npm run qa:relationship-recovery` 통과
+  - `npm run qa:yearly-fortune` 통과
+  - `npm run verify:quality` 통과
+
+- 관련 커밋
+  - `dc49a35` Enhance celtic-cross narrative and add relationship QA gate

@@ -233,3 +233,79 @@
 - `0c3ae28` Add automated quality gates for reading regressions
 - `9ffa015` Add relationship-recovery spread and telemetry hooks
 - `861df93` Strengthen context-aware card explanations across all sections
+
+## 9) 관계회복 품질 2차(균형형) + 회귀 강화 (추가)
+
+### 9.1 관계회복 정량 QA 게이트 추가
+- 변경 파일:
+  - `scripts/relationship-recovery-variation-check.mjs`
+  - `package.json`
+  - `README.md`
+  - `docs/relationship-recovery-manual-qa-2026-02-22.md`
+- 추가 내용:
+  - `qa:relationship-recovery` 스크립트 추가
+  - `verify:quality`에 관계회복 정량 QA 포함
+  - 샘플 50회 기준 정량 지표 계산:
+    - `exactPairRate`
+    - `highSimilarityPairRate`
+    - `distinctRatio`
+    - 구조/행동문 실패 건수
+  - 리포트 파일 자동 생성:
+    - `tmp/relationship-recovery-variation-report.json`
+    - `tmp/relationship-recovery-variation-report.md`
+
+### 9.2 연간운세 회귀 케이스 확장 및 규칙 강화
+- 변경 파일:
+  - `scripts/yearly-fortune-regression-cases.json`
+  - `scripts/yearly-fortune-regression-check.mjs`
+  - `docs/yearly-fortune-regression-checklist.md`
+- 추가 내용:
+  - 회귀 케이스 총 18건으로 확대
+    - 커리어 6건, 관계 5건, 재정 4건, 일반 3건
+  - 검증 규칙 강화:
+    - 시기 질문의 시간 표현 포함 여부
+    - 커리어 도메인 단어 최소 포함 규칙
+    - 최종 문단의 `언제 + 무엇` 문장 규칙
+
+### 9.3 신규 운영/검증 리포트 문서
+- 추가 파일:
+  - `docs/card-detail-context-branch-check-2026-02-22.md`
+  - `docs/spread-telemetry-baseline-2026-02-22.md`
+- 내용:
+  - 카드 상세 7개 섹션 맥락 분기 확인 결과
+  - 스프레드 텔레메트리 기준선(draw/review 비율) 기록
+
+## 10) 켈틱 크로스 장문 리딩 고도화 (벤치마킹 대응)
+
+### 10.1 켈틱 전용 장문 요약기 도입
+- 변경 파일: `apps/api/src/index.js`
+- 핵심 변경:
+  - `summarizeSpread()`에서 `celtic-cross`를 전용 함수로 분기
+  - `summarizeCelticCross()` 추가:
+    - 10개 포지션(현재/교차/기반/과거/가능성/미래/자기인식/외부환경/희망·두려움/결과) 문단 생성
+    - 질문 의도(`relationship-repair`, `relationship`, `career`, `finance`, `general`) 감지
+    - 의도별 문체/해석 분기
+
+### 10.2 관계 화해 질문 특화 문체/행동 처방
+- 변경 파일: `apps/api/src/index.js`
+- 핵심:
+  - `inferCelticIntent()`로 화해/갈등 질문 감지
+  - `buildCelticPositionLine()`에 관계 회복 전용 문장 템플릿 적용
+  - `buildCelticConclusion()`에서 결론 + 즉시 실행 문장 고정
+    - 예: `지금 실행할 한 문장: ...`
+
+### 10.3 품질 보정
+- 변경 파일: `apps/api/src/index.js`
+- 조치:
+  - 조사 어색함(`역방향로`)을 `withKoreanParticle()` 사용으로 교정
+
+### 10.4 검증 로그(추가)
+- `node --check apps/api/src/index.js` 통과
+- `npm run test:api` 통과
+- `npm run verify:quality` 통과
+- 실샘플 검증:
+  - 입력: `친구랑 싸웠는데 어떻게 화해할까`
+  - 결과: 켈틱 summary가 장문(12문단)으로 생성됨
+
+### 10.5 관련 커밋(추가)
+- `dc49a35` Enhance celtic-cross narrative and add relationship QA gate

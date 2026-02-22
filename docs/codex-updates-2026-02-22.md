@@ -212,3 +212,68 @@
 - `0c3ae28` Add automated quality gates for reading regressions
 - `9ffa015` Add relationship-recovery spread and telemetry hooks
 - `861df93` Strengthen context-aware card explanations across all sections
+
+---
+
+## 추가 업데이트 3 (관계회복 QA 2차 + 켈틱 장문 벤치마킹 반영)
+
+### 1) 관계회복 정량 QA 게이트 도입
+- 파일:
+  - `scripts/relationship-recovery-variation-check.mjs`
+  - `package.json`
+  - `README.md`
+  - `docs/relationship-recovery-manual-qa-2026-02-22.md`
+- 변경:
+  - `qa:relationship-recovery` 명령 추가
+  - `verify:quality`에 관계회복 QA 포함
+  - 샘플 50회 기준 정량 지표 계산:
+    - `exactPairRate`
+    - `highSimilarityPairRate`
+    - `distinctRatio`
+    - 구조/행동문 실패 수
+  - 리포트 산출:
+    - `tmp/relationship-recovery-variation-report.json`
+    - `tmp/relationship-recovery-variation-report.md`
+
+### 2) 연간운세 회귀 케이스 확장(비-커리어 포함)
+- 파일:
+  - `scripts/yearly-fortune-regression-cases.json`
+  - `scripts/yearly-fortune-regression-check.mjs`
+  - `docs/yearly-fortune-regression-checklist.md`
+- 변경:
+  - 총 18케이스로 확장(커리어/관계/재정/일반)
+  - 시기 표현, 커리어 도메인 단어, `언제 + 무엇` 결론 문장 회귀 규칙 강화
+
+### 3) 켈틱 크로스 장문 리딩 고도화
+- 파일: `apps/api/src/index.js`
+- 변경:
+  - `summarizeSpread()`에서 `celtic-cross`를 전용 요약기로 분기
+  - `summarizeCelticCross()` 추가:
+    - 10포지션 장문 해석 생성
+    - 질문 의도 감지(`relationship-repair` 등) 기반 문체 분기
+  - `buildCelticPositionLine()`:
+    - 관계 화해 맥락 감정형 문체 강화
+  - `buildCelticConclusion()`:
+    - 결론 + 즉시 실행 문장 고정
+    - `지금 실행할 한 문장: ...` 출력
+  - 조사 어색함 1건 교정(`역방향로` -> 조사 자동 선택)
+
+### 4) 운영 리포트 문서 추가
+- 파일:
+  - `docs/card-detail-context-branch-check-2026-02-22.md`
+  - `docs/spread-telemetry-baseline-2026-02-22.md`
+- 내용:
+  - 카드 상세 맥락 분기 강도 검증 결과
+  - 스프레드 텔레메트리 기준선 기록
+
+### 5) 검증
+- `npm run test:api` 통과
+- `npm run qa:learning-leader` 통과
+- `npm run qa:relationship-recovery` 통과
+- `npm run qa:yearly-fortune` 통과
+- `npm run verify:quality` 통과
+- 켈틱 샘플 검증:
+  - 입력 `친구랑 싸웠는데 어떻게 화해할까`에 대해 장문 summary 생성 확인
+
+### 6) 관련 커밋
+- `dc49a35` Enhance celtic-cross narrative and add relationship QA gate
