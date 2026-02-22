@@ -299,7 +299,13 @@ app.post('/api/cards/:cardId/explain', async (request, reply) => {
 });
 
 app.post('/api/quiz/generate', async (request, reply) => {
-  const { lessonId, level = 'beginner', count = 5 } = request.body || {};
+  const {
+    lessonId,
+    level = 'beginner',
+    count = 5,
+    quizMode = 'guided',
+    recentAccuracy = null
+  } = request.body || {};
   const lesson = getLessonById(lessonId);
 
   if (!lesson) {
@@ -308,7 +314,7 @@ app.post('/api/quiz/generate', async (request, reply) => {
   }
 
   const lessonCards = lesson.cardIds.map((cardId) => getCardById(cardId)).filter(Boolean);
-  const questions = generateQuiz({
+  const generated = generateQuiz({
     lessonCards,
     lessonMeta: {
       lessonId: lesson.id,
@@ -316,13 +322,17 @@ app.post('/api/quiz/generate', async (request, reply) => {
       summary: lesson.summary
     },
     level,
-    count: Number(count) || 5
+    count: Number(count) || 5,
+    quizMode,
+    recentAccuracy
   });
 
   return {
     lessonId,
     level,
-    questions
+    quizMode: generated.policy.quizMode,
+    policy: generated.policy,
+    questions: generated.questions
   };
 });
 

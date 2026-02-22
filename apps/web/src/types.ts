@@ -91,16 +91,40 @@ export interface QuizChoice {
 
 export interface QuizQuestion {
   id: string;
-  type: 'multiple_choice';
+  type: 'two_step_multiple_choice';
   cardId: string;
   stem: string;
-  choices: QuizChoice[];
+  hint?: string;
+  contextTag?: string;
+  cardNameKo?: string;
+  cardImageUrl?: string;
+  keywordCue?: string[];
+  arcanaLabel?: string;
+  orientationHint?: string;
+  steps: Array<{
+    id: 'step-1' | 'step-2';
+    title: string;
+    stem: string;
+    choices: QuizChoice[];
+  }>;
   explanation: string;
+  scoring?: {
+    full: number;
+    partial: number;
+  };
 }
 
 export interface QuizPayload {
   lessonId: string;
   level: 'beginner' | 'intermediate';
+  quizMode?: 'guided' | 'exam' | 'auto';
+  policy?: {
+    quizMode: 'guided' | 'exam' | 'auto';
+    lowAccuracy: boolean;
+    choiceCount: number;
+    hintsEnabled: boolean;
+    twoStepEnabled: boolean;
+  };
   questions: QuizQuestion[];
 }
 
@@ -111,9 +135,18 @@ export interface QuizResult {
   details: Array<{
     questionId: string;
     cardId: string;
+    score: number;
     correct: boolean;
-    selected: string | null;
-    correctAnswer: string | null;
+    step1Correct: boolean;
+    step2Correct: boolean;
+    selected: {
+      step1: string | null;
+      step2: string | null;
+    };
+    correctAnswer: {
+      step1: string | null;
+      step2: string | null;
+    };
     explanation: string;
   }>;
   weakCards: TarotCard[];

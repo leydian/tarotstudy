@@ -13,26 +13,54 @@ function uniqueTexts(values) {
   return Array.from(new Set(values.filter(Boolean).map((v) => String(v).trim()).filter(Boolean)));
 }
 
-function createChoices(correctText, distractorCandidates, fallbackCandidates = []) {
+function createChoices(correctText, distractorCandidates, fallbackCandidates = [], targetChoiceCount = 4) {
+  const safeCount = Math.max(2, Math.min(Number(targetChoiceCount) || 4, 4));
+  const targetDistractors = Math.max(1, safeCount - 1);
   const distractors = uniqueTexts(distractorCandidates)
     .filter((text) => text !== correctText)
-    .slice(0, 3);
+    .slice(0, targetDistractors);
   const fallback = uniqueTexts(fallbackCandidates)
     .filter((text) => text !== correctText && !distractors.includes(text));
-  while (distractors.length < 3 && fallback.length > 0) {
+  while (distractors.length < targetDistractors && fallback.length > 0) {
     distractors.push(fallback.shift());
   }
 
   const choices = shuffle([
     { text: correctText, correct: true },
     ...distractors.map((text) => ({ text, correct: false }))
-  ]).slice(0, 4);
+  ]).slice(0, safeCount);
 
   return choices.map((choice, i) => ({
     id: `c-${i + 1}`,
     text: choice.text,
     correct: choice.correct
   }));
+}
+
+function sentenceifyChoiceText(text, card, level) {
+  const normalized = String(text || '').trim();
+  if (!normalized) return normalized;
+  if (/[.!?]|다\)|다\./.test(normalized) || normalized.includes(' ')) return normalized;
+  const lead = level === 'intermediate' ? '해석 우선순위는' : '우선 체크할 포인트는';
+  return `${lead} "${normalized}"이며, 카드 근거 1개와 함께 말한다.`;
+}
+
+function buildDifficultyPolicy({ level = 'beginner', quizMode = 'guided', recentAccuracy = null } = {}) {
+  const normalizedMode = ['guided', 'exam', 'auto'].includes(quizMode) ? quizMode : 'guided';
+  const accuracy = Number.isFinite(Number(recentAccuracy)) ? Number(recentAccuracy) : null;
+  const lowAccuracy = accuracy != null && accuracy < 70;
+  const baseChoiceCount = level === 'beginner' ? 3 : 4;
+  const modeChoiceCount = normalizedMode === 'guided' ? 3 : baseChoiceCount;
+  const choiceCount = lowAccuracy ? 3 : Math.min(4, Math.max(3, modeChoiceCount));
+  const hintsEnabled = normalizedMode !== 'exam' || lowAccuracy;
+  const twoStepEnabled = true;
+  return {
+    quizMode: normalizedMode,
+    lowAccuracy,
+    choiceCount,
+    hintsEnabled,
+    twoStepEnabled
+  };
 }
 
 function buildRankStage(rank) {
@@ -61,6 +89,36 @@ function buildSuitDomain(suitKo) {
     소드: '판단/의사소통/분석',
     펜타클: '현실/성과/자원'
   }[suitKo] ?? '큰 흐름/전환');
+}
+
+function inferContextTagFromArchetype(archetypeId) {
+  if (archetypeId.includes('relationship')) return '관계';
+  if (archetypeId.includes('career')) return '커리어';
+  if (archetypeId.includes('study')) return '학습';
+  if (archetypeId.includes('reversed')) return '리스크';
+  if (archetypeId.includes('suit') || archetypeId.includes('rank')) return '카드 구조';
+  if (archetypeId.includes('arcana')) return '아르카나';
+  return '기본 해석';
+}
+
+function inferHintByArchetype(archetypeId, card) {
+  const key = card?.keywords?.[0] || '핵심';
+  const map = {
+    keyword_primary: `힌트: ${card.nameKo}의 대표 키워드(${key})를 먼저 떠올려 보세요.`,
+    keyword_secondary: '힌트: 대표 키워드 옆에서 보조 역할을 하는 신호를 찾으세요.',
+    keyword_context: '힌트: 키워드 2개를 결론+근거 구조로 연결해 보세요.',
+    arcana_type: '힌트: 메이저(큰 흐름)와 마이너(실전 상황)를 먼저 구분하세요.',
+    suit_domain: '힌트: 수트는 행동/감정/판단/현실 영역을 가릅니다.',
+    rank_stage: '힌트: 랭크는 단계(시작-전개-완결)를 나타냅니다.',
+    upright_action: '힌트: 정방향은 과속보다 안정된 실행 유지가 핵심입니다.',
+    reversed_guard: '힌트: 역방향은 부정 단정보다 병목 1개를 먼저 찾는 것이 우선입니다.',
+    relationship_context: '힌트: 관계 질문은 감정 추측보다 근거 설명이 먼저입니다.',
+    career_context: '힌트: 커리어/학업은 오늘 끝낼 수 있는 작은 작업으로 쪼개 보세요.',
+    study_context: '힌트: 학습은 오답 원인 1개 + 보완 1개가 가장 효율적입니다.',
+    evidence_structure: '힌트: 카드 키워드 + 상황 사실 + 실행 조건 3요소를 맞추세요.',
+    final_line: '힌트: 마지막 문장은 언제/어디서/무엇을 할지로 닫아보세요.'
+  };
+  return map[archetypeId] || '힌트: 카드 근거 1개를 먼저 잡고 행동 문장으로 이어보세요.';
 }
 
 function buildQuestionFamilies(level) {
@@ -246,14 +304,20 @@ function resolveLessonArchetypes(lessonMeta = {}) {
   return new Set(map[series] || []);
 }
 
-function buildQuestionBankFromPool(pool, level) {
+function buildQuestionBankFromPool(pool, level, policy = buildDifficultyPolicy({ level })) {
   const families = buildQuestionFamilies(level);
   const fallbackCandidates = [
-    '오늘 20분 실행 1개 고정',
-    '결론 1문장 + 근거 1문장',
-    '적중 1줄 + 오차 1줄 복기',
-    '감정 추측보다 근거 제시',
-    '우선순위 1개 먼저 완료'
+    '오늘 할 행동 1개를 시간과 함께 정한다.',
+    '결론 1문장과 근거 1문장을 함께 말한다.',
+    '실행 후 적중 1줄과 오차 1줄을 복기한다.',
+    '감정 추측보다 카드 근거를 먼저 제시한다.',
+    '우선순위 1개를 먼저 완료한다.'
+  ];
+  const beginnerSafeDistractors = [
+    '카드 뜻을 외우는 데만 집중하고 행동으로 연결하지 않는다.',
+    '결론 없이 느낌 위주로 길게 설명한다.',
+    '실행 시점 없이 추상적인 조언으로 마무리한다.',
+    '복기 없이 다음 질문으로 바로 넘어간다.'
   ];
   const bank = [];
 
@@ -270,21 +334,69 @@ function buildQuestionBankFromPool(pool, level) {
           ...distractorCards.map((d) => `${d.keywords?.[0] || '핵심'} + ${d.keywords?.[1] || '보조'}`),
           ...(built.fixedChoices || [])
         ];
+        const softenedDistractors = level === 'beginner'
+          ? beginnerSafeDistractors
+          : distractorCandidates;
 
         const choices = built.fixedChoices
           ? createChoices(
-            built.correctText,
+            sentenceifyChoiceText(built.correctText, card, level),
             built.fixedChoices.filter((text) => text !== built.correctText),
-            fallbackCandidates
+            fallbackCandidates.map((line) => sentenceifyChoiceText(line, card, level)),
+            policy.choiceCount
           )
-          : createChoices(built.correctText, distractorCandidates, fallbackCandidates);
+          : createChoices(
+            sentenceifyChoiceText(built.correctText, card, level),
+            softenedDistractors.map((text) => sentenceifyChoiceText(text, card, level)),
+            fallbackCandidates.map((line) => sentenceifyChoiceText(line, card, level)),
+            policy.choiceCount
+          );
+
+        const normalizedChoices = choices.map((choice) => ({
+          ...choice,
+          text: sentenceifyChoiceText(choice.text, card, level)
+        }));
+        const evidenceCorrect = `카드 키워드(${card.keywords?.[0] || '핵심'})와 질문 사실 1개를 연결했기 때문이다.`;
+        const evidenceChoices = createChoices(
+          evidenceCorrect,
+          [
+            '카드 근거 없이 직감만으로 결론을 낸 설명이기 때문이다.',
+            '실행 시점 없이 단정 문장만 남겨서 설득력이 약하기 때문이다.',
+            '질문 맥락과 무관한 일반론을 반복했기 때문이다.',
+            ...(level === 'beginner' ? beginnerSafeDistractors : [])
+          ],
+          [
+            '카드 근거 1개와 행동 1개가 같이 제시되어 있기 때문이다.',
+            '결론과 근거가 같은 방향으로 정리되어 있기 때문이다.'
+          ],
+          policy.choiceCount
+        );
+        const contextTag = inferContextTagFromArchetype(family.id);
 
         bank.push({
           id: `bank-${family.id}-v${variant + 1}-${card.id}`,
           archetypeId: family.id,
           cardId: card.id,
           stem: built.stem,
-          choices,
+          hint: inferHintByArchetype(family.id, card),
+          contextTag,
+          cardNameKo: card.nameKo,
+          cardImageUrl: card.imageUrl,
+          keywordCue: card.keywords?.slice(0, 2) || [],
+          arcanaLabel: card.arcana === 'major' ? '메이저' : '마이너',
+          orientationHint: family.id.includes('reversed')
+            ? '역방향'
+            : family.id.includes('upright')
+              ? '정방향'
+              : '공통',
+          step1: {
+            stem: built.stem,
+            choices: normalizedChoices
+          },
+          step2: {
+            stem: `[근거 선택] 방금 고른 결론이 타당한 이유로 가장 적절한 것은?`,
+            choices: evidenceChoices
+          },
           explanation: built.explanation,
           type: 'multiple_choice'
         });
@@ -366,23 +478,56 @@ function pickDiverseQuestions(bank, count) {
 function toQuizQuestion(question, index) {
   return {
     id: `q-${index + 1}-${question.archetypeId}-${question.cardId}`,
-    type: 'multiple_choice',
+    type: 'two_step_multiple_choice',
     cardId: question.cardId,
     stem: question.stem,
-    choices: question.choices.map((choice, i) => ({
-      id: `c-${i + 1}`,
-      text: choice.text,
-      correct: choice.correct
-    })),
-    explanation: question.explanation
+    hint: question.hint,
+    contextTag: question.contextTag,
+    cardNameKo: question.cardNameKo,
+    cardImageUrl: question.cardImageUrl,
+    keywordCue: question.keywordCue,
+    arcanaLabel: question.arcanaLabel,
+    orientationHint: question.orientationHint,
+    steps: [
+      {
+        id: 'step-1',
+        title: '1단계: 결론 선택',
+        stem: question.step1.stem,
+        choices: question.step1.choices.map((choice, i) => ({
+          id: `s1-c-${i + 1}`,
+          text: choice.text,
+          correct: choice.correct
+        }))
+      },
+      {
+        id: 'step-2',
+        title: '2단계: 근거 선택',
+        stem: question.step2.stem,
+        choices: question.step2.choices.map((choice, i) => ({
+          id: `s2-c-${i + 1}`,
+          text: choice.text,
+          correct: choice.correct
+        }))
+      }
+    ],
+    explanation: question.explanation,
+    scoring: { full: 1, partial: 0.5 }
   };
 }
 
-export function generateQuiz({ lessonCards, lessonMeta = null, level = 'beginner', count = 5 }) {
+export function generateQuiz({
+  lessonCards,
+  lessonMeta = null,
+  level = 'beginner',
+  count = 5,
+  quizMode = 'guided',
+  recentAccuracy = null
+}) {
+  const policy = buildDifficultyPolicy({ level, quizMode, recentAccuracy });
   const basePool = lessonCards.length ? lessonCards : cards;
   const hasLessonScope = Boolean(lessonMeta && lessonMeta.lessonId && lessonCards.length);
   const expandedPool = hasLessonScope ? basePool : expandQuizPool(basePool);
-  const bank = buildQuestionBankFromPool(expandedPool, level);
+  const bank = buildQuestionBankFromPool(expandedPool, level, policy);
   const allowedArchetypes = resolveLessonArchetypes(lessonMeta || {});
   const alignedBank = allowedArchetypes.size
     ? bank.filter((item) => allowedArchetypes.has(item.archetypeId))
@@ -390,7 +535,10 @@ export function generateQuiz({ lessonCards, lessonMeta = null, level = 'beginner
   const safeCount = Math.max(1, Math.min(Number(count) || 5, 30));
   const sourceBank = alignedBank.length >= Math.min(safeCount, 5) ? alignedBank : bank;
   const selected = pickDiverseQuestions(sourceBank, Math.min(safeCount, sourceBank.length));
-  return selected.map((question, index) => toQuizQuestion(question, index));
+  return {
+    policy,
+    questions: selected.map((question, index) => toQuizQuestion(question, index))
+  };
 }
 
 export function getQuizQuestionBankSize(level = 'beginner') {
@@ -400,24 +548,41 @@ export function getQuizQuestionBankSize(level = 'beginner') {
 export function gradeQuiz({ questions, answers }) {
   let score = 0;
   const details = questions.map((question) => {
-    const answerId = answers[question.id];
-    const selected = question.choices.find((choice) => choice.id === answerId);
-    const correctChoice = question.choices.find((choice) => choice.correct);
-    const correct = Boolean(selected?.correct);
-    if (correct) score += 1;
+    const step1 = question.steps?.[0];
+    const step2 = question.steps?.[1];
+    const answer1 = answers[`${question.id}:step-1`];
+    const answer2 = answers[`${question.id}:step-2`];
+    const selected1 = step1?.choices?.find((choice) => choice.id === answer1) ?? null;
+    const selected2 = step2?.choices?.find((choice) => choice.id === answer2) ?? null;
+    const correctChoice1 = step1?.choices?.find((choice) => choice.correct) ?? null;
+    const correctChoice2 = step2?.choices?.find((choice) => choice.correct) ?? null;
+    const step1Correct = Boolean(selected1?.correct);
+    const step2Correct = Boolean(selected2?.correct);
+    const gainedScore = step1Correct && step2Correct ? 1 : (step1Correct || step2Correct ? 0.5 : 0);
+    score += gainedScore;
+    const correct = gainedScore === 1;
 
     return {
       questionId: question.id,
       cardId: question.cardId,
+      score: gainedScore,
       correct,
-      selected: selected?.text ?? null,
-      correctAnswer: correctChoice?.text ?? null,
+      step1Correct,
+      step2Correct,
+      selected: {
+        step1: selected1?.text ?? null,
+        step2: selected2?.text ?? null
+      },
+      correctAnswer: {
+        step1: correctChoice1?.text ?? null,
+        step2: correctChoice2?.text ?? null
+      },
       explanation: question.explanation
     };
   });
 
   const weakCardIds = details
-    .filter((detail) => !detail.correct)
+    .filter((detail) => detail.score < 1)
     .map((detail) => detail.cardId)
     .slice(0, 3);
 

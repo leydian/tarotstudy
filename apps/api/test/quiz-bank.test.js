@@ -12,7 +12,8 @@ test('quiz question bank size is at least 1000', () => {
 
 test('generateQuiz returns mixed archetypes and varied stems', () => {
   const lessonCards = cards.slice(0, 5);
-  const questions = generateQuiz({ lessonCards, level: 'beginner', count: 12 });
+  const generated = generateQuiz({ lessonCards, level: 'beginner', count: 12 });
+  const questions = generated.questions;
   assert.equal(questions.length, 12);
 
   const archetypes = new Set(
@@ -28,12 +29,13 @@ test('generateQuiz returns mixed archetypes and varied stems', () => {
 
 test('generateQuiz aligns archetypes to lesson scope when lessonMeta is provided', () => {
   const lessonCards = cards.slice(0, 8);
-  const questions = generateQuiz({
+  const generated = generateQuiz({
     lessonCards,
     level: 'beginner',
     count: 10,
     lessonMeta: { lessonId: 'fz-1' }
   });
+  const questions = generated.questions;
   assert.equal(questions.length, 10);
 
   const allowed = new Set([

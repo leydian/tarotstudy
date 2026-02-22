@@ -161,7 +161,13 @@ export const api = {
       body: JSON.stringify({ level, context })
     });
   },
-  generateQuiz(input: { lessonId: string; level: 'beginner' | 'intermediate'; count: number }) {
+  generateQuiz(input: {
+    lessonId: string;
+    level: 'beginner' | 'intermediate';
+    count: number;
+    quizMode?: 'guided' | 'exam' | 'auto';
+    recentAccuracy?: number | null;
+  }) {
     return request<QuizPayload>('/api/quiz/generate', {
       method: 'POST',
       body: JSON.stringify(input)

@@ -397,6 +397,29 @@ input {
   margin-top: 12px;
 }
 
+.soft-divider {
+  border: 0;
+  border-top: 1px dashed var(--reading-line);
+  margin: 6px 0;
+}
+
+.quiz-question-head {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.quiz-card-thumb {
+  width: 72px;
+  min-width: 72px;
+  height: 112px;
+  border-radius: 8px;
+  border: 1px solid var(--reading-line);
+  background: var(--reading-bg);
+  object-fit: cover;
+}
+
 .badge {
   display: inline-block;
   margin: 0;
@@ -1276,6 +1299,16 @@ input {
 
   .yearly-month-grid {
     grid-template-columns: 1fr;
+  }
+
+  .quiz-question-head {
+    flex-direction: column;
+  }
+
+  .quiz-card-thumb {
+    width: 64px;
+    min-width: 64px;
+    height: 98px;
   }
 
   .weekly-day-grid {
