@@ -1277,7 +1277,14 @@ export function buildSpreadReading({
   const learningPoint = joinUniqueParts([
     `[학습 리더] ${buildLearningCoachOpening({ positionName: position.name, seed })}`,
     `[학습 리더] ${buildLearningCoachFrame({ style, seed })}`,
-    `[학습 리더] ${buildLearningCoachReview({ positionName: position.name, contextProfile, style, seed })}`
+    `[학습 리더] ${buildLearningCoachReview({
+      positionName: position.name,
+      cardName: card.nameKo,
+      orientation,
+      contextProfile,
+      style,
+      seed
+    })}`
   ]);
 
   return { interpretation, coreMessage, learningPoint };
@@ -1311,7 +1318,7 @@ function inferContextProfile(context = '') {
       anchor: '갈등 상황에서는 누가 맞는지보다 감정 과열을 먼저 낮추는 순서가 중요합니다.',
       interpretationHint: '관계 회복 해석은 의도 추측보다 실제 반응과 대화 순서를 기준으로 읽을 때 정확합니다.',
       actionHint: '사실 1개, 감정 1개, 요청 1개를 짧게 분리해 전달해보세요.',
-      trackMetric: '대화 긴장도와 회복 체감'
+      trackMetric: '카드 키워드와 대화 반응의 일치도'
     },
     {
       id: 'social',
@@ -1319,7 +1326,7 @@ function inferContextProfile(context = '') {
       anchor: '상대의 반응을 단정하기보다 반복해서 보이는 인상 단서를 먼저 확인해야 합니다.',
       interpretationHint: '대인 해석은 의도 추측보다 실제 말투/거리감/반응 패턴을 기준으로 읽을 때 정확합니다.',
       actionHint: '주변과의 대화에서 유지할 태도 1개와 줄일 반응 1개를 정해보세요.',
-      trackMetric: '관계 피로도와 대화 안정감'
+      trackMetric: '포지션 해석과 관찰 단서의 일치도'
     },
     {
       id: 'career',
@@ -1327,7 +1334,7 @@ function inferContextProfile(context = '') {
       anchor: '현실 제약(시간/성과/역할)을 먼저 고정해야 합니다.',
       interpretationHint: '성과와 리스크를 같은 기준으로 비교해야 의사결정 오류를 줄일 수 있습니다.',
       actionHint: '일정과 책임 범위를 명확히 써서 실행하세요.',
-      trackMetric: '성과 지표와 일정 준수율'
+      trackMetric: '카드 신호와 업무 징후의 일치도'
     },
     {
       id: 'relationship',
@@ -1335,7 +1342,7 @@ function inferContextProfile(context = '') {
       anchor: '감정 사실과 기대를 분리해 표현 순서를 정해야 합니다.',
       interpretationHint: '상대 반응을 추정하기보다 관찰 가능한 대화 패턴을 기준으로 읽어야 정확합니다.',
       actionHint: '요청 1개와 경계 1개를 분명히 말하는 방식이 좋습니다.',
-      trackMetric: '대화의 명확성 및 감정 소모도'
+      trackMetric: '카드 방향성과 관계 흐름의 일치도'
     },
     {
       id: 'daily',
@@ -1343,7 +1350,7 @@ function inferContextProfile(context = '') {
       anchor: '오늘 가장 소모가 큰 구간 1개와 집중할 행동 1개를 먼저 정해야 합니다.',
       interpretationHint: '넓은 인생 해석보다 오늘 실제 일정에 바로 적용되는 조언을 우선해야 효과가 큽니다.',
       actionHint: '오늘 할 일 1개와 피할 소모 1개를 짝으로 정해 실천하세요.',
-      trackMetric: '하루 집중 유지율과 감정 소모도'
+      trackMetric: '카드 키워드와 실제 사건 매칭 정확도'
     },
     {
       id: 'finance',
@@ -1351,7 +1358,7 @@ function inferContextProfile(context = '') {
       anchor: '현금흐름과 고정비를 먼저 확인해야 판단이 흔들리지 않습니다.',
       interpretationHint: '기대수익보다 손실 가능성과 유동성 리스크를 함께 읽어야 안전합니다.',
       actionHint: '지출 우선순위를 3단계로 나눠 즉시 조정하세요.',
-      trackMetric: '지출 통제율과 손실 한도'
+      trackMetric: '카드 해석과 금전 흐름 단서의 일치도'
     },
     {
       id: 'study',
@@ -1359,7 +1366,7 @@ function inferContextProfile(context = '') {
       anchor: '학습량보다 반복 주기와 복기 품질을 먼저 고정해야 합니다.',
       interpretationHint: '지식 습득과 실전 적용을 분리해 읽으면 실행력이 올라갑니다.',
       actionHint: '25분 학습 1회와 5분 복기 1회를 묶어 수행하세요.',
-      trackMetric: '반복 주기 유지율과 회상 정확도'
+      trackMetric: '카드 메시지와 학습 리듬 변화의 일치도'
     },
     {
       id: 'health',
@@ -1367,7 +1374,7 @@ function inferContextProfile(context = '') {
       anchor: '강도보다 회복 리듬을 우선 관리해야 반등 폭이 커집니다.',
       interpretationHint: '단기 의욕보다 지속 가능한 루틴 관점으로 해석해야 변동성이 줄어듭니다.',
       actionHint: '수면/활동/식사 중 하나만 먼저 안정화하세요.',
-      trackMetric: '회복 체감도와 루틴 지속일'
+      trackMetric: '카드 해석과 컨디션 신호의 일치도'
     }
   ];
 
@@ -1382,7 +1389,7 @@ function inferContextProfile(context = '') {
     anchor: '지금 가장 중요한 한 가지부터 정하면 흐름이 훨씬 선명해집니다.',
     interpretationHint: '카드 해석을 넓히기보다 현재 결정에 영향을 주는 현실 단서부터 잡아야 정확도가 올라갑니다.',
     actionHint: '지금 가능한 단일 행동으로 축소해 바로 실행하세요.',
-    trackMetric: '실행 완료 여부와 체감 변화'
+    trackMetric: '카드 키워드와 실제 전개의 일치도'
   };
 }
 
@@ -2989,21 +2996,22 @@ function buildLearningCoachOpening({ positionName, seed }) {
 
 function buildLearningCoachFrame({ style, seed }) {
   const lines = [
-    style.learningFrame,
+    `리딩 결과 학습 기준: ${style.learningFrame}`,
     `훈련 프레임: ${style.learningFrame}`,
-    `학습 루틴 권고: ${style.learningFrame}`,
-    `이번 카드 학습 기준은 다음과 같습니다. ${style.learningFrame}`
+    `타로 학습 루틴: ${style.learningFrame}`,
+    `이번 카드 복기 기준은 다음과 같습니다. ${style.learningFrame}`
   ];
   return pickVariant(`${seed}:coach-frame`, lines);
 }
 
-function buildLearningCoachReview({ positionName, contextProfile, style, seed }) {
+function buildLearningCoachReview({ positionName, cardName, orientation, contextProfile, style, seed }) {
+  const direction = orientation === 'upright' ? '정방향' : '역방향';
   const lines = [
-    `복기 질문: "${positionName} 판단을 ${contextProfile.trackMetric} 기준으로 점검했는가?"`,
-    `체크 질문: "${positionName} 해석이 ${contextProfile.trackMetric} 변화로 확인됐는가?"`,
-    `검증 질문: "${positionName} 리딩이 실제 ${contextProfile.trackMetric}에 어떤 차이를 만들었는가?"`
+    `복기 질문: "${positionName}에서 읽은 ${cardName} ${direction} 해석을 ${contextProfile.trackMetric} 기준으로 점검했는가?"`,
+    `체크 질문: "${cardName} ${direction}의 핵심 키워드가 ${positionName} 실제 전개와 어떻게 맞았는가?"`,
+    `검증 질문: "${positionName} 리딩에서 카드 근거(키워드/방향/포지션)를 분리해 설명할 수 있는가?"`
   ];
-  return `${pickVariant(`${seed}:coach-review-q`, lines)} ${pickVariant(`${seed}:coach-review-step`, [style.reviewStep, `실행 후 검증: ${style.reviewStep}`])}`;
+  return `${pickVariant(`${seed}:coach-review-q`, lines)} ${pickVariant(`${seed}:coach-review-step`, [style.reviewStep, `리딩 검증: ${style.reviewStep}`])}`;
 }
 
 function withKoreanParticle(word = '', consonantParticle = '이', vowelParticle = '가') {
@@ -3039,14 +3047,14 @@ const READING_STYLE_AB = {
       reversedTail: '핵심은 무리한 확장보다 손실을 줄이는 것입니다.',
       actionHint: '오늘 바로 실행 가능한 1단계 행동으로 줄이세요.',
       learningFrame: '사실(카드/포지션)과 해석(의미 추론)을 한 문장씩 분리해 기록하세요.',
-      reviewStep: '24시간 뒤 결과를 맞음/부분맞음/다름으로 표시하고 한 줄 근거를 남기세요.'
+      reviewStep: '24시간 뒤 카드 키워드 적중 여부를 맞음/부분맞음/다름으로 표시하고 근거 1줄을 남기세요.'
     },
     B: {
       uprightTail: '핵심은 리듬을 유지하며 작은 성공을 누적하는 것입니다.',
       reversedTail: '핵심은 일정/감정 소모를 먼저 줄여 회복 구간을 확보하는 것입니다.',
       actionHint: '실행 후 체감 변화를 10점 척도로 기록하세요.',
       learningFrame: '키워드 3개 중 실제로 관찰된 증거 1개를 반드시 적어 과잉해석을 막으세요.',
-      reviewStep: '다음 리딩 전, 지난 행동이 흐름을 바꿨는지 1문장으로 평가하세요.'
+      reviewStep: '다음 리딩 전, 이번 해석이 실제 사건과 맞았는지 카드 근거 중심으로 1문장 평가하세요.'
     }
   },
   intermediate: {
@@ -3055,14 +3063,14 @@ const READING_STYLE_AB = {
       reversedTail: '원인-증상 분리 후 병목 변수 하나를 먼저 제거해야 합니다.',
       actionHint: '7일 단기 플랜과 30일 중기 플랜을 분리해 기록하세요.',
       learningFrame: '포지션별 가설을 세우고, 충돌하는 카드가 있으면 우선순위 규칙을 명시하세요.',
-      reviewStep: '가설 적중률을 주간 단위로 측정해 다음 스프레드 해석 규칙을 보정하세요.'
+      reviewStep: '가설 적중률을 주간 단위로 측정하고, 빗나간 경우 카드 근거 누락 지점을 함께 기록하세요.'
     },
     B: {
       uprightTail: '카드 간 상호작용을 우선순위 테이블로 정리하면 정확도가 올라갑니다.',
       reversedTail: '역방향 신호는 구조적 리스크로 보고 완충 자원을 먼저 확보하세요.',
       actionHint: '가설-검증 루프를 다음 리딩 전까지 최소 1회 수행하세요.',
       learningFrame: '현재/근미래/결과를 시간축으로 분리하고 각 구간의 실패 비용을 추정하세요.',
-      reviewStep: '복기 시 리딩 오류를 정보 부족/감정 편향/실행 누락 중 하나로 분류하세요.'
+      reviewStep: '복기 시 리딩 오류를 정보 부족/해석 과확장/카드 근거 누락 중 하나로 분류하세요.'
     }
   }
 };
