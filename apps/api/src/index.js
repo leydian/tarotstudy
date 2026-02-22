@@ -1880,9 +1880,13 @@ function buildSummaryLead({
     if (yesNo) {
       return `${yesNo.verdict} 이유: ${yesNo.reason}`;
     }
-    const verdictLine = uprightCount >= reversedCount
-      ? '결론은 진행해도 되는 쪽에 가깝습니다.'
-      : '결론은 속도를 늦추고 조절하는 쪽에 가깝습니다.';
+    const verdictLine = intent === 'social'
+      ? (uprightCount >= reversedCount
+          ? '주변 인식은 전반적으로 긍정적인 쪽에 가깝습니다.'
+          : '주변 인식은 피로 신호가 비칠 수 있어 조절이 필요한 쪽에 가깝습니다.')
+      : uprightCount >= reversedCount
+        ? '결론은 진행해도 되는 쪽에 가깝습니다.'
+        : '결론은 속도를 늦추고 조절하는 쪽에 가깝습니다.';
     return `${verdictLine} ${keywordLine}`;
   }
 

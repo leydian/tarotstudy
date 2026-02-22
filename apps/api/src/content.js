@@ -1580,6 +1580,7 @@ function buildSocialBenchmarkInterpretation({ card, position, orientation, sprea
   const sub = card.keywords?.[1] ?? main;
   const open = orientation === 'upright';
   const positionLabel = position.name || '이 자리';
+  const cardName = card.nameKo || '이 카드';
   const seed = `${spreadId}:${positionLabel}:${card.id}:${orientation}:social-int`;
   const socialLine = (() => {
     if (positionLabel === '과거') {
@@ -1620,8 +1621,13 @@ function buildSocialBenchmarkInterpretation({ card, position, orientation, sprea
         ? `선택 비교에서는 '${main}' 신호가 열려 있어, 주변과 협업 신뢰를 유지하기 쉬운 선택지가 보입니다.`
         : `선택 비교에서는 '${main}' 신호가 흔들려 보여, 피로를 줄이고 관계 긴장을 낮추는 선택을 우선하는 편이 좋습니다.`;
     }
+    if (positionLabel === '핵심 메시지') {
+      return open
+        ? `핵심 메시지에서는 '${main}' 신호가 살아 있어, 주변이 당신을 안정적으로 믿을 수 있는 사람으로 인식할 가능성이 큽니다.`
+        : `핵심 메시지에서는 '${main}' 신호가 예민해 보여, 능력보다 피로한 인상이 먼저 전달될 가능성이 있습니다.`;
+    }
     return open
-      ? `${positionLabel}에서는 '${main}'에서 '${sub}'으로 이어지는 흐름이 살아 있어, 주변 인식이 긍정적으로 정리될 가능성이 있습니다.`
+      ? `${positionLabel}에서는 '${main}'에서 '${sub}'로 이어지는 흐름이 살아 있어, 주변 인식이 긍정적으로 정리될 가능성이 있습니다.`
       : `${positionLabel}에서는 '${main}' 신호가 예민해, 해명보다 태도 일관성을 먼저 회복하는 편이 더 효과적입니다.`;
   })();
   const realityLine = (() => {
@@ -1643,9 +1649,33 @@ function buildSocialBenchmarkInterpretation({ card, position, orientation, sprea
         '앞으로의 평판은 한 번의 만회보다 안정적인 반응 습관이 쌓일 때 더 강하게 바뀝니다.'
       ]);
     }
+    if (positionLabel === '핵심 메시지') {
+      return '핵심 메시지에서는 카드 의미 확장보다 지금 보이는 태도 신호를 선명하게 유지하는 것이 실제 인상 관리에 더 효과적입니다.';
+    }
     return '대인관계 해석은 내 의도보다 상대가 반복적으로 체감하는 반응이 기준이 되므로, 말투·속도·표정을 일정하게 유지하는 것이 중요합니다.';
   })();
   const actionLine = (() => {
+    if (positionLabel === '핵심 메시지') {
+      if (!open) {
+        return '실행 문장: 오늘은 설명을 줄이고, 답변 전 3초 멈춤 후 핵심 한 문장으로 반응해 부담 인상을 낮춰보세요.';
+      }
+      if (card.arcana === 'major') {
+        return `실행 문장: ${cardName} 신호를 살리려면, 오늘 한 번은 차분한 톤으로 의견을 정리해 말한 뒤 짧게 확인 질문을 붙여보세요.`;
+      }
+      if (card.suit === 'Pentacles') {
+        return '실행 문장: 오늘은 약속한 일 1가지를 정확히 마무리해 "안정적인 사람" 인상을 확실히 남겨보세요.';
+      }
+      if (card.suit === 'Swords') {
+        return '실행 문장: 오늘은 의견을 길게 설명하기보다 핵심 결론 1문장과 근거 1문장만 또렷하게 전해보세요.';
+      }
+      if (card.suit === 'Wands') {
+        return '실행 문장: 오늘은 열정을 앞세우기보다 톤을 한 단계 낮춰 말해, 추진력과 안정감을 함께 보여주세요.';
+      }
+      if (card.suit === 'Cups') {
+        return '실행 문장: 오늘은 공감 표현 1개와 요청 1개를 분리해 전달해, 부드러움과 명확함을 함께 보여주세요.';
+      }
+      return '실행 문장: 오늘은 내 강점 1개를 살리고 줄일 반응 1개를 정해, 인상을 안정적으로 관리해보세요.';
+    }
     if (positionLabel === '과거') {
       return open
         ? '실행 문장: 과거에 신뢰를 만들었던 행동 1가지를 오늘 대화에 다시 사용해보세요.'
