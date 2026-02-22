@@ -1306,6 +1306,14 @@ function inferContextProfile(context = '') {
   const text = String(context || '').toLowerCase();
   const profiles = [
     {
+      id: 'relationship-repair',
+      keywords: ['싸웠', '싸움', '다툼', '갈등', '서운', '오해', '화해', '관계 회복'],
+      anchor: '갈등 상황에서는 누가 맞는지보다 감정 과열을 먼저 낮추는 순서가 중요합니다.',
+      interpretationHint: '관계 회복 해석은 의도 추측보다 실제 반응과 대화 순서를 기준으로 읽을 때 정확합니다.',
+      actionHint: '사실 1개, 감정 1개, 요청 1개를 짧게 분리해 전달해보세요.',
+      trackMetric: '대화 긴장도와 회복 체감'
+    },
+    {
       id: 'social',
       keywords: ['친구', '동료', '사람들이', '어떻게 생각', '평판', '인상', '인간관계'],
       anchor: '상대의 반응을 단정하기보다 반복해서 보이는 인상 단서를 먼저 확인해야 합니다.',
@@ -1392,6 +1400,9 @@ function buildNaturalCoreMessage({
   if (spreadId === 'yearly-fortune' && isYearlyMonthPosition(position.name)) {
     return buildYearlyMonthCoreMessage({ card, position, orientation, context, seed });
   }
+  if (contextProfile.id === 'relationship-repair') {
+    return buildRepairBenchmarkCoreMessage({ card, position, orientation, spreadId });
+  }
   if (contextProfile.id === 'social') {
     return buildSocialBenchmarkCoreMessage({ card, position, orientation, spreadId });
   }
@@ -1437,6 +1448,9 @@ function buildTarotConsultingInterpretation({
 }) {
   if (spreadId === 'yearly-fortune' && isYearlyMonthPosition(position.name)) {
     return buildYearlyMonthInterpretation({ card, position, orientation, context, seed });
+  }
+  if (contextProfile.id === 'relationship-repair') {
+    return buildRepairBenchmarkInterpretation({ card, position, orientation, spreadId });
   }
   if (contextProfile.id === 'social') {
     return buildSocialBenchmarkInterpretation({ card, position, orientation, spreadId });
@@ -1696,6 +1710,78 @@ function buildSocialBenchmarkInterpretation({ card, position, orientation, sprea
       : '실행 문장: 오늘은 설명을 길게 늘리기보다 핵심 한 문장만 말하고 반응을 확인해 오해를 줄여보세요.';
   })();
   return polishTarotInterpretation([socialLine, realityLine, actionLine].join(' '));
+}
+
+function buildRepairBenchmarkCoreMessage({ card, position, orientation, spreadId = 'default' }) {
+  const cardDirection = orientation === 'upright' ? '정방향' : '역방향';
+  const keyword = card.keywords?.[0] ?? '감정';
+  const positionLabel = position.name || '이 자리';
+  const openerBySpread = {
+    'three-card': `${positionLabel} 카드를 통해 갈등 회복의 현재 신호를 먼저 보겠습니다.`,
+    'celtic-cross': `${positionLabel} 카드가 갈등의 핵심과 회복 경로를 어떻게 비추는지 확인해보겠습니다.`,
+    default: `${positionLabel} 카드로 지금 관계 회복 흐름을 차분히 살펴보겠습니다.`
+  };
+  const signalLine = orientation === 'upright'
+    ? `${card.nameKo}의 "${keyword}" 신호가 열려 있어, 대화 문을 다시 여는 여지는 남아 있습니다.`
+    : `${card.nameKo}의 "${keyword}" 신호가 예민해 보여, 지금은 결론보다 감정 온도 조절이 먼저입니다.`;
+  const closeLine = /(조언|결과)/.test(positionLabel)
+    ? '관계 회복은 한 번의 설득보다 짧고 안전한 대화가 반복될 때 실제로 움직입니다.'
+    : '지금 단계에서는 상대 의도 해석보다, 충돌을 키우는 반응 패턴을 먼저 줄이는 편이 더 효과적입니다.';
+  return polishCoreMessage([
+    openerBySpread[spreadId] ?? openerBySpread.default,
+    `뽑으신 카드는 '${card.nameKo} ${cardDirection}'입니다.`,
+    signalLine,
+    closeLine
+  ].join(' '));
+}
+
+function buildRepairBenchmarkInterpretation({ card, position, orientation, spreadId = 'default' }) {
+  const main = card.keywords?.[0] ?? '감정';
+  const sub = card.keywords?.[1] ?? main;
+  const open = orientation === 'upright';
+  const positionLabel = position.name || '이 자리';
+  const seed = `${spreadId}:${positionLabel}:${card.id}:${orientation}:repair-int`;
+
+  const repairLine = (() => {
+    if (positionLabel === '문제' || /문제|갈등/.test(positionLabel)) {
+      return open
+        ? `현재 갈등의 핵심은 '${main}'에서 '${sub}'로 이어지는 해석 차이일 가능성이 큽니다.`
+        : `지금 갈등은 '${main}' 신호가 과열된 상태라, 대화가 사실보다 감정 반응으로 흘렀을 가능성이 큽니다.`;
+    }
+    if (positionLabel === '해결방법' || /해결/.test(positionLabel)) {
+      return open
+        ? `해결 구간에서는 '${main}' 흐름이 열려 있어, 짧은 확인 대화로 접점을 만들 여지가 있습니다.`
+        : `해결 구간에서는 '${main}' 신호가 예민해, 설득보다 긴장도를 낮추는 접근이 우선입니다.`;
+    }
+    if (positionLabel === '조언' || /조언|결과/.test(positionLabel)) {
+      return open
+        ? `조언 카드 기준으로 '${main}' 신호는 회복 가능성을 남기고 있어, 작은 신뢰 행동을 먼저 보여주는 편이 좋습니다.`
+        : `조언 카드 기준으로 '${main}' 신호가 흔들려, 지금은 관계를 밀어붙이기보다 숨을 고르고 순서를 재정리해야 합니다.`;
+    }
+    return open
+      ? `'${main}'에서 '${sub}'로 이어지는 흐름이 살아 있어, 회복 대화를 시도할 여지가 있습니다.`
+      : `'${main}' 신호가 조정 구간이라, 결론보다 감정 과열을 먼저 낮추는 편이 안정적입니다.`;
+  })();
+
+  const realityLine = pickVariant(`${seed}:reality`, [
+    '회복 대화에서는 누가 맞는지보다 사실 1개, 감정 1개, 요청 1개를 분리해 말하는 순서가 중요합니다.',
+    '갈등 상황에서는 긴 설명보다 짧은 확인 문장이 오해를 줄이는 데 더 효과적입니다.'
+  ]);
+
+  const actionLine = (() => {
+    if (open) {
+      return pickVariant(`${seed}:action:open`, [
+        '실행 문장: "그때 내가 이렇게 느꼈고, 다음엔 이렇게 맞춰보고 싶어"처럼 짧게 전달해보세요.',
+        '실행 문장: 먼저 사과/설명/요청 중 하나만 선택해 한 문장으로 건네고 상대 반응을 확인하세요.'
+      ]);
+    }
+    return pickVariant(`${seed}:action:rev`, [
+      '실행 문장: 오늘은 화해 결론을 서두르지 말고, 감정이 가라앉는 시간대를 잡아 짧은 확인 메시지만 보내보세요.',
+      '실행 문장: 설명은 줄이고 "지금은 감정을 정리한 뒤 다시 이야기하고 싶어"처럼 경계 문장을 먼저 세우세요.'
+    ]);
+  })();
+
+  return polishTarotInterpretation([repairLine, realityLine, actionLine].join(' '));
 }
 
 function buildFinanceBenchmarkCoreMessage({ card, position, orientation, spreadId = 'default' }) {
@@ -2158,6 +2244,7 @@ function buildYearlyMonthInterpretation({ card, position, orientation, context =
 function inferYearlyIntent(context = '') {
   const text = String(context || '').toLowerCase();
   if (/(취직|취업|이직|입사|지원|면접|커리어|직장|회사)/.test(text)) return 'career';
+  if (/(싸웠|싸움|다툼|갈등|서운|오해|화해|관계 회복)/.test(text)) return 'relationship-repair';
   if (/(친구|동료|사람들이|어떻게 생각|평판|인상|인간관계)/.test(text)) return 'social';
   if (/(연애|관계|재회|결혼|상대|썸)/.test(text)) return 'relationship';
   if (/(재정|재물|돈|지출|수입|저축|투자|소비|자산|현금흐름|가계부)/.test(text)) return 'finance';

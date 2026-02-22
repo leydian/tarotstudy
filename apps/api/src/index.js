@@ -1306,6 +1306,7 @@ function summarizeYearlyFortune({ items, context = '', level = 'beginner' }) {
 function inferYearlyIntent(context = '') {
   const text = String(context || '').toLowerCase();
   if (/(취직|취업|이직|입사|지원|면접|커리어|직장|회사|오퍼|협상|이력서|포트폴리오|직무)/.test(text)) return 'career';
+  if (/(싸웠|싸움|다툼|갈등|서운|오해|화해|관계 회복)/.test(text)) return 'relationship-repair';
   if (/(친구|동료|사람들이|어떻게 생각|평판|인상|인간관계)/.test(text)) return 'social';
   if (/(연애|관계|재회|결혼|상대|썸)/.test(text)) return 'relationship';
   if (/(재정|재물|돈|지출|수입|저축|투자|소비|자산|현금흐름|가계부)/.test(text)) return 'finance';
@@ -1906,6 +1907,10 @@ function buildSummaryLead({
     ? (uprightCount >= reversedCount
         ? '전반적으로는 대화의 문이 열릴 여지가 있어도, 감정 속도 조절이 함께 필요합니다.'
         : '전반적으로는 결론을 서두르기보다 감정 온도를 맞추며 오해를 줄이는 쪽이 더 유리합니다.')
+    : intent === 'relationship-repair'
+      ? (uprightCount >= reversedCount
+          ? '전반적으로는 회복 가능성은 남아 있지만, 화해를 서두르기보다 대화 순서를 안정적으로 잡는 편이 좋겠습니다.'
+          : '전반적으로는 감정 과열 신호가 있어, 지금은 결론보다 긴장 완화와 반응 조절이 우선입니다.')
     : intent === 'social'
       ? (uprightCount >= reversedCount
           ? '전반적으로는 주변에서 당신을 믿음직하게 보는 흐름이 살아 있지만, 과한 책임감은 거리감을 만들 수 있어 강약 조절이 필요합니다.'
@@ -1928,6 +1933,9 @@ function buildSummaryFocus({ spreadName, firstItem, lastItem, context = '', cont
   const intent = inferYearlyIntent(context);
   if (!firstItem || !lastItem) return contextTone.mainHint;
   if (spreadName === '원카드' || firstItem.position.name === '핵심 메시지') {
+    if (intent === 'relationship-repair') {
+      return '갈등 회복 질문에서는 카드 의미를 넓히기보다, 대화 순서와 감정 온도 조절 신호를 먼저 읽는 편이 정확합니다. 오늘은 사실 1개, 감정 1개, 요청 1개만 짧게 준비해 충돌을 줄이는 데 집중해보세요.';
+    }
     if (intent === 'social') {
       const cardName = firstItem.card?.nameKo || '이 카드';
       const keyword = firstItem.card?.keywords?.[0] || '인상';
@@ -1942,6 +1950,9 @@ function buildSummaryFocus({ spreadName, firstItem, lastItem, context = '', cont
     return `실행: ${buildOneCardActionLine({ context, firstItem })}`;
   }
   if (spreadName === '양자택일 (A/B)') {
+    if (intent === 'relationship-repair') {
+      return '갈등 상황의 양자택일은 누가 맞는지보다, 오해를 덜 키우고 대화를 다시 열 수 있는 선택지를 기준으로 보시는 편이 좋습니다. 각 선택지에서 감정 소모와 회복 가능성을 하나씩 비교해보세요.';
+    }
     if (intent === 'social') {
       return '대인관계 양자택일은 누가 맞는지보다, 주변 신뢰를 오래 유지할 수 있는 선택지를 기준으로 보는 편이 좋습니다. 두 선택지에서 피로도와 협업 안정감을 각각 한 가지씩 비교해보세요.';
     }
@@ -1954,6 +1965,9 @@ function buildSummaryFocus({ spreadName, firstItem, lastItem, context = '', cont
     return `양자택일에서는 현재 상황 카드로 판단 기준을 먼저 고정하고, A/B 결과 카드에서 내가 오래 유지할 수 있는 쪽을 우선 보세요. ${contextTone.mainHint}`;
   }
   if (spreadName === '일별 운세') {
+    if (intent === 'relationship-repair') {
+      return '일간 관계 회복 운은 오늘의 흐름 카드로 감정 온도를 읽고, 주의 카드로 충돌 신호를 확인한 뒤, 행동 조언 카드에서 대화 문장 1개를 정하는 순서가 가장 안정적입니다.';
+    }
     if (intent === 'social') {
       return '일간 대인운은 오늘의 흐름 카드로 내 인상 톤을 읽고, 주의할 점 카드로 오해 포인트를 확인한 뒤, 행동 조언 카드에서 말투/반응 1개를 고정하는 순서가 가장 안정적입니다.';
     }
@@ -1966,6 +1980,9 @@ function buildSummaryFocus({ spreadName, firstItem, lastItem, context = '', cont
     return `일별 운세는 오늘의 흐름 카드로 페이스를 잡고, 행동 조언 카드 한 줄만 실제 일정에 반영하면 충분합니다. ${contextTone.mainHint}`;
   }
   if (spreadName === '주별 운세') {
+    if (intent === 'relationship-repair') {
+      return '주간 관계 회복 운은 힘이 실리는 날에 짧은 확인 대화를 열고, 조심할 날에는 감정 강도를 낮추는 방식이 효과적입니다. 화해는 설득보다 안전한 대화 리듬이 먼저입니다.';
+    }
     if (intent === 'social') {
       return '주간 대인운은 힘이 실리는 날에 협업 접점을 늘리고, 조심할 날에는 설명을 줄이며 태도 일관성을 유지하는 방식이 효과적입니다. 평판은 한 번의 해명보다 반복되는 반응 패턴에서 만들어집니다.';
     }
@@ -1978,6 +1995,9 @@ function buildSummaryFocus({ spreadName, firstItem, lastItem, context = '', cont
     return `주별 운세는 월요일 시동 카드에서 시작해 일요일 복기 카드까지 일자별 흐름으로 연결해서 보면 판단이 안정됩니다. ${contextTone.mainHint}`;
   }
   if (spreadName === '월별 운세') {
+    if (intent === 'relationship-repair') {
+      return '월간 관계 회복 운에서는 한 번에 풀어내기보다 갈등 강도를 낮추는 대화 습관을 먼저 고정하는 편이 좋습니다. 회복 속도보다 재충돌 방지가 핵심입니다.';
+    }
     if (intent === 'social') {
       return '월간 대인운에서는 순간 감정 대응보다 꾸준한 태도가 더 크게 보입니다. 월간 테마를 기준으로 소통 톤과 거리감을 조절하면 주변 신뢰를 안정적으로 유지할 수 있습니다.';
     }
@@ -1990,6 +2010,9 @@ function buildSummaryFocus({ spreadName, firstItem, lastItem, context = '', cont
     return `월별 운세는 월간 테마로 방향을 세우고 1~4주차 카드로 강약만 조절하면 됩니다. ${contextTone.mainHint}`;
   }
   if (spreadName === '연간 운세 (12개월)') {
+    if (intent === 'relationship-repair') {
+      return '연간 관계 회복 운은 사건 단위보다 분기별 감정 안정 흐름을 읽는 방식이 현실적입니다. 대화를 다시 열 시기와 거리 조절 시기를 나눠 운영하면 재충돌을 줄일 수 있습니다.';
+    }
     if (intent === 'social') {
       return '연간 대인운은 사건 하나보다 분기별 인상 흐름을 읽는 방식이 현실적입니다. 접점을 넓힐 시기와 숨 고를 시기를 나눠 운영하면 평판의 변동성을 줄일 수 있습니다.';
     }
@@ -2002,6 +2025,9 @@ function buildSummaryFocus({ spreadName, firstItem, lastItem, context = '', cont
     return `연간 운세는 월별 사건에 매달리기보다 분기별 공통 흐름을 잡을 때 훨씬 선명해집니다. ${contextTone.mainHint}`;
   }
   if (spreadName === '켈틱 크로스') {
+    if (intent === 'relationship-repair') {
+      return '켈틱 관계 회복 리딩은 현재 갈등, 병목 원인, 결과 흐름을 한 줄로 연결해 읽을 때 정확도가 높습니다. 해결책 제시보다 충돌 패턴을 먼저 특정해보세요.';
+    }
     if (intent === 'social') {
       return '켈틱 대인 리딩은 현재 인상, 갈등 포인트, 결과 흐름을 한 줄로 연결해 읽을 때 정확도가 높습니다. 의도 설명보다 반복되는 반응 패턴을 먼저 확인해보세요.';
     }
@@ -2012,6 +2038,9 @@ function buildSummaryFocus({ spreadName, firstItem, lastItem, context = '', cont
       return '켈틱 연애 리딩은 현재 감정, 갈등 지점, 결과 흐름을 한 줄로 연결해 읽을 때 정확도가 올라갑니다. 상대 의도 추측보다 반복되는 대화 패턴을 먼저 확인해보세요.';
     }
     return `켈틱 크로스는 현재/교차 카드로 중심 갈등을 확인하고 결과 카드로 연결하면 흐름이 깔끔해집니다. ${contextTone.mainHint}`;
+  }
+  if (intent === 'relationship-repair') {
+    return '이 갈등 흐름은 결론보다 순서를 먼저 잡아 읽는 방식이 가장 안정적입니다. 오늘은 감정 과열을 낮추는 반응 하나만 정해도 관계 회복 가능성이 달라집니다.';
   }
   if (intent === 'social') {
     return '이 대인 흐름은 큰 결론보다 현재 신호와 다음 반응을 짧게 연결해 읽는 방식이 가장 안정적입니다. 오늘은 말투 하나, 반응 하나만 정리해도 인상이 분명해집니다.';
@@ -2029,6 +2058,9 @@ function buildSummaryAction({ spreadName, level, context = '', firstItem = null,
   const intent = inferYearlyIntent(context);
   const levelLine = level === 'intermediate' ? contextTone.intermediateHint : contextTone.beginnerHint;
   if (spreadName === '원카드') {
+    if (intent === 'relationship-repair') {
+      return `오늘 관계 회복 조언은 두 갈래입니다: 대화를 열고 싶다면 사실-감정-요청 순서로 한 문장만 먼저 보내고, 아직 과열 상태라면 결론을 미루고 감정 정리 후 짧은 확인 메시지로 리듬을 회복하세요. ${levelLine}`;
+    }
     if (intent === 'social') {
       return `오늘 대인운 조언은 두 갈래입니다: 신뢰를 더 쌓고 싶다면 짧고 분명한 소통을 먼저 여시고, 피로가 크다면 설명을 줄인 뒤 반응 템포를 낮춰 인상을 안정시키세요. ${levelLine}`;
     }
@@ -2042,6 +2074,9 @@ function buildSummaryAction({ spreadName, level, context = '', firstItem = null,
     return `복기: ${reviewLine} ${levelLine}`;
   }
   if (spreadName === '일별 운세') {
+    if (intent === 'relationship-repair') {
+      return `오늘 관계 회복 조언은 두 갈래입니다: 여지를 만들고 싶다면 사과/설명/요청 중 하나만 짧게 전달하고 반응을 보세요. 아직 긴장이 높다면 대화 길이를 줄이고 시간 간격을 두는 편이 안전합니다. ${levelLine}`;
+    }
     if (intent === 'social') {
       return `오늘 대인운 조언은 두 갈래로 보시면 됩니다. 관계를 열고 싶다면 먼저 인사/확인/감사 중 1가지를 표현하세요. 조절이 필요하다면 말수를 줄이고 핵심 한 문장만 남겨 오해를 줄이는 편이 좋습니다. ${levelLine}`;
     }
@@ -2054,6 +2089,9 @@ function buildSummaryAction({ spreadName, level, context = '', firstItem = null,
     return `오늘은 맞추려 하기보다 리듬을 지키는 쪽이 더 좋습니다. ${levelLine}`;
   }
   if (spreadName === '주별 운세') {
+    if (intent === 'relationship-repair') {
+      return `이번 주 관계 회복 조언은 두 갈래입니다: 회복을 시도한다면 강한 날에 짧은 확인 대화를 열어보세요. 조정이 필요하다면 약한 날에는 결론을 미루고 감정 강도부터 낮추는 편이 좋습니다. ${levelLine}`;
+    }
     if (intent === 'social') {
       return `이번 주 대인운은 두 갈래로 정리됩니다. 신뢰를 넓히고 싶다면 강한 날에 협업 접점을 한 번 더 만드세요. 피로가 크다면 약한 날에는 대화 강도를 낮추고 경계를 분명히 하는 편이 좋습니다. ${levelLine}`;
     }
@@ -2066,6 +2104,9 @@ function buildSummaryAction({ spreadName, level, context = '', firstItem = null,
     return `한 주를 한 번에 바꾸려 하지 말고, 중반부터 천천히 페이스를 맞춰 보세요. ${levelLine}`;
   }
   if (spreadName === '월별 운세') {
+    if (intent === 'relationship-repair') {
+      return `이번 달 관계 회복 조언은 두 갈래입니다: 진전을 원하면 짧은 대화를 반복해 신뢰를 다시 쌓아보세요. 소모가 크다면 접촉 빈도를 낮추고 재충돌 방지 규칙부터 세우는 편이 좋습니다. ${levelLine}`;
+    }
     if (intent === 'social') {
       return `이번 달 대인운은 두 갈래 운영이 좋습니다. 관계 확장을 원하면 일관된 태도와 짧은 피드백을 유지하세요. 소모가 크다면 접촉 빈도를 조절하고 반응 속도를 낮추는 편이 좋습니다. ${levelLine}`;
     }
@@ -2078,6 +2119,9 @@ function buildSummaryAction({ spreadName, level, context = '', firstItem = null,
     return `월간 리딩은 초반 스퍼트보다 후반 유지력이 더 중요합니다. ${levelLine}`;
   }
   if (spreadName === '연간 운세 (12개월)') {
+    if (intent === 'relationship-repair') {
+      return `연간 관계 회복 조언도 두 갈래입니다: 회복 기회를 살리려면 상승 구간에 짧은 대화를 꾸준히 이어가세요. 조정이 필요하면 갈등 구간에서는 거리 조절과 감정 회복을 우선하세요. ${levelLine}`;
+    }
     if (intent === 'social') {
       return `연간 대인운도 두 갈래로 보시면 됩니다. 확장을 원하면 상승 구간에 협업/네트워킹을 늘리세요. 안정이 우선이면 조정 구간에는 갈등 소지를 줄이고 내 리듬을 지키는 편이 좋습니다. ${levelLine}`;
     }
@@ -2090,6 +2134,9 @@ function buildSummaryAction({ spreadName, level, context = '', firstItem = null,
     return `연간 리딩은 월별 성과보다 분기별 균형을 먼저 챙기면 덜 흔들립니다. ${levelLine}`;
   }
   if (spreadName === '양자택일 (A/B)') {
+    if (intent === 'relationship-repair') {
+      return `선택형 관계 회복 조언도 두 갈래입니다: 화해를 열고 싶다면 오해를 덜 키우는 선택을 고르세요. 소모를 줄이려면 경계가 지켜지는 선택지를 우선하는 편이 좋습니다. ${levelLine}`;
+    }
     if (intent === 'social') {
       return `선택형 대인운 조언도 두 갈래입니다. 신뢰를 원하면 관계가 오래 유지되는 선택지를 고르세요. 소모를 줄이려면 경계가 지켜지고 부담이 적은 선택지를 우선하는 편이 좋습니다. ${levelLine}`;
     }
@@ -2102,6 +2149,9 @@ function buildSummaryAction({ spreadName, level, context = '', firstItem = null,
     return `결정 전에는 시간, 비용, 마음 소모 이 세 가지만 두 선택지에 대입해 보세요. ${levelLine}`;
   }
   if (spreadName === '3카드 스프레드') {
+    if (intent === 'relationship-repair') {
+      return `3카드 관계 회복 조언은 두 갈래 실행이 좋습니다: 대화를 열고 싶다면 오늘 한 문장만 먼저 보내세요. 아직 힘들다면 결론을 미루고 감정 과열을 낮추는 반응 하나만 정해두세요. ${levelLine}`;
+    }
     if (intent === 'social') {
       return `3카드 대인운은 두 갈래 실행으로 마무리하면 좋습니다. 관계를 열고 싶다면 오늘 먼저 따뜻한 확인 한마디를 건네보세요. 부담이 크다면 설명을 줄이고 핵심 반응 1개만 확인하는 방식이 안전합니다. ${levelLine}`;
     }
@@ -2114,6 +2164,9 @@ function buildSummaryAction({ spreadName, level, context = '', firstItem = null,
     return `세 장의 공통 키워드 하나를 잡아 오늘 행동 한 줄로 바꾸면 충분합니다. ${levelLine}`;
   }
   if (spreadName === '켈틱 크로스') {
+    if (intent === 'relationship-repair') {
+      return `켈틱 관계 회복 조언은 두 갈래입니다: 회복을 원하면 사실 확인 후 짧게 대화를 여세요. 소모가 크면 충돌 패턴을 먼저 정리하고 결론은 다음 대화로 넘기는 편이 안정적입니다. ${levelLine}`;
+    }
     if (intent === 'social') {
       return `켈틱 대인운 조언은 두 갈래입니다. 회복과 확장을 원하면 사실 확인 후 짧게 소통을 여세요. 소모가 크면 대화 속도를 늦추고 갈등 신호를 먼저 정리한 뒤 다음 단계를 여는 편이 안정적입니다. ${levelLine}`;
     }
@@ -2124,6 +2177,9 @@ function buildSummaryAction({ spreadName, level, context = '', firstItem = null,
       return `켈틱 연애운 조언은 두 갈래입니다. 회복과 진전을 원하면 사실-감정-요청 순서로 대화를 짧게 여세요. 소모가 크다면 감정 과열 구간을 먼저 줄이고, 결론은 다음 대화로 넘기는 편이 안정적입니다. ${levelLine}`;
     }
     return `복합 이슈일수록 중심 흐름과 외부 환경을 분리해서 천천히 정리해 보세요. ${levelLine}`;
+  }
+  if (intent === 'relationship-repair') {
+    return `관계 회복 조언은 두 갈래로 정리됩니다: 화해를 열고 싶다면 짧고 안전한 대화를 먼저 두세요. 아직 과열 상태라면 속도를 늦추고 감정 정리부터 하는 편이 좋습니다. ${levelLine}`;
   }
   if (intent === 'social') {
     return `대인운 조언은 두 갈래로 정리됩니다. 관계를 넓히고 싶다면 짧고 분명한 소통을 이어가세요. 소모를 줄이고 싶다면 반응 템포를 늦추고 경계를 분명히 하며 리듬을 지키는 편이 좋습니다. ${levelLine}`;
