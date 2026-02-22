@@ -1173,6 +1173,51 @@ const lessonStoryBlueprints = {
   'eql-3': { character: '민채', situation: '복기 리포트가 끊김', question: '복기 데이터로 다음 리딩을 어떻게 개선할까?', action: '주간 리포트 1회', review: '개선 적용률' }
 };
 
+const lessonNovelConclusionsById = {
+  'fz-1': '정방향과 역방향 중 오늘 흐름에 맞는 해석 1개를 정했습니다.',
+  'fz-2': '핵심 키워드 1개를 행동 문장으로 바꿔 결론을 정했습니다.',
+  'fz-3': '오늘 바로 실행할 행동 1개를 먼저 고정하기로 정했습니다.',
+  'fm-1': '지금 단계를 시작/선택/추진 중 1개로 확정했습니다.',
+  'fm-2': '속도를 올릴지 조율할지 오늘 기준을 1개로 정했습니다.',
+  'fm-3': '끊어야 할 반복 1개와 마무리할 과제 1개를 정했습니다.',
+  'bd-1': '질문을 한 줄로 줄여 오늘 핵심을 먼저 확정했습니다.',
+  'bd-2': '결론 문장과 근거 문장을 분리해 핵심을 정했습니다.',
+  'bd-3': '이번 해석에서 맞은 점과 빗나간 점을 먼저 구분했습니다.',
+  'bt-1': '현재 상황의 사실 1개를 먼저 고정해 해석 방향을 정했습니다.',
+  'bt-2': '카드가 요구하는 행동 1개를 오늘 일정에 반영하기로 정했습니다.',
+  'bt-3': '기대 결과 1개와 리스크 1개를 함께 쓰는 결론으로 정했습니다.',
+  'ubr-1': '지연/과속/누락 중 지금 병목 1개를 먼저 정했습니다.',
+  'ubr-2': '막힌 흐름을 바꿀 교정 문장 1개를 결론으로 정했습니다.',
+  'ubr-3': '오늘 줄일 것 1개와 지킬 것 1개를 같이 정했습니다.',
+  'ubs-1': '속도와 감정 중 오늘 먼저 다룰 축 1개를 정했습니다.',
+  'ubs-2': '판단과 운영 중 먼저 정리할 축 1개를 정했습니다.',
+  'ubs-3': '같은 질문을 수트별로 나눠 보고 주력 문장 1개를 정했습니다.',
+  'icb-1': '관계 질문의 핵심 축을 감정/대화/경계 중 1개로 정했습니다.',
+  'icb-2': '업무·학습 질문의 핵심 축을 성과/준비/운영 중 1개로 정했습니다.',
+  'icb-3': '재정·일상 질문의 핵심을 누수 관리/습관 교정 중 1개로 정했습니다.',
+  'icv-1': '탐색형과 추진형 중 지금 맞는 역할 1개를 정했습니다.',
+  'icv-2': '내면 안정과 외부 책임 중 우선할 축 1개를 정했습니다.',
+  'icv-3': '현재 상황에 가장 맞는 코트 역할 1개를 정했습니다.',
+  'ich-1': 'A와 B를 비교해 유지 가능성이 높은 선택 1개를 정했습니다.',
+  'ich-2': '우세/조건부/박빙 중 현재 판정 라벨 1개를 정했습니다.',
+  'ich-3': '선택 결과를 확인할 검증 지표 1개를 먼저 정했습니다.',
+  'uis-1': '카드 단문을 연결해 하나의 흐름 문장으로 결론을 정했습니다.',
+  'uis-2': '충돌 신호를 판정하기 위한 완충 조건 1개를 정했습니다.',
+  'uis-3': '해석을 7일 실행 계획으로 바꿀 핵심 행동 1개를 정했습니다.',
+  'uip-1': '해석 가설 1개와 반례 1개를 함께 두고 결론을 정했습니다.',
+  'uip-2': '이번 오차의 유형 1개를 분류해 교정 기준을 정했습니다.',
+  'uip-3': '같은 뜻의 대체 문장 중 오늘 쓸 표현 1개를 정했습니다.',
+  'acs-1': '켈틱 10포지션 읽기 순서를 오늘 기준으로 고정했습니다.',
+  'acs-2': '복합 질문을 변수 단위로 나눠 핵심 변수 1개를 정했습니다.',
+  'acs-3': '장문 리딩을 결론 중심의 짧은 문장으로 압축해 정했습니다.',
+  'ayc-1': '주간 리듬에서 오늘 먼저 실행할 행동 1개를 정했습니다.',
+  'ayc-2': '월간 4주 흐름에서 이번 주 핵심 1개를 정했습니다.',
+  'ayc-3': '연간 운영에서 확장 구간과 정비 구간의 기준을 정했습니다.',
+  'eql-1': '판정 라벨과 근거가 실제로 맞는지 먼저 점검하기로 정했습니다.',
+  'eql-2': '행동 문장을 오늘 실행 가능한 형태로 다시 정했습니다.',
+  'eql-3': '복기 데이터를 기반으로 다음 리딩의 개선점 1개를 정했습니다.'
+};
+
 function selectStoryNovelType(lessonId, order) {
   let hash = 0;
   for (const ch of lessonId) {
@@ -1213,7 +1258,20 @@ function buildKeywordEvidence(cardName = '') {
   return `${cardName}의 핵심 키워드 "${keywordPhrase}"${obj} 현재 상황 사실과 연결했습니다.`;
 }
 
-function buildStoryNovelByType({ type, blueprint, cardPreview, a, b, c }) {
+function buildNovelConclusionByLesson(lessonId, blueprint) {
+  const id = String(lessonId || '');
+  if (lessonNovelConclusionsById[id]) return lessonNovelConclusionsById[id];
+  if (id.startsWith('ich-')) return 'A와 B를 비교해 유지 가능성이 높은 선택 1개를 정했습니다.';
+  if (id.startsWith('eql-')) return '판정 라벨과 근거가 실제로 맞는지 먼저 점검하기로 정했습니다.';
+  if (id.startsWith('ubs-')) return '속도와 감정 중 오늘 먼저 다룰 축 1개를 정했습니다.';
+  if (id.startsWith('icb-')) return '질문의 핵심 축 1개를 먼저 고정하기로 정했습니다.';
+  if (id.startsWith('icv-')) return '지금 상황에서 맡을 역할 1개를 먼저 정했습니다.';
+  if (id.startsWith('fm-')) return '지금 단계를 1개로 확정하고 그에 맞는 행동을 정했습니다.';
+  if (id.startsWith('ubr-')) return '지금 바로 교정할 위험 신호 1개를 먼저 정했습니다.';
+  return `${withObjectParticle(blueprint.action)} 먼저 확정하기로 정했습니다.`;
+}
+
+function buildStoryNovelByType({ lessonId, type, blueprint, cardPreview, a, b, c }) {
   void type;
   const cards = cardPreview || '카드';
   const supportCard = b || a;
@@ -1222,10 +1280,11 @@ function buildStoryNovelByType({ type, blueprint, cardPreview, a, b, c }) {
   const aSubject = withSubjectParticle(a);
   const keywordEvidenceA = buildKeywordEvidence(a);
   const keywordEvidenceB = buildKeywordEvidence(supportCard);
+  const conclusion = buildNovelConclusionByLesson(lessonId, blueprint);
   return [
     `${characterTopic} 오늘 리딩이 어렵게 느껴졌습니다. 이유는 ${blueprint.situation} 때문이었습니다.`,
     `노트 첫 줄에 "${blueprint.question}"를 쓰자, 지금 다룰 핵심이 선명해졌습니다.`,
-    `${cards} 중에서는 ${aSubject} 가장 먼저 눈에 들어왔고, 결론은 "오늘은 한 가지 행동만 먼저 한다"로 정했습니다.`,
+    `${cards} 중에서는 ${aSubject} 가장 먼저 눈에 들어왔고, 결론은 "${conclusion}"`,
     `${keywordEvidenceA} ${keywordEvidenceB} 그래서 근거 문장이 짧아졌고 해석이 퍼지지 않았습니다.`,
     `${characterTopic} ${withObjectParticle(blueprint.action)} 일정에 넣고 시작 시간을 정했습니다.`,
     `마지막에는 ${blueprint.review}만 확인하며 적중 1줄과 오차 1줄을 적었습니다. ${withTopicParticle(checkCard)} 다음 점검 카드로 남겼습니다.`
@@ -1263,7 +1322,7 @@ function buildDedicatedLessonDetail({ lesson, stageMeta, cardNames, lessonProfil
     `장면 6 - 실행: ${blueprint.action} 문장으로 오늘 행동을 고정합니다.`,
     `장면 7 - 복기: ${blueprint.review}를 확인하며 적중 1줄/오차 1줄로 마무리합니다.`
   ];
-  const storyNovel = buildStoryNovelByType({ type: storyType, blueprint, cardPreview, a, b, c });
+  const storyNovel = buildStoryNovelByType({ lessonId: lesson.id, type: storyType, blueprint, cardPreview, a, b, c });
 
   return {
     intro: `${lesson.title}는 스토리 한 편을 따라가며 바로 실행하는 전용 실전 레슨입니다.`,
