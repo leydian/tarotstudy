@@ -37,6 +37,14 @@ type CoachSummarySections = {
   question: string[];
 };
 
+type CoachSummaryContext = {
+  positionName: string;
+  cardName: string;
+  orientation: 'upright' | 'reversed';
+  keywords: string[];
+  questionContext: string;
+};
+
 const SPREAD_VISUAL_PRESETS: Record<string, SpreadVisualPreset> = {
   'one-card': { scale: 'xl', rowHeight: 246, minColWidth: 196 },
   'three-card': { scale: 'xl', rowHeight: 222, minColWidth: 162 },
@@ -459,6 +467,13 @@ export function SpreadsPage() {
                       <CoachSummaryView
                         lines={toCoachBlocks(item.learningPoint || '카드 키워드 1개와 행동 1개를 짝지어 복기하세요.')}
                         scope={item.position.name}
+                        context={{
+                          positionName: item.position.name,
+                          cardName: item.card.nameKo,
+                          orientation: item.orientation,
+                          keywords: item.card.keywords || [],
+                          questionContext: drawMutation.data.context || ''
+                        }}
                       />
                     </div>
                   </div>
@@ -714,12 +729,14 @@ export function SpreadsPage() {
 
 function CoachSummaryView({
   lines,
-  scope
+  scope,
+  context
 }: {
   lines: string[];
   scope: string;
+  context: CoachSummaryContext;
 }) {
-  const sections = groupCoachSummary(lines);
+  const sections = groupCoachSummary(lines, context);
   return (
     <div className="coach-summary-grid">
       <article className="coach-summary-block">
@@ -798,7 +815,7 @@ function splitCoachLineForDisplay(text: string) {
   return chunks.length > 0 ? chunks : [normalized];
 }
 
-function groupCoachSummary(lines: string[]): CoachSummarySections {
+function groupCoachSummary(lines: string[], context: CoachSummaryContext): CoachSummarySections {
   const cleaned = lines.map((line) => String(line || '').trim()).filter(Boolean);
   const sections: CoachSummarySections = {
     core: [],
@@ -829,7 +846,7 @@ function groupCoachSummary(lines: string[]): CoachSummarySections {
     }
   }
 
-  if (sections.core.length === 0) sections.core.push('카드의 핵심 신호 1개를 먼저 고정하고 해석 범위를 좁혀 읽어보세요.');
+  if (sections.core.length === 0) sections.core.push(buildCoreSignalGuidance(context));
   if (sections.action.length === 0) sections.action.push('핵심 카드 근거 1개와 바로 할 행동 1개를 1문장으로 적어 실행하세요.');
   if (sections.caution.length === 0) sections.caution.push('과한 해석 확장보다 시간/감정/에너지 조건을 고정해 판단 흔들림을 줄이세요.');
   if (sections.question.length === 0) sections.question.push('이 포지션 리딩에서 실제 행동으로 바로 옮길 근거 1개는 무엇인가요?');
@@ -870,6 +887,33 @@ function normalizeCoachLine(line: string) {
     .replace(/[^0-9a-zA-Z가-힣]+/g, ' ')
     .trim()
     .toLowerCase();
+}
+
+function buildCoreSignalGuidance(context: CoachSummaryContext) {
+  const keyword = context.keywords[0] || '핵심 흐름';
+  const direction = context.orientation === 'reversed' ? '역방향' : '정방향';
+  const directionHint = context.orientation === 'reversed'
+    ? '지연/과잉 가능성'
+    : '진행/확장 가능성';
+  const questionHint = buildQuestionLinkedHint(context.questionContext, keyword);
+  return `핵심 신호를 "${keyword}"로 고정하세요. 예시: ${context.positionName}에서 ${context.cardName} ${direction}이면 ${directionHint}을 1차 근거로 두고 해석 범위를 좁혀 읽습니다. ${questionHint}`;
+}
+
+function buildQuestionLinkedHint(questionContext: string, keyword: string) {
+  const question = String(questionContext || '').trim();
+  const preview = question ? summarizeText(question, 34) : '현재 질문';
+  const axis = inferQuestionAxis(question);
+  return `질문 연동: "${preview}" 질문에서는 "${keyword}"를 ${axis} 기준으로 해석하면 이해도가 올라갑니다.`;
+}
+
+function inferQuestionAxis(questionContext: string) {
+  const text = String(questionContext || '');
+  if (/재회|연애|관계|상대|대화|갈등|화해/.test(text)) return '관계 반응/대화 순서';
+  if (/이직|취업|면접|직장|업무|커리어|학업|시험|공부/.test(text)) return '실행 우선순위/지속 가능성';
+  if (/돈|재정|수입|지출|저축|투자|예산/.test(text)) return '손실 통제/현금흐름 안정성';
+  if (/건강|수면|컨디션|회복/.test(text)) return '회복 리듬/무리 신호';
+  if (/A|B|선택|둘 중|비교/.test(text)) return '판단 기준(시간/비용/감정 소모)';
+  return '오늘 바로 검증 가능한 행동 근거';
 }
 
 function YearlySummaryView({ summary }: { summary: string }) {
