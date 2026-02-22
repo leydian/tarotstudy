@@ -456,14 +456,15 @@ function cleanCoachPrefix(text: string) {
 }
 
 function lineTagLabel(text: string) {
-  if (/복기 질문|체크 질문|검증 질문|질문:/.test(text)) return '질문';
-  if (/실행 후 검증|실행|수행|기록/.test(text)) return '검증';
+  if (/복기 질문|체크 질문|점검 질문|검증 질문|질문:/.test(text)) return '질문';
+  if (/리딩 검증|실행 후 검증|검증 단계|검증:/.test(text)) return '검증';
+  if (/학습 기준|훈련 프레임|학습 프레임|학습 루틴|복기 기준/.test(text)) return '프레임';
   return '코칭';
 }
 
 function lineTagClass(text: string) {
-  if (/복기 질문|체크 질문|검증 질문|질문:/.test(text)) return 'line-tag-question';
-  if (/실행 후 검증|실행|수행|기록/.test(text)) return 'line-tag-check';
+  if (/복기 질문|체크 질문|점검 질문|검증 질문|질문:/.test(text)) return 'line-tag-question';
+  if (/리딩 검증|실행 후 검증|검증 단계|검증:/.test(text)) return 'line-tag-check';
   return 'line-tag-coach';
 }
 

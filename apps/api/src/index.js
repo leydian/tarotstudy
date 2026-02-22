@@ -1985,14 +1985,22 @@ function buildSummaryLead({
     if (yesNo) {
       return `${yesNo.verdict} 이유: ${yesNo.reason}`;
     }
+    const oneCardRisk = scoreOneCardRisk({
+      firstItem,
+      topKeywords,
+      uprightCount,
+      reversedCount
+    });
     const verdictLine = intent === 'social'
       ? (uprightCount >= reversedCount
           ? '주변 인식은 전반적으로 긍정적인 쪽에 가깝습니다.'
           : '주변 인식은 피로 신호가 비칠 수 있어 조절이 필요한 쪽에 가깝습니다.')
       : intent === 'daily'
-        ? (uprightCount >= reversedCount
-            ? '오늘 흐름은 비교적 안정적인 쪽에 가깝습니다.'
-            : '오늘 흐름은 속도 조절이 필요한 쪽에 가깝습니다.')
+        ? (oneCardRisk >= 2
+            ? '오늘 흐름은 정비와 속도 조절이 우선인 쪽에 가깝습니다.'
+            : oneCardRisk === 1
+              ? '오늘 흐름은 과속을 피하면 안정적으로 유지할 수 있는 쪽에 가깝습니다.'
+              : '오늘 흐름은 비교적 안정적인 쪽에 가깝습니다.')
       : uprightCount >= reversedCount
         ? '결론은 진행해도 되는 쪽에 가깝습니다.'
         : '결론은 속도를 늦추고 조절하는 쪽에 가깝습니다.';
@@ -2470,7 +2478,7 @@ function scoreOneCardRisk({ firstItem = null, topKeywords = [], uprightCount = 0
   ]);
   if (riskyCardIds.has(cardId)) score += 1;
 
-  const riskWords = ['붕괴', '급변', '속박', '유혹', '집착', '불안', '혼란', '과부하', '갈등', '피로', '충돌', '상실'];
+  const riskWords = ['붕괴', '급변', '속박', '유혹', '집착', '불안', '혼란', '과부하', '갈등', '피로', '충돌', '상실', '권태', '무기력'];
   const warningWords = ['지연', '정체', '과신', '과소비', '소모', '압박'];
   if (keywords.some((k) => riskWords.some((w) => k.includes(w)))) score += 1;
   else if (keywords.some((k) => warningWords.some((w) => k.includes(w)))) score += 0.5;

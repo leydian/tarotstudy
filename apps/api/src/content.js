@@ -1991,7 +1991,8 @@ function buildOneCardInterpretation({ card, orientation, focus, context = '' }) 
     subObject,
     focus
   });
-  const evidenceWithSymbol = `${evidence} 카드 상징은 '${main}', '${sub}', '${third}'입니다.`;
+  const symbolKeywords = [...new Set([main, sub, third].map((k) => String(k || '').trim()).filter(Boolean))];
+  const evidenceWithSymbol = `${evidence} 카드 상징 키워드는 ${symbolKeywords.map((k) => `'${k}'`).join(', ')}입니다.`;
   const comfort = buildOneCardComfortLine({ group, risk });
   const timing = buildOneCardTimingLine({ group, risk, orientation });
   const bridge = buildOneCardBridgeLine({ group, card, orientation, main, sub });
@@ -2002,6 +2003,12 @@ function buildOneCardInterpretation({ card, orientation, focus, context = '' }) 
 
 function buildOneCardEvidenceLine({ group = 'general', orientation = 'upright', main = '흐름', subSubject = '흐름이', subObject = '흐름을', focus = '핵심 포인트' }) {
   const mainSubject = withKoreanParticle(main, '이', '가');
+  const focusObject = withKoreanParticle(focus, '을', '를');
+  if (group === 'daily') {
+    return orientation === 'upright'
+      ? `근거 키워드는 '${main}'이고, ${mainSubject} 비교적 안정적이라 ${focusObject} 지키며 과속을 줄이는 운영이 유리합니다.`
+      : `근거 키워드는 '${main}'이고, ${mainSubject} 흔들릴 수 있어 ${focus}에서는 속도를 낮추고 ${subObject} 기준으로 정리하는 편이 좋겠습니다.`;
+  }
   if (group === 'contact') {
     const contactMain = CONTACT_KEYWORD_TONE[main] ?? main;
     return orientation === 'upright'
@@ -2023,9 +2030,11 @@ function buildOneCardCoreMessage({ card, orientation, context = '' }) {
   const normalizedContext = normalizeClientQuestion(context);
   const group = detectOneCardQuestionGroup(context);
   const verdict = buildOneCardDecisionLine({ group, card, orientation });
-  const empathy = normalizedContext
-    ? `"${normalizedContext}"를 두고 망설이고 계시군요.`
-    : '지금 선택을 두고 망설이는 지점을 점검하고 계시군요.';
+  const empathy = group === 'daily'
+    ? (normalizedContext ? `"${normalizedContext}"에 대한 오늘 흐름을 함께 보겠습니다.` : '오늘 흐름을 카드 기준으로 차분히 정리해보겠습니다.')
+    : (normalizedContext
+        ? `"${normalizedContext}"를 두고 망설이고 계시군요.`
+        : '지금 선택을 두고 망설이는 지점을 점검하고 계시군요.');
   const lead = normalizedContext
     ? `카드는 '${card.nameKo} ${cardDirection}'입니다.`
     : `뽑으신 카드는 '${card.nameKo} ${cardDirection}'입니다.`;
@@ -2058,6 +2067,11 @@ function buildOneCardExecutionHint({ context = '', group = 'general', card, orie
     if (risk === 1) return '소액·필수 항목만 먼저 진행하고, 큰 금액은 하루 더 검토해 보세요.';
     return '예산 한도를 먼저 정한 뒤 진행해 보세요.';
   }
+  if (group === 'daily') {
+    if (risk >= 2 || orientation === 'reversed') return '오늘은 일정을 줄여 핵심 1개만 완료하고, 감정 소모를 키우는 약속 1개는 미루세요.';
+    if (risk === 1) return '오늘은 우선순위 1개를 먼저 끝내고, 나머지는 짧은 시간 블록으로 나눠 확인하세요.';
+    return '오늘은 가장 중요한 일 1개를 오전에 고정하고, 소모가 큰 일 1개는 기준을 낮춰 가볍게 처리하세요.';
+  }
   return risk >= 2
     ? '결정을 한 템포 늦추고 소모를 줄이는 선택부터 해보세요.'
     : risk === 1
@@ -2071,11 +2085,17 @@ function detectOneCardQuestionGroup(context = '') {
   if (/(운동|헬스|러닝|달리기|조깅|산책|근력|유산소|필라테스|요가)/.test(normalized)) return 'exercise';
   if (/(연락|문자|카톡|톡|dm|디엠|전화|답장|고백|메시지)/.test(normalized)) return 'contact';
   if (/(결제|구매|지출|주문|구독|환불|계약|할부|투자|송금|이체)/.test(normalized)) return 'payment';
+  if (/(오늘|운세|하루|금일|오늘의)/.test(normalized)) return 'daily';
   return 'general';
 }
 
 function buildOneCardDecisionLine({ group = 'general', card, orientation = 'upright' }) {
   const risk = scoreOneCardRiskLight({ card, orientation });
+  if (group === 'daily') {
+    if (risk >= 2 || orientation === 'reversed') return '한 줄 결론은 오늘은 정비가 먼저인 흐름입니다.';
+    if (risk === 1) return '한 줄 결론은 오늘은 속도 조절이 필요한 흐름입니다.';
+    return '한 줄 결론은 오늘은 무리하지 않으면 안정적으로 흘러갈 가능성이 큽니다.';
+  }
   if (group === 'caffeine') {
     if (risk >= 2) return '한 줄 결론은 금지 상태에 가까워요. 지금은 마시지 않는 쪽이 더 안전해 보여요.';
     if (risk === 1) return '한 줄 결론은 한 잔만 가능 상태예요. 추가 섭취는 피하는 쪽이 좋아요.';
@@ -2097,9 +2117,9 @@ function buildOneCardDecisionLine({ group = 'general', card, orientation = 'upri
     if (risk === 1) return '한 줄 결론은 조건부 가능 상태예요. 소액/필수 결제만 먼저 권장돼요.';
     return '한 줄 결론은 완전 가능 상태예요. 예산 범위 안이라면 진행해도 괜찮아 보여요.';
   }
-  if (risk >= 2) return '한 줄 결론은 보류 상태에 가까워요.';
-  if (risk === 1) return '한 줄 결론은 조건부 가능 상태예요.';
-  return orientation === 'upright' ? '한 줄 결론은 완전 가능 상태예요.' : '한 줄 결론은 보류 상태에 가까워요.';
+  if (risk >= 2) return '한 줄 결론은 보류보다 정비가 우선입니다.';
+  if (risk === 1) return '한 줄 결론은 가능하지만 속도 조절이 필요합니다.';
+  return orientation === 'upright' ? '한 줄 결론은 무리하지 않으면 안정적으로 진행할 수 있습니다.' : '한 줄 결론은 속도를 늦춰 정비하는 편이 좋습니다.';
 }
 
 function scoreOneCardRiskLight({ card, orientation = 'upright' }) {
@@ -2107,7 +2127,7 @@ function scoreOneCardRiskLight({ card, orientation = 'upright' }) {
   const riskyIds = new Set(['major-15', 'major-16', 'major-18', 'minor-swords-ten', 'minor-swords-nine', 'minor-cups-five']);
   if (riskyIds.has(card?.id)) score += 1;
   const keywords = (card?.keywords || []).map((k) => String(k || '').toLowerCase());
-  if (keywords.some((k) => /(붕괴|급변|속박|유혹|집착|혼란|불안|갈등|상실|소모)/.test(k))) score += 1;
+  if (keywords.some((k) => /(붕괴|급변|속박|유혹|집착|혼란|불안|갈등|상실|소모|권태|무기력)/.test(k))) score += 1;
   if (score >= 2) return 2;
   if (score >= 1) return 1;
   return 0;
@@ -2141,6 +2161,16 @@ function buildOneCardBridgeLine({ group = 'general', card, orientation = 'uprigh
     return orientation === 'upright'
       ? `${cardBaseBridge} 운동 질문에서는 '${main}'에서 ${subTo} 자연스럽게 이어지는 구간이라, 작은 시작이 실제 리듬으로 연결되기 쉽습니다.`
       : `${cardBaseBridge} 운동 질문에서는 '${main}' 신호가 흔들리기 쉬우니, 완벽한 계획보다 짧고 가벼운 시작으로 리듬부터 다시 붙이는 편이 안전합니다.`;
+  }
+  if (group === 'daily') {
+    if (card?.id === 'minor-cups-four') {
+      return orientation === 'reversed'
+        ? '컵 4 역방향은 무감각 루틴에서 벗어나려는 신호라, 새 일을 늘리기보다 미뤄둔 감정 정리를 짧게 시작하는 편이 좋습니다.'
+        : '컵 4 정방향은 무심히 지나친 감정 신호를 점검하라는 카드라, 오늘은 확장보다 우선순위와 에너지 배분을 다시 맞추는 편이 좋습니다.';
+    }
+    return orientation === 'upright'
+      ? `${cardBaseBridge} 오늘 운세 관점에서는 '${main}'을 과하게 키우기보다 에너지 소모를 줄이는 선택이 하루 흐름을 더 안정적으로 만듭니다.`
+      : `${cardBaseBridge} 오늘 운세 관점에서는 '${main}' 신호가 흔들릴 수 있어, 계획 확장보다 일정 정비를 먼저 두는 편이 안전합니다.`;
   }
   if (group !== 'caffeine') {
     return orientation === 'upright'
@@ -2211,6 +2241,11 @@ function buildOneCardTimingLine({ group = 'general', risk = 1, orientation = 'up
     if (risk === 1) return '지금은 반응을 확인하며 템포를 가져가는 전략이 관계 손상을 줄일 가능성이 높아요.';
     return '타이밍은 나쁘지 않아 보여요. 먼저 신호를 주면 대화 흐름이 열릴 가능성이 높아요.';
   }
+  if (group === 'daily') {
+    if (risk >= 2 || orientation === 'reversed') return '오늘은 페이스를 늦출수록 결과가 안정됩니다. 급한 결정보다 순서 정리가 우선입니다.';
+    if (risk === 1) return '오늘은 과속만 피하면 흐름을 지킬 수 있습니다. 짧은 단위로 끊어 진행하세요.';
+    return '오늘은 흐름이 비교적 안정적이라, 우선순위만 분명히 하면 무리 없이 지나갈 가능성이 큽니다.';
+  }
   if (risk >= 2) {
     return '지금은 강하게 밀기보다 타이밍을 하루 정도 늦추는 쪽이 더 안정적일 가능성이 높아요.';
   }
@@ -2245,6 +2280,11 @@ function buildOneCardOutcomeLine({ group = 'general', risk = 1, orientation = 'u
     if (risk >= 2) return '추가 섭취를 줄이면 컨디션 흔들림을 막을 가능성이 높습니다.';
     if (risk === 1) return '한 잔 기준만 지키면 집중 유지와 과자극 회피를 함께 가져갈 수 있습니다.';
     return '적정량을 지키면 집중 흐름을 안정적으로 가져갈 가능성이 높습니다.';
+  }
+  if (group === 'daily') {
+    if (risk >= 2 || orientation === 'reversed') return '오늘은 정비 중심으로 가면 소모를 줄이고 흐름 이탈을 막을 가능성이 높습니다.';
+    if (risk === 1) return '오늘은 속도만 조절하면 해야 할 일을 안정적으로 마무리할 가능성이 높습니다.';
+    return '오늘은 우선순위를 선명히 두면 체감 안정감을 유지할 가능성이 높습니다.';
   }
   if (risk >= 2 || orientation === 'reversed') {
     return '속도 조절을 우선하면 결과 변동성을 줄일 가능성이 높습니다.';
@@ -3008,8 +3048,8 @@ function buildLearningCoachReview({ positionName, cardName, orientation, context
   const direction = orientation === 'upright' ? '정방향' : '역방향';
   const lines = [
     `복기 질문: "${positionName}에서 읽은 ${cardName} ${direction} 해석을 ${contextProfile.trackMetric} 기준으로 점검했는가?"`,
-    `체크 질문: "${cardName} ${direction}의 핵심 키워드가 ${positionName} 실제 전개와 어떻게 맞았는가?"`,
-    `검증 질문: "${positionName} 리딩에서 카드 근거(키워드/방향/포지션)를 분리해 설명할 수 있는가?"`
+    `점검 질문: "${cardName} ${direction}의 핵심 키워드가 ${positionName} 실제 전개와 어떻게 맞았는가?"`,
+    `복기 질문: "${positionName} 리딩에서 카드 근거(키워드/방향/포지션)를 분리해 설명할 수 있는가?"`
   ];
   return `${pickVariant(`${seed}:coach-review-q`, lines)} ${pickVariant(`${seed}:coach-review-step`, [style.reviewStep, `리딩 검증: ${style.reviewStep}`])}`;
 }

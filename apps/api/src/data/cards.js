@@ -570,6 +570,12 @@ function suitTheme(suit) {
 }
 
 function minorKeywords(suit, rank) {
+  const override = {
+    'Cups:Four': ['감정 점검', '권태', '거리두기'],
+    'Swords:Nine': ['불안', '과잉 사고', '휴식 필요']
+  }[`${suit}:${rank}`];
+  if (override) return override;
+
   const base = {
     Wands: ['열정', '추진력'],
     Cups: ['감정', '공감'],
