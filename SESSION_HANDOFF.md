@@ -1,7 +1,7 @@
 # 세션 인수인계 문서 (메인)
 
 작성일: 2026-02-22  
-최종 갱신: 2026-02-23 (late)  
+최종 갱신: 2026-02-22 (latest)  
 작업 경로: `/home/eunok/studycodex`
 
 ## 1) 문서 구조
@@ -36,39 +36,46 @@
   - 텔레메트리 수집 API(`spread_drawn`, `spread_review_saved`) 및 롤업 스크립트 추가
 
 ## 3) 금일 추가 반영 (최신)
-- 양자택일(`choice-a-b`) 리딩 품질 2차/3차 고도화
-  - 질문 맥락별 전용 축 분기:
-    - 근무지 선택: `통근 시간/교통 피로/생활비/성장 기회/지속 가능성`
-    - 구매/브랜드 선택: `예산 압박/즉시 만족도/활용도/스타일 적합성/3개월 후 만족도`
-  - 포지션 역할 고정:
-    - `현재 상황`: 공통 기준 고정
-    - `A/B 가까운 미래`: 1~2주 단기 반응/적응
-    - `A/B 결과`: 1~3개월 누적 보상/소모
-  - 카드 긴장도 보정:
-    - `악마/달/탑/소드 고긴장군`은 정방향이어도 경계 문장 우선
-  - 조사/문장 품질 보정:
-    - `'...는'` 조사 오류, 목적격 조사(`...을/를`) 오류 교정
-  - 반복 완화:
-    - 양자택일 공통 반복 문장을 포지션별/맥락별 문장으로 분리
+- 질문 뱅크 대규모 확장 + 의도 분기 통합
+  - 신규 파일: `apps/api/src/data/question-intents.js`
+  - 질문 규모: `100,000`문항 / `1,000`주제
+  - 구조:
+    - 베이스 주제 `50`
+    - 시리즈 확장 `20` (`week`, `month`, `risk`, `longterm` 등)
+    - 문항 변형 `10` (`핵심 질문`, `실행 우선`, `리스크 점검`, `복기 포인트` 등)
+  - 의도 분기:
+    - `inferQuestionIntent()`로 `career/relationship/relationship-repair/social/finance/study/health/daily` 공통 판별
+    - 질문 생성 시 의도 앵커(`커리어/관계/재정/학습/건강/운세`) 포함
+    - 전수 검증에서 `general` 누락 0건
+  - API:
+    - `GET /api/questions/predicted?limit=100000`
+    - 기본 `limit=100000`, 최대 `200000`
 
-- 전 스프레드 공통 결론 정책 적용
-  - `우세 / 조건부 / 박빙` 판정 블록을 모든 summary 앞단에 삽입
-  - 근거 2~3개를 `포지션/카드/정역/키워드` 단위로 함께 제시
-  - 스프레드별 어휘 중심축 분리:
-    - 예: 선택 유지성, 서사 중심축, 요일별 완급, 분기별 전략 축
+- 스프레드 상단 리딩 UX 재정리
+  - 파일: `apps/web/src/pages/SpreadsPage.tsx`, `apps/web/src/styles.css`
+  - 변경:
+    - `상세 보기` 토글 제거
+    - 상단 우측을 `종합 학습 내역` 요약 블록으로 교체
+    - 상단은 `타로 리더 종합 리딩 + 종합 학습 내역` 2패널 고정
+    - 카드별 상세 학습 내역은 하단 카드 섹션에서 유지
 
-- 전 스프레드 문장 리듬 보정
-  - summary 후처리에서 문장 중복 제거(문단 간 중복 포함)
-  - 동일 문장 재출력 억제로 가독성 개선
+- 양자택일 지역 질문 분기 보정
+  - 파일: `apps/api/src/content.js`, `apps/api/src/index.js`
+  - 변경:
+    - `부산을 갈까 광주를 갈까?` 형태를 지역/거점 선택으로 인식
+    - 지역 전용 축 적용:
+      - `이동 거리`, `정착 난이도`, `생활비`, `관계망/지원망`, `지속 가능성`
+  - 회귀 테스트:
+    - `apps/api/test/choice-a-b-reading.test.js`에 도시 선택 케이스 추가
 
 ## 4) 최근 커밋 타임라인 (최신 우선)
+- `b7e7443` Improve choice A/B location intent detection for city decisions
+- `036c5d2` Simplify spread top panel with consolidated learning digest
+- `571a610` Expand question bank to 100k questions across 1k topics
+- `eaa8240` Scale question bank to 10000 questions across 1000 topics
+- `e9699e6` Expand tarot question bank to 5000 across 50 topics
+- `8a0d57f` Update handoff docs with latest A/B and summary-policy rollout
 - `6135a1b` Apply verdict-and-evidence summary policy across all spreads
-- `389fa59` Improve purchase-focused A/B reading tone and decision clarity
-- `cd445be` Refine choice A/B reading for clarity and work-location context
-- `cde023c` Reorganize handoff docs into main-index-details structure
-- `e1ad671` Add regression test for weekly fortune monday-to-sunday positions
-- `737899b` Compact spread metadata layout and restore weekly day-separated summary
-- `274481f` Rebuild page layouts and fix dark-theme text contrast
 
 ## 5) 현재 상태
 - 빌드/테스트 기준으로 주요 기능은 정상 범위
@@ -78,6 +85,7 @@
   - `node --check apps/api/src/content.js` 통과
   - `node --check apps/api/src/index.js` 통과
   - `npm run test:api` 통과
+  - `npm run build:web` 통과
 
 ## 6) 즉시 참조 링크
 - 전체 인수인계 인덱스: `docs/handoff/INDEX.md`

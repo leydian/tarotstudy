@@ -258,6 +258,60 @@
   - `소드 킹`: `판단/원칙/명료함`
   - 카드별 고유 의미와 출력 문체의 정합성 강화
 
+---
+
+## 추가 업데이트 6 (질문 뱅크 대규모 확장 + 분기 통합 + UI 정리)
+
+### 1) 질문 뱅크 확장 (`100,000` / `1,000`)
+- 파일:
+  - `apps/api/src/data/question-intents.js`
+  - `apps/api/src/index.js`
+  - `apps/api/test/question-intents.test.js`
+  - `README.md`
+- 변경:
+  - 질문 뱅크 생성 로직을 `베이스 주제 50 × 시리즈 20 × 문항변형 10` 구조로 확장
+  - 총 `100,000`문항, `1,000`주제 고정
+  - API 엔드포인트:
+    - `GET /api/questions/predicted?limit=100000`
+    - 기본 `limit=100000`, 최대 `200000`
+- 의도 분기:
+  - `inferQuestionIntent()` 공통 유틸 사용
+  - 질문 생성 시 의도 앵커(`커리어/관계/재정/학습/건강/운세`)를 함께 삽입해 분기 안정성 강화
+  - 전수 분기 점검에서 `general` 누락 없이 분류되도록 보정
+
+### 2) 스프레드 상단 UI 재정리 (종합 학습 내역)
+- 파일:
+  - `apps/web/src/pages/SpreadsPage.tsx`
+  - `apps/web/src/styles.css`
+- 변경:
+  - 상단 `리딩 메시지` 영역에서 `상세 보기` 토글 제거
+  - 상단 우측 패널을 포지션별 장문 코치 목록 대신 `종합 학습 내역` 요약(프레임/질문/검증)으로 전환
+  - 카드별 상세 학습 내역은 하단 포지션 카드 블록에서 그대로 유지
+- 목적:
+  - `종합 리딩`과 `학습 코치`의 길이 불균형으로 인한 가독성 저하 완화
+
+### 3) 양자택일 도시 선택 질문 분기 보정
+- 파일:
+  - `apps/api/src/content.js`
+  - `apps/api/src/index.js`
+  - `apps/api/test/choice-a-b-reading.test.js`
+- 변경:
+  - `부산을 갈까 광주를 갈까?` 유형을 지역/거점 선택으로 인식
+  - 지역 전용 축 적용:
+    - `이동 거리`, `정착 난이도`, `생활비`, `관계망/지원망`, `지속 가능성`
+  - 회귀 테스트에 도시 선택 케이스 추가
+
+### 4) 검증
+- `npm run test:api` 통과
+- `npm run build:web` 통과
+
+### 5) 관련 커밋
+- `e9699e6` Expand tarot question bank to 5000 across 50 topics
+- `eaa8240` Scale question bank to 10000 questions across 1000 topics
+- `571a610` Expand question bank to 100k questions across 1k topics
+- `036c5d2` Simplify spread top panel with consolidated learning digest
+- `b7e7443` Improve choice A/B location intent detection for city decisions
+
 ### 3) 학습 리더 코치 관점 전환
 - 파일: `apps/api/src/content.js`, `apps/web/src/pages/SpreadsPage.tsx`
 - 변경:
