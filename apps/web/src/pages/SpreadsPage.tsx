@@ -35,6 +35,7 @@ export function SpreadsPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [variantId, setVariantId] = useState<string | null>(null);
   const [context, setContext] = useState('');
+  const [detailView, setDetailView] = useState<'reading' | 'guide'>('reading');
   const [readingLevel, setReadingLevel] = useState<'beginner' | 'intermediate'>('beginner');
   const [reviewDraft, setReviewDraft] = useState<Record<string, string>>({});
   const [reviewChecklistDraft, setReviewChecklistDraft] = useState<Record<string, ReviewChecklist>>({});
@@ -66,6 +67,7 @@ export function SpreadsPage() {
       );
     },
     onSuccess: (data) => {
+      setDetailView('reading');
       addSpreadReading({
         id: `${data.spreadId}:${data.drawnAt}`,
         spreadId: data.spreadId,
@@ -232,7 +234,27 @@ export function SpreadsPage() {
         </div>
 
         {drawMutation.isError && <p>드로우 생성에 실패했습니다. 잠시 후 다시 시도해주세요.</p>}
-        {drawMutation.data && (
+
+        <div className="chip-wrap view-toggle">
+          <button
+            className={`chip-link ${detailView === 'reading' ? 'chip-on' : ''}`}
+            onClick={() => setDetailView('reading')}
+          >
+            스프레드 리딩 결과
+          </button>
+          <button
+            className={`chip-link ${detailView === 'guide' ? 'chip-on' : ''}`}
+            onClick={() => setDetailView('guide')}
+          >
+            스프레드 가이드/복기
+          </button>
+        </div>
+
+        {detailView === 'reading' && !drawMutation.data && (
+          <p className="sub">카드를 뽑으면 이 영역에 리딩 결과가 표시됩니다.</p>
+        )}
+
+        {detailView === 'reading' && drawMutation.data && (
           <>
             <h4>리딩 메시지</h4>
             <div className="reading-dual-panel">
@@ -380,162 +402,166 @@ export function SpreadsPage() {
           </>
         )}
 
-        <h4>언제 쓰면 좋은가</h4>
-        <ul className="clean-list compact-list">
-          {selected.whenToUse.map((item) => <li key={item}>{item}</li>)}
-        </ul>
+        {detailView === 'guide' && (
+          <>
+            <h4>언제 쓰면 좋은가</h4>
+            <ul className="clean-list compact-list">
+              {selected.whenToUse.map((item) => <li key={item}>{item}</li>)}
+            </ul>
 
-        <h4>포지션 의미</h4>
-        <div className="position-grid">
-          {positions.map((pos) => (
-            <article key={pos.name} className="position-card">
-              <p><strong>{pos.name}</strong></p>
-              <p>{pos.meaning}</p>
-            </article>
-          ))}
-        </div>
+            <h4>포지션 의미</h4>
+            <div className="position-grid">
+              {positions.map((pos) => (
+                <article key={pos.name} className="position-card">
+                  <p><strong>{pos.name}</strong></p>
+                  <p>{pos.meaning}</p>
+                </article>
+              ))}
+            </div>
 
-        <h4>학습 루틴</h4>
-        <ol className="clean-list compact-list">
-          {selected.studyGuide.map((item) => <li key={item}>{item}</li>)}
-        </ol>
+            <h4>학습 루틴</h4>
+            <ol className="clean-list compact-list">
+              {selected.studyGuide.map((item) => <li key={item}>{item}</li>)}
+            </ol>
 
-        <div className="history-header">
-          <h4>리딩 복기 기록</h4>
-          <button
-            className="btn danger"
-            disabled={recentSpreadHistory.length === 0}
-            onClick={() => {
-              setReviewDraft((prev) => {
-                const next = { ...prev };
-                for (const record of recentSpreadHistory) delete next[record.id];
-                return next;
-              });
-              removeSpreadReadingsBySpreadId(selected.id);
-            }}
-          >
-            이 스프레드 기록 전체 삭제
-          </button>
-        </div>
-        {recentSpreadHistory.length === 0 && <p>아직 복기 기록이 없습니다.</p>}
-        <div className="stack">
-          {recentSpreadHistory.map((record) => (
-            <article key={record.id} className="result-item">
-              <div className="history-row">
-                <p><strong>{new Date(record.drawnAt).toLocaleString()}</strong> · {record.variantName ?? record.spreadName}</p>
-                <button
-                  className="btn danger"
-                  onClick={() => {
-                    setReviewDraft((prev) => {
-                      const next = { ...prev };
-                      delete next[record.id];
-                      return next;
-                    });
-                    removeSpreadReading(record.id);
-                  }}
-                >
-                  삭제
-                </button>
-              </div>
-              {record.readingExperiment && <p className="sub">리딩 템플릿 실험군: {record.readingExperiment}</p>}
-              <p>{record.summary}</p>
-              <ul className="clean-list">
-                {record.items.map((item) => (
-                  <li key={`${record.id}:${item.position.name}`}>
-                    <strong>{item.position.name}</strong>: {item.learningPoint || '학습 포인트가 없는 기록입니다. 다음 복기부터 카드-행동 연결 문장을 남겨주세요.'}
-                  </li>
-                ))}
-              </ul>
-              <div className="filters">
-                <select
-                  value={record.outcome ?? ''}
-                  onChange={(e) => {
-                    const nextOutcome = (e.target.value || undefined) as 'matched' | 'partial' | 'different' | undefined;
-                    const noteWithChecklist = mergeReviewNoteAndChecklist(
-                      reviewDraft[record.id] ?? stripChecklistTags(record.reviewNote ?? ''),
-                      reviewChecklistDraft[record.id] ?? parseChecklistFromNote(record.reviewNote ?? '')
-                    );
-                    reviewSpreadReading(
-                      record.id,
-                      nextOutcome,
-                      noteWithChecklist
-                    );
-                    if (nextOutcome) {
-                      sendSpreadEvent({
-                        type: 'spread_review_saved',
-                        spreadId: record.spreadId,
-                        level: record.level,
-                        context: record.context
-                      });
-                    }
-                  }}
-                >
-                  <option value="">결과 체감 선택</option>
-                  <option value="matched">대체로 맞음</option>
-                  <option value="partial">부분적으로 맞음</option>
-                  <option value="different">다름</option>
-                </select>
-              <input
-                  value={reviewDraft[record.id] ?? stripChecklistTags(record.reviewNote ?? '')}
-                  onChange={(e) => setReviewDraft((prev) => ({ ...prev, [record.id]: e.target.value }))}
-                  placeholder="실제 결과 메모"
-                />
-                <div className="review-checks">
-                  {([
-                    ['routine', '루틴 준수'],
-                    ['time', '시간 관리'],
-                    ['mistakes', '오답 관리'],
-                    ['condition', '컨디션 관리']
-                  ] as const).map(([key, label]) => {
-                    const current = reviewChecklistDraft[record.id] ?? parseChecklistFromNote(record.reviewNote ?? '');
-                    return (
-                      <label key={`${record.id}-${key}`} className="review-check-item">
-                        <input
-                          type="checkbox"
-                          checked={Boolean(current[key])}
-                          onChange={(e) =>
-                            setReviewChecklistDraft((prev) => ({
-                              ...prev,
-                              [record.id]: {
-                                ...current,
-                                [key]: e.target.checked
+            <div className="history-header">
+              <h4>리딩 복기 기록</h4>
+              <button
+                className="btn danger"
+                disabled={recentSpreadHistory.length === 0}
+                onClick={() => {
+                  setReviewDraft((prev) => {
+                    const next = { ...prev };
+                    for (const record of recentSpreadHistory) delete next[record.id];
+                    return next;
+                  });
+                  removeSpreadReadingsBySpreadId(selected.id);
+                }}
+              >
+                이 스프레드 기록 전체 삭제
+              </button>
+            </div>
+            {recentSpreadHistory.length === 0 && <p>아직 복기 기록이 없습니다.</p>}
+            <div className="stack">
+              {recentSpreadHistory.map((record) => (
+                <article key={record.id} className="result-item">
+                  <div className="history-row">
+                    <p><strong>{new Date(record.drawnAt).toLocaleString()}</strong> · {record.variantName ?? record.spreadName}</p>
+                    <button
+                      className="btn danger"
+                      onClick={() => {
+                        setReviewDraft((prev) => {
+                          const next = { ...prev };
+                          delete next[record.id];
+                          return next;
+                        });
+                        removeSpreadReading(record.id);
+                      }}
+                    >
+                      삭제
+                    </button>
+                  </div>
+                  {record.readingExperiment && <p className="sub">리딩 템플릿 실험군: {record.readingExperiment}</p>}
+                  <p>{record.summary}</p>
+                  <ul className="clean-list">
+                    {record.items.map((item) => (
+                      <li key={`${record.id}:${item.position.name}`}>
+                        <strong>{item.position.name}</strong>: {item.learningPoint || '학습 포인트가 없는 기록입니다. 다음 복기부터 카드-행동 연결 문장을 남겨주세요.'}
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="filters">
+                    <select
+                      value={record.outcome ?? ''}
+                      onChange={(e) => {
+                        const nextOutcome = (e.target.value || undefined) as 'matched' | 'partial' | 'different' | undefined;
+                        const noteWithChecklist = mergeReviewNoteAndChecklist(
+                          reviewDraft[record.id] ?? stripChecklistTags(record.reviewNote ?? ''),
+                          reviewChecklistDraft[record.id] ?? parseChecklistFromNote(record.reviewNote ?? '')
+                        );
+                        reviewSpreadReading(
+                          record.id,
+                          nextOutcome,
+                          noteWithChecklist
+                        );
+                        if (nextOutcome) {
+                          sendSpreadEvent({
+                            type: 'spread_review_saved',
+                            spreadId: record.spreadId,
+                            level: record.level,
+                            context: record.context
+                          });
+                        }
+                      }}
+                    >
+                      <option value="">결과 체감 선택</option>
+                      <option value="matched">대체로 맞음</option>
+                      <option value="partial">부분적으로 맞음</option>
+                      <option value="different">다름</option>
+                    </select>
+                  <input
+                      value={reviewDraft[record.id] ?? stripChecklistTags(record.reviewNote ?? '')}
+                      onChange={(e) => setReviewDraft((prev) => ({ ...prev, [record.id]: e.target.value }))}
+                      placeholder="실제 결과 메모"
+                    />
+                    <div className="review-checks">
+                      {([
+                        ['routine', '루틴 준수'],
+                        ['time', '시간 관리'],
+                        ['mistakes', '오답 관리'],
+                        ['condition', '컨디션 관리']
+                      ] as const).map(([key, label]) => {
+                        const current = reviewChecklistDraft[record.id] ?? parseChecklistFromNote(record.reviewNote ?? '');
+                        return (
+                          <label key={`${record.id}-${key}`} className="review-check-item">
+                            <input
+                              type="checkbox"
+                              checked={Boolean(current[key])}
+                              onChange={(e) =>
+                                setReviewChecklistDraft((prev) => ({
+                                  ...prev,
+                                  [record.id]: {
+                                    ...current,
+                                    [key]: e.target.checked
+                                  }
+                                }))
                               }
-                            }))
-                          }
-                        />
-                        {label}
-                      </label>
-                    );
-                  })}
-                </div>
-                <button
-                  className="btn"
-                  onClick={() => {
-                    const noteWithChecklist = mergeReviewNoteAndChecklist(
-                      reviewDraft[record.id] ?? stripChecklistTags(record.reviewNote ?? ''),
-                      reviewChecklistDraft[record.id] ?? parseChecklistFromNote(record.reviewNote ?? '')
-                    );
-                    reviewSpreadReading(
-                      record.id,
-                      record.outcome,
-                      noteWithChecklist
-                    );
-                    if (record.outcome) {
-                      sendSpreadEvent({
-                        type: 'spread_review_saved',
-                        spreadId: record.spreadId,
-                        level: record.level,
-                        context: record.context
-                      });
-                    }
-                  }}
-                >
-                  복기 저장
-                </button>
-              </div>
-            </article>
-          ))}
-        </div>
+                            />
+                            {label}
+                          </label>
+                        );
+                      })}
+                    </div>
+                    <button
+                      className="btn"
+                      onClick={() => {
+                        const noteWithChecklist = mergeReviewNoteAndChecklist(
+                          reviewDraft[record.id] ?? stripChecklistTags(record.reviewNote ?? ''),
+                          reviewChecklistDraft[record.id] ?? parseChecklistFromNote(record.reviewNote ?? '')
+                        );
+                        reviewSpreadReading(
+                          record.id,
+                          record.outcome,
+                          noteWithChecklist
+                        );
+                        if (record.outcome) {
+                          sendSpreadEvent({
+                            type: 'spread_review_saved',
+                            spreadId: record.spreadId,
+                            level: record.level,
+                            context: record.context
+                          });
+                        }
+                      }}
+                    >
+                      복기 저장
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </>
+        )}
       </article>
     </section>
   );
