@@ -205,11 +205,15 @@ export function SpreadsPage() {
             <div className="reading-dual-panel">
               <article className="result-item reading-summary">
                 <p><strong>타로 리더 종합 리딩</strong></p>
-                <div className="reading-prose-wrap">
-                  {toParagraphBlocks(drawMutation.data.summary).map((block, idx) => (
-                    <p key={`summary-block-${idx}`} className="reading-prose">{block}</p>
-                  ))}
-                </div>
+                {selected.id === 'yearly-fortune'
+                  ? <YearlySummaryView summary={drawMutation.data.summary} />
+                  : (
+                    <div className="reading-prose-wrap">
+                      {toParagraphBlocks(drawMutation.data.summary).map((block, idx) => (
+                        <p key={`summary-block-${idx}`} className="reading-prose">{block}</p>
+                      ))}
+                    </div>
+                  )}
               </article>
               <article className="result-item">
                 <p><strong>학습 리더 코치 내역</strong></p>
@@ -470,6 +474,89 @@ function mergeTarotMessage(coreMessage: string, interpretation: string) {
   if (!detail) return core;
   if (detail.includes(core)) return detail;
   return `${core} ${detail}`.trim();
+}
+
+function YearlySummaryView({ summary }: { summary: string }) {
+  const parsed = parseYearlySummary(summary);
+  if (!parsed) {
+    return (
+      <div className="reading-prose-wrap">
+        {toParagraphBlocks(summary).map((block, idx) => (
+          <p key={`summary-fallback-${idx}`} className="reading-prose">{block}</p>
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="yearly-summary">
+      <section className="yearly-section">
+        <h5>총평</h5>
+        <p className="reading-prose">{parsed.overall}</p>
+      </section>
+      <section className="yearly-section">
+        <h5>분기별 운세</h5>
+        <p className="reading-prose">{parsed.quarterly}</p>
+      </section>
+      <section className="yearly-section">
+        <h5>월별 운세</h5>
+        <div className="yearly-month-grid">
+          {parsed.monthly.map((line, idx) => (
+            <article key={`monthly-item-${idx}`} className="yearly-month-item">
+              <p className="reading-prose">{line}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+      {parsed.closing && (
+        <section className="yearly-section">
+          <h5>마무리</h5>
+          <p className="reading-prose">{parsed.closing}</p>
+        </section>
+      )}
+    </div>
+  );
+}
+
+function parseYearlySummary(text: string) {
+  const raw = String(text || '').trim();
+  if (!raw.includes('총평:') || !raw.includes('분기별 운세:') || !raw.includes('월별 운세:')) return null;
+
+  const overall = extractSection(raw, '총평:', '분기별 운세:');
+  const quarterly = extractSection(raw, '분기별 운세:', '월별 운세:');
+  const monthlyAndClose = extractSection(raw, '월별 운세:', null);
+  if (!overall || !quarterly || !monthlyAndClose) return null;
+
+  const monthlyLines = splitMonthlyLines(monthlyAndClose);
+  const closeStart = monthlyLines.length > 0
+    ? monthlyAndClose.indexOf(monthlyLines[monthlyLines.length - 1]) + monthlyLines[monthlyLines.length - 1].length
+    : 0;
+  const closing = monthlyAndClose.slice(closeStart).trim();
+
+  return {
+    overall,
+    quarterly,
+    monthly: monthlyLines.length > 0 ? monthlyLines : [monthlyAndClose],
+    closing
+  };
+}
+
+function extractSection(text: string, startLabel: string, endLabel: string | null) {
+  const start = text.indexOf(startLabel);
+  if (start < 0) return '';
+  const from = start + startLabel.length;
+  const to = endLabel ? text.indexOf(endLabel, from) : text.length;
+  return text.slice(from, to < 0 ? text.length : to).trim();
+}
+
+function splitMonthlyLines(monthlyText: string) {
+  const segments = monthlyText
+    .split(/(?=(?:[1-9]|1[0-2])월\([^)]*\)은)/g)
+    .map((seg) => seg.trim())
+    .filter(Boolean);
+
+  const monthlyOnly = segments.filter((seg) => /^(?:[1-9]|1[0-2])월\([^)]*\)은/.test(seg));
+  return monthlyOnly;
 }
 
 function buildChoiceComparison(result: SpreadDrawResult) {

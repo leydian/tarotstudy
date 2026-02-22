@@ -414,6 +414,38 @@ input {
   white-space: pre-line;
 }
 
+.yearly-summary {
+  display: grid;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.yearly-section {
+  border: 1px solid #cfdcfb;
+  border-radius: 10px;
+  background: #ffffffd9;
+  padding: 10px;
+}
+
+.yearly-section h5 {
+  margin: 0 0 6px;
+  font-size: 0.92rem;
+  color: #2448a5;
+}
+
+.yearly-month-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.yearly-month-item {
+  border: 1px dashed #d5e0ff;
+  border-radius: 8px;
+  padding: 8px;
+  background: #fbfdff;
+}
+
 .line-tag {
   display: inline-block;
   border-radius: 999px;
@@ -563,6 +595,10 @@ input {
   }
 
   .reading-highlights {
+    grid-template-columns: 1fr;
+  }
+
+  .yearly-month-grid {
     grid-template-columns: 1fr;
   }
 

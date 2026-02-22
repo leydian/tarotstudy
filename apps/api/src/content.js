@@ -1802,7 +1802,7 @@ function inferYearlyIntent(context = '') {
   const text = String(context || '').toLowerCase();
   if (/(취직|취업|이직|입사|지원|면접|커리어|직장|회사)/.test(text)) return 'career';
   if (/(연애|관계|재회|결혼|상대|썸)/.test(text)) return 'relationship';
-  if (/(재정|돈|지출|수입|저축|투자|소비|자산)/.test(text)) return 'finance';
+  if (/(재정|재물|돈|지출|수입|저축|투자|소비|자산|현금흐름|가계부)/.test(text)) return 'finance';
   return 'general';
 }
 

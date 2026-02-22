@@ -771,7 +771,7 @@ function inferYearlyIntent(context = '') {
   const text = String(context || '').toLowerCase();
   if (/(취직|취업|이직|입사|지원|면접|커리어|직장|회사|오퍼|협상|이력서|포트폴리오|직무)/.test(text)) return 'career';
   if (/(연애|관계|재회|결혼|상대|썸)/.test(text)) return 'relationship';
-  if (/(재정|돈|지출|수입|저축|투자|소비|자산)/.test(text)) return 'finance';
+  if (/(재정|재물|돈|지출|수입|저축|투자|소비|자산|현금흐름|가계부)/.test(text)) return 'finance';
   return 'general';
 }
 
@@ -1022,7 +1022,7 @@ function buildMonthlyToneLine({ intent, mode, keyword, cardName, month, monthRol
       return pickByNumber([
         `${cardName}의 ${keyword} 신호가 살아 있어 ${role}에서 외부 접점을 넓히기 좋은 결입니다.`,
         `${cardName} 기준으로 보면 ${keyword} 흐름이 열려 있어 ${role}의 실행 탄력이 붙기 쉽습니다.`,
-        `${cardName} 카드가 ${keyword} 축을 밀어주고 있어 ${role} 구간에서 행동 반경을 조금 넓혀도 무리가 적습니다.`
+        `${cardName} 카드가 ${keyword} 축을 밀어주고 있어 ${role}에서 행동 반경을 조금 넓혀도 무리가 적습니다.`
       ], baseSeed);
     }
     if (mode === 'balanced') {
@@ -1043,15 +1043,15 @@ function buildMonthlyToneLine({ intent, mode, keyword, cardName, month, monthRol
     if (mode === 'open') {
       return pickByNumber([
         `${cardName}의 ${keyword} 결이 열려 있어 ${role}에서 대화 접점을 늘리기 좋은 분위기입니다.`,
-        `${cardName} 흐름에서는 ${keyword} 신호가 비교적 부드러워 ${role} 구간의 관계 회복 시도가 유리합니다.`,
+        `${cardName} 흐름에서는 ${keyword} 신호가 비교적 부드러워 ${role}의 관계 회복 시도가 유리합니다.`,
         `${cardName} 카드 기준으로 ${role}에서는 감정 교류를 먼저 열어도 무리가 적겠습니다.`
       ], baseSeed);
     }
     return pickByNumber([
-      `${cardName}의 ${keyword} 결이 예민해 ${role}에서는 감정 속도를 낮추는 편이 관계에 도움이 됩니다.`,
-      `${cardName} 흐름상 ${role} 구간에서 해석 충돌이 생기기 쉬워 확인 대화를 먼저 두는 편이 좋겠습니다.`,
-      `${cardName} 카드가 ${keyword} 변동을 시사하므로 ${role}에서는 단정 대신 반응 확인이 우선입니다.`
-    ], baseSeed);
+        `${cardName}의 ${keyword} 결이 예민해 ${role}에서는 감정 속도를 낮추는 편이 관계에 도움이 됩니다.`,
+        `${cardName} 흐름상 ${role}에서 해석 충돌이 생기기 쉬워 확인 대화를 먼저 두는 편이 좋겠습니다.`,
+        `${cardName} 카드가 ${keyword} 변동을 시사하므로 ${role}에서는 단정 대신 반응 확인이 우선입니다.`
+      ], baseSeed);
   }
 
   if (intent === 'finance') {
@@ -1059,12 +1059,12 @@ function buildMonthlyToneLine({ intent, mode, keyword, cardName, month, monthRol
       return pickByNumber([
         `${cardName}의 ${keyword} 흐름이 안정 쪽이라 ${role}에서 계획형 운영이 잘 맞는 달입니다.`,
         `${cardName} 신호를 보면 ${role}에서는 수입·지출 기준을 유지할수록 체감 안정성이 올라갑니다.`,
-        `${cardName} 카드가 ${keyword} 축을 받쳐줘 ${role} 구간에서 예산 운영을 확장해도 무리가 적습니다.`
+        `${cardName} 카드가 ${keyword} 축을 받쳐줘 ${role}에서 예산 운영을 확장해도 무리가 적습니다.`
       ], baseSeed);
     }
     return pickByNumber([
       `${cardName}의 ${keyword} 흐름이 흔들릴 수 있어 ${role}에서는 지출 통제와 점검을 먼저 두는 편이 좋겠습니다.`,
-      `${cardName} 신호는 ${role} 구간에서 손실 방어를 우선하라는 메시지에 가깝습니다.`,
+      `${cardName} 신호는 ${role}에서 손실 방어를 우선하라는 메시지에 가깝습니다.`,
       `${cardName} 카드상 ${keyword} 변동성이 있어 ${role}에서는 보수적 운영이 더 안전합니다.`
     ], baseSeed);
   }
@@ -1072,14 +1072,14 @@ function buildMonthlyToneLine({ intent, mode, keyword, cardName, month, monthRol
   if (mode === 'advance') {
     return pickByNumber([
       `${cardName}의 ${keyword} 흐름이 열려 있어 ${role}에서 계획한 일을 진행하기 좋은 달입니다.`,
-      `${cardName} 기준으로 ${keyword} 신호가 살아 있어 ${role} 구간의 실행을 이어가기 수월합니다.`,
+      `${cardName} 기준으로 ${keyword} 신호가 살아 있어 ${role}의 실행을 이어가기 수월합니다.`,
       `${cardName} 카드가 ${role} 단계의 추진력을 받쳐줘 작은 확장을 시도해보기 좋겠습니다.`
     ], baseSeed);
   }
 
   return pickByNumber([
     `${cardName}의 ${keyword} 흐름이 고르지 않아 ${role}에서는 속도를 조금 늦추는 편이 좋겠습니다.`,
-    `${cardName} 신호는 ${role} 구간에서 정비가 우선이라는 의미에 가깝습니다.`,
+    `${cardName} 신호는 ${role}에서 정비가 우선이라는 의미에 가깝습니다.`,
     `${cardName} 카드 기준으로 ${keyword} 변동이 있어 ${role}에서는 실행 폭을 줄여 운영하는 편이 안정적입니다.`
   ], baseSeed);
 }
