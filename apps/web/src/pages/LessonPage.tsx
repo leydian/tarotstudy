@@ -16,6 +16,7 @@ export function LessonPage() {
 
   const lesson = lessonsQuery.data.find((item) => item.id === lessonId);
   if (!lesson) return <p>해당 레슨을 찾을 수 없습니다.</p>;
+  const hasStoryNovel = Boolean(lesson.detail?.storyNovel && lesson.detail.storyNovel.length > 0);
 
   return (
     <section className="stack">
@@ -75,7 +76,7 @@ export function LessonPage() {
               </>
             )}
 
-            {lesson.detail.lessonFlow.length > 0 && (
+            {!hasStoryNovel && lesson.detail.lessonFlow.length > 0 && (
               <>
                 <h3>레슨 진행 순서</h3>
                 <ul className="clean-list">
@@ -86,7 +87,7 @@ export function LessonPage() {
               </>
             )}
 
-            {lesson.detail.onePassScript && lesson.detail.onePassScript.length > 0 && (
+            {!hasStoryNovel && lesson.detail.onePassScript && lesson.detail.onePassScript.length > 0 && (
               <>
                 <h3>한 번에 읽는 실전 스크립트</h3>
                 <ul className="clean-list">
