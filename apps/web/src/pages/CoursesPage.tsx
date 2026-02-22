@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../lib/api';
 import { useProgressStore } from '../state/progress';
+import { PageHero } from '../components/PageHero';
+import { KpiRow } from '../components/KpiRow';
 
 const STAGE_ORDER = [
   '기초 입문',
@@ -115,31 +117,20 @@ export function CoursesPage() {
 
   return (
     <section className="page-shell">
-      <article className="hero-card page-hero">
-        <div>
-          <p className="eyebrow">Courses</p>
-          <h2>코스 목록</h2>
-          <p>기초부터 전문가 랩까지, 단계 순서대로 진도를 이어서 학습합니다.</p>
-        </div>
-        <div className="hero-actions">
-          <button className="btn" onClick={() => setOpenCourseId(null)}>모두 접기</button>
-        </div>
-      </article>
+      <PageHero
+        eyebrow="Courses"
+        title="코스 목록"
+        description="기초부터 전문가 랩까지, 단계 순서대로 진도를 이어서 학습합니다."
+        actions={<button className="btn" onClick={() => setOpenCourseId(null)}>모두 접기</button>}
+      />
 
-      <section className="kpi-row">
-        <article className="kpi-card">
-          <p className="sub">전체 코스</p>
-          <h3>{orderedCourses.length}</h3>
-        </article>
-        <article className="kpi-card">
-          <p className="sub">학습 단계</p>
-          <h3>{stageOptions.length}</h3>
-        </article>
-        <article className="kpi-card">
-          <p className="sub">현재 내 진행 단계</p>
-          <h3>{currentStage}</h3>
-        </article>
-      </section>
+      <KpiRow
+        items={[
+          { label: '전체 코스', value: orderedCourses.length },
+          { label: '학습 단계', value: stageOptions.length },
+          { label: '현재 내 진행 단계', value: currentStage }
+        ]}
+      />
 
       <article className="panel">
         <div className="filters">

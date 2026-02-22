@@ -51,7 +51,9 @@ export function SpreadsPage() {
   const [reviewDraft, setReviewDraft] = useState<Record<string, string>>({});
   const [reviewChecklistDraft, setReviewChecklistDraft] = useState<Record<string, ReviewChecklist>>({});
   const [historyTag, setHistoryTag] = useState<'all' | 'relationship' | 'career' | 'finance' | 'general'>('all');
+  const [historyOutcome, setHistoryOutcome] = useState<'all' | 'matched' | 'partial' | 'different' | 'unreviewed'>('all');
   const [historyQuery, setHistoryQuery] = useState('');
+  const [expandedHistory, setExpandedHistory] = useState<Record<string, boolean>>({});
   const spreadsQuery = useQuery({ queryKey: ['spreads'], queryFn: api.getSpreads });
   const spreadHistory = useProgressStore((s) => s.spreadHistory);
   const addSpreadReading = useProgressStore((s) => s.addSpreadReading);
@@ -134,10 +136,17 @@ export function SpreadsPage() {
             : 'general';
 
       if (historyTag !== 'all' && inferredTag !== historyTag) return false;
+      if (historyOutcome === 'unreviewed' && record.outcome) return false;
+      if (historyOutcome !== 'all' && historyOutcome !== 'unreviewed' && record.outcome !== historyOutcome) return false;
       if (!q) return true;
       return `${context} ${summary}`.includes(q);
     });
-  }, [historyQuery, historyTag, recentSpreadHistory]);
+  }, [historyOutcome, historyQuery, historyTag, recentSpreadHistory]);
+  const historyCounts = useMemo(() => {
+    const reviewed = recentSpreadHistory.filter((item) => item.outcome).length;
+    const unreviewed = recentSpreadHistory.length - reviewed;
+    return { reviewed, unreviewed };
+  }, [recentSpreadHistory]);
   const sendSpreadEvent = (payload: {
     type: 'spread_drawn' | 'spread_review_saved';
     spreadId: string;
@@ -481,41 +490,75 @@ export function SpreadsPage() {
                 <option value="finance">재정</option>
                 <option value="general">일반</option>
               </select>
+              <select value={historyOutcome} onChange={(e) => setHistoryOutcome(e.target.value as typeof historyOutcome)}>
+                <option value="all">전체 판정</option>
+                <option value="matched">대체로 맞음</option>
+                <option value="partial">부분적으로 맞음</option>
+                <option value="different">다름</option>
+                <option value="unreviewed">미복기</option>
+              </select>
               <input
                 value={historyQuery}
                 onChange={(e) => setHistoryQuery(e.target.value)}
                 placeholder="복기 기록 검색"
               />
             </div>
+            <p className="sub">
+              최근 {recentSpreadHistory.length}건 중 복기 완료 {historyCounts.reviewed}건 · 미복기 {historyCounts.unreviewed}건
+            </p>
             {filteredSpreadHistory.length === 0 && <p>조건에 맞는 복기 기록이 없습니다.</p>}
             <div className="stack">
               {filteredSpreadHistory.map((record) => (
                 <article key={record.id} className="result-item">
                   <div className="history-row">
-                    <p><strong>{new Date(record.drawnAt).toLocaleString()}</strong> · {record.variantName ?? record.spreadName}</p>
-                    <button
-                      className="btn danger"
-                      onClick={() => {
-                        setReviewDraft((prev) => {
-                          const next = { ...prev };
-                          delete next[record.id];
-                          return next;
-                        });
-                        removeSpreadReading(record.id);
-                      }}
-                    >
-                      삭제
-                    </button>
+                    <p>
+                      <strong>{new Date(record.drawnAt).toLocaleString()}</strong> · {record.variantName ?? record.spreadName}
+                    </p>
+                    <div className="history-actions">
+                      <button
+                        className="btn"
+                        onClick={() =>
+                          setExpandedHistory((prev) => ({ ...prev, [record.id]: !prev[record.id] }))
+                        }
+                      >
+                        {expandedHistory[record.id] ? '요약으로 보기' : '상세 보기'}
+                      </button>
+                      <button
+                        className="btn danger"
+                        onClick={() => {
+                          setReviewDraft((prev) => {
+                            const next = { ...prev };
+                            delete next[record.id];
+                            return next;
+                          });
+                          removeSpreadReading(record.id);
+                        }}
+                      >
+                        삭제
+                      </button>
+                    </div>
                   </div>
                   {record.readingExperiment && <p className="sub">리딩 템플릿 실험군: {record.readingExperiment}</p>}
-                  <p>{record.summary}</p>
-                  <ul className="clean-list">
-                    {record.items.map((item) => (
-                      <li key={`${record.id}:${item.position.name}`}>
-                        <strong>{item.position.name}</strong>: {item.learningPoint || '학습 포인트가 없는 기록입니다. 다음 복기부터 카드-행동 연결 문장을 남겨주세요.'}
-                      </li>
-                    ))}
-                  </ul>
+                  <p className="history-summary">
+                    {expandedHistory[record.id] ? record.summary : summarizeText(record.summary, 260)}
+                  </p>
+                  <div className="history-digest">
+                    <p className="badge">판정: {toOutcomeLabel(record.outcome)}</p>
+                    <ul className="clean-list reading-lines reading-lines-compact">
+                      {buildLearningDigest(record.items).slice(0, expandedHistory[record.id] ? 5 : 2).map((line, idx) => (
+                        <li key={`${record.id}:digest:${idx}`}>{line}</li>
+                      ))}
+                    </ul>
+                  </div>
+                  {expandedHistory[record.id] && (
+                    <ul className="clean-list">
+                      {record.items.map((item) => (
+                        <li key={`${record.id}:${item.position.name}`}>
+                          <strong>{item.position.name}</strong>: {summarizeText(item.learningPoint || '학습 포인트가 없는 기록입니다.', 180)}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                   <div className="filters">
                     <select
                       value={record.outcome ?? ''}
@@ -695,4 +738,17 @@ function WeeklySummaryView({ summary }: { summary: string }) {
       )}
     </div>
   );
+}
+
+function summarizeText(text: string, max: number) {
+  const normalized = String(text || '').replace(/\s+/g, ' ').trim();
+  if (normalized.length <= max) return normalized;
+  return `${normalized.slice(0, max).trimEnd()}...`;
+}
+
+function toOutcomeLabel(outcome?: 'matched' | 'partial' | 'different') {
+  if (outcome === 'matched') return '대체로 맞음';
+  if (outcome === 'partial') return '부분적으로 맞음';
+  if (outcome === 'different') return '다름';
+  return '미복기';
 }

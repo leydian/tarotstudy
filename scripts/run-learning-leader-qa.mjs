@@ -3,6 +3,21 @@ import process from 'node:process';
 import { withApiRuntime } from './lib/api-runtime.mjs';
 
 const writeReview = process.argv.includes('--write-review');
+const refreshCases = process.argv.includes('--refresh-cases');
+
+function runRefreshCases() {
+  return new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, ['scripts/refresh-qa-cases.mjs'], {
+      stdio: 'inherit',
+      env: process.env
+    });
+    child.on('error', reject);
+    child.on('exit', (code) => {
+      if (code === 0) resolve();
+      else reject(new Error(`[learning-leader-qa] refresh-cases exited with code ${code}`));
+    });
+  });
+}
 
 function runRawQa(apiBase) {
   return new Promise((resolve, reject) => {
@@ -29,6 +44,10 @@ function runRawQa(apiBase) {
 }
 
 try {
+  if (refreshCases) {
+    await runRefreshCases();
+  }
+
   const code = await withApiRuntime(
     {
       label: 'learning-leader-qa'

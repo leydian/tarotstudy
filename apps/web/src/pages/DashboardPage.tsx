@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../lib/api';
 import { useProgressStore } from '../state/progress';
+import { PageHero } from '../components/PageHero';
+import { KpiRow } from '../components/KpiRow';
 
 export function DashboardPage() {
   const completedLessons = useProgressStore((s) => s.completedLessons);
@@ -77,31 +79,20 @@ export function DashboardPage() {
 
   return (
     <section className="page-shell">
-      <article className="hero-card page-hero">
-        <div>
-          <p className="eyebrow">Dashboard</p>
-          <h2>학습 대시보드</h2>
-          <p>퀴즈/스프레드/이미지 운영 상태를 한 화면에서 점검합니다.</p>
-        </div>
-        <div className="hero-actions">
-          <button className="btn" onClick={reset}>로컬 진도 초기화</button>
-        </div>
-      </article>
+      <PageHero
+        eyebrow="Dashboard"
+        title="학습 대시보드"
+        description="퀴즈/스프레드/이미지 운영 상태를 한 화면에서 점검합니다."
+        actions={<button className="btn" onClick={reset}>로컬 진도 초기화</button>}
+      />
 
-      <section className="kpi-row">
-        <article className="kpi-card">
-          <p className="sub">완료 레슨</p>
-          <h3>{completedLessons.length}</h3>
-        </article>
-        <article className="kpi-card">
-          <p className="sub">퀴즈 평균</p>
-          <h3>{avg}%</h3>
-        </article>
-        <article className="kpi-card">
-          <p className="sub">스프레드 정확도</p>
-          <h3>{spreadAccuracy}%</h3>
-        </article>
-      </section>
+      <KpiRow
+        items={[
+          { label: '완료 레슨', value: completedLessons.length },
+          { label: '퀴즈 평균', value: `${avg}%` },
+          { label: '스프레드 정확도', value: `${spreadAccuracy}%` }
+        ]}
+      />
 
       <section className="content-grid">
         <div className="content-main stack">

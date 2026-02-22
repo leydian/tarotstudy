@@ -20,6 +20,7 @@ npm run dev:web -- --host 127.0.0.1 --port 5173
 
 ## 세션 인수인계
 - 요약(핵심만): [SESSION_HANDOFF.md](./SESSION_HANDOFF.md)
+- 인덱스: [docs/handoff/INDEX.md](./docs/handoff/INDEX.md)
 - 상세 변경 내역: [docs/session-handoff-2026-02-22-details.md](./docs/session-handoff-2026-02-22-details.md)
 - 후속 상세(2026-02-23): [docs/session-handoff-2026-02-23-details.md](./docs/session-handoff-2026-02-23-details.md)
 - Codex 변경 요약: [docs/codex-updates-2026-02-22.md](./docs/codex-updates-2026-02-22.md)
@@ -139,6 +140,10 @@ npm run qa:learning-leader
 ```bash
 npm run qa:yearly-fortune
 ```
+- QA 케이스셋 갱신(주기 실행 권장):
+```bash
+npm run qa:refresh-cases
+```
 - 관계 회복 스프레드 변주/반복률 정량 점검:
 ```bash
 npm run qa:relationship-recovery
@@ -146,6 +151,10 @@ npm run qa:relationship-recovery
 - 스프레드별 draw→review 전환율 집계 리포트:
 ```bash
 npm run qa:spread-telemetry
+```
+- 핸드오프 문서 계층 무결성 점검:
+```bash
+npm run docs:check-handoff
 ```
 - 전체 게이트 일괄 실행:
 ```bash

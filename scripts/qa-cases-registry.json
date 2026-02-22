@@ -1,0 +1,8 @@
+{
+  "generatedAt": "2026-02-22T21:02:14.681Z",
+  "generatedDate": "2026-02-22",
+  "offset": 5,
+  "learningCases": 20,
+  "yearlyCases": 14,
+  "source": "apps/api/src/data/question-intents.js"
+}
