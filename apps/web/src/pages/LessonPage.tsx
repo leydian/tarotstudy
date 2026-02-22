@@ -23,11 +23,47 @@ export function LessonPage() {
         <p className="eyebrow">레슨</p>
         <h2>{lesson.title}</h2>
         <p>{lesson.summary}</p>
+        {lesson.detail?.intro && <p>{lesson.detail.intro}</p>}
         <div className="hero-actions">
           <Link to={`/quiz/${lesson.id}`} className="btn primary">퀴즈 시작</Link>
           <Link to="/courses" className="btn">코스로 돌아가기</Link>
         </div>
       </article>
+
+      {lesson.detail && (
+        <article className="panel">
+          <h3>학습 목표</h3>
+          <ul className="clean-list">
+            {lesson.detail.learningGoals.map((goal) => (
+              <li key={goal}>{goal}</li>
+            ))}
+          </ul>
+
+          <h3>레슨 진행 순서</h3>
+          <ul className="clean-list">
+            {lesson.detail.lessonFlow.map((step) => (
+              <li key={step}>{step}</li>
+            ))}
+          </ul>
+
+          <h3>실전 체크리스트</h3>
+          <ul className="clean-list">
+            {lesson.detail.practiceChecklist.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+
+          <h3>과제</h3>
+          <p>{lesson.detail.assignment}</p>
+
+          <h3>복기 질문</h3>
+          <ul className="clean-list">
+            {lesson.detail.reflectionQuestions.map((question) => (
+              <li key={question}>{question}</li>
+            ))}
+          </ul>
+        </article>
+      )}
 
       <article className="panel">
         <h3>학습 카드</h3>

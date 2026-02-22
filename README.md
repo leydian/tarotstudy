@@ -58,6 +58,13 @@ cp apps/api/.env.example apps/api/.env
 cp apps/web/.env.example apps/web/.env
 ```
 
+웹 API 연결 권장값:
+```env
+VITE_API_BASE_URL=/api
+```
+- 개발 서버(Vite)에서 `/api` 프록시를 통해 `http://127.0.0.1:8787`로 전달됩니다.
+- CORS/호스트 불일치 이슈를 줄이기 위해 로컬 개발에서는 `/api` 사용을 권장합니다.
+
 4. API 환경변수 확인
 ```env
 PORT=8787
@@ -210,6 +217,21 @@ npm run dev:web -- --host 127.0.0.1 --port 5173
 - 루트 응답 확인
 ```bash
 curl -sSI http://127.0.0.1:5173/
+```
+
+### 5) 카드 도감에서 `Network request failed: Failed to fetch`가 뜰 때
+- API 서버 실행 상태 확인:
+```bash
+npm run dev:api
+```
+- 웹 서버 재시작:
+```bash
+pkill -f "vite --host 127.0.0.1 --port 5173"
+npm run dev:web -- --host 127.0.0.1 --port 5173
+```
+- 브라우저에서 프록시 확인:
+```bash
+curl -sS http://127.0.0.1:5173/api/health
 ```
 
 ### 4) 서버 중복 실행으로 동작이 불안정할 때

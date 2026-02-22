@@ -425,6 +425,93 @@ export const lessonsByCourse = {
   ]
 };
 
+const stagePlaybook = {
+  '기초 입문': {
+    focus: '카드를 길게 설명하려 하지 말고, 핵심 키워드 1개를 오늘 상황 1개와 연결하는 훈련',
+    mistakes: '뜻을 외우는 데만 시간을 쓰고, 실제 질문/상황에 연결하지 못하는 실수',
+    review: '리딩 뒤에 "내가 근거로 쓴 단어가 실제 상황과 맞았는가?"를 짧게 확인'
+  },
+  '입문 실전': {
+    focus: '결론 1문장 + 근거 1문장 + 오늘 행동 1개로 리딩을 짧고 선명하게 만드는 훈련',
+    mistakes: '결론 없이 느낌만 길어지거나, 행동 없이 해석만 끝나는 실수',
+    review: '당일 저녁에 "실행했는지/안 했는지"와 이유 1개를 반드시 기록'
+  },
+  '입문 심화': {
+    focus: '역방향/수트 차이를 "위험 신호와 보정 행동"으로 번역하는 훈련',
+    mistakes: '역방향을 무조건 부정으로 읽거나, 수트 차이를 비슷하게 읽는 실수',
+    review: '막힘 원인 1개와 바로 바꿀 행동 1개를 짝으로 남기는 복기'
+  },
+  '중급 코어': {
+    focus: '질문 맥락에 따라 같은 카드도 해석 기준을 다르게 잡는 훈련',
+    mistakes: '관계/커리어/재정 질문을 같은 문장 톤으로 읽어 맥락이 흐려지는 실수',
+    review: '해석 가설 1개, 반례 1개, 검증 행동 1개를 분리해 점검'
+  },
+  '중급 심화': {
+    focus: '포지션 연결과 충돌 신호를 하나의 스토리로 묶어 판정하는 훈련',
+    mistakes: '카드별 해석은 맞지만 전체 결론과 행동 계획이 분리되는 실수',
+    review: '적중 근거와 오차 근거를 각각 1개씩 남겨 다음 리딩 기준 보정'
+  },
+  '고급 운영': {
+    focus: '긴 리딩을 결론-근거-실행 순서로 압축해 전달 품질을 높이는 훈련',
+    mistakes: '장문 설명은 많지만, 실제 의사결정에 바로 쓰기 어려운 실수',
+    review: '리딩 후 "실행 가능한 문장으로 끝났는가?"를 체크리스트로 검증'
+  },
+  '전문가 랩': {
+    focus: '문장 품질/판정 정확도/복기 데이터로 리딩 재현성을 관리하는 훈련',
+    mistakes: '느낌 좋은 문장에 의존하고, 근거 기록 없이 다음 리딩으로 넘어가는 실수',
+    review: '주간 단위로 오판 유형을 분류하고 교정 규칙을 업데이트'
+  }
+};
+
+function buildLessonDetail(course, lesson, lessonIndex) {
+  const stageMeta = stagePlaybook[course.stage] || stagePlaybook['기초 입문'];
+  const cardPreview = (lesson.cardIds || []).slice(0, 4).join(', ');
+  const order = lessonIndex + 1;
+
+  return {
+    intro:
+      `${lesson.title}는 ${lesson.summary}를 목표로 합니다. 이 레슨에서는 "${course.stage}" 단계 기준으로 `
+      + `해석을 길게 늘리지 않고, 근거가 분명한 문장으로 정리하는 훈련을 진행합니다. `
+      + `추천 학습 시간은 45~60분이며, 중간에 5분 복기를 포함하세요.`,
+    learningGoals: [
+      `목표 1: ${stageMeta.focus}`,
+      '목표 2: 카드 키워드/포지션/질문 맥락을 한 문단 안에서 자연스럽게 연결하기',
+      '목표 3: 해석 문장을 읽는 사람이 바로 행동으로 옮길 수 있게 구체적으로 쓰기',
+      `목표 4: ${stageMeta.review}`
+    ],
+    lessonFlow: [
+      `1단계(도입 10분): 레슨 질문을 한 문장으로 고정하고, 사용할 카드 후보(${cardPreview || '샘플 카드'})를 빠르게 훑습니다.`,
+      `2단계(핵심 15분): "${lesson.title}"의 핵심 문법을 적용해 결론 1문장 + 근거 1문장을 작성합니다.`,
+      '3단계(확장 10분): 같은 결론을 정방향/역방향 또는 맥락(관계/일/학습) 기준으로 각각 1회 재작성합니다.',
+      '4단계(실행 10분): 오늘 실제로 시도할 행동 1개를 정하고, 실행 조건(시간/장소/완료 기준)을 붙입니다.',
+      '5단계(복기 5분): 적중한 근거 1개와 빗나간 근거 1개를 분리해 다음 리딩 보정 포인트를 남깁니다.'
+    ],
+    practiceChecklist: [
+      '체크 1: 해석 첫 문장에 결론이 분명하게 들어갔는가?',
+      '체크 2: 카드 키워드가 단어 나열이 아니라 실제 상황 근거로 쓰였는가?',
+      '체크 3: 실행 문장이 "언제/무엇을" 수준까지 구체화되었는가?',
+      `체크 4: 이 단계의 대표 실수("${stageMeta.mistakes}")를 피했는가?`,
+      '체크 5: 복기 메모를 2줄 이상 남겼는가?'
+    ],
+    assignment:
+      `${order}차 과제: 같은 질문으로 2회 리딩을 진행하고, 두 결과의 차이를 `
+      + '"결론 차이 1개 / 근거 차이 1개 / 실행 차이 1개" 형식으로 정리하세요.',
+    reflectionQuestions: [
+      '질문 1: 이번 레슨에서 내가 가장 자신 있게 설명할 수 있는 근거 문장은 무엇인가?',
+      '질문 2: 해석이 흔들린 지점은 카드 이해 문제였는가, 질문 맥락 문제였는가?',
+      '질문 3: 다음 리딩에서 반드시 바꿀 표현 1개는 무엇인가?'
+    ]
+  };
+}
+
+for (const course of courses) {
+  const baseLessons = lessonsByCourse[course.id] || [];
+  lessonsByCourse[course.id] = baseLessons.map((lesson, index) => ({
+    ...lesson,
+    detail: buildLessonDetail(course, lesson, index)
+  }));
+}
+
 export function getCourseById(courseId) {
   return courses.find((course) => course.id === courseId);
 }

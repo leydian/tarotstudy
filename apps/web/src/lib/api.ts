@@ -12,23 +12,68 @@ import type {
   TarotCard
 } from '../types';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8787';
+const ENV_API_BASE = String(import.meta.env.VITE_API_BASE_URL || '').trim();
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
-    headers: {
-      'content-type': 'application/json',
-      ...(init?.headers ?? {})
-    },
-    ...init
-  });
+function trimSlash(value: string) {
+  return value.replace(/\/+$/, '');
+}
 
-  if (!res.ok) {
-    const payload = await res.json().catch(() => null);
-    throw new Error(payload?.message ?? `Request failed: ${res.status}`);
+function buildApiBaseCandidates() {
+  if (typeof window === 'undefined') {
+    const bases = ['http://127.0.0.1:8787', 'http://localhost:8787'];
+    if (ENV_API_BASE) bases.unshift(trimSlash(ENV_API_BASE));
+    return Array.from(new Set(bases));
   }
 
-  return res.json() as Promise<T>;
+  const protocol = window.location.protocol;
+  const host = window.location.hostname;
+  const envBase = ENV_API_BASE ? trimSlash(ENV_API_BASE) : '';
+  return Array.from(new Set([
+    envBase,
+    '',
+    trimSlash(`${protocol}//${host}:8787`),
+    trimSlash(`${protocol}//localhost:8787`),
+    trimSlash(`${protocol}//127.0.0.1:8787`),
+  ]));
+}
+
+let resolvedApiBase: string | null = ENV_API_BASE ? trimSlash(ENV_API_BASE) : null;
+
+async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const hasBody = init?.body != null;
+  const headers = {
+    ...(hasBody ? { 'content-type': 'application/json' } : {}),
+    ...(init?.headers ?? {})
+  };
+  const bases = resolvedApiBase ? [resolvedApiBase] : buildApiBaseCandidates();
+  let lastError: unknown = null;
+
+  for (const base of bases) {
+    try {
+      const res = await fetch(`${base}${path}`, {
+        ...init,
+        headers
+      });
+
+      if (!res.ok) {
+        const payload = await res.json().catch(() => null);
+        throw new Error(payload?.message ?? `Request failed: ${res.status}`);
+      }
+
+      resolvedApiBase = base;
+      return res.json() as Promise<T>;
+    } catch (error) {
+      lastError = error;
+      if (error instanceof Error && error.message.startsWith('Request failed:')) {
+        throw error;
+      }
+    }
+  }
+
+  if (lastError instanceof Error) {
+    throw new Error(`Network request failed: ${lastError.message}`);
+  }
+  throw new Error('Network request failed');
 }
 
 export const api = {

@@ -16,6 +16,10 @@ export function LibraryPage() {
   });
 
   const cards = useMemo(() => cardsQuery.data ?? [], [cardsQuery.data]);
+  const cardsErrorMessage = cardsQuery.error instanceof Error ? cardsQuery.error.message : '알 수 없는 오류';
+  const cardsErrorHint = cardsErrorMessage.includes('Failed to fetch')
+    ? 'API 연결에 실패했습니다. `npm run dev:api` 실행 상태와 웹 서버 재시작을 확인해 주세요.'
+    : '잠시 후 다시 시도해 주세요.';
 
   return (
     <section className="page-shell">
@@ -61,7 +65,13 @@ export function LibraryPage() {
       </section>
 
       {cardsQuery.isLoading && <p>카드 로딩 중...</p>}
-      {cardsQuery.isError && <p>카드를 불러오지 못했습니다.</p>}
+      {cardsQuery.isError && (
+        <p>
+          카드 데이터를 가져오지 못했습니다. {cardsErrorHint}
+          {' '}
+          (원인: {cardsErrorMessage})
+        </p>
+      )}
 
       <div className="card-grid">
         {cards.map((card) => {

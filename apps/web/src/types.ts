@@ -50,6 +50,14 @@ export interface Lesson {
   title: string;
   summary: string;
   cardIds: string[];
+  detail?: {
+    intro: string;
+    learningGoals: string[];
+    lessonFlow: string[];
+    practiceChecklist: string[];
+    assignment: string;
+    reflectionQuestions: string[];
+  };
   cards: Array<Pick<TarotCard, 'id' | 'name' | 'nameKo' | 'arcana' | 'suit'>>;
 }
 
