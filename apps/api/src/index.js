@@ -1764,6 +1764,7 @@ function summarizeMonthlyFortune({ items, context = '', level = 'beginner' }) {
   const uprightCount = items.filter((item) => item.orientation === 'upright').length;
   const topKeyword = pickTopKeywords(items, 1)[0] || theme?.card?.keywords?.[0] || '월간 흐름';
   const unstable = [week3, week4].some((item) => item?.orientation === 'reversed' || scoreCardRisk(item) >= 2);
+  const verdictLabel = uprightCount >= 3 ? '우세' : uprightCount === 2 ? '조건부' : '정비 우선';
   const monthLabel = intent === 'relationship'
     ? (uprightCount >= 3 ? '관계 진전 여지가 있으나 중반 리스크 관리가 필요한 달' : '속도 조절과 오해 관리가 우선인 달')
     : uprightCount >= 3
@@ -1776,8 +1777,22 @@ function summarizeMonthlyFortune({ items, context = '', level = 'beginner' }) {
     if (!item) return `${role}는 카드 신호 확인이 필요합니다.`;
     const keyword = item.card?.keywords?.[0] || '흐름';
     const open = item.orientation !== 'reversed' && scoreCardRisk(item) < 2;
-    if (open) return `${role}(${cardLabel(item)})는 "${keyword}" 축이 열려 있어 실행 리듬을 붙이기 좋습니다.`;
-    return `${role}(${cardLabel(item)})는 "${keyword}" 축 마찰이 있어 속도보다 정비를 우선해야 합니다.`;
+    const openLineByRole = {
+      '1주차': `"${keyword}" 신호가 보여 시작하기 좋은 흐름입니다.`,
+      '2주차': `"${keyword}" 신호가 보여 흔들림 없이 이어가기 좋은 흐름입니다.`,
+      '3주차': `"${keyword}" 신호가 보여 판단과 우선순위 정리가 쉬워지는 흐름입니다.`,
+      '4주차·정리': `"${keyword}" 신호가 보여 균형을 맞추며 마무리하기 좋은 흐름입니다.`
+    };
+    const adjustLineByRole = {
+      '1주차': `"${keyword}" 신호가 흔들릴 수 있어 시작 속도를 낮추고 기준부터 정리하는 편이 좋습니다.`,
+      '2주차': `"${keyword}" 신호가 흔들릴 수 있어 무리한 확장보다 유지 가능한 페이스를 먼저 맞추는 편이 좋습니다.`,
+      '3주차': `"${keyword}" 신호가 예민해질 수 있어 빠른 결론보다 확인과 점검을 먼저 두는 편이 좋습니다.`,
+      '4주차·정리': `"${keyword}" 신호가 흔들릴 수 있어 마무리 범위를 줄이고 핵심 정리에 집중하는 편이 좋습니다.`
+    };
+    const line = open
+      ? (openLineByRole[role] || `"${keyword}" 신호가 보여 움직이기 좋은 흐름입니다.`)
+      : (adjustLineByRole[role] || `"${keyword}" 신호가 흔들릴 수 있어 속도를 낮추고 정비를 먼저 두는 편이 좋습니다.`);
+    return `${role}(${cardLabel(item)})는 ${line}`;
   };
   const bridge = (() => {
     if (unstable) {
@@ -1798,6 +1813,7 @@ function summarizeMonthlyFortune({ items, context = '', level = 'beginner' }) {
     context
   });
   const overall = [
+    `이번 리딩의 1차 판정은 ${verdictLabel}입니다.`,
     `월간 테마 카드는 ${cardLabel(theme)}이고, 핵심 키워드는 "${topKeyword}"입니다.`,
     `전체적으로는 ${monthLabel}으로 보입니다.`
   ].join(' ');
@@ -3238,7 +3254,7 @@ function buildSummaryTheme({ spreadName, context = '', items = [], topKeywords =
     return `한 줄 테마: 이번 주는 '${leadKeyword}' 키워드를 중심으로 강한 날 실행, 약한 날 정비 리듬을 나눠 운영해보세요.`;
   }
   if (spreadName === '월별 운세') {
-    return `한 줄 테마: 이번 달은 '${leadKeyword}' 축을 중심으로 확장과 조절 타이밍을 분리하면 흐름이 선명해집니다.`;
+    return `한 줄 테마: 이번 달은 '${leadKeyword}' 기준으로 확장할 때와 조절할 때를 나누면 흐름이 더 선명해집니다.`;
   }
   if (spreadName === '연간 운세 (12개월)') {
     return `한 줄 테마: 올해는 '${leadKeyword}' 키워드를 분기 기준으로 나눠 운영하면 변동성을 줄이기 좋습니다.`;
