@@ -54,9 +54,16 @@ export interface Lesson {
     intro: string;
     learningGoals: string[];
     lessonFlow: string[];
+    lessonBody: string[];
+    coreConcepts: string[];
+    coachingScript: string[];
+    workedExample: string[];
     practiceChecklist: string[];
+    commonMistakes: string[];
     assignment: string;
+    completionCriteria: string[];
     reflectionQuestions: string[];
+    onePassScript?: string[];
   };
   cards: Array<Pick<TarotCard, 'id' | 'name' | 'nameKo' | 'arcana' | 'suit'>>;
 }
