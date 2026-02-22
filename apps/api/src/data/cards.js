@@ -95,10 +95,47 @@ function enrichCard(card) {
 
 function buildBeginnerDescription(card) {
   return [
-    `${card.nameKo}의 핵심 키워드는 ${card.keywords.join(', ')}입니다. 먼저 키워드 1개를 오늘 상황과 연결해 보세요.`,
+    buildBeginnerKeywordLine(card),
     buildBeginnerFlowLine(card),
     buildBeginnerLearningPoint(card)
   ].join('\n');
+}
+
+function buildBeginnerKeywordLine(card) {
+  const keyword = card.keywords?.[0] || '핵심';
+  const keyword2 = card.keywords?.[1] || keyword;
+  const keyword3 = card.keywords?.[2] || keyword;
+
+  const majorVariants = [
+    `${card.nameKo}의 핵심 키워드는 ${card.keywords.join(', ')}입니다. 오늘 선택 하나를 떠올리고 "${keyword}"이 드러난 장면을 먼저 잡아보세요.`,
+    `${card.nameKo} 카드는 ${card.keywords.join(', ')} 흐름을 보여줍니다. 지금 가장 고민되는 상황 1개에 "${keyword2}" 키워드를 연결해 해석해 보세요.`,
+    `${card.nameKo}의 키워드(${card.keywords.join(', ')})를 외우기보다, 오늘 행동 1개가 "${keyword3}"와 어떻게 연결되는지 확인해 보세요.`,
+    `${card.nameKo} 카드는 ${card.keywords.join(', ')}을 통해 방향을 보여줍니다. 현재 상황에 가장 가까운 키워드 1개를 골라 이유를 붙여보세요.`
+  ];
+
+  const minorBySuit = {
+    Wands: [
+      `${card.nameKo}의 키워드는 ${card.keywords.join(', ')}입니다. 오늘 실행할 과제 1개를 고르고 "${keyword}" 키워드를 행동 기준으로 잡아보세요.`,
+      `${card.nameKo}는 ${card.keywords.join(', ')} 흐름이 핵심입니다. 시작 속도와 완주 가능성을 기준으로 키워드 1개를 연결해 보세요.`
+    ],
+    Cups: [
+      `${card.nameKo}의 키워드는 ${card.keywords.join(', ')}입니다. 오늘 대화 장면 1개를 떠올리고 "${keyword2}"가 어떻게 나타났는지 확인해 보세요.`,
+      `${card.nameKo} 카드는 ${card.keywords.join(', ')}을 통해 감정 흐름을 읽습니다. 현재 관계 상황에 키워드 1개를 붙여 해석해 보세요.`
+    ],
+    Swords: [
+      `${card.nameKo}의 키워드는 ${card.keywords.join(', ')}입니다. 지금 판단이 필요한 문제 1개를 골라 "${keyword}" 기준으로 정리해 보세요.`,
+      `${card.nameKo} 카드는 ${card.keywords.join(', ')} 신호를 줍니다. 정보/해석을 분리한 뒤 키워드 1개를 선택해 연결해 보세요.`
+    ],
+    Pentacles: [
+      `${card.nameKo}의 키워드는 ${card.keywords.join(', ')}입니다. 오늘 남길 결과물 1개를 정하고 "${keyword3}"를 완료 기준으로 잡아보세요.`,
+      `${card.nameKo} 카드는 ${card.keywords.join(', ')}을 통해 현실 운영을 보여줍니다. 시간·비용·완료 중 하나에 키워드 1개를 연결해 보세요.`
+    ]
+  };
+
+  const variants = card.arcana === 'major'
+    ? majorVariants
+    : (minorBySuit[card.suit] || majorVariants);
+  return pickCardVariant(card.id, 'beginner-keyword-line', variants);
 }
 
 function buildBeginnerFlowLine(card) {
