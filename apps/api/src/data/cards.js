@@ -263,15 +263,108 @@ function pickCardVariant(cardId, salt, variants) {
 }
 
 function buildIntermediateDescription(card, { context = '' } = {}) {
+  const contextProfile = inferBasicContextProfile(context);
+  const keyword = card.keywords?.[0] || '핵심';
+  const keyword2 = card.keywords?.[1] || keyword;
   const rankLine = card.rank
     ? `${card.rankKo} 단계는 ${rankStage(card.rank)} 맥락을 덧붙입니다.`
     : '원형 카드이므로 개인 심리·상황 구조·타이밍의 3축으로 분해해 해석합니다.';
-  const contextProfile = inferBasicContextProfile(context);
+
+  const leadMajor = [
+    `${card.nameKo}를 중급 관점에서 볼 때, 키워드(${card.keywords.join(', ')}) 자체보다 카드 위치와 연결 흐름을 먼저 확정해야 해석 오차가 줄어듭니다.`,
+    `${card.nameKo}는 단일 의미 카드가 아니라 해석 강도가 크게 변하는 카드입니다. 중급에서는 위치(과거/현재/미래)와 맥락 충돌 여부를 함께 봐야 합니다.`,
+    `${card.nameKo}의 중급 해석은 "키워드 나열"보다 "상황 구조 분석"에 가깝습니다. 같은 카드라도 질문 의도에 따라 결과 해석이 달라집니다.`,
+    `${card.nameKo}는 중급에서 방향성 카드로 다룹니다. "${keyword}" 신호가 언제 강화되고 언제 약해지는지 위치별로 분리해 읽어야 정확합니다.`
+  ];
+  const leadMinorBySuit = {
+    Wands: [
+      `${card.nameKo} 카드의 중급 해석 핵심은 추진 에너지의 지속 조건 분석입니다. "${keyword}" 키워드가 실제 실행으로 이어지는 구조를 먼저 점검하세요.`,
+      `${card.nameKo} 카드는 실행력 카드처럼 보이지만, 중급에서는 속도·소모·완주율의 균형으로 읽어야 정확합니다.`
+    ],
+    Cups: [
+      `${card.nameKo} 카드의 중급 해석 핵심은 감정 신호의 질과 방향성입니다. "${keyword2}" 키워드가 관계 리듬을 어떻게 바꾸는지 먼저 확인하세요.`,
+      `${card.nameKo} 카드는 공감 카드가 아니라 관계 구조 카드로도 읽어야 합니다. 감정 반응과 행동 결과를 분리해 보세요.`
+    ],
+    Swords: [
+      `${card.nameKo} 카드의 중급 해석 핵심은 판단 기준의 일관성입니다. "${keyword}" 신호가 사실 기반인지 해석 기반인지 먼저 나눠 보세요.`,
+      `${card.nameKo} 카드는 사고 카드라서 중급에서는 정보 품질이 해석 품질을 결정합니다. 근거 없는 가설은 먼저 제거하세요.`
+    ],
+    Pentacles: [
+      `${card.nameKo} 카드의 중급 해석 핵심은 운영 지표 연결입니다. "${keyword}" 키워드를 결과물·시간·비용 중 어디와 연결할지 먼저 정해야 합니다.`,
+      `${card.nameKo} 카드는 현실 카드이므로 중급에서는 감보다 운영 기준이 우선입니다. 성과 정의를 먼저 고정하고 읽으세요.`
+    ]
+  };
+  const leadVariants = card.arcana === 'major'
+    ? leadMajor
+    : (leadMinorBySuit[card.suit] || leadMajor);
+
+  const signalMajor = [
+    `${rankLine} 같은 카드라도 질문 범주(연애/일/관계/재정)에 따라 긍정 신호와 경고 신호를 분리해 기록해야 재현성이 생깁니다.`,
+    `${rankLine} 중급에서는 "좋다/나쁘다" 이분법을 피하고, 신호의 지속 조건과 붕괴 조건을 동시에 적어두는 편이 좋습니다.`,
+    `${rankLine} "${keyword2}"이 강화되는 상황과 약해지는 상황을 각각 남기면 카드 해석의 일관성이 높아집니다.`
+  ];
+  const signalMinorBySuit = {
+    Wands: [
+      `${rankLine} 완드 계열은 과열 리스크가 있으니 추진 신호와 소진 신호를 같이 기록하세요.`,
+      `${rankLine} 실행 속도만 보지 말고 유지 가능성까지 함께 계산해야 과해석을 줄일 수 있습니다.`
+    ],
+    Cups: [
+      `${rankLine} 컵 계열은 감정 신호가 왜곡되기 쉬우므로 사실(대화/행동)과 느낌을 분리해 기록하세요.`,
+      `${rankLine} 관계 해석에서는 기대와 실제 반응 차이를 같이 적어야 정확도가 올라갑니다.`
+    ],
+    Swords: [
+      `${rankLine} 소드 계열은 판단 편향 점검이 핵심이므로 반대 근거 1개를 항상 함께 써두세요.`,
+      `${rankLine} 논리 정합성만 보지 말고 의사소통 결과까지 확인해야 신호 판별이 정확해집니다.`
+    ],
+    Pentacles: [
+      `${rankLine} 펜타클 계열은 누적 흐름을 읽는 카드라 단기 성과와 장기 유지 조건을 분리해 보세요.`,
+      `${rankLine} 운영 관점에서는 비용 대비 결과를 같이 적어야 카드 의미가 실전에 연결됩니다.`
+    ]
+  };
+  const signalVariants = card.arcana === 'major'
+    ? signalMajor
+    : (signalMinorBySuit[card.suit] || signalMajor);
+
+  const learningMajor = [
+    `중급 학습 포인트: ${card.nameKo}는 "사실(관찰) → 해석(가설) → 행동(검증)" 3단계로 정리하고, 다음 리딩에서 검증 결과를 반드시 대조해 보세요.`,
+    `중급 학습 포인트: ${card.nameKo}를 읽을 때는 가설 2개 이상을 세운 뒤, 어떤 근거로 1개를 채택했는지 기록하면 품질이 올라갑니다.`,
+    `중급 학습 포인트: ${card.nameKo} 리딩은 단정 문장보다 조건 문장으로 쓰는 편이 좋습니다. "언제 맞고 언제 틀리는지"를 같이 남기세요.`
+  ];
+  const learningMinorBySuit = {
+    Wands: [
+      `중급 학습 포인트: ${card.nameKo}는 실행 로그(시작/완료/중단 이유)를 남기면 다음 해석 정확도가 크게 올라갑니다.`,
+      `중급 학습 포인트: 추진 카드 해석에서는 목표 달성률보다 유지율 지표를 같이 보면 재현성이 좋아집니다.`
+    ],
+    Cups: [
+      `중급 학습 포인트: ${card.nameKo}는 관계 대화 로그(표현·반응·결과)를 남겨야 카드 해석이 실전에서 맞아떨어집니다.`,
+      `중급 학습 포인트: 감정 카드 해석은 체감만 기록하지 말고 행동 변화까지 함께 적어야 품질이 올라갑니다.`
+    ],
+    Swords: [
+      `중급 학습 포인트: ${card.nameKo}는 판단 근거 표를 만들어 사실/해석/추정을 분리하면 오판율을 낮출 수 있습니다.`,
+      `중급 학습 포인트: 사고 카드 해석은 결론보다 반례 점검을 먼저 기록할수록 안정적입니다.`
+    ],
+    Pentacles: [
+      `중급 학습 포인트: ${card.nameKo}는 운영 지표(시간, 비용, 완료율) 중 1~2개를 고정해 추적하면 해석 품질이 빠르게 올라갑니다.`,
+      `중급 학습 포인트: 현실 카드 해석은 결과물 기반 복기가 핵심입니다. 숫자/증거를 반드시 남겨보세요.`
+    ]
+  };
+  const learningVariants = card.arcana === 'major'
+    ? learningMajor
+    : (learningMinorBySuit[card.suit] || learningMajor);
 
   return [
-    `${card.nameKo}를 중급 관점에서 볼 때, 단일 키워드보다 카드 위치(과거/현재/미래)와 인접 카드의 상호작용을 우선 평가합니다.`,
-    `${rankLine} 같은 카드라도 질문 범주(연애/일/관계)에 따라 긍정 신호와 경고 신호를 분리해서 기록하세요.${contextProfile.id !== 'general' ? ` ${contextProfile.flowHint}` : ''}`,
-    `중급 학습 포인트: "사실(관찰) → 해석(가설) → 조언(행동)" 3단계로 문장을 구성하면 리딩 일관성이 크게 높아집니다.`
+    appendContextHint(
+      pickCardVariant(card.id, 'intermediate-lead-line', leadVariants),
+      contextProfile.keywordHint
+    ),
+    appendContextHint(
+      pickCardVariant(card.id, 'intermediate-signal-line', signalVariants),
+      contextProfile.flowHint
+    ),
+    appendContextHint(
+      pickCardVariant(card.id, 'intermediate-learning-line', learningVariants),
+      contextProfile.learningHint
+    )
   ].join('\n');
 }
 
@@ -348,6 +441,11 @@ function getMinorSuitRankFocus(suit, rank) {
   const s = suitFocus[suit] || '핵심 흐름을 점검하는';
   const r = rankFocus[rank] || '성장 구간';
   return `${s} ${r}이라는 점을 같이 기억해 두세요.`;
+}
+
+function appendContextHint(line, hint = '') {
+  if (!hint) return line;
+  return `${line} ${hint}`;
 }
 
 function getImagePath(card) {
