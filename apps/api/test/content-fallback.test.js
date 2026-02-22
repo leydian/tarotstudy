@@ -66,8 +66,10 @@ test('buildSpreadReading compacts one-card output for short questions', () => {
   });
 
   assert.match(reading.coreMessage, /질문이네요/);
+  assert.match(reading.coreMessage, /결론:/);
   assert.match(reading.interpretation, /실행:/);
   assert.match(reading.interpretation, /복기:/);
+  assert.match(reading.interpretation, /결론:/);
   assert.doesNotMatch(reading.interpretation, /카드 상징 키워드는/);
   assert.ok(reading.learningPoint.includes('[학습 리더]'));
 });

@@ -573,17 +573,26 @@ function pickRandomCards(deck, count) {
 
 function summarizeSpread({ spreadId = '', spreadName, items, context = '', level = 'beginner' }) {
   const normalizedContext = normalizeContextForSpread({ spreadName, context });
-  if (spreadId === 'one-card' && inferShortUtterance(context)) {
+  const oneCardAnalysis = spreadId === 'one-card' ? analyzeQuestionContextSync(context) : null;
+  const shouldForceYesNoConclusion = spreadId === 'one-card'
+    && (Boolean(inferShortUtterance(context)) || oneCardAnalysis?.questionType === 'yes_no');
+  if (spreadId === 'one-card' && shouldForceYesNoConclusion) {
     const lead = items[0];
     const keyword = lead?.card?.keywords?.[0] || '흐름';
     const direction = lead?.orientation === 'upright' ? '정방향' : '역방향';
-    const analysis = analyzeSpreadSignal(items, analyzeQuestionContextSync(context).intent);
+    const analysis = analyzeSpreadSignal(items, oneCardAnalysis?.intent || 'general');
+    const conclusion = analysis.label === '우세'
+      ? '결론: 예. 지금 진행해도 됩니다.'
+      : analysis.label === '박빙'
+        ? '결론: 조건부 예. 강도를 낮추면 가능합니다.'
+        : '결론: 아니오. 지금은 멈추고 정비가 먼저입니다.';
     const action = analysis.label === '우세'
       ? '지금 할 행동 1개만 정해서 바로 실행하세요.'
       : analysis.label === '박빙'
         ? '강도를 낮춰 행동 1개만 실행하고 반응을 확인하세요.'
         : '10분 정리 후 다시 판단하세요.';
     return [
+      conclusion,
       `판정: ${analysis.label} · ${keyword} 신호(${direction}) 기준으로 속도 조절이 핵심입니다.`,
       `실행: ${action}`,
       '복기: 실행 후 실제 체감 변화를 1줄로 기록하세요.'
