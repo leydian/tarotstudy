@@ -1754,7 +1754,11 @@ function buildUnifiedInterpretationNarrative({
   const normalizedConclusion = normalizeOneCardConclusionSentence(String(explicitConclusion || '')
     .replace(/^결론:\s*/g, '')
     .trim());
+  const conclusionTone = detectConclusionTone(normalizedConclusion);
 
+  const empathyLine = isYesNo
+    ? buildEmpathyLeadLine({ conclusionTone, group, context })
+    : '';
   const answerLine = isYesNo
     ? `답부터 말씀드리면, ${normalizedConclusion || (orientation === 'upright' ? '예, 진행하셔도 괜찮습니다.' : '아니오, 지금은 정비를 먼저 하시는 편이 좋습니다.')}`
     : (orientation === 'upright'
@@ -1762,16 +1766,18 @@ function buildUnifiedInterpretationNarrative({
       : '핵심부터 말씀드리면, 지금은 속도를 낮추고 정비를 먼저 두시는 편이 안정적입니다.');
 
   const focusObject = withKoreanParticle(focus || '핵심 흐름', '을', '를');
-  const evidenceLine = `${card?.nameKo || '이번 카드'} 카드는 지금 질문에서 "${keyword}" 신호를 보여주고 있고, ${focusObject} 기준으로 읽으실 때 판단이 가장 선명해집니다.`;
+  const meaningLine = buildCardMeaningDetailLine({ card, orientation, keyword, group });
+  const evidenceLine = `${card?.nameKo || '이번 카드'} 카드는 지금 질문에서 "${keyword}" 신호를 보여주고 있고, ${focusObject} 기준으로 읽으실 때 판단이 가장 선명해집니다. ${meaningLine}`;
   const actionLine = buildUnifiedActionLine({ text, spreadId, context, orientation, sleepQuestion });
+  const recheckLine = buildRecheckGuideLine({ group, conclusionTone, sleepQuestion });
   const reviewLine = sleepQuestion
-    ? '실행 후 20분 또는 내일 아침에 잠든 속도와 컨디션 변화를 한 줄로만 남겨 보세요.'
-    : '실행해보신 뒤 체감 변화를 한 줄만 기록해 두시면 다음 판단이 훨씬 정확해집니다.';
+    ? `${recheckLine} 실행 후 20분 또는 내일 아침에 잠든 속도와 컨디션 변화를 한 줄로만 남겨 보세요.`
+    : `${recheckLine} 실행해보신 뒤 체감 변화를 한 줄만 기록해 두시면 다음 판단이 훨씬 정확해집니다.`;
   const themeLine = orientation === 'upright'
     ? `오늘의 테마는 "${keyword}" 신호를 무리 없이 이어가는 운영입니다.`
     : `오늘의 테마는 "${keyword}" 신호에서 과속을 줄이고 정비를 앞에 두는 운영입니다.`;
 
-  return polishTarotInterpretation([answerLine, evidenceLine, actionLine, reviewLine, themeLine].join(' '));
+  return polishTarotInterpretation([empathyLine, answerLine, themeLine, actionLine, evidenceLine, reviewLine].filter(Boolean).join(' '));
 }
 
 function buildUnifiedActionLine({ text = '', spreadId = '', context = '', orientation = 'upright', sleepQuestion = false }) {
@@ -2489,6 +2495,59 @@ function normalizeOneCardConclusionSentence(text = '') {
     .replace(/^아니오\.\s*/g, '아니오, ')
     .replace(/^조건부 예\.\s*/g, '조건부 예, ')
     .trim();
+}
+
+function detectConclusionTone(conclusion = '') {
+  const text = String(conclusion || '');
+  if (/^아니오/.test(text) || /^보류/.test(text)) return 'negative';
+  if (/^조건부 예/.test(text)) return 'conditional';
+  if (/^예/.test(text)) return 'positive';
+  return 'neutral';
+}
+
+function buildEmpathyLeadLine({ conclusionTone = 'neutral', group = 'general', context = '' }) {
+  if (conclusionTone === 'negative') {
+    if (group === 'caffeine') return '아니오에 가까운 결론이라 실망하실 수 있어요. 하지만 지금 결정이 틀렸다는 뜻은 아니고, 몸 리듬을 먼저 지키라는 신호에 가깝습니다.';
+    if (isSleepQuestion(context)) return '바로 자라는 답이 아니라서 답답하실 수 있어요. 다만 지금 카드는 잠을 포기하라는 뜻이 아니라, 먼저 머리를 비우는 순서를 잡으라는 신호입니다.';
+    return '원하신 방향과 다른 결론이라 실망하실 수 있어요. 지금 카드는 선택 자체를 막기보다 타이밍과 강도를 조절하라는 메시지에 가깝습니다.';
+  }
+  if (conclusionTone === 'conditional') {
+    return '가능성은 열려 있지만 조건이 붙는 흐름이라, 기준을 잡고 움직이실 때 결과가 안정됩니다.';
+  }
+  if (conclusionTone === 'positive') {
+    return '진행 가능 신호가 보이지만, 무리한 확장보다 균형을 지켜야 카드 흐름이 오래 유지됩니다.';
+  }
+  return '';
+}
+
+function buildCardMeaningDetailLine({ card, orientation = 'upright', keyword = '핵심 흐름', group = 'general' }) {
+  const cardName = card?.nameKo || '이 카드';
+  const directionLabel = orientation === 'upright' ? '정방향' : '역방향';
+  if (orientation === 'reversed') {
+    if (group === 'caffeine') {
+      return `${cardName} ${directionLabel}은 선택 균형이 흔들리기 쉬워, 욕구보다 회복 기준을 먼저 두라는 신호입니다.`;
+    }
+    if (group === 'daily') {
+      return `${cardName} ${directionLabel}은 에너지 분산 구간이라, 우선순위를 좁혀 다시 판단하라는 메시지에 가깝습니다.`;
+    }
+    return `${cardName} ${directionLabel}은 '${keyword}' 축의 과속 신호라, 선택 방식과 순서를 재정렬하라는 뜻에 가깝습니다.`;
+  }
+  if (group === 'caffeine') {
+    return `${cardName} ${directionLabel}은 에너지 축이 열려 있지만, 양과 타이밍을 통제할 때 해석이 맞습니다.`;
+  }
+  return `${cardName} ${directionLabel}은 '${keyword}' 기준이 선명하다는 뜻이라, 감정 반응보다 기준 문장을 먼저 고정하는 편이 정확합니다.`;
+}
+
+function buildRecheckGuideLine({ group = 'general', conclusionTone = 'neutral', sleepQuestion = false }) {
+  if (sleepQuestion) return '재점검 기준은 실행 후 20분으로 두시면 됩니다. 긴장이 풀리지 않으면 정리 1개만 더 하고, 풀리면 바로 취침으로 전환하세요.';
+  if (group === 'caffeine') {
+    return conclusionTone === 'negative'
+      ? '재점검은 15~20분 뒤에 하세요. 물 한 잔 후에도 집중 저하가 계속되면 디카페인 또는 소량으로 대체하는 방식이 안전합니다.'
+      : '재점검은 30분 뒤 심박·집중 상태를 기준으로 하세요. 불안정 신호가 있으면 추가 섭취는 멈추는 편이 좋습니다.';
+  }
+  if (conclusionTone === 'negative') return '재점검 기준은 “지금 꼭 해야 하는가” 한 문장입니다. 그 문장에 확신이 없으면 오늘은 보류가 더 정확합니다.';
+  if (conclusionTone === 'conditional') return '재점검 기준은 실행 후 체감 변화 1개입니다. 기준이 개선되지 않으면 강도를 더 낮추는 쪽으로 조정하세요.';
+  return '재점검 기준은 실행 후 체감 변화 1개만 기록하는 것입니다. 이 기록이 다음 판단의 정확도를 높여줍니다.';
 }
 
 function buildOneCardYesNoConclusion({ group = 'general', card, orientation = 'upright', questionType = 'open', context = '' }) {
