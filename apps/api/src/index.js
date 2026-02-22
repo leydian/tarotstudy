@@ -2103,7 +2103,7 @@ function inferSummaryContextTone(context = '') {
       intermediateHint: '상황별 대응 문장을 1개씩 고정하면 평판 변동성이 줄어듭니다.'
     };
   }
-  if (['돈', '재정', '재물', '투자', '지출', '저축', '수입', '대출', '자산', '현금흐름'].some((k) => text.includes(k))) {
+  if (['돈', '재정', '재물', '투자', '지출', '저축', '수입', '대출', '자산', '현금흐름', '살까', '구매', '브랜드', '명품', '가방', '패션'].some((k) => text.includes(k))) {
     return {
       mainHint: '돈 문제는 수익 기대보다 지출 통제부터 잡을 때 마음이 안정됩니다.',
       beginnerHint: '오늘 줄일 지출 하나만 정해도 흐름이 바로 달라집니다.',
@@ -2369,7 +2369,12 @@ function buildChoiceABSnapshot({ items = [], context = '' }) {
   const bScore = score(bNear, 1) + score(bResult, 1.4);
   const gap = aScore - bScore;
   const options = parseChoiceOptions(context);
-  const axis = options.isWorkChoice ? '통근·생활비·지속 가능성' : '시간·비용·감정 소모';
+  const axis = options.isPurchaseChoice
+    ? '예산 압박·활용도·3개월 후 만족도'
+    : options.isWorkChoice
+      ? '통근·생활비·지속 가능성'
+      : '시간·비용·감정 소모';
+  const axisObject = withKoreanParticle(axis, '을', '를');
   const currentKeyword = current?.card?.keywords?.[0] || '현재 신호';
 
   if (Math.abs(gap) < 0.65) {
@@ -2379,7 +2384,7 @@ function buildChoiceABSnapshot({ items = [], context = '' }) {
   }
   if (gap > 0) {
     return {
-      recommendationLine: `카드 흐름은 ${options.optionA} 쪽이 조금 더 우세합니다. 단기 반응보다 3개월 유지 기준으로 ${axis}을 점검하면 선택 정확도가 높아집니다.`
+      recommendationLine: `카드 흐름은 ${options.optionA} 쪽이 조금 더 우세합니다. 단기 반응보다 3개월 유지 기준으로 ${axisObject} 점검하면 선택 정확도가 높아집니다.`
     };
   }
   return {
@@ -2390,14 +2395,23 @@ function buildChoiceABSnapshot({ items = [], context = '' }) {
 function parseChoiceOptions(context = '') {
   const raw = String(context || '').trim();
   const lowered = raw.toLowerCase();
+  const purchasePattern = /([가-힣A-Za-z0-9]{2,20})(?:을|를)?\s*살까/g;
+  const purchaseOptions = [...raw.matchAll(purchasePattern)]
+    .map((m) => m[1])
+    .filter(Boolean);
   const places = [...raw.matchAll(/([가-힣A-Za-z0-9]{2,20})\s*에서/g)]
     .map((m) => m[1])
     .filter(Boolean);
-  const uniquePlaces = [...new Set(places)];
+  const uniquePlaces = [...new Set(places)].filter((name) => !/(게|곳|데)$/.test(name));
+  const uniquePurchase = [...new Set(purchaseOptions)];
+  const isPurchaseChoice = /(살까|구매|브랜드|가방|지갑|코트|옷|패션|명품)/.test(lowered) && uniquePurchase.length >= 2;
+  const optionA = isPurchaseChoice ? uniquePurchase[0] : (uniquePlaces[0] || 'A');
+  const optionB = isPurchaseChoice ? uniquePurchase[1] : (uniquePlaces[1] || 'B');
   return {
-    optionA: uniquePlaces[0] || 'A',
-    optionB: uniquePlaces[1] || 'B',
-    isWorkChoice: /(일하|근무|출퇴근|통근|직장|회사|오피스|사무실|출근)/.test(lowered)
+    optionA,
+    optionB,
+    isPurchaseChoice,
+    isWorkChoice: !isPurchaseChoice && /(일하|근무|출퇴근|통근|직장|회사|오피스|사무실|출근)/.test(lowered)
   };
 }
 
@@ -2525,6 +2539,7 @@ function buildSummaryAction({ spreadName, level, context = '', firstItem = null,
   }
   if (spreadName === '양자택일 (A/B)') {
     const choiceMeta = parseChoiceOptions(context);
+    const purchaseChecklist = `${choiceMeta.optionA}/${choiceMeta.optionB} 각각에 대해 예산 대비 부담, 주 1회 이상 활용 가능성, 3개월 후 만족도를 같은 포맷으로 적어 보세요.`;
     const workChecklist = choiceMeta.isWorkChoice
       ? `${choiceMeta.optionA}/${choiceMeta.optionB} 각각에 대해 통근 시간, 월 고정비, 체력 소모를 같은 포맷으로 적어 보세요.`
       : 'A/B 각각에 대해 시간, 비용, 감정 소모를 같은 포맷으로 적어 보세요.';
@@ -2540,7 +2555,8 @@ function buildSummaryAction({ spreadName, level, context = '', firstItem = null,
     if (intent === 'relationship') {
       return `선택형 연애운 조언도 두 갈래입니다. 더 가까워지고 싶다면 대화가 편안하게 이어지는 쪽을 고르세요. 안정이 우선이라면 감정 소모가 적고 경계가 지켜지는 선택지를 우선하는 편이 좋습니다. ${levelLine}`;
     }
-    return `결정 전 실행 기준: ${workChecklist} 3개월 뒤에도 유지 가능한 쪽을 우선하세요. ${levelLine}`;
+    const checklist = choiceMeta.isPurchaseChoice ? purchaseChecklist : workChecklist;
+    return `결정 전 실행 기준: ${checklist} 3개월 뒤에도 유지 가능한 쪽을 우선하세요. ${levelLine}`;
   }
   if (spreadName === '3카드 스프레드') {
     if (intent === 'relationship-repair') {

@@ -51,3 +51,34 @@ test('choice-a-b reading reflects work-location decision axes and avoids repetit
   assert.notEqual(aNear.interpretation, aResult.interpretation, 'position readings should be differentiated');
   assert.doesNotMatch(current.coreMessage, /불안이 열려 있어서 .*힘을 실어주기 좋은 타이밍/);
 });
+
+test('choice-a-b reading maps purchase context to budget/usability axes and avoids particle errors', () => {
+  const devil = getCardById('major-15');
+  const moon = getCardById('major-18');
+  assert.ok(devil && moon, 'cards should exist');
+
+  const purchaseContext = '샤넬을 살까 버버리를 살까?';
+  const bNear = buildSpreadReading({
+    card: devil,
+    spreadId: 'choice-a-b',
+    position: { name: 'B 선택 시 가까운 미래' },
+    orientation: 'upright',
+    level: 'beginner',
+    context: purchaseContext,
+    experimentVariant: 'A'
+  });
+  const aResult = buildSpreadReading({
+    card: moon,
+    spreadId: 'choice-a-b',
+    position: { name: 'A 선택 시 결과' },
+    orientation: 'upright',
+    level: 'beginner',
+    context: purchaseContext,
+    experimentVariant: 'A'
+  });
+
+  assert.match(bNear.interpretation, /(예산 압박|활용도|스타일 적합성|3개월 후 만족도)/);
+  assert.match(aResult.interpretation, /(예산 압박|활용도|스타일 적합성|3개월 후 만족도)/);
+  assert.match(bNear.interpretation, /(유혹|과열|경계|통제)/);
+  assert.doesNotMatch(aResult.interpretation, /'[^']+'는/);
+});
