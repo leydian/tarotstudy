@@ -31,7 +31,17 @@ export function LessonPage() {
       </article>
 
       {lesson.detail && (
-        <article className="panel">
+        <>
+          {lesson.detail.storyNovel && lesson.detail.storyNovel.length > 0 && (
+            <article className="panel">
+              <h3>레슨 소설</h3>
+              {lesson.detail.storyNovel.map((paragraph) => (
+                <p key={paragraph}>{paragraph}</p>
+              ))}
+            </article>
+          )}
+
+          <article className="panel">
           {lesson.detail.onePassScript && lesson.detail.onePassScript.length > 0 && (
             <>
               <h3>한 번에 읽는 실전 스크립트</h3>
@@ -161,7 +171,8 @@ export function LessonPage() {
               </ul>
             </>
           )}
-        </article>
+          </article>
+        </>
       )}
 
       <article className="panel">

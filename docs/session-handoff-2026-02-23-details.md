@@ -292,3 +292,33 @@
 - `6cd8112` Diversify quiz archetypes and add 1000+ question bank coverage
 - `3e8e8a0` Align quiz archetypes to lesson scope and add story-driven lesson flows
 - `2ffd296` Refine lessons into mission-driven scripts and verify quiz scope alignment
+
+## 12) 2026-02-23 추가 후속 4 (소설 선배치 + 소설/레슨 분리 UI)
+
+### 12.1 전 레슨 소설 도입(`storyNovel`)
+- 변경 파일:
+  - `apps/api/src/data/courses.js`
+- 핵심:
+  - `lessonId`별 스토리 블루프린트를 사용해 전 레슨에 소설형 도입 문단을 생성
+  - 소설 문단 구성:
+    - 시작 상황
+    - 질문 고정
+    - 카드 선택
+    - 결론/근거
+    - 실행 고정
+    - 복기 마무리
+
+### 12.2 레슨 화면 패널 분리(가독성 강화)
+- 변경 파일:
+  - `apps/web/src/pages/LessonPage.tsx`
+  - `apps/web/src/types.ts`
+- 핵심:
+  - `레슨 소설` 패널을 최상단 별도 카드로 분리
+  - 기존 학습 요소(`한 번에 읽는 실전 스크립트`, 목표, 진행 순서 등)는 별도 패널에서 유지
+  - 타입에 `storyNovel` 필드 추가
+
+### 12.3 검증 로그 (추가)
+- `node --check apps/api/src/data/courses.js` 통과
+- `npm run test:api` 통과
+- `npm run typecheck:web` 통과
+- `npm run build:web` 통과

@@ -1147,9 +1147,18 @@ function buildDedicatedLessonDetail({ lesson, stageMeta, cardNames, lessonProfil
     `장면 6 - 실행: ${blueprint.action} 문장으로 오늘 행동을 고정합니다.`,
     `장면 7 - 복기: ${blueprint.review}를 확인하며 적중 1줄/오차 1줄로 마무리합니다.`
   ];
+  const storyNovel = [
+    `${blueprint.character}는 오늘도 평소처럼 카드를 펼쳤지만, 마음은 평소보다 더 복잡했습니다. ${blueprint.situation} 상태였기 때문입니다.`,
+    `노트 첫 줄에 "${blueprint.question}"를 적는 순간, 흩어지던 생각이 한 방향으로 모이기 시작했습니다.`,
+    `${cardPreview || '카드'} 중 가장 눈에 들어온 카드는 ${a}였습니다. ${blueprint.character}는 오래 고민하지 않고 결론을 한 줄로 적었습니다. "지금은 이것부터 한다."`,
+    `${a}의 신호를 현재 상황 사실과 붙이자, 해석은 길어지지 않았고 오히려 더 선명해졌습니다. 오늘 필요한 건 완벽한 문장이 아니라 실행 가능한 문장이었습니다.`,
+    `${blueprint.character}는 "${blueprint.action}"을 오늘 일정에 박아 넣었습니다. 시간과 장소를 정하자 망설임이 줄었습니다.`,
+    `하루를 마칠 때는 ${blueprint.review}만 확인하며 복기 두 줄을 남겼습니다. 적중 한 줄, 오차 한 줄. 그 짧은 기록이 다음 리딩의 기준이 되었습니다.`
+  ];
 
   return {
     intro: `${lesson.title}는 스토리 한 편을 따라가며 바로 실행하는 전용 실전 레슨입니다.`,
+    storyNovel,
     learningGoals: [
       '목표 1: 질문-결론-근거-실행을 4줄로 끝낸다.',
       '목표 2: 카드 신호를 상황 사실과 붙여 한 문장으로 설명한다.',

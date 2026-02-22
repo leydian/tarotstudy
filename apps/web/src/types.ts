@@ -52,6 +52,7 @@ export interface Lesson {
   cardIds: string[];
   detail?: {
     intro: string;
+    storyNovel?: string[];
     learningGoals: string[];
     lessonFlow: string[];
     lessonBody: string[];

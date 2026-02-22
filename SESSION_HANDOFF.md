@@ -80,6 +80,24 @@
     - `npm run build:web` 통과
     - `npm run test:api` 통과
 
+- 레슨 소설 섹션 신설 + 소설/레슨 본문 패널 분리
+  - 파일:
+    - `apps/api/src/data/courses.js`
+    - `apps/web/src/pages/LessonPage.tsx`
+    - `apps/web/src/types.ts`
+  - 변경:
+    - 전 레슨에 `storyNovel`(단편 소설형 도입 문단) 추가
+      - 시작(상황) → 질문 고정 → 카드 선택 → 결론/근거 → 실행 → 복기의 6문단 구성
+    - 레슨 화면에서 소설을 최상단 별도 패널(`레슨 소설`)로 분리 노출
+    - 기존 레슨 본문(실전 스크립트/목표/진행 순서 등)은 별도 패널로 유지해 가독성 강화
+  - 효과:
+    - 사용자 진입 시 서사 맥락을 먼저 이해하고, 바로 아래 실전 파트로 자연스럽게 이동 가능
+    - 스토리 영역과 학습 영역이 시각적으로 분리되어 정보 피로도 감소
+  - 검증:
+    - `npm run typecheck:web` 통과
+    - `npm run build:web` 통과
+    - `npm run test:api` 통과
+
 - 카드 도감 리더 양성 관점 전환(입문 + 중급)
   - 파일:
     - `apps/api/src/content.js`

@@ -38,6 +38,7 @@
 - 스프레드 리딩 결과/가이드 토글 + 카드 썸네일 확대: `docs/session-handoff-2026-02-23-details.md`
 - 퀴즈 아키타입 다각화 + 문제은행 1,000+ + 레슨 정렬 출제: `docs/session-handoff-2026-02-23-details.md`
 - 전 레슨 전용 실전형 스토리텔링 전환: `docs/session-handoff-2026-02-23-details.md`
+- 레슨 소설 선배치 + 소설/레슨 패널 분리: `docs/session-handoff-2026-02-23-details.md`
 - 질문 뱅크 `100,000/1,000` 확장: `docs/codex-updates-2026-02-22.md`
 - 학습 리더 코치 실전형(입문/중급 차등 강화): `docs/session-handoff-2026-02-23-details.md`
 - QA/회귀/텔레메트리 운영: `docs/handoff/details/quality-gates-telemetry-2026-02-22.md`
