@@ -1276,7 +1276,7 @@ export function buildSpreadReading({
 
   const learningPoint = joinUniqueParts([
     `[학습 리더] ${buildLearningCoachOpening({ positionName: position.name, seed })}`,
-    `[학습 리더] ${buildLearningCoachFrame({ style, seed })}`,
+    `[학습 리더] ${buildLearningCoachFrame({ style, spreadId, positionName: position.name, seed })}`,
     `[학습 리더] ${buildLearningCoachReview({
       positionName: position.name,
       cardName: card.nameKo,
@@ -1429,8 +1429,11 @@ function buildNaturalCoreMessage({
     ? buildCelticCoreLead({ positionName: position.name, seed })
     : buildSpreadCoreLead({ spreadId, positionName: position.name, seed });
   const cardLine = `뽑으신 카드는 '${card.nameKo} ${cardDirection}'입니다.`;
+  const isTensionKeyword = /(제약|불안|권태|무기력|과잉 사고|소모|병목|갈등|오해|혼란)/.test(mainKeyword);
   const meaningLine = spreadId === 'celtic-cross'
     ? buildCelticCoreMeaningLine({ cardName: card.nameKo, positionName: position.name, orientation, focus, mainKeyword })
+    : spreadId === 'daily-fortune' && orientation === 'upright' && isTensionKeyword
+      ? `${card.nameKo}의 핵심 키워드인 ${mainKeywordSubject} 보여주는 경계 신호를 읽어, ${focus}에서 과속을 줄이는 운영이 더 중요합니다.`
     : orientation === 'upright'
       ? `${card.nameKo}의 핵심 키워드인 ${mainKeywordSubject} 열려 있어서 ${focus}에 힘을 실어주기 좋은 타이밍입니다.`
       : `${card.nameKo}의 핵심 키워드인 ${mainKeywordSubject} 잠시 막혀 있어서 ${focus}에서는 속도를 조금 늦추고 차분히 조정해보시는 편이 좋겠습니다.`;
@@ -1476,7 +1479,7 @@ function buildTarotConsultingInterpretation({
   }
   const spreadGuide = buildSpreadConsultingGuide({ spreadId, positionName: position.name, positionPrompt, seed });
   const orientationGuide = buildOrientationCounselLine({ spreadId, positionName: position.name, cardName: card.nameKo, orientation, tone, seed });
-  const keywordGuide = buildKeywordCounselLine({ card, focus, seed });
+  const keywordGuide = buildKeywordCounselLine({ card, spreadId, positionName: position.name, focus, seed });
   const contextLine = spreadId === 'weekly-fortune'
     ? buildWeeklyContextLine({ positionName: position.name, seed })
     : buildCoreContextLine({ spreadId, positionName: position.name, contextProfile, seed });
@@ -2651,12 +2654,23 @@ function buildTarotAdviceLine({ spreadId, positionName, contextProfile, tone, or
 }
 
 function buildSpreadConsultingGuide({ spreadId, positionName, positionPrompt, seed }) {
+  const dailyGuideByPosition = {
+    '오늘의 흐름': [
+      '오늘의 흐름 카드는 하루 전반의 페이스와 에너지 배분을 정하는 기준입니다.'
+    ],
+    '주의할 점': [
+      '주의할 점 카드는 사고나 감정이 과열되는 구간을 미리 잡아주는 역할을 합니다.'
+    ],
+    '행동 조언': [
+      '행동 조언 카드는 오늘 바로 실행할 한 문장을 확정하는 자리입니다.'
+    ]
+  };
   const map = {
     'one-card': [
       '원카드는 길게 늘어놓기보다 지금 필요한 결론을 또렷하게 받아들이는 리딩입니다.',
       '이 한 장은 오늘의 선택을 가볍게 밀어줄지, 잠깐 멈출지를 정해주는 신호로 보시면 됩니다.'
     ],
-    'daily-fortune': [
+    'daily-fortune': dailyGuideByPosition[positionName] ?? [
       '오늘 운세 리딩은 예언보다 하루 페이스를 어떻게 운영할지 정하는 데 의미가 있습니다.',
       '하루 리딩에서는 무엇을 할지와 무엇을 줄일지를 같이 잡을 때 체감이 분명해집니다.'
     ],
@@ -2673,11 +2687,9 @@ function buildSpreadConsultingGuide({ spreadId, positionName, positionPrompt, se
   const defaultOptions = [
     positionPrompt,
     `${positionTopic} 이 포지션의 핵심 역할을 먼저 짚는 구간입니다.`,
-    `${positionName} 자리는 앞뒤 카드와 함께 읽으면 포인트가 더 또렷해집니다.`
+    `${positionName} 자리에서는 카드 신호를 오늘 일정에 연결해 읽을수록 해석 정확도가 올라갑니다.`
   ];
-  const options = spreadId === 'celtic-cross'
-    ? map[spreadId]
-    : defaultOptions;
+  const options = map[spreadId] ?? defaultOptions;
   return pickVariant(`${seed}:spread-guide`, options);
 }
 
@@ -2685,6 +2697,29 @@ function buildOrientationCounselLine({ spreadId, positionName, cardName, orienta
   const cardNameSubject = withSmartSubject(cardName);
   const cautionPosition = isCautionPosition(positionName);
   const outcomePosition = isOutcomePosition(positionName);
+  if (spreadId === 'daily-fortune') {
+    const dailyLine = (() => {
+      if (positionName === '오늘의 흐름') {
+        return orientation === 'upright'
+          ? `${cardNameSubject} 정방향이라 오늘 전체 페이스를 안정적으로 잡아가기 좋은 구간입니다.`
+          : `${cardNameSubject} 역방향이라 오늘은 일정 과속을 줄이고 기본 리듬을 먼저 회복하는 편이 좋습니다.`;
+      }
+      if (positionName === '주의할 점') {
+        return orientation === 'upright'
+          ? `${cardNameSubject} 정방향이더라도 과신하면 마찰이 생길 수 있으니 표현 강도와 일정 밀도를 함께 점검하세요.`
+          : `${cardNameSubject} 역방향이라 오해/과해석 리스크가 커질 수 있어 단정 문장을 줄이는 편이 안전합니다.`;
+      }
+      if (positionName === '행동 조언') {
+        return orientation === 'upright'
+          ? `${cardNameSubject} 정방향이라 오늘 실천 문장 1개를 고정하면 체감 변화가 빠르게 보일 수 있습니다.`
+          : `${cardNameSubject} 역방향이라 실행 문장 길이를 줄이고 실패 비용이 낮은 행동부터 시작하는 편이 좋습니다.`;
+      }
+      return orientation === 'upright'
+        ? `${cardNameSubject} 정방향이라 오늘 흐름을 안정적으로 운영하기 좋은 신호입니다.`
+        : `${cardNameSubject} 역방향이라 속도 조절과 기준 정비를 먼저 두는 편이 좋습니다.`;
+    })();
+    return dailyLine;
+  }
   const toneLine = cautionPosition
     ? (orientation === 'upright'
         ? '이 자리에서는 낙관보다 리스크 점검을 우선해야 합니다.'
@@ -2713,13 +2748,24 @@ function buildOrientationCounselLine({ spreadId, positionName, cardName, orienta
   return pickVariant(`${seed}:${spreadId}:orientation-counsel`, lines);
 }
 
-function buildKeywordCounselLine({ card, focus, seed }) {
+function buildKeywordCounselLine({ card, spreadId = 'default', positionName = '', focus, seed }) {
   const main = card.keywords?.[0] ?? '핵심';
   const sub = card.keywords?.[1] ?? main;
   const focusWithParticle = withKoreanParticle(focus, '을', '를');
   const cardNameTopic = withKoreanParticle(card.nameKo, '은', '는');
   const mainSubject = withKoreanParticle(main, '이', '가');
   const subSubject = withKoreanParticle(sub, '이', '가');
+  if (spreadId === 'daily-fortune') {
+    if (positionName === '오늘의 흐름') {
+      return `${card.nameKo} 카드는 '${main}' 신호가 오늘 페이스를 읽는 기준이므로, ${focusWithParticle} 하나로 좁혀 운영하는 편이 좋습니다.`;
+    }
+    if (positionName === '주의할 점') {
+      return `${card.nameKo} 카드는 '${main}' 신호가 과열될 때 실수가 커지므로, '${sub}' 관련 반응 패턴을 먼저 줄이는 편이 안전합니다.`;
+    }
+    if (positionName === '행동 조언') {
+      return `${card.nameKo} 카드는 '${main}'에서 '${sub}'으로 이어지는 흐름을 오늘 실행 문장 1개에 연결하면 복기가 쉬워집니다.`;
+    }
+  }
   const lines = [
     `${cardNameTopic} '${main}'에서 '${sub}'으로 넘어가는 과정을 보여주니, 지금은 ${focusWithParticle} 선명하게 잡는 게 중요합니다.`,
     `카드 키워드를 풀어보면 ${mainSubject} 출발점이고 ${subSubject} 다음 단계입니다. 오늘은 ${focusWithParticle} 중심으로 우선순위를 정하면 흐름이 더 선명해집니다.`
@@ -2790,6 +2836,26 @@ function polishTarotInterpretation(raw = '') {
 }
 
 function buildCoreContextLine({ spreadId, positionName, contextProfile, seed }) {
+  if (spreadId === 'daily-fortune') {
+    const byPosition = {
+      '오늘의 흐름': [
+        '오늘의 흐름 해석에서는 오전/오후 중 리듬이 흔들리는 구간 1개를 먼저 지정해보세요.',
+        '오늘의 흐름 해석에서는 해야 할 일의 양보다 집중이 유지되는 시간대를 먼저 고정해보세요.'
+      ],
+      '주의할 점': [
+        '주의할 점 해석에서는 실수를 키우는 반응 패턴 1개를 먼저 분리해두면 안정적입니다.',
+        '주의할 점 해석에서는 피로가 누적되는 시간대 1개를 지정해 과속을 줄이는 편이 좋습니다.'
+      ],
+      '행동 조언': [
+        '행동 조언 해석에서는 오늘 바로 실행할 문장 1개를 카드 키워드와 연결해 고정해보세요.',
+        '행동 조언 해석에서는 실천 항목을 1개로 줄여 카드 신호와 실제 행동을 매칭해보세요.'
+      ]
+    };
+    const options = byPosition[positionName] ?? [
+      '일별 해석에서는 카드 신호를 오늘 일정의 단일 행동으로 연결할수록 정확도가 올라갑니다.'
+    ];
+    return pickVariant(`${seed}:daily-core-context:${positionName}`, options);
+  }
   const positionTopic = withKoreanParticle(positionName, '은', '는');
   const lines = spreadId === 'one-card'
     ? [
@@ -2800,7 +2866,7 @@ function buildCoreContextLine({ spreadId, positionName, contextProfile, seed }) 
     : [
       `${positionTopic} 질문 맥락상 ${contextProfile.anchor}`,
       `${positionName} 자리에서는 ${contextProfile.anchor}`,
-      `${positionTopic} 읽을 때는 ${contextProfile.anchor}`
+      `${positionName} 해석에서는 ${contextProfile.anchor}`
     ];
   return pickVariant(`${seed}:core-context`, lines);
 }
@@ -2817,8 +2883,22 @@ function buildWeeklyContextLine({ positionName, seed = '' }) {
 
 function buildSpreadCoreLead({ spreadId = 'default', positionName = '', seed = '' }) {
   const topic = withKoreanParticle(positionName, '은', '는');
+  const dailyLeadByPosition = {
+    '오늘의 흐름': [
+      '오늘의 흐름은 하루 전반의 페이스를 읽는 핵심 자리입니다.',
+      '오늘의 흐름 자리에서 오늘 일정의 중심축을 먼저 정리해보겠습니다.'
+    ],
+    '주의할 점': [
+      '주의할 점은 소모와 오해가 커질 구간을 미리 분리하는 자리입니다.',
+      '주의할 점 자리에서 오늘 병목이 생길 수 있는 포인트를 먼저 짚어보겠습니다.'
+    ],
+    '행동 조언': [
+      '행동 조언은 오늘 바로 실행할 행동 문장을 확정하는 자리입니다.',
+      '행동 조언 자리에서 지금 바로 적용할 한 가지 실천을 정리해보겠습니다.'
+    ]
+  };
   const linesBySpread = {
-    'daily-fortune': [
+    'daily-fortune': dailyLeadByPosition[positionName] ?? [
       `${topic} 오늘 체감 흐름을 읽는 핵심 자리입니다.`,
       `${positionName} 자리에서 오늘의 감정과 선택 포인트를 먼저 살펴보겠습니다.`
     ],
@@ -3034,14 +3114,26 @@ function buildLearningCoachOpening({ positionName, seed }) {
   return pickVariant(`${seed}:coach-open`, lines);
 }
 
-function buildLearningCoachFrame({ style, seed }) {
+function buildLearningCoachFrame({ style, spreadId = 'default', positionName = '', seed }) {
+  const dailyPositionFrame = spreadId === 'daily-fortune'
+    ? (() => {
+      if (positionName === '오늘의 흐름') return '오늘의 흐름 카드는 당일 사건 1개를 골라 키워드와 실제 전개를 1:1로 대응해보세요.';
+      if (positionName === '주의할 점') return '주의할 점 카드는 역방향/긴장 신호를 먼저 분리해 리스크 근거를 문장으로 남기세요.';
+      if (positionName === '행동 조언') return '행동 조언 카드는 실행 문장 1개를 카드 키워드와 직접 연결해 기록하세요.';
+      return '';
+    })()
+    : '';
   const lines = [
     `리딩 결과 학습 기준: ${style.learningFrame}`,
     `훈련 프레임: ${style.learningFrame}`,
     `타로 학습 루틴: ${style.learningFrame}`,
     `이번 카드 복기 기준은 다음과 같습니다. ${style.learningFrame}`
-  ];
-  return pickVariant(`${seed}:coach-frame`, lines);
+  ].filter(Boolean);
+  const base = pickVariant(`${seed}:coach-frame`, lines);
+  if (dailyPositionFrame) {
+    return `${base} 포지션 학습 기준: ${dailyPositionFrame}`;
+  }
+  return base;
 }
 
 function buildLearningCoachReview({ positionName, cardName, orientation, contextProfile, style, seed }) {
@@ -3051,7 +3143,7 @@ function buildLearningCoachReview({ positionName, cardName, orientation, context
     `점검 질문: "${cardName} ${direction}의 핵심 키워드가 ${positionName} 실제 전개와 어떻게 맞았는가?"`,
     `복기 질문: "${positionName} 리딩에서 카드 근거(키워드/방향/포지션)를 분리해 설명할 수 있는가?"`
   ];
-  return `${pickVariant(`${seed}:coach-review-q`, lines)} ${pickVariant(`${seed}:coach-review-step`, [style.reviewStep, `리딩 검증: ${style.reviewStep}`])}`;
+  return `${pickVariant(`${seed}:coach-review-q`, lines)} 리딩 검증: ${style.reviewStep}`;
 }
 
 function withKoreanParticle(word = '', consonantParticle = '이', vowelParticle = '가') {

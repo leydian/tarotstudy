@@ -2008,7 +2008,7 @@ function buildSummaryLead({
   }
 
   const keywordLine = topKeywords.length
-    ? `이번 흐름의 중심 키워드는 ${topKeywords.join(', ')}로 모입니다.`
+    ? `이번 흐름의 중심 키워드는 ${topKeywords.join(', ')}입니다.`
     : '이번 흐름은 한 가지 키워드로 단정하기보다 전체 결을 함께 보는 편이 좋습니다.';
   const flowLine = intent === 'relationship'
     ? (uprightCount >= reversedCount
@@ -2026,6 +2026,10 @@ function buildSummaryLead({
       ? (uprightCount >= reversedCount
           ? '전반적으로는 수익 기회가 보이더라도 지출 상한과 통제 규칙을 함께 두는 편이 유리합니다.'
           : '전반적으로는 확장보다 손실 방어와 현금흐름 점검을 먼저 두는 쪽이 더 안전합니다.')
+    : intent === 'daily'
+      ? (uprightCount >= reversedCount
+          ? '전반적으로는 하루 운영 리듬이 비교적 안정적이어서 우선순위를 선명히 두면 무리 없이 지나가기 좋습니다.'
+          : '전반적으로는 일정 과속을 줄이고 소모를 정리하는 쪽이 오늘 체감을 더 안정적으로 만듭니다.')
     : uprightCount >= reversedCount
       ? '전반적으로는 밀어도 되는 흐름이 조금 더 강합니다.'
       : '전반적으로는 속도를 조절하고 정리하는 쪽이 더 유리합니다.';

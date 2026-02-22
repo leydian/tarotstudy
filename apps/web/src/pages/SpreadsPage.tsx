@@ -452,7 +452,10 @@ function toCoachBlocks(text: string) {
 }
 
 function cleanCoachPrefix(text: string) {
-  return text.replace(/^\[학습 리더\]\s*/g, '');
+  return text
+    .replace(/^\[학습 리더\]\s*/g, '')
+    .replace(/^(복기 질문|점검 질문|체크 질문|검증 질문):\s*/g, '')
+    .replace(/^리딩 검증:\s*/g, '');
 }
 
 function lineTagLabel(text: string) {
