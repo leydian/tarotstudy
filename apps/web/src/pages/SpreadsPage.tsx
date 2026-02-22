@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import type { ReactNode } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { api } from '../lib/api';
@@ -457,7 +458,9 @@ export function SpreadsPage() {
                       <h5 className="reading-block-title">타로 리더 리딩</h5>
                       <div className="reading-prose-wrap">
                         {toParagraphBlocks(mergeTarotMessage(item.coreMessage, item.interpretation)).map((block, idx) => (
-                          <p key={`item-tarot-${item.position.name}-${idx}`} className="reading-prose">{block}</p>
+                          <p key={`item-tarot-${item.position.name}-${idx}`} className="reading-prose">
+                            {renderHighlightedText(block, item.card.keywords || [], `tarot-${item.position.name}-${idx}`)}
+                          </p>
                         ))}
                       </div>
                     </div>
@@ -738,7 +741,9 @@ function CoachSummaryView({
   return (
     <div className="coach-narrative-wrap">
       {paragraphs.map((text, idx) => (
-        <p key={`coach-narrative-${idx}`} className="coach-narrative-paragraph">{text}</p>
+        <p key={`coach-narrative-${idx}`} className="coach-narrative-paragraph">
+          {renderHighlightedText(text, context.keywords, `coach-${context.positionName}-${idx}`)}
+        </p>
       ))}
     </div>
   );
@@ -990,6 +995,82 @@ function withRoParticle(word: string) {
   const jong = (ch - HANGUL_START) % 28;
   if (jong === 0 || jong === 8) return '로';
   return '으로';
+}
+
+type HighlightTone = 'signal' | 'action' | 'caution' | 'evidence';
+
+type HighlightPattern = {
+  regex: RegExp;
+  tone: HighlightTone;
+};
+
+function renderHighlightedText(text: string, keywords: string[], keyBase: string): ReactNode[] {
+  const input = String(text || '');
+  if (!input) return [input];
+  const patterns = buildHighlightPatterns(keywords);
+  if (!patterns.length) return [input];
+
+  const nodes: ReactNode[] = [];
+  let cursor = 0;
+  let tokenIndex = 0;
+
+  while (cursor < input.length) {
+    let earliestMatch: RegExpExecArray | null = null;
+    let earliestTone: HighlightTone | null = null;
+
+    for (const pattern of patterns) {
+      pattern.regex.lastIndex = cursor;
+      const match = pattern.regex.exec(input);
+      if (!match || match.index < cursor) continue;
+      if (!earliestMatch || match.index < earliestMatch.index) {
+        earliestMatch = match;
+        earliestTone = pattern.tone;
+      }
+    }
+
+    if (!earliestMatch || !earliestTone) {
+      nodes.push(input.slice(cursor));
+      break;
+    }
+
+    if (earliestMatch.index > cursor) {
+      nodes.push(input.slice(cursor, earliestMatch.index));
+    }
+
+    const matchedText = earliestMatch[0];
+    nodes.push(
+      <span key={`${keyBase}-${tokenIndex++}`} className={`keyword-mark keyword-${earliestTone}`}>
+        {matchedText}
+      </span>
+    );
+    cursor = earliestMatch.index + matchedText.length;
+  }
+
+  return nodes;
+}
+
+function buildHighlightPatterns(keywords: string[]): HighlightPattern[] {
+  const signalKeywords = Array.from(
+    new Set(
+      (keywords || [])
+        .map((word) => String(word || '').trim())
+        .filter((word) => word.length >= 2)
+    )
+  );
+
+  const patterns: HighlightPattern[] = signalKeywords.map((word) => ({
+    regex: new RegExp(escapeRegex(word), 'g'),
+    tone: 'signal'
+  }));
+
+  patterns.push({ regex: /(실행|행동|기록|검증|복기|점검|고정|적어|비교)/g, tone: 'action' });
+  patterns.push({ regex: /(주의|리스크|소모|과속|지연|불안|오차|병목|과잉)/g, tone: 'caution' });
+  patterns.push({ regex: /(근거|키워드|신호|질문|결론|포지션)/g, tone: 'evidence' });
+  return patterns;
+}
+
+function escapeRegex(text: string) {
+  return String(text || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 function YearlySummaryView({ summary }: { summary: string }) {
