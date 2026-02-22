@@ -322,3 +322,124 @@
 - `npm run test:api` 통과
 - `npm run typecheck:web` 통과
 - `npm run build:web` 통과
+
+## 13) 2026-02-23 추가 후속 5 (스타일 분리/QA 갱신/운영 안정화)
+
+### 13.1 웹 스타일 구조 분리 + 공통 컴포넌트 도입
+- 변경 파일:
+  - `apps/web/src/styles.css`
+  - `apps/web/src/styles/theme.css`
+  - `apps/web/src/styles/layout.css`
+  - `apps/web/src/styles/spreads.css`
+  - `apps/web/src/components/PageHero.tsx`
+  - `apps/web/src/components/KpiRow.tsx`
+  - `apps/web/src/pages/HomePage.tsx`
+  - `apps/web/src/pages/CoursesPage.tsx`
+  - `apps/web/src/pages/DashboardPage.tsx`
+- 핵심:
+  - 단일 대형 스타일 파일을 `theme/layout/spreads` 3개로 분리
+  - 홈/코스/대시보드의 히어로/KPI 블록을 공통 컴포넌트로 추출
+  - 레이아웃 중복 렌더링을 줄여 화면 수정 시 변경 지점을 단순화
+
+### 13.2 QA 케이스셋 자동 갱신 체계
+- 변경 파일:
+  - `scripts/refresh-qa-cases.mjs`
+  - `scripts/learning-leader-eval-set.json`
+  - `scripts/yearly-fortune-regression-cases.json`
+  - `scripts/qa-cases-registry.json`
+  - `scripts/run-learning-leader-qa.mjs`
+  - `package.json`
+- 핵심:
+  - 질문 뱅크를 기반으로 학습 리더/연간운세 회귀 케이스를 자동 생성
+  - 실행 명령 추가: `npm run qa:refresh-cases`
+  - QA 실행기에서 케이스 갱신을 옵션으로 연동할 수 있게 확장
+
+### 13.3 텔레메트리 저장 로테이션 + 문서 무결성 체크 자동화
+- 변경 파일:
+  - `apps/api/src/telemetry.js`
+  - `apps/api/test/telemetry-store.test.js`
+  - `scripts/check-handoff-docs.mjs`
+  - `package.json`
+  - `README.md`
+  - `docs/handoff/details/docs-ops-structure-2026-02-22.md`
+- 핵심:
+  - 텔레메트리 저장소에 크기/기간 기반 로테이션, 보관 개수 제한 정책 추가
+  - 핸드오프 문서 계층(메인/인덱스/상세) 필수 링크/표기 검사 스크립트 추가
+  - 실행 명령 추가: `npm run docs:check-handoff`
+  - `verify:quality`에 문서 무결성 검사를 포함해 운영 누락을 조기 탐지
+
+### 13.4 스프레드 복기 히스토리 가독성 개선
+- 변경 파일:
+  - `apps/web/src/pages/SpreadsPage.tsx`
+  - `apps/web/src/styles/spreads.css`
+  - `apps/web/src/styles/layout.css`
+- 핵심:
+  - 기록 기본 노출을 요약 중심으로 전환하고 상세는 토글
+  - 판정(맞음/부분/다름/미복기) 필터를 추가해 복기 큐 탐색 속도 개선
+  - 긴 요약/코칭 문장을 축약해 스캔성 강화
+
+### 13.5 검증 로그 (추가)
+- `npm run qa:refresh-cases` 통과
+- `npm run docs:check-handoff` 통과
+- `npm run typecheck:web` 통과
+- `npm run test:api` 통과
+- `npm run build:web` 통과
+- `npm run lint` 통과
+
+### 13.6 관련 커밋 (추가)
+- `a415cbb` Refactor UI/docs ops and improve review history workflow
+
+## 14) 2026-02-23 추가 후속 6 (리드모델 API + 퍼널 기반 화면 연동)
+
+### 14.1 학습 리드모델 모듈/엔드포인트 추가
+- 변경 파일:
+  - `apps/api/src/learning-read-models.js`
+  - `apps/api/src/index.js`
+  - `apps/api/src/telemetry.js`
+  - `apps/api/test/learning-read-models.test.js`
+- 핵심:
+  - 사용자 행동 루프를 위한 리드모델 빌더 추가
+    - `buildNextActions`: 다음 레슨/저점수 복습/미복기/휴면 재시작 액션 생성
+    - `buildReviewInbox`: 미복기 기록 인박스 생성
+    - `buildLearningFunnel`: 활성→레슨→퀴즈→드로우→복기 전환율 계산
+  - API 추가:
+    - `GET /api/learning/next-actions?userId=...`
+    - `GET /api/reviews/inbox?userId=...&spreadId=...&limit=...`
+    - `GET /api/analytics/funnel?window=7d|30d`
+    - `POST /api/events/batch`
+
+### 14.2 프론트 타입/API/화면 연동
+- 변경 파일:
+  - `apps/web/src/types.ts`
+  - `apps/web/src/lib/api.ts`
+  - `apps/web/src/state/progress.ts`
+  - `apps/web/src/pages/HomePage.tsx`
+  - `apps/web/src/pages/SpreadsPage.tsx`
+  - `apps/web/src/pages/DashboardPage.tsx`
+- 핵심:
+  - 신규 응답 타입(`NextActions`, `ReviewInbox`, `LearningFunnel`) 추가
+  - 홈에서 서버 `next-actions` 노출
+  - 스프레드에서 서버 `review inbox` 노출
+  - 대시보드에 7일 퍼널 카드 노출
+  - 페이지 조회/드로우/복기 이벤트를 배치 전송해 퍼널 집계 정합성 강화
+
+### 14.3 효과
+- 사용자:
+  - “다음에 무엇을 해야 하는지”가 서버 기준으로 일관되게 노출되어 학습 완주 루프가 명확해짐
+  - 미복기 인박스 노출로 복기 누락이 줄고 재방문 동기가 강화됨
+- 기획:
+  - 단일 KPI 외에 단계별 전환율(퍼널) 기반 병목 탐지가 가능해짐
+- 개발/운영:
+  - 프론트 계산 의존 일부를 서버 리드모델로 이동해 화면 로직 중복 감소
+  - 이벤트 수집이 단건 호출에서 배치 호출로 정리되어 추적 일관성 개선
+
+### 14.4 검증 로그 (추가)
+- `npm run typecheck:web` 통과
+- `npm run test:api` 통과
+  - 신규: `apps/api/test/learning-read-models.test.js`
+- `npm run build:web` 통과
+- `npm run lint` 통과
+- `npm run docs:check-handoff` 통과
+
+### 14.5 관련 커밋 (추가)
+- `de1cae9` Add learning read-model APIs and funnel-driven UI integration

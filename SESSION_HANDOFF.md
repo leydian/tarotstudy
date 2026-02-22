@@ -36,6 +36,77 @@
   - 텔레메트리 수집 API(`spread_drawn`, `spread_review_saved`) 및 롤업 스크립트 추가
 
 ## 3) 금일 추가 반영 (최신)
+- 리드모델 기반 학습 API 확장 + 퍼널/인박스 화면 연동 (사용자/기획/개발 페르소나 후속 2차)
+  - 파일:
+    - `apps/api/src/learning-read-models.js`
+    - `apps/api/src/index.js`
+    - `apps/api/src/telemetry.js`
+    - `apps/api/test/learning-read-models.test.js`
+    - `apps/web/src/lib/api.ts`
+    - `apps/web/src/types.ts`
+    - `apps/web/src/state/progress.ts`
+    - `apps/web/src/pages/HomePage.tsx`
+    - `apps/web/src/pages/SpreadsPage.tsx`
+    - `apps/web/src/pages/DashboardPage.tsx`
+  - 변경:
+    - 학습 리드모델 API 추가
+      - `GET /api/learning/next-actions?userId=...`
+      - `GET /api/reviews/inbox?userId=...&spreadId=...&limit=...`
+      - `GET /api/analytics/funnel?window=7d|30d`
+      - `POST /api/events/batch`
+    - 서버 리드모델 빌더 추가(`buildNextActions`, `buildReviewInbox`, `buildLearningFunnel`)
+      - 다음 레슨/저점수 퀴즈/미복기/휴면 재시작 액션을 우선순위로 정렬
+      - 미복기 기록 인박스(스프레드별 필터/제한) 제공
+      - 7일/30일 퍼널(활성→레슨→퀴즈→드로우→복기) 전환율 계산
+    - 텔레메트리 확장
+      - 앱 이벤트 저장소(`appEventStats`) 추가
+      - 배치 이벤트 수집을 통해 페이지 조회/드로우/복기 흐름을 한 번에 적재
+    - 프론트 연동
+      - 홈: 서버 `next-actions` 노출 + `home_viewed` 이벤트 전송
+      - 스프레드: 서버 `review inbox` 노출 + `spreads_viewed`/드로우/복기 이벤트 배치 전송
+      - 대시보드: 7일 퍼널 카드 추가
+  - 효과:
+    - 사용자 관점: 다음 할 일/미복기 항목이 서버 기준으로 일관되게 노출되어 완주 루프가 명확해짐
+    - 기획 관점: 로컬 기록 기반 지표에서 퍼널 기반 지표로 전환되어 전환율 병목 탐지가 쉬워짐
+    - 개발 관점: 화면 계산 로직 일부가 API 리드모델로 이동해 프론트 중복 계산/상태 의존 감소
+  - 검증:
+    - `npm run typecheck:web` 통과
+    - `npm run test:api` 통과 (신규 `learning-read-models.test.js` 포함)
+    - `npm run build:web` 통과
+    - `npm run lint` 통과
+    - `npm run docs:check-handoff` 통과
+
+- 프론트 구조/운영 문서/QA 체계 후속 보강
+  - 파일:
+    - `apps/web/src/styles.css`
+    - `apps/web/src/styles/theme.css`
+    - `apps/web/src/styles/layout.css`
+    - `apps/web/src/styles/spreads.css`
+    - `apps/web/src/components/PageHero.tsx`
+    - `apps/web/src/components/KpiRow.tsx`
+    - `scripts/refresh-qa-cases.mjs`
+    - `scripts/check-handoff-docs.mjs`
+    - `apps/api/src/telemetry.js`
+    - `apps/api/test/telemetry-store.test.js`
+    - `README.md`, `package.json`
+  - 변경:
+    - 스타일 파일 분리(`theme/layout/spreads`) 및 페이지 공통 컴포넌트 도입
+    - QA 케이스셋 자동 갱신 명령 추가(`qa:refresh-cases`)
+    - 핸드오프 문서 무결성 점검 명령 추가(`docs:check-handoff`)
+    - 텔레메트리 저장소 로테이션(크기/기간 기준) + 보관 개수 정책 도입
+    - 스프레드 복기 히스토리 요약/상세 토글, 판정 필터, 인박스 가독성 강화
+  - 효과:
+    - 프론트 유지보수성 개선(중복 스타일/반복 구조 감소)
+    - QA 샘플 고정 리스크 완화
+    - 운영 데이터 파일 비대화/장기 누적 리스크 감소
+    - 복기 기록 탐색 피로 감소 및 미복기 처리 속도 개선
+  - 검증:
+    - `npm run qa:refresh-cases` 통과
+    - `npm run docs:check-handoff` 통과
+    - `npm run test:api` 통과
+    - `npm run typecheck:web` 통과
+    - `npm run build:web` 통과
+
 - 페르소나 기반 제품 보완 1차 구현 (사용자/개발자/기획자 관점 반영)
   - 파일:
     - `apps/api/src/index.js`
