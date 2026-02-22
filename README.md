@@ -21,9 +21,21 @@ npm run dev:web -- --host 127.0.0.1 --port 5173
 ## 세션 인수인계
 - 요약(핵심만): [SESSION_HANDOFF.md](./SESSION_HANDOFF.md)
 - 상세 변경 내역: [docs/session-handoff-2026-02-22-details.md](./docs/session-handoff-2026-02-22-details.md)
+- Codex 변경 요약: [docs/codex-updates-2026-02-22.md](./docs/codex-updates-2026-02-22.md)
 - 관련 보고서:
   - [docs/persona-report-2026-02-22.md](./docs/persona-report-2026-02-22.md)
   - [docs/annual-fortune-job-timing-awkwardness-report-2026-02-22.md](./docs/annual-fortune-job-timing-awkwardness-report-2026-02-22.md)
+
+## 최근 변경 요약 (2026-02-22)
+- 원카드 리딩 품질 개선:
+  - `핵심메시지(한 줄 결론)`와 `타로 리딩(근거/실행)`을 분리해 중복을 줄이고 결론을 빠르게 전달합니다.
+  - 질문 맥락(커피/운동/연락/결제)에 맞춰 실행 문장을 다르게 안내합니다.
+- 판정 체계 명확화:
+  - 상태를 `완전 가능 / 조건부 가능 / 보류`로 구분해 “무조건 진행”과 “한 잔만” 같은 조건부 진행을 명확히 나눕니다.
+- 문체 개선:
+  - 과도한 단정 대신 가능성 기반 표현을 유지하면서, 벤치마킹한 부드러운 구어체 톤을 적용했습니다.
+- 개발 비용 최적화:
+  - `EXTERNAL_AI_MODE=cli`를 통해 개발/테스트 중 API 대신 Codex CLI 호출이 가능합니다.
 
 ## 구성
 - `apps/api`: Fastify 백엔드 (카드/코스/퀴즈/설명/스프레드/운영관측 API)
