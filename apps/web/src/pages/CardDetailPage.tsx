@@ -10,16 +10,18 @@ export function CardDetailPage() {
   const [context, setContext] = useState('');
 
   const cardQuery = useQuery({
-    queryKey: ['card', cardId],
-    queryFn: () => api.getCard(cardId as string),
-    enabled: Boolean(cardId)
+    queryKey: ['card', cardId, context],
+    queryFn: () => api.getCard(cardId as string, context),
+    enabled: Boolean(cardId),
+    placeholderData: (previousData) => previousData
   });
 
   const explainMutation = useMutation({
-    mutationFn: () => api.explainCard(cardId as string, level, context)
+    mutationFn: (input: { level: 'beginner' | 'intermediate'; context: string }) =>
+      api.explainCard(cardId as string, input.level, input.context)
   });
 
-  if (cardQuery.isLoading) return <p>카드 정보를 불러오는 중...</p>;
+  if (cardQuery.isLoading && !cardQuery.data) return <p>카드 정보를 불러오는 중...</p>;
   if (cardQuery.isError || !cardQuery.data) return <p>카드를 찾을 수 없습니다.</p>;
 
   const card = cardQuery.data;
@@ -61,10 +63,17 @@ export function CardDetailPage() {
           </select>
           <input
             value={context}
-            onChange={(e) => setContext(e.target.value)}
+            onChange={(e) => {
+              setContext(e.target.value);
+              explainMutation.reset();
+            }}
             placeholder="질문 맥락(예: 이직, 관계 회복)"
           />
-          <button className="btn primary" onClick={() => explainMutation.mutate()} disabled={explainMutation.isPending}>
+          <button
+            className="btn primary"
+            onClick={() => explainMutation.mutate({ level, context })}
+            disabled={explainMutation.isPending}
+          >
             {explainMutation.isPending ? '생성 중...' : '설명 생성'}
           </button>
         </div>

@@ -3,6 +3,7 @@ import { getCardById } from './data/cards.js';
 const TTL_FALLBACK_SOURCE = 'fallback';
 
 export function buildFallbackExplanation(card, level = 'beginner', context = '') {
+  const explanationContext = inferExplanationContext(context);
   const contextLine = context?.trim()
     ? `질문 맥락(${context.trim()})에 맞춰 보면,`
     : '맥락 없이 기본 의미로 보면,';
@@ -19,6 +20,7 @@ export function buildFallbackExplanation(card, level = 'beginner', context = '')
 
   const primaryKeyword = card.keywords?.[0] || '핵심 에너지';
   const profile = getFallbackCardProfile(card);
+  const contextFocus = buildContextFocusLines({ explanationContext, level });
 
   return {
     cardId: card.id,
@@ -26,17 +28,19 @@ export function buildFallbackExplanation(card, level = 'beginner', context = '')
     sections: {
       coreMeaning: enforceMinLines([
         `${card.nameKo} (${card.name})의 핵심은 ${card.keywords.join(', ')}입니다.`,
-        `${contextLine} ${profile.coreFocus}`,
+        `${contextLine} ${profile.coreFocus} ${contextFocus.core}`,
         level === 'intermediate'
           ? '중급에서는 카드 위치와 인접 카드에 따라 의미 강도와 시점이 어떻게 달라지는지 먼저 확정하세요.'
-          : '입문에서는 핵심 키워드 1개를 오늘 상황 1개에 연결해 해석의 초점을 좁히세요.'
+          : '입문에서는 핵심 키워드 1개를 오늘 상황 1개에 연결해 해석의 초점을 좁히세요.',
+        contextFocus.coreAction
       ].join('\n')),
       symbolism: enforceMinLines([
         arcanaLine,
         `${rankLine} ${profile.symbolFocus}`,
         level === 'intermediate'
           ? '상징은 결론이 아니라 가설입니다. 관찰 가능한 사실과 충돌하는 해석은 버리고 남은 가설만 검증하세요.'
-          : '상징은 정답이 아니라 방향 힌트입니다. 어렵게 확장하기보다 지금 문제와 연결해 읽으세요.'
+          : '상징은 정답이 아니라 방향 힌트입니다. 어렵게 확장하기보다 지금 문제와 연결해 읽으세요.',
+        contextFocus.symbolism
       ].join('\n')),
       upright: enforceMinLines([
         `정방향은 "${primaryKeyword}" 에너지가 비교적 안정적으로 작동하는 흐름입니다.`,
@@ -44,8 +48,8 @@ export function buildFallbackExplanation(card, level = 'beginner', context = '')
           ? `${profile.uprightIntermediate} 긍정 신호의 지속 조건(시간, 자원, 관계)을 같이 점검해야 과해석을 줄일 수 있습니다.`
           : `${profile.uprightBeginner} ${buildBeginnerUprightActionLine(card)}`,
         level === 'intermediate'
-          ? '실행 뒤에는 가설이 맞았는지 근거 1개를 남겨 다음 해석의 기준으로 삼으세요.'
-          : buildBeginnerUprightReviewLine(card)
+          ? `실행 뒤에는 가설이 맞았는지 근거 1개를 남겨 다음 해석의 기준으로 삼으세요. ${contextFocus.upright}`
+          : `${buildBeginnerUprightReviewLine(card)} ${contextFocus.upright}`
       ].join('\n')),
       reversed: enforceMinLines([
         `역방향은 "${primaryKeyword}" 에너지가 지연되거나 과잉/결핍으로 나타날 가능성을 뜻합니다.`,
@@ -53,14 +57,14 @@ export function buildFallbackExplanation(card, level = 'beginner', context = '')
           ? `${profile.reversedIntermediate} 원인을 내부 요인과 외부 제약으로 분리해 어디를 먼저 조정할지 우선순위를 정하세요.`
           : `${profile.reversedBeginner} ${buildBeginnerReversedActionLine(card)}`,
         level === 'intermediate'
-          ? '교정 후에는 같은 질문으로 재평가해 흐름 변화와 남은 리스크를 함께 확인하세요.'
-          : buildBeginnerReversedReviewLine(card)
+          ? `교정 후에는 같은 질문으로 재평가해 흐름 변화와 남은 리스크를 함께 확인하세요. ${contextFocus.reversed}`
+          : `${buildBeginnerReversedReviewLine(card)} ${contextFocus.reversed}`
       ].join('\n')),
       love: enforceMinLines([
-        ...buildLoveSectionLines({ card, level, profile, context })
+        ...buildLoveSectionLines({ card, level, profile, context, explanationContext })
       ].join('\n')),
       career: enforceMinLines([
-        ...buildCareerSectionLines({ card, level, profile, context })
+        ...buildCareerSectionLines({ card, level, profile, context, explanationContext })
       ].join('\n')),
       advice: enforceMinLines([
         level === 'intermediate'
@@ -69,13 +73,13 @@ export function buildFallbackExplanation(card, level = 'beginner', context = '')
         level === 'intermediate'
           ? '실천 과제: 사실(관찰) → 해석(가설) → 행동(검증) 3단계로 문장을 작성해 복기 정확도를 올리세요.'
           : buildBeginnerAdviceTaskLine(card),
-        buildAdviceReviewLine(card, level)
+        `${buildAdviceReviewLine(card, level)} ${contextFocus.advice}`
       ].join('\n'))
     }
   };
 }
 
-function buildLoveSectionLines({ card, level, profile, context = '' }) {
+function buildLoveSectionLines({ card, level, profile, context = '', explanationContext }) {
   const contextTag = detectRelationshipContext(context);
   const openersBeginner = [
     '연애/관계에서는 상대를 통제하기보다 내 감정의 사실과 요청을 분리해 전달하는 것이 중요합니다.',
@@ -111,14 +115,20 @@ function buildLoveSectionLines({ card, level, profile, context = '' }) {
     ? '중급 관점에서는 대화 전 가설 1개와 확인 질문 1개를 준비해 관계 리듬을 검증하세요.'
     : '입문 관점에서는 오늘 전할 한 문장과 피할 한 문장을 먼저 정해 대화 흔들림을 줄이세요.'));
 
+  const crossDomainLine = buildCrossDomainLine({
+    section: 'love',
+    explanationContext,
+    level
+  });
+
   return [
     pickCardVariant(card.id, `love-opener-${level}`, level === 'intermediate' ? openersIntermediate : openersBeginner),
-    `${profile.loveFocus} ${suitNuance}`,
+    `${profile.loveFocus} ${suitNuance} ${crossDomainLine}`,
     contextAction
   ];
 }
 
-function buildCareerSectionLines({ card, level, profile, context = '' }) {
+function buildCareerSectionLines({ card, level, profile, context = '', explanationContext }) {
   const contextTag = detectCareerContext(context);
   const openersBeginner = [
     '일/학업에서는 우선순위를 1~2개로 압축하고 실행 증거(기록/산출물)를 남기는 방식이 유리합니다.',
@@ -141,6 +151,9 @@ function buildCareerSectionLines({ card, level, profile, context = '' }) {
     : '메이저 계열은 커리어 방향 전환 신호를 다루는 경우가 많아 단기 결과보다 전략 축을 먼저 점검해야 합니다.';
 
   const contextAction = ({
+    jobChange: level === 'intermediate'
+      ? '이직/취업 시점 맥락이라면 30일 이내 실행(지원·네트워킹)과 60일 준비(포트폴리오·답변 보강)를 분리해 주차별로 운영하세요.'
+      : '이직/취업 시점 맥락이라면 이번 주 실행할 지원 1건과 보완할 문서 1개를 짝으로 정해 진행해 보세요.',
     interview: level === 'intermediate'
       ? '면접/지원 맥락이라면 핵심 경험 2개를 STAR 구조로 정리하고, 질문 대비 반례 답변까지 준비하세요.'
       : '면접/지원 맥락이라면 강점 1개와 근거 사례 1개를 먼저 정리해 말해보세요.',
@@ -157,9 +170,15 @@ function buildCareerSectionLines({ card, level, profile, context = '' }) {
     ? '중급 관점에서는 실행 후 결과 편차 원인을 일정·자원·협업 변수로 나눠 기록하세요.'
     : '입문 관점에서는 오늘 20분 안에 끝낼 수 있는 단위로 쪼개서 시작하는 것이 핵심입니다.'));
 
+  const crossDomainLine = buildCrossDomainLine({
+    section: 'career',
+    explanationContext,
+    level
+  });
+
   return [
     pickCardVariant(card.id, `career-opener-${level}`, level === 'intermediate' ? openersIntermediate : openersBeginner),
-    `${profile.careerFocus} ${suitNuance}`,
+    `${profile.careerFocus} ${suitNuance} ${crossDomainLine}`,
     contextAction
   ];
 }
@@ -173,10 +192,145 @@ function detectRelationshipContext(context = '') {
 
 function detectCareerContext(context = '') {
   const text = String(context || '').toLowerCase();
+  if (['이직', '취업', '입사', '퇴사', '전직'].some((k) => text.includes(k))) return 'jobChange';
   if (['면접', '지원', '이력서', '자소서'].some((k) => text.includes(k))) return 'interview';
   if (['프로젝트', '업무', '직장', '회사'].some((k) => text.includes(k))) return 'project';
   if (['공부', '시험', '학습', '자격증'].some((k) => text.includes(k))) return 'study';
   return 'default';
+}
+
+function inferExplanationContext(context = '') {
+  const text = String(context || '').toLowerCase();
+  const relationshipTag = detectRelationshipContext(text);
+  const careerTag = detectCareerContext(text);
+
+  if (relationshipTag !== 'default') return { domain: 'relationship', tag: relationshipTag };
+  if (careerTag !== 'default') return { domain: 'career', tag: careerTag };
+  if (['연애', '관계', '재회', '결혼', '상대', '썸', '감정', '소통'].some((k) => text.includes(k))) {
+    return { domain: 'relationship', tag: 'default' };
+  }
+  if (['재정', '돈', '지출', '수입', '저축', '투자', '소비', '자산'].some((k) => text.includes(k))) {
+    return { domain: 'finance', tag: 'default' };
+  }
+  if (['공부', '시험', '학습', '자격증', '과제'].some((k) => text.includes(k))) {
+    return { domain: 'study', tag: 'study' };
+  }
+  if (['건강', '수면', '운동', '회복', '컨디션'].some((k) => text.includes(k))) {
+    return { domain: 'health', tag: 'default' };
+  }
+  if (['오늘', '하루', '금일', '오늘의', '이번 주'].some((k) => text.includes(k))) {
+    return { domain: 'daily', tag: 'default' };
+  }
+  if (['업무', '직장', '회사', '커리어', '프로젝트'].some((k) => text.includes(k))) {
+    return { domain: 'career', tag: 'project' };
+  }
+  return { domain: 'general', tag: 'default' };
+}
+
+function buildContextFocusLines({ explanationContext, level }) {
+  const isIntermediate = level === 'intermediate';
+  const linesByDomain = {
+    relationship: {
+      core: '관계 맥락에서는 상대 의도 추측보다 대화 패턴과 경계 신호를 우선 읽어야 합니다.',
+      coreAction: isIntermediate
+        ? '관계 해석 체크: 감정 사실/요청 문장/합의 행동을 1개씩 분리해 기록하세요.'
+        : '관계 해석 체크: 오늘 전할 문장 1개와 피할 문장 1개를 먼저 정해보세요.',
+      symbolism: '상징을 감정 온도와 대화 타이밍 변수로 번역하면 해석이 훨씬 실전에 가까워집니다.',
+      upright: '관계 맥락의 정방향에서는 접점을 여는 짧은 대화 제안이 흐름을 살립니다.',
+      reversed: '관계 맥락의 역방향에서는 결론을 늦추고 오해를 줄이는 확인 질문이 우선입니다.',
+      advice: '관계 실행은 감정 해석보다 전달 순서(사실→감정→요청)를 지켜 복기하세요.'
+    },
+    career: {
+      core: '커리어 맥락에서는 분위기 해석보다 실행 지표(제출/면접/완료율)로 읽는 것이 정확합니다.',
+      coreAction: isIntermediate
+        ? '커리어 해석 체크: 이번 주 실행 지표 1개와 보완 지표 1개를 짝으로 운영하세요.'
+        : '커리어 해석 체크: 오늘 실행할 행동 1개와 보완할 문서 1개를 연결하세요.',
+      symbolism: '상징을 일정·역할·성과 기준으로 번역하면 과해석이 줄고 행동으로 이어집니다.',
+      upright: '커리어 맥락의 정방향에서는 작은 제출/접점을 끊기지 않게 유지하는 것이 핵심입니다.',
+      reversed: '커리어 맥락의 역방향에서는 확장보다 문서 품질과 답변 구조 보완이 먼저입니다.',
+      advice: '커리어 복기는 결과보다 과정 지표(준비량/반응률/교정 포인트)를 남겨야 효과가 큽니다.'
+    },
+    finance: {
+      core: '재정 맥락에서는 기대 수익보다 손실 통제와 현금흐름 안정성을 먼저 읽어야 합니다.',
+      coreAction: isIntermediate
+        ? '재정 해석 체크: 고정비/변동비/리스크 노출을 분리해 점검표를 만드세요.'
+        : '재정 해석 체크: 오늘 줄일 지출 1개와 유지할 지출 1개를 구분하세요.',
+      symbolism: '상징을 지출 구조와 리스크 한도로 번역하면 현실 판단 정확도가 올라갑니다.',
+      upright: '재정 맥락의 정방향에서는 계획형 운영을 유지할 때 누적 안정성이 커집니다.',
+      reversed: '재정 맥락의 역방향에서는 확장성보다 손실 방어와 지출 통제가 우선입니다.',
+      advice: '재정 복기는 감정 소비가 아니라 숫자 기록(지출/저축/누수 원인)으로 남기세요.'
+    },
+    study: {
+      core: '학습 맥락에서는 의욕보다 반복 주기와 복기 품질이 성과를 결정합니다.',
+      coreAction: isIntermediate
+        ? '학습 해석 체크: 회상 정확도와 적용 정확도를 분리해 주간 단위로 보정하세요.'
+        : '학습 해석 체크: 25분 학습 + 5분 복기 1세트를 먼저 고정하세요.',
+      symbolism: '상징을 학습 루틴(시간/반복/테스트)으로 번역하면 실행력이 높아집니다.',
+      upright: '학습 맥락의 정방향에서는 반복 루틴을 유지할수록 체감 성과가 빨라집니다.',
+      reversed: '학습 맥락의 역방향에서는 범위를 줄이고 회상 테스트부터 재시작하세요.',
+      advice: '학습 복기는 공부 시간보다 오답 원인과 재시도 계획을 중심으로 남기세요.'
+    },
+    health: {
+      core: '건강 맥락에서는 의욕보다 회복 리듬(수면/식사/활동) 안정화를 먼저 읽어야 합니다.',
+      coreAction: isIntermediate
+        ? '건강 해석 체크: 수면·활동·피로 지표를 하루 단위로 기록해 변동 원인을 찾으세요.'
+        : '건강 해석 체크: 오늘 하나의 회복 루틴(수면/걷기/수분)을 먼저 실행해 보세요.',
+      symbolism: '상징을 회복 지표로 번역하면 컨디션 해석의 체감 정확도가 올라갑니다.',
+      upright: '건강 맥락의 정방향에서는 작은 루틴 유지가 회복 속도를 높입니다.',
+      reversed: '건강 맥락의 역방향에서는 강도 확장보다 휴식과 리듬 복구가 우선입니다.',
+      advice: '건강 복기는 느낌만 쓰지 말고 수면/활동/피로도를 함께 기록하세요.'
+    },
+    daily: {
+      core: '일상 맥락에서는 거대한 결론보다 오늘 실행 1개를 고정하는 것이 핵심입니다.',
+      coreAction: isIntermediate
+        ? '일상 해석 체크: 오늘 우선순위 1개와 회피할 소모 1개를 분리하세요.'
+        : '일상 해석 체크: 지금 20분 안에 가능한 행동으로 바로 전환해 보세요.',
+      symbolism: '상징을 오늘 일정과 감정 소모 구간으로 번역하면 해석이 가벼워집니다.',
+      upright: '일상 맥락의 정방향에서는 단순 실행을 이어가면 흐름이 자연스럽게 붙습니다.',
+      reversed: '일상 맥락의 역방향에서는 과욕을 줄이고 정리부터 시작해야 흔들림이 줄어듭니다.',
+      advice: '일상 복기는 오늘 성공 1개와 소모 1개만 남겨도 충분히 효과적입니다.'
+    },
+    general: {
+      core: '일반 맥락에서는 카드 메시지를 한 가지 행동 기준으로 축소해야 해석이 선명해집니다.',
+      coreAction: isIntermediate
+        ? '해석 체크: 가설 1개와 검증 행동 1개를 짝으로 설정하세요.'
+        : '해석 체크: 지금 바로 할 행동 1개로 문장을 마무리하세요.',
+      symbolism: '상징을 지금 결정해야 하는 현실 문제로 번역하면 해석 공회전을 막을 수 있습니다.',
+      upright: '정방향에서는 실행의 문턱을 낮추고 작은 결과물을 먼저 만드는 편이 좋습니다.',
+      reversed: '역방향에서는 원인 하나를 고르고 교정 행동 하나만 먼저 적용하세요.',
+      advice: '복기에서는 해석보다 행동-결과 연결을 짧게 남기는 습관이 핵심입니다.'
+    }
+  };
+
+  return linesByDomain[explanationContext.domain] ?? linesByDomain.general;
+}
+
+function buildCrossDomainLine({ section, explanationContext, level }) {
+  const isIntermediate = level === 'intermediate';
+  if (!explanationContext || explanationContext.domain === 'general') return '';
+  if (section === 'love' && explanationContext.domain === 'career') {
+    return isIntermediate
+      ? '커리어 질문 맥락에서도 관계 섹션은 협업 대화 톤과 경계 설정 방식 점검에 직접 연결됩니다.'
+      : '커리어 질문이라도 관계 섹션에서 대화 톤을 정리하면 면접/업무 소통 품질에 도움이 됩니다.';
+  }
+  if (section === 'career' && explanationContext.domain === 'relationship') {
+    return isIntermediate
+      ? '관계 질문 맥락에서도 커리어 섹션은 대화 운영 전략(타이밍·명료성) 훈련으로 연결해 읽으세요.'
+      : '관계 질문이어도 커리어 섹션의 실행 루틴은 대화 준비와 표현 정리에 바로 적용됩니다.';
+  }
+  if (section === 'love' && explanationContext.domain === 'finance') {
+    return '재정 질문 맥락에서는 관계 섹션을 지출·기대·경계 대화의 합의 방식으로 연결해 해석하세요.';
+  }
+  if (section === 'career' && explanationContext.domain === 'finance') {
+    return '재정 질문 맥락에서는 커리어 섹션을 수입 안정화 행동과 리스크 통제 실행으로 읽는 편이 정확합니다.';
+  }
+  if (section === 'love' && explanationContext.domain === 'study') {
+    return '학습 질문 맥락에서는 관계 섹션을 피드백 수용 방식과 소통 리듬 조정으로 해석하세요.';
+  }
+  if (section === 'career' && explanationContext.domain === 'study') {
+    return '학습 질문 맥락에서는 커리어 섹션의 실행 기준을 학습 루틴 운영 규칙으로 변환해 적용하세요.';
+  }
+  return '';
 }
 
 function buildBeginnerUprightActionLine(card) {

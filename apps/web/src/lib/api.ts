@@ -104,8 +104,11 @@ export const api = {
     const qs = search.toString();
     return request<TarotCard[]>(`/api/cards${qs ? `?${qs}` : ''}`);
   },
-  getCard(cardId: string) {
-    return request<TarotCard>(`/api/cards/${cardId}`);
+  getCard(cardId: string, context = '') {
+    const search = new URLSearchParams();
+    if (context.trim()) search.set('context', context.trim());
+    const qs = search.toString();
+    return request<TarotCard>(`/api/cards/${cardId}${qs ? `?${qs}` : ''}`);
   },
   explainCard(cardId: string, level: 'beginner' | 'intermediate', context = '') {
     return request<CardExplanation>(`/api/cards/${cardId}/explain`, {
