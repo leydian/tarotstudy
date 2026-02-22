@@ -467,13 +467,13 @@ function summarizeRelationshipRecovery({ items, context = '', level = 'beginner'
 
 function summarizeWeeklyFortune({ items, context = '', level = 'beginner' }) {
   const pick = (name) => items.find((item) => item.position?.name === name) || null;
-  const theme = pick('주간 테마');
-  const monTue = pick('월-화');
-  const wedThu = pick('수-목');
+  const monday = pick('월요일');
+  const tuesday = pick('화요일');
+  const wednesday = pick('수요일');
+  const thursday = pick('목요일');
   const friday = pick('금요일');
   const saturday = pick('토요일');
   const sunday = pick('일요일');
-  const advice = pick('주간 조언');
   const intent = inferYearlyIntent(context);
   const tone = inferSummaryContextTone(context);
   const levelHint = level === 'intermediate' ? tone.intermediateHint : tone.beginnerHint;
@@ -481,37 +481,37 @@ function summarizeWeeklyFortune({ items, context = '', level = 'beginner' }) {
   const reversedCount = items.length - uprightCount;
   const seed = hashText([
     context,
-    theme?.card?.id || '',
-    monTue?.card?.id || '',
-    wedThu?.card?.id || '',
+    monday?.card?.id || '',
+    tuesday?.card?.id || '',
+    wednesday?.card?.id || '',
+    thursday?.card?.id || '',
     friday?.card?.id || '',
     saturday?.card?.id || '',
-    sunday?.card?.id || '',
-    advice?.card?.id || ''
+    sunday?.card?.id || ''
   ].join(':'));
 
-  const themeKeyword = theme?.card?.keywords?.[0] || '주간 흐름';
-  const themeLabel = theme?.card?.nameKo ? `${theme.card.nameKo} ${theme?.orientation === 'reversed' ? '역방향' : '정방향'}` : '신호 확인 필요';
+  const mondayKeyword = monday?.card?.keywords?.[0] || '주간 흐름';
+  const mondayLabel = monday?.card?.nameKo ? `${monday.card.nameKo} ${monday?.orientation === 'reversed' ? '역방향' : '정방향'}` : '신호 확인 필요';
   const overallFlow = uprightCount >= reversedCount ? '전개가 열려 있는 주간' : '속도 조절이 필요한 주간';
-  const overallIntentLine = buildWeeklyIntentLine({ intent, orientation: theme?.orientation || 'upright', keyword: themeKeyword });
+  const overallIntentLine = buildWeeklyIntentLine({ intent, orientation: monday?.orientation || 'upright', keyword: mondayKeyword });
 
   const overall = [
-    `이번 주의 중심 카드는 ${themeLabel}이며, 핵심 키워드는 "${themeKeyword}"입니다.`,
+    `이번 주 시작 카드(월요일)는 ${mondayLabel}이며, 핵심 키워드는 "${mondayKeyword}"입니다.`,
     `전체적으로는 ${overallFlow}으로 보입니다.`,
     overallIntentLine
   ].join(' ');
 
   const mondayLine = buildWeeklyDayLine({
-    item: monTue,
+    item: monday,
     dayLabel: '월요일',
     roleHint: '주간 시동',
     intent,
-    openHint: '주 초반에는 일정과 우선순위를 빠르게 고정하면 흐름을 선점하기 좋습니다.',
-    adjustHint: '주 초반에는 무리한 확장보다 속도 조절과 기준 정리가 먼저입니다.',
+    openHint: '월요일에는 일정과 우선순위를 빠르게 고정하면 흐름을 선점하기 좋습니다.',
+    adjustHint: '월요일에는 무리한 확장보다 속도 조절과 기준 정리가 먼저입니다.',
     seed: seed + 1
   });
   const tuesdayLine = buildWeeklyDayLine({
-    item: monTue,
+    item: tuesday,
     dayLabel: '화요일',
     roleHint: '초반 안정화',
     intent,
@@ -520,7 +520,7 @@ function summarizeWeeklyFortune({ items, context = '', level = 'beginner' }) {
     seed: seed + 2
   });
   const wednesdayLine = buildWeeklyDayLine({
-    item: wedThu,
+    item: wednesday,
     dayLabel: '수요일',
     roleHint: '중반 전환',
     intent,
@@ -529,7 +529,7 @@ function summarizeWeeklyFortune({ items, context = '', level = 'beginner' }) {
     seed: seed + 3
   });
   const thursdayLine = buildWeeklyDayLine({
-    item: wedThu,
+    item: thursday,
     dayLabel: '목요일',
     roleHint: '중반 마무리',
     intent,
@@ -566,17 +566,17 @@ function summarizeWeeklyFortune({ items, context = '', level = 'beginner' }) {
     seed: seed + 7
   });
 
-  const adviceKeyword = advice?.card?.keywords?.[0] || '실행';
-  const adviceLabel = advice?.card?.nameKo ? `${advice.card.nameKo} ${advice?.orientation === 'reversed' ? '역방향' : '정방향'}` : '신호 확인 필요';
-  const actionGuide = advice?.orientation === 'reversed'
-    ? pickByNumber([
-      `주간 조언(${adviceLabel})은 "${adviceKeyword}" 구간의 과속을 멈추고, 실행 항목을 1개로 축소하라는 신호입니다.`,
-      `주간 조언(${adviceLabel})은 "${adviceKeyword}"에서 병목이 생기기 쉬우니, 선택지를 줄여 집중도를 높이라는 메시지입니다.`
-    ], seed + 6)
-    : pickByNumber([
-      `주간 조언(${adviceLabel})은 "${adviceKeyword}" 축을 중심으로 작은 실행을 매일 이어가면 체감이 커진다는 신호입니다.`,
-      `주간 조언(${adviceLabel})은 "${adviceKeyword}" 흐름을 살리기 위해 하루 1개 실행과 짧은 복기를 묶으라는 메시지입니다.`
-    ], seed + 8);
+  const actionGuide = buildWeeklyActionGuide({
+    intent,
+    monday,
+    tuesday,
+    wednesday,
+    thursday,
+    friday,
+    saturday,
+    sunday,
+    seed: seed + 8
+  });
 
   return [
     `총평: ${overall}`,
@@ -716,6 +716,67 @@ function buildWeeklyDayLine({
 
   const dayHint = open ? openHint : adjustHint;
   return `${label}은 ${rolePrefix} ${intentHint} ${dayHint}`;
+}
+
+function buildWeeklyActionGuide({
+  intent = 'general',
+  monday,
+  tuesday,
+  wednesday,
+  thursday,
+  friday,
+  saturday,
+  sunday,
+  seed = 0
+}) {
+  const cards = [monday, tuesday, wednesday, thursday, friday, saturday, sunday].filter(Boolean);
+  const reversedCount = cards.filter((item) => item?.orientation === 'reversed').length;
+  const key = cards.map((item) => item?.card?.keywords?.[0]).filter(Boolean)[0] || '실행';
+  const unstable = reversedCount >= 3;
+
+  if (intent === 'finance') {
+    return unstable
+      ? pickByNumber([
+        `이번 주는 "${key}" 구간의 변동성이 있어 하루 예산 한도 1개를 먼저 고정하고 지출 로그를 짧게 남기세요.`,
+        `이번 주는 "${key}" 신호가 흔들릴 수 있으니 신규 지출은 늦추고 고정비 점검을 먼저 진행하세요.`
+      ], seed)
+      : pickByNumber([
+        `이번 주는 "${key}" 흐름이 살아 있어 계획형 지출/저축 루틴을 매일 짧게 유지하면 안정성이 올라갑니다.`,
+        `이번 주는 "${key}" 축을 기준으로 지출 우선순위 1개만 고정하면 흐름을 안정적으로 가져갈 수 있습니다.`
+      ], seed);
+  }
+  if (intent === 'relationship') {
+    return unstable
+      ? pickByNumber([
+        `이번 주는 "${key}" 구간에서 해석 충돌이 생기기 쉬우니, 확인 질문 1개 중심으로 대화 강도를 낮추세요.`,
+        `이번 주는 "${key}" 축이 예민해 단정 문장보다 사실 확인 문장을 우선해 관계 피로를 줄이세요.`
+      ], seed)
+      : pickByNumber([
+        `이번 주는 "${key}" 흐름이 살아 있어 짧고 명확한 대화 시도를 하루 1회 기준으로 이어가면 좋겠습니다.`,
+        `이번 주는 "${key}" 축을 중심으로 요청 1개/감정 1개를 분리해 전달하면 반응을 읽기 쉽습니다.`
+      ], seed);
+  }
+  if (intent === 'career') {
+    return unstable
+      ? pickByNumber([
+        `이번 주는 "${key}" 구간의 마찰이 있어 실행 수를 줄이고 핵심 산출물 완성도 1개에 집중하는 편이 좋겠습니다.`,
+        `이번 주는 "${key}" 축이 조정 구간이니 외부 실행보다 자료 보완/일정 정리를 먼저 고정하세요.`
+      ], seed)
+      : pickByNumber([
+        `이번 주는 "${key}" 흐름이 살아 있어 외부 실행 1개와 내부 정리 1개를 짝으로 유지하면 체감이 좋습니다.`,
+        `이번 주는 "${key}" 축을 기준으로 우선순위 1개를 밀어붙이고, 매일 짧은 복기로 리듬을 유지하세요.`
+      ], seed);
+  }
+
+  return unstable
+    ? pickByNumber([
+      `이번 주는 "${key}" 구간의 변동성이 있어 실행 항목을 1개로 줄이고 속도를 조절하는 편이 좋겠습니다.`,
+      `이번 주는 "${key}" 축에서 병목이 생길 수 있으니, 선택지를 줄여 집중도를 높이는 전략이 안전합니다.`
+    ], seed)
+    : pickByNumber([
+      `이번 주는 "${key}" 흐름이 살아 있어 하루 1개 실행과 짧은 복기를 묶으면 체감이 커질 수 있습니다.`,
+      `이번 주는 "${key}" 축을 중심으로 작은 실행을 매일 이어가면 주간 리듬이 안정됩니다.`
+    ], seed);
 }
 
 function summarizeCelticCross({ items, context = '', level = 'beginner' }) {
@@ -1557,7 +1618,7 @@ function buildSummaryFocus({ spreadName, firstItem, lastItem, context = '', cont
     return `일별 운세는 오늘의 흐름 카드로 페이스를 잡고, 행동 조언 카드 한 줄만 실제 일정에 반영하면 충분합니다. ${contextTone.mainHint}`;
   }
   if (spreadName === '주별 운세') {
-    return `주별 운세는 주간 테마에서 시작해 주간 조언으로 마무리되는 큰 흐름을 보시면 판단이 안정됩니다. ${contextTone.mainHint}`;
+    return `주별 운세는 월요일 시동 카드에서 시작해 일요일 복기 카드까지 일자별 흐름으로 연결해서 보면 판단이 안정됩니다. ${contextTone.mainHint}`;
   }
   if (spreadName === '월별 운세') {
     return `월별 운세는 월간 테마로 방향을 세우고 1~4주차 카드로 강약만 조절하면 됩니다. ${contextTone.mainHint}`;

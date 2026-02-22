@@ -162,31 +162,31 @@ export const spreads = [
       '주간 루틴을 개선하고 싶을 때'
     ],
     positions: [
-      { name: '주간 테마', meaning: '이번 주의 핵심 키워드' },
-      { name: '월-화', meaning: '주 초반 페이스와 집중 포인트' },
-      { name: '수-목', meaning: '중반 변수와 전환점' },
-      { name: '금요일', meaning: '성과 확인과 마무리 준비' },
+      { name: '월요일', meaning: '주간 시동과 우선순위 고정' },
+      { name: '화요일', meaning: '초반 리듬 안정화와 실행 유지' },
+      { name: '수요일', meaning: '중반 변수 대응과 전환점' },
+      { name: '목요일', meaning: '중반 마무리와 정리 품질' },
+      { name: '금요일', meaning: '성과 확인과 마감 준비' },
       { name: '토요일', meaning: '회복/관계/정비 흐름' },
-      { name: '일요일', meaning: '복기와 다음 주 준비' },
-      { name: '주간 조언', meaning: '이번 주 전체 실행 전략' }
+      { name: '일요일', meaning: '복기와 다음 주 준비' }
     ],
     layout: {
       cols: 7,
       rows: 1,
       slots: [
-        { position: '주간 테마', col: 1, row: 1 },
-        { position: '월-화', col: 2, row: 1 },
-        { position: '수-목', col: 3, row: 1 },
-        { position: '금요일', col: 4, row: 1 },
-        { position: '토요일', col: 5, row: 1 },
-        { position: '일요일', col: 6, row: 1 },
-        { position: '주간 조언', col: 7, row: 1 }
+        { position: '월요일', col: 1, row: 1 },
+        { position: '화요일', col: 2, row: 1 },
+        { position: '수요일', col: 3, row: 1 },
+        { position: '목요일', col: 4, row: 1 },
+        { position: '금요일', col: 5, row: 1 },
+        { position: '토요일', col: 6, row: 1 },
+        { position: '일요일', col: 7, row: 1 }
       ]
     },
     studyGuide: [
-      '주간 테마 카드를 기준으로 캘린더 우선순위를 재배치합니다.',
-      '중반 전환점 카드에 맞춰 일정 완충 구간을 확보합니다.',
-      '일요일/주간 조언 카드를 기준으로 다음 주 준비 루틴을 만듭니다.'
+      '월요일 카드로 이번 주 핵심 우선순위 1개를 먼저 고정합니다.',
+      '수요일/목요일 카드에 맞춰 중반 완충 구간과 정리 구간을 분리합니다.',
+      '일요일 카드 기준으로 다음 주 준비 루틴 1개를 확정합니다.'
     ]
   },
   {
