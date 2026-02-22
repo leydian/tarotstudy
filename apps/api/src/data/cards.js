@@ -182,29 +182,57 @@ function buildBeginnerLearningPoint(card) {
     `입문 학습 포인트: "${keyword2}" 키워드가 대화/일정/감정 중 어디에서 가장 크게 드러났는지 체크해 보세요.`
   ];
 
-  const minorBySuit = {
-    Wands: [
-      `입문 학습 포인트: 추진 에너지가 분산되지 않게 오늘 우선순위 1개를 정하고 "${keyword}" 실행 여부를 체크하세요.`,
-      `입문 학습 포인트: 시작 속도와 완주율을 같이 적어보세요. ${card.nameKo}는 '착수'와 '완료' 균형을 볼 때 정확해집니다.`
-    ],
-    Cups: [
-      `입문 학습 포인트: 감정 표현 1개와 요청 1개를 분리해 기록해 보세요. ${card.nameKo}는 관계 온도 변화를 읽는 데 강합니다.`,
-      `입문 학습 포인트: 오늘 대화에서 "${keyword2}"가 높아진 장면 1개를 적고, 그때 사용한 표현을 함께 남겨보세요.`
-    ],
-    Swords: [
-      `입문 학습 포인트: 판단 기준 1개를 먼저 정한 뒤 결정을 내려보세요. ${card.nameKo} 카드는 기준 명확화 연습에 적합합니다.`,
-      `입문 학습 포인트: 추측 대신 확인 질문 1개를 실행하고 결과를 기록하세요. "${keyword}" 키워드의 정확도가 빠르게 올라갑니다.`
-    ],
-    Pentacles: [
-      `입문 학습 포인트: 눈에 보이는 결과물 1개를 남기는 습관을 들여보세요. ${card.nameKo}는 현실 성과와 연결할 때 해석이 안정됩니다.`,
-      `입문 학습 포인트: 시간/비용/완료 여부 중 1개를 숫자로 기록해 보세요. "${keyword}" 키워드를 실전 기준으로 바꿀 수 있습니다.`
-    ]
+  const minorVariants = buildMinorLearningPointVariants(card, keyword, keyword2);
+  const variants = card.arcana === 'major' ? majorVariants : minorVariants;
+  return pickCardVariant(card.id, 'beginner-learning-point', variants);
+}
+
+function buildMinorLearningPointVariants(card, keyword, keyword2) {
+  const suitGuides = {
+    Wands: {
+      focus: '추진 에너지와 실행 우선순위',
+      action: `오늘 할 일 1개를 고르고 "${keyword}" 키워드가 실제 행동으로 이어졌는지 체크하세요.`
+    },
+    Cups: {
+      focus: '감정 신호와 관계 온도',
+      action: `대화 장면 1개를 고른 뒤 "${keyword2}"가 높아진 순간과 낮아진 순간을 각각 기록하세요.`
+    },
+    Swords: {
+      focus: '판단 기준과 의사소통 정확도',
+      action: `결정이 필요한 문제 1개를 골라 "${keyword}" 기준으로 사실/해석을 분리해 적어보세요.`
+    },
+    Pentacles: {
+      focus: '현실 운영과 결과물 축적',
+      action: `오늘 남길 결과물 1개를 정하고 "${keyword}" 키워드를 완료 기준으로 고정해 보세요.`
+    }
   };
 
-  const variants = card.arcana === 'major'
-    ? majorVariants
-    : (minorBySuit[card.suit] || majorVariants);
-  return pickCardVariant(card.id, 'beginner-learning-point', variants);
+  const rankGuides = {
+    Ace: '시작 버튼을 누르는 연습이 핵심입니다.',
+    Two: '선택지 비교 기준 1개를 먼저 세우는 연습이 중요합니다.',
+    Three: '협업/확장 관점에서 역할을 나누어 보는 연습이 유효합니다.',
+    Four: '기본 루틴을 안정화해 흔들림을 줄이는 연습이 필요합니다.',
+    Five: '충돌 지점을 사실로 정리해 감정 소모를 줄이는 연습이 중요합니다.',
+    Six: '회복 신호를 포착해 흐름을 다시 잇는 연습이 효과적입니다.',
+    Seven: '점검 기준으로 전략을 수정하는 연습이 핵심입니다.',
+    Eight: '반복 숙련을 통해 정확도를 높이는 연습이 필요합니다.',
+    Nine: '완성 직전 미세 조정 포인트를 찾는 연습이 중요합니다.',
+    Ten: '마무리 기준을 정하고 다음 단계로 넘기는 연습이 유효합니다.',
+    Page: '탐색 결과를 작은 실행으로 연결하는 연습이 핵심입니다.',
+    Knight: '속도와 품질의 균형을 맞추는 연습이 필요합니다.',
+    Queen: '내면 반응을 안정적으로 다루는 연습이 중요합니다.',
+    King: '책임 있는 운영 기준을 세우는 연습이 효과적입니다.'
+  };
+
+  const suit = suitGuides[card.suit] || suitGuides.Wands;
+  const rankHint = rankGuides[card.rank] || '지금 카드 흐름에 맞는 작은 실행을 반복해 보세요.';
+
+  return [
+    `입문 학습 포인트: ${card.nameKo} 카드는 ${suit.focus} 중심으로 읽는 카드입니다. ${rankHint} ${suit.action}`,
+    `입문 학습 포인트: ${card.rankKo} 단계에서는 ${rankHint} 오늘은 "${keyword}" 관련 행동 1개를 정해 실행 결과를 1줄로 남겨보세요.`,
+    `입문 학습 포인트: ${card.suitKo} 수트 학습에서는 ${suit.focus} 중심 접근이 기본입니다. ${card.nameKo}에서는 ${rankHint} 실행 후 체감 변화를 짧게 기록하세요.`,
+    `입문 학습 포인트: ${card.nameKo}를 볼 때 "${keyword2}" 키워드를 먼저 잡고, ${rankHint} ${suit.action}`
+  ];
 }
 
 function pickCardVariant(cardId, salt, variants) {
