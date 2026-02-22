@@ -90,23 +90,23 @@ function enrichCard(card) {
   };
 }
 
-export function buildCardDescriptions(card, { context = '', variantSeed = '' } = {}) {
+export function buildCardDescriptions(card, { context = '' } = {}) {
   return {
-    beginner: buildBeginnerDescription(card, { context, variantSeed }),
-    intermediate: buildIntermediateDescription(card, { context, variantSeed })
+    beginner: buildBeginnerDescription(card, { context }),
+    intermediate: buildIntermediateDescription(card, { context })
   };
 }
 
-function buildBeginnerDescription(card, { context = '', variantSeed = '' } = {}) {
+function buildBeginnerDescription(card, { context = '' } = {}) {
   const contextProfile = inferBasicContextProfile(context);
   return [
-    buildBeginnerKeywordLine(card, { contextProfile, variantSeed }),
-    buildBeginnerFlowLine(card, { contextProfile, variantSeed }),
-    buildBeginnerLearningPoint(card, { contextProfile, variantSeed })
+    buildBeginnerKeywordLine(card, { contextProfile }),
+    buildBeginnerFlowLine(card, { contextProfile }),
+    buildBeginnerLearningPoint(card, { contextProfile })
   ].join('\n');
 }
 
-function buildBeginnerKeywordLine(card, { contextProfile, variantSeed }) {
+function buildBeginnerKeywordLine(card, { contextProfile }) {
   const keyword = card.keywords?.[0] || '핵심';
   const keyword2 = card.keywords?.[1] || keyword;
   const keyword3 = card.keywords?.[2] || keyword;
@@ -140,12 +140,12 @@ function buildBeginnerKeywordLine(card, { contextProfile, variantSeed }) {
   const variants = card.arcana === 'major'
     ? majorVariants
     : (minorBySuit[card.suit] || majorVariants);
-  const line = pickCardVariant(card.id, 'beginner-keyword-line', variants, variantSeed);
+  const line = pickCardVariant(card.id, 'beginner-keyword-line', variants);
   if (!contextProfile || contextProfile.id === 'general') return line;
   return `${line} ${contextProfile.keywordHint}`;
 }
 
-function buildBeginnerFlowLine(card, { contextProfile, variantSeed }) {
+function buildBeginnerFlowLine(card, { contextProfile }) {
   const majorVariants = [
     `${card.nameKo} 카드는 인생의 큰 전환을 다루므로 정방향에서는 흐름이 열리고, 역방향에서는 멈춤 신호가 먼저 드러날 수 있습니다.`,
     `${card.nameKo} 카드는 태도와 선택의 축을 보여줍니다. 정방향은 전개가 비교적 자연스럽고, 역방향은 지연·과잉·회피를 점검해야 합니다.`,
@@ -175,12 +175,12 @@ function buildBeginnerFlowLine(card, { contextProfile, variantSeed }) {
   const variants = card.arcana === 'major'
     ? majorVariants
     : (minorBySuit[card.suit] || majorVariants);
-  const line = pickCardVariant(card.id, 'beginner-flow-line', variants, variantSeed);
+  const line = pickCardVariant(card.id, 'beginner-flow-line', variants);
   if (!contextProfile || contextProfile.id === 'general') return line;
   return `${line} ${contextProfile.flowHint}`;
 }
 
-function buildBeginnerLearningPoint(card, { contextProfile, variantSeed }) {
+function buildBeginnerLearningPoint(card, { contextProfile }) {
   const keyword = card.keywords?.[0] || '핵심';
   const keyword2 = card.keywords?.[1] || keyword;
 
@@ -193,7 +193,7 @@ function buildBeginnerLearningPoint(card, { contextProfile, variantSeed }) {
 
   const minorVariants = buildMinorLearningPointVariants(card, keyword, keyword2, contextProfile);
   const variants = card.arcana === 'major' ? majorVariants : minorVariants;
-  let line = pickCardVariant(card.id, 'beginner-learning-point', variants, variantSeed);
+  let line = pickCardVariant(card.id, 'beginner-learning-point', variants);
   if (card.arcana === 'major' && contextProfile && contextProfile.id !== 'general') {
     line = `${line} ${contextProfile.learningHint}`;
   }
@@ -252,10 +252,9 @@ function buildMinorLearningPointVariants(card, keyword, keyword2, contextProfile
   ];
 }
 
-function pickCardVariant(cardId, salt, variants, variantSeed = '') {
+function pickCardVariant(cardId, salt, variants) {
   if (!Array.isArray(variants) || variants.length === 0) return '';
-  const rotationSeed = String(variantSeed || '');
-  const seed = `${cardId}:${salt}:${rotationSeed}`;
+  const seed = `${cardId}:${salt}`;
   let hash = 0;
   for (let i = 0; i < seed.length; i += 1) {
     hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;

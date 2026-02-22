@@ -202,8 +202,7 @@ app.get('/api/courses/:courseId/lessons', async (request, reply) => {
 });
 
 app.get('/api/cards', async (request) => {
-  const { arcana, suit, difficulty, q, context = '', variantSeed = '' } = request.query;
-  const rotationSeed = String(variantSeed || new Date().toISOString().slice(0, 10));
+  const { arcana, suit, difficulty, q, context = '' } = request.query;
 
   return cards.filter((card) => {
     if (arcana && card.arcana !== arcana) return false;
@@ -218,27 +217,24 @@ app.get('/api/cards', async (request) => {
   }).map((card) => ({
     ...card,
     descriptions: buildCardDescriptions(card, {
-      context: String(context || ''),
-      variantSeed: rotationSeed
+      context: String(context || '')
     })
   }));
 });
 
 app.get('/api/cards/:cardId', async (request, reply) => {
   const { cardId } = request.params;
-  const { context = '', variantSeed = '' } = request.query || {};
+  const { context = '' } = request.query || {};
   const card = getCardById(cardId);
   if (!card) {
     reply.code(404);
     return { message: 'Card not found' };
   }
-  const rotationSeed = String(variantSeed || new Date().toISOString().slice(0, 10));
 
   return {
     ...card,
     descriptions: buildCardDescriptions(card, {
-      context: String(context || ''),
-      variantSeed: rotationSeed
+      context: String(context || '')
     }),
     relatedCardIds: cards
       .filter((candidate) => candidate.id !== card.id)
