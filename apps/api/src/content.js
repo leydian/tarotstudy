@@ -2665,6 +2665,55 @@ function buildSpreadConsultingGuide({ spreadId, positionName, positionPrompt, se
       '행동 조언 카드는 오늘 바로 실행할 한 문장을 확정하는 자리입니다.'
     ]
   };
+  const weeklyGuideByPosition = {
+    월요일: ['월요일 카드는 주간 시동을 거는 기준이라 우선순위 1개를 먼저 고정하는 데 집중합니다.'],
+    화요일: ['화요일 카드는 초반 리듬 유지 구간이라 전날 정한 기준을 지킬 수 있는지 점검하는 데 의미가 있습니다.'],
+    수요일: ['수요일 카드는 중반 전환 구간이라 변수 대응과 속도 조절을 함께 보는 것이 핵심입니다.'],
+    목요일: ['목요일 카드는 중반 마무리 구간이라 누락 정리와 품질 보완 포인트를 먼저 확인합니다.'],
+    금요일: ['금요일 카드는 주간 성과 확인 구간이라 마감 품질과 소모도를 함께 점검하는 데 의미가 있습니다.'],
+    토요일: ['토요일 카드는 회복/정비 구간이라 다음 흐름을 위해 에너지 배분을 조정하는 데 초점을 둡니다.'],
+    일요일: ['일요일 카드는 복기/준비 구간이라 다음 주로 넘길 기준 문장 1개를 확정하는 데 의미가 있습니다.']
+  };
+  const monthlyGuideByPosition = {
+    '월간 테마': ['월간 테마 카드는 이번 달 전체 리듬을 묶는 중심축으로, 주차 카드 해석의 기준점이 됩니다.'],
+    '1주차': ['1주차 카드는 시작 구간의 시행착오를 줄이기 위한 실행 기준을 먼저 정하는 자리입니다.'],
+    '2주차': ['2주차 카드는 중간 점검 구간이라 계획과 실제 체감의 오차를 조정하는 데 의미가 있습니다.'],
+    '3주차': ['3주차 카드는 피로/갈등 누적 구간이라 병목 신호를 미리 줄이는 데 초점을 둡니다.'],
+    '4주차·정리': ['4주차·정리 카드는 마무리 품질과 다음 달 인수인계 포인트를 정리하는 자리입니다.']
+  };
+  const threeCardGuideByPosition = {
+    과거: ['과거 카드는 현재 판단을 끌어당기는 배경 패턴을 확인하는 자리입니다.'],
+    현재: ['현재 카드는 전체 해석의 중심축이라 다른 카드는 보조 신호로 연결해 읽는 편이 정확합니다.'],
+    미래: ['미래 카드는 확정 예언이 아니라 현재 선택 유지 시 유력한 전개를 보여주는 자리입니다.'],
+    문제: ['문제 카드는 증상보다 구조적 병목을 먼저 특정하는 데 의미가 있습니다.'],
+    해결방법: ['해결방법 카드는 실행 가능한 행동 문장으로 번역할 때 실제 효용이 생깁니다.'],
+    조언: ['조언 카드는 무엇을 먼저 할지 우선순위 규칙을 정하는 자리입니다.'],
+    상황: ['상황 카드는 현재 조건을 사실 단위로 정리해 판단 기준을 고정하는 자리입니다.'],
+    행동: ['행동 카드는 실천 강도와 시작 조건을 정하는 자리입니다.'],
+    결과: ['결과 카드는 실행 후 변화를 검증할 기준을 미리 잡는 자리입니다.']
+  };
+  const choiceGuideByPosition = {
+    '현재 상황': ['현재 상황 카드는 A/B 비교 전에 공통 판단 기준을 고정하는 자리입니다.'],
+    'A 선택 시 가까운 미래': ['A 가까운 미래 카드는 단기 리스크와 즉시 체감 변화를 읽는 자리입니다.'],
+    'A 선택 시 결과': ['A 결과 카드는 선택 유지 시 장기 지속 가능성을 확인하는 자리입니다.'],
+    'B 선택 시 가까운 미래': ['B 가까운 미래 카드는 단기 리스크와 즉시 체감 변화를 읽는 자리입니다.'],
+    'B 선택 시 결과': ['B 결과 카드는 선택 유지 시 장기 지속 가능성을 확인하는 자리입니다.']
+  };
+  const yearlyGuideByPosition = isYearlyMonthPosition(positionName)
+    ? [`${positionName} 카드는 연간 흐름에서 해당 달 운영 기준을 정하는 자리입니다.`]
+    : null;
+  const celticGuideByPosition = {
+    현재: ['현재 포지션은 전체 서사의 중심 문제를 고정하는 자리입니다.'],
+    '교차/장애': ['교차/장애 포지션은 진행을 막는 병목 요인을 특정하는 자리입니다.'],
+    기반: ['기반 포지션은 표면 아래에서 작동하는 근본 동기를 확인하는 자리입니다.'],
+    '가까운 과거': ['가까운 과거 포지션은 직전 사건이 현재에 미치는 영향을 점검하는 자리입니다.'],
+    가능성: ['가능성 포지션은 의식적으로 지향하는 방향과 이상을 확인하는 자리입니다.'],
+    '가까운 미래': ['가까운 미래 포지션은 단기 전개를 조건부로 읽는 자리입니다.'],
+    '자기 인식': ['자기 인식 포지션은 질문자의 태도와 해석 편향을 점검하는 자리입니다.'],
+    '외부 환경': ['외부 환경 포지션은 타인/환경 변수의 영향을 분리해 보는 자리입니다.'],
+    '희망·두려움': ['희망·두려움 포지션은 양가 감정이 판단에 미치는 영향을 확인하는 자리입니다.'],
+    결과: ['결과 포지션은 현재 흐름 지속 시 종합 전개를 검증 기준과 함께 읽는 자리입니다.']
+  };
   const map = {
     'one-card': [
       '원카드는 길게 늘어놓기보다 지금 필요한 결론을 또렷하게 받아들이는 리딩입니다.',
@@ -2674,11 +2723,25 @@ function buildSpreadConsultingGuide({ spreadId, positionName, positionPrompt, se
       '오늘 운세 리딩은 예언보다 하루 페이스를 어떻게 운영할지 정하는 데 의미가 있습니다.',
       '하루 리딩에서는 무엇을 할지와 무엇을 줄일지를 같이 잡을 때 체감이 분명해집니다.'
     ],
+    'weekly-fortune': weeklyGuideByPosition[positionName] ?? [
+      '주별 운세는 요일별 강약을 분리해 주간 운영 리듬을 설계하는 데 의미가 있습니다.'
+    ],
+    'monthly-fortune': monthlyGuideByPosition[positionName] ?? [
+      '월별 운세는 월간 테마와 주차별 조정 포인트를 함께 읽을 때 정확도가 높아집니다.'
+    ],
+    'three-card': threeCardGuideByPosition[positionName] ?? [
+      '3카드 리딩은 각 카드 해석보다 카드 간 연결 문장 1개를 만드는 과정이 핵심입니다.'
+    ],
     'choice-a-b': [
+      ...(choiceGuideByPosition[positionName] ?? []),
       '양자택일 리딩은 감정보다 유지 비용을 같이 봐야 후회가 줄어듭니다.',
       'A/B 리딩에서는 즉시 만족보다 오래 유지 가능한 쪽이 보통 더 안정적입니다.'
     ],
+    'yearly-fortune': yearlyGuideByPosition ?? [
+      '연간 운세는 월별 사건보다 분기별 공통 흐름을 먼저 읽을 때 실제 활용성이 높습니다.'
+    ],
     'celtic-cross': [
+      ...(celticGuideByPosition[positionName] ?? []),
       '켈틱 크로스는 한 장 한 장보다 전체 서사 흐름으로 읽을 때 정확해집니다.',
       '복합 이슈일수록 현재의 긴장과 결과 흐름을 한 줄로 연결해 보는 게 핵심입니다.'
     ]
@@ -2719,6 +2782,67 @@ function buildOrientationCounselLine({ spreadId, positionName, cardName, orienta
         : `${cardNameSubject} 역방향이라 속도 조절과 기준 정비를 먼저 두는 편이 좋습니다.`;
     })();
     return dailyLine;
+  }
+  if (spreadId === 'weekly-fortune') {
+    const dayLine = orientation === 'upright'
+      ? `${cardNameSubject} 정방향이라 ${positionName} 흐름에서 주간 리듬을 유지하기 좋은 신호입니다.`
+      : `${cardNameSubject} 역방향이라 ${positionName} 흐름에서는 과속을 줄이고 병목을 먼저 정리하는 편이 좋습니다.`;
+    return dayLine;
+  }
+  if (spreadId === 'monthly-fortune') {
+    if (positionName === '월간 테마') {
+      return orientation === 'upright'
+        ? `${cardNameSubject} 정방향이라 이번 달 중심축을 안정적으로 유지하기 좋은 흐름입니다.`
+        : `${cardNameSubject} 역방향이라 이번 달 중심축을 다시 정비하고 우선순위를 줄이는 편이 좋습니다.`;
+    }
+    return orientation === 'upright'
+      ? `${cardNameSubject} 정방향이라 ${positionName} 운영에서는 실행과 점검을 병행하기 좋은 구간입니다.`
+      : `${cardNameSubject} 역방향이라 ${positionName} 운영에서는 무리한 확장보다 정비가 우선입니다.`;
+  }
+  if (spreadId === 'three-card') {
+    if (positionName === '과거') {
+      return orientation === 'upright'
+        ? `${cardNameSubject} 정방향이라 현재를 만든 배경 패턴이 비교적 선명하게 드러납니다.`
+        : `${cardNameSubject} 역방향이라 과거 패턴이 왜곡돼 읽힐 수 있어 사실 단서부터 정리해야 합니다.`;
+    }
+    if (positionName === '현재' || positionName === '문제' || positionName === '상황') {
+      return orientation === 'upright'
+        ? `${cardNameSubject} 정방향이라 핵심 변수를 중심축으로 고정하기 좋은 구간입니다.`
+        : `${cardNameSubject} 역방향이라 중심 변수가 흔들릴 수 있어 해석 확장을 줄이는 편이 안전합니다.`;
+    }
+    if (positionName === '미래' || positionName === '결과') {
+      return orientation === 'upright'
+        ? `${cardNameSubject} 정방향이라 현재 선택 유지 시 긍정 전개 가능성이 비교적 열려 있습니다.`
+        : `${cardNameSubject} 역방향이라 현재 패턴을 유지하면 마찰이 커질 수 있어 조정이 필요합니다.`;
+    }
+    return orientation === 'upright'
+      ? `${cardNameSubject} 정방향이라 ${positionName} 포지션 신호를 실행으로 옮기기 좋은 구간입니다.`
+      : `${cardNameSubject} 역방향이라 ${positionName} 포지션 신호는 속도 조절 후 적용하는 편이 좋습니다.`;
+  }
+  if (spreadId === 'choice-a-b') {
+    if (positionName === '현재 상황') {
+      return orientation === 'upright'
+        ? `${cardNameSubject} 정방향이라 비교 기준을 명확히 세우기 좋은 구간입니다.`
+        : `${cardNameSubject} 역방향이라 현재 판단 기준이 흔들릴 수 있어 기준 재정렬이 먼저입니다.`;
+    }
+    return orientation === 'upright'
+      ? `${cardNameSubject} 정방향이라 ${positionName} 시나리오의 유지 가능성을 높게 볼 수 있습니다.`
+      : `${cardNameSubject} 역방향이라 ${positionName} 시나리오는 단기 마찰을 먼저 점검해야 합니다.`;
+  }
+  if (spreadId === 'celtic-cross') {
+    if (positionName === '결과') {
+      return orientation === 'upright'
+        ? `${cardNameSubject} 정방향이라 현재 흐름을 유지할 때 결과 가능성이 비교적 열려 있습니다.`
+        : `${cardNameSubject} 역방향이라 결과 구간의 마찰이 예상되어 변수 조정이 필요합니다.`;
+    }
+    if (positionName === '교차/장애') {
+      return orientation === 'upright'
+        ? `${cardNameSubject} 정방향이더라도 교차/장애 포지션에서는 병목 정의가 우선입니다.`
+        : `${cardNameSubject} 역방향이라 교차/장애 포지션의 저항 신호가 강해 조기 정리가 필요합니다.`;
+    }
+    return orientation === 'upright'
+      ? `${cardNameSubject} 정방향이라 ${positionName} 포지션의 서사 역할이 비교적 선명합니다.`
+      : `${cardNameSubject} 역방향이라 ${positionName} 포지션은 해석 오차를 줄이기 위한 교차 검증이 필요합니다.`;
   }
   const toneLine = cautionPosition
     ? (orientation === 'upright'
@@ -2765,6 +2889,30 @@ function buildKeywordCounselLine({ card, spreadId = 'default', positionName = ''
     if (positionName === '행동 조언') {
       return `${card.nameKo} 카드는 '${main}'에서 '${sub}'으로 이어지는 흐름을 오늘 실행 문장 1개에 연결하면 복기가 쉬워집니다.`;
     }
+  }
+  if (spreadId === 'weekly-fortune') {
+    return `${card.nameKo} 카드의 '${main}' 키워드를 ${positionName} 운영 기준으로 두고, '${sub}' 신호는 강약 조절 포인트로 기록하면 주간 복기가 쉬워집니다.`;
+  }
+  if (spreadId === 'monthly-fortune') {
+    if (positionName === '월간 테마') {
+      return `${card.nameKo} 카드의 '${main}' 키워드를 이번 달 테마 한 줄로 고정하고, 주차 카드와 충돌 여부를 점검하세요.`;
+    }
+    return `${card.nameKo} 카드의 '${main}' 키워드를 ${positionName} 실행 기준으로 두고, '${sub}' 신호는 조정 포인트로 기록해보세요.`;
+  }
+  if (spreadId === 'three-card') {
+    if (positionName === '미래' || positionName === '결과') {
+      return `${card.nameKo} 카드의 '${main}' 신호는 조건부 전개로 기록하고, '${sub}'를 바꿀 변수로 함께 적어두는 편이 좋습니다.`;
+    }
+    return `${card.nameKo} 카드의 '${main}' 키워드를 ${positionName} 포지션 근거로 고정하면 세 장 연결 해석의 오차를 줄일 수 있습니다.`;
+  }
+  if (spreadId === 'choice-a-b') {
+    return `${card.nameKo} 카드의 '${main}' 키워드를 ${positionName} 시나리오의 유지 가능성 기준으로 두고, '${sub}' 신호를 리스크 항목으로 비교해보세요.`;
+  }
+  if (spreadId === 'celtic-cross') {
+    return `${card.nameKo} 카드의 '${main}' 키워드를 ${positionName} 서사 역할과 연결하고, '${sub}'를 교차 검증 포인트로 적어두면 해석 일관성이 올라갑니다.`;
+  }
+  if (spreadId === 'yearly-fortune') {
+    return `${card.nameKo} 카드의 '${main}' 키워드를 ${positionName} 월 운영 기준으로 두고, '${sub}' 신호를 다음 달 인계 포인트로 기록해보세요.`;
   }
   const lines = [
     `${cardNameTopic} '${main}'에서 '${sub}'으로 넘어가는 과정을 보여주니, 지금은 ${focusWithParticle} 선명하게 잡는 게 중요합니다.`,
@@ -2856,6 +3004,46 @@ function buildCoreContextLine({ spreadId, positionName, contextProfile, seed }) 
     ];
     return pickVariant(`${seed}:daily-core-context:${positionName}`, options);
   }
+  if (spreadId === 'weekly-fortune') {
+    const options = [
+      `${positionName} 해석에서는 해당 요일 사건 1개를 카드 키워드와 매칭해 주간 흐름에 연결해보세요.`,
+      `${positionName} 해석에서는 강한 날/약한 날 대비 문장을 1개씩 미리 정해두면 오차를 줄일 수 있습니다.`
+    ];
+    return pickVariant(`${seed}:weekly-core-context:${positionName}`, options);
+  }
+  if (spreadId === 'monthly-fortune') {
+    const options = positionName === '월간 테마'
+      ? [
+        '월간 테마 해석에서는 이번 달 공통 키워드 1개를 먼저 고정해 주차 해석 기준으로 삼아보세요.',
+        '월간 테마 해석에서는 확장/조정 두 갈래 운영 기준을 한 줄로 정리해두는 편이 좋습니다.'
+      ]
+      : [
+        `${positionName} 해석에서는 해당 주차 사건 1개를 카드 근거와 함께 기록해 월간 흐름에 연결해보세요.`,
+        `${positionName} 해석에서는 실행/조정 포인트를 분리해 다음 주차로 인계할 기준을 남겨보세요.`
+      ];
+    return pickVariant(`${seed}:monthly-core-context:${positionName}`, options);
+  }
+  if (spreadId === 'three-card') {
+    const options = [
+      `${positionName} 해석에서는 카드 근거를 한 줄로 고정해 세 장 연결 문장의 중복을 줄여보세요.`,
+      `${positionName} 해석에서는 이 포지션이 시간축/문제축에서 어떤 역할인지 먼저 정해두는 편이 정확합니다.`
+    ];
+    return pickVariant(`${seed}:three-core-context:${positionName}`, options);
+  }
+  if (spreadId === 'choice-a-b') {
+    const options = [
+      `${positionName} 해석에서는 시간/비용/감정 소모 중 1개 기준을 먼저 정해 비교 오차를 줄여보세요.`,
+      `${positionName} 해석에서는 카드 키워드를 시나리오 리스크 항목으로 변환해 기록하면 판단이 빨라집니다.`
+    ];
+    return pickVariant(`${seed}:choice-core-context:${positionName}`, options);
+  }
+  if (spreadId === 'celtic-cross') {
+    const options = [
+      `${positionName} 해석에서는 단독 해석보다 중심축-결과축 연결 문장으로 서사 역할을 고정해보세요.`,
+      `${positionName} 해석에서는 사실 단서와 해석 단서를 분리해 복합 이슈 과확장을 줄이는 편이 좋습니다.`
+    ];
+    return pickVariant(`${seed}:celtic-core-context:${positionName}`, options);
+  }
   const positionTopic = withKoreanParticle(positionName, '은', '는');
   const lines = spreadId === 'one-card'
     ? [
@@ -2901,6 +3089,18 @@ function buildSpreadCoreLead({ spreadId = 'default', positionName = '', seed = '
     'daily-fortune': dailyLeadByPosition[positionName] ?? [
       `${topic} 오늘 체감 흐름을 읽는 핵심 자리입니다.`,
       `${positionName} 자리에서 오늘의 감정과 선택 포인트를 먼저 살펴보겠습니다.`
+    ],
+    'weekly-fortune': [
+      `${positionName} 카드는 이번 주 리듬에서 해당 요일의 강약 포인트를 읽는 자리입니다.`,
+      `${positionName} 자리에서 주간 운영에 바로 반영할 기준을 먼저 짚어보겠습니다.`
+    ],
+    'monthly-fortune': [
+      `${positionName} 카드는 이번 달 흐름에서 해당 구간의 운영 기준을 정하는 자리입니다.`,
+      `${positionName} 자리에서 월간 리듬의 병목과 보강 포인트를 먼저 확인해보겠습니다.`
+    ],
+    'three-card': [
+      `${positionName} 카드는 세 장 연결 해석에서 역할이 분명한 기준 자리입니다.`,
+      `${positionName} 자리에서 시간축/문제축 해석의 핵심 신호를 먼저 확인해보겠습니다.`
     ],
     'choice-a-b': [
       `${topic} 선택 비교에서 유지 비용을 가르는 기준입니다.`,
@@ -3115,14 +3315,45 @@ function buildLearningCoachOpening({ positionName, seed }) {
 }
 
 function buildLearningCoachFrame({ style, spreadId = 'default', positionName = '', seed }) {
-  const dailyPositionFrame = spreadId === 'daily-fortune'
-    ? (() => {
+  const spreadPositionFrame = (() => {
+    if (spreadId === 'daily-fortune') {
       if (positionName === '오늘의 흐름') return '오늘의 흐름 카드는 당일 사건 1개를 골라 키워드와 실제 전개를 1:1로 대응해보세요.';
       if (positionName === '주의할 점') return '주의할 점 카드는 역방향/긴장 신호를 먼저 분리해 리스크 근거를 문장으로 남기세요.';
       if (positionName === '행동 조언') return '행동 조언 카드는 실행 문장 1개를 카드 키워드와 직접 연결해 기록하세요.';
-      return '';
-    })()
-    : '';
+    }
+    if (spreadId === 'weekly-fortune') {
+      if (/월요일|화요일|수요일|목요일|금요일|토요일|일요일/.test(positionName)) {
+        return `${positionName} 카드는 해당 요일 사건 1개를 선택해 카드 키워드와 실제 반응을 비교 기록하세요.`;
+      }
+    }
+    if (spreadId === 'monthly-fortune') {
+      if (positionName === '월간 테마') return '월간 테마 카드는 이번 달 공통 키워드 1개를 고정하고 주차 카드와 충돌 여부를 점검하세요.';
+      if (/1주차|2주차|3주차|4주차/.test(positionName)) return `${positionName} 카드는 해당 주차 사건 1개를 골라 카드 근거와 실행 결과를 연결해 기록하세요.`;
+    }
+    if (spreadId === 'three-card') {
+      if (positionName === '과거') return '과거 카드는 현재 판단에 영향을 준 패턴 1개를 카드 키워드로 설명해보세요.';
+      if (positionName === '현재') return '현재 카드는 가장 강한 변수 1개를 카드 근거로 고정해 해석 기준으로 쓰세요.';
+      if (positionName === '미래') return '미래 카드는 확정 예측이 아니라 조건부 전개로 기록하고, 바꿀 변수 1개를 함께 적으세요.';
+      if (positionName === '문제') return '문제 카드는 증상/원인을 분리해 카드 키워드가 가리키는 병목을 먼저 특정하세요.';
+      if (positionName === '해결방법') return '해결방법 카드는 실행 가능한 행동 문장 1개로 번역해 기록하세요.';
+      if (positionName === '조언') return '조언 카드는 우선순위 규칙 1개를 뽑아 다음 리딩 전까지 유지해보세요.';
+      if (positionName === '상황') return '상황 카드는 사실 단서와 해석 단서를 분리해 기록해 과확장을 막으세요.';
+      if (positionName === '행동') return '행동 카드는 카드 키워드와 실행 문장을 직접 매칭해 기록하세요.';
+      if (positionName === '결과') return '결과 카드는 확정이 아닌 조건부로 기록하고, 검증 지표 1개를 함께 남기세요.';
+    }
+    if (spreadId === 'choice-a-b') {
+      if (positionName === '현재 상황') return '현재 상황 카드는 A/B 공통 판단 기준 1개(시간·비용·감정)를 먼저 고정해보세요.';
+      if (/A 선택 시 가까운 미래|B 선택 시 가까운 미래/.test(positionName)) return `${positionName} 카드는 단기 리스크 1개를 카드 키워드로 기록해 비교하세요.`;
+      if (/A 선택 시 결과|B 선택 시 결과/.test(positionName)) return `${positionName} 카드는 유지 가능성 기준(지속성/소모도)을 카드 근거로 비교 기록하세요.`;
+    }
+    if (spreadId === 'celtic-cross') {
+      if (positionName === '현재') return '현재 카드는 전체 서사의 중심 문제를 한 문장으로 압축해 기록하세요.';
+      if (positionName === '교차/장애') return '교차/장애 카드는 병목 요인 1개를 원인/증상으로 분리해 기록하세요.';
+      if (positionName === '결과') return '결과 카드는 단정이 아니라 조건부 시나리오로 기록하고 바꿀 변수 1개를 함께 적으세요.';
+      return `${positionName} 카드는 중심축과 연결해 읽고, 단독 해석보다 서사 위치 근거를 우선 기록하세요.`;
+    }
+    return '';
+  })();
   const lines = [
     `리딩 결과 학습 기준: ${style.learningFrame}`,
     `훈련 프레임: ${style.learningFrame}`,
@@ -3130,8 +3361,8 @@ function buildLearningCoachFrame({ style, spreadId = 'default', positionName = '
     `이번 카드 복기 기준은 다음과 같습니다. ${style.learningFrame}`
   ].filter(Boolean);
   const base = pickVariant(`${seed}:coach-frame`, lines);
-  if (dailyPositionFrame) {
-    return `${base} 포지션 학습 기준: ${dailyPositionFrame}`;
+  if (spreadPositionFrame) {
+    return `${base} 포지션 학습 기준: ${spreadPositionFrame}`;
   }
   return base;
 }

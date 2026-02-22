@@ -389,7 +389,8 @@ function summarizeSpread({ spreadId = '', spreadName, items, context = '', level
     firstItem: items[0],
     contextTone
   });
-  return polishSummary([leadLine, focusLine, actionLine].filter(Boolean).join(' '));
+  const themeLine = buildSummaryTheme({ spreadName, context, items, topKeywords });
+  return polishSummary([leadLine, focusLine, actionLine, themeLine].filter(Boolean).join(' '));
 }
 
 function summarizeRelationshipRecovery({ items, context = '', level = 'beginner' }) {
@@ -742,11 +743,14 @@ function summarizeWeeklyFortune({ items, context = '', level = 'beginner' }) {
     riskTotal,
     seed: seed + 8
   });
+  const themeKeyword = pickTopKeywords(items, 1)[0] || '주간 리듬';
+  const themeLine = `한 줄 테마: 이번 주는 '${themeKeyword}' 신호를 기준으로 강한 날 실행, 약한 날 정비로 리듬을 나누면 안정적입니다.`;
 
   return [
     `총평: ${overall}`,
     `일별 흐름: ${mondayLine} ${tuesdayLine} ${wednesdayLine} ${thursdayLine} ${fridayLine} ${saturdayLine} ${sundayLine}`,
-    `실행 가이드: ${actionGuide} ${levelHint}`
+    `실행 가이드: ${actionGuide} ${levelHint}`,
+    themeLine
   ].join('\n\n');
 }
 
@@ -1305,6 +1309,7 @@ function buildCelticConclusion({
       '지금 실행할 한 문장: "서운했던 부분은 천천히 풀고 싶어. 네가 느낀 점을 먼저 들려줄래?"',
       '지금 실행할 한 문장: "다툰 건 마음에 남지만, 관계를 풀고 싶어. 짧게라도 대화할 수 있을까?"'
     ], seed),
+    '한 줄 테마: 관계 켈틱은 갈등 원인보다 대화 순서와 속도 조절을 먼저 맞출 때 결과 전환 가능성이 커집니다.',
     levelHint
   ];
 
@@ -1314,6 +1319,7 @@ function buildCelticConclusion({
       ? '결론은 실행 가능성이 비교적 열려 있습니다. 우선순위 하나를 정해 작은 실행으로 흐름을 붙여보세요.'
       : '결론은 조정이 필요한 흐름입니다. 무리한 확장보다 핵심 병목 하나를 먼저 줄이는 쪽이 유리합니다.',
     '지금 실행할 한 문장: "이번 이슈에서 가장 먼저 정리할 핵심 한 가지를 지금 바로 결정하겠습니다."',
+    '한 줄 테마: 켈틱은 중심축-장애축-결과축을 한 줄로 연결해 읽을 때 실행 기준이 가장 선명해집니다.',
     levelHint
   ];
 
@@ -1388,12 +1394,15 @@ function summarizeYearlyFortune({ items, context = '', level = 'beginner' }) {
     : yearlyIntent === 'finance'
       ? `재물운 관점에서는 두 갈래로 운영하시면 됩니다. 확장 구간인 ${strongest.label}에는 계획형 집행 1~2개만 기준 안에서 실행하고, 조정 구간인 ${weakest.label}에는 신규 지출을 줄이며 누수 점검과 현금 보존을 우선해 주세요. ${levelHint}`
     : `마지막으로 ${strongest.label}은 확장 구간, ${weakest.label}은 정비 구간으로 나눠 운영하시면 올해 리딩을 실제 행동으로 옮기기가 훨씬 수월해집니다. ${levelHint}`;
+  const yearlyThemeKeyword = monthly.map((m) => m.keywords?.[0]).find(Boolean) || '연간 리듬';
+  const yearlyThemeLine = `한 줄 테마: 올해는 '${yearlyThemeKeyword}' 키워드를 분기 기준으로 나눠 운영할 때 변동성을 줄이기 좋습니다.`;
 
   return [
     `총평: ${overall}`,
     `분기별 운세: ${quarterLines}`,
     `월별 운세: ${monthlyLines}`,
-    timingClose
+    timingClose,
+    yearlyThemeLine
   ].join('\n\n');
 }
 
@@ -2031,8 +2040,8 @@ function buildSummaryLead({
           ? '전반적으로는 하루 운영 리듬이 비교적 안정적이어서 우선순위를 선명히 두면 무리 없이 지나가기 좋습니다.'
           : '전반적으로는 일정 과속을 줄이고 소모를 정리하는 쪽이 오늘 체감을 더 안정적으로 만듭니다.')
     : uprightCount >= reversedCount
-      ? '전반적으로는 밀어도 되는 흐름이 조금 더 강합니다.'
-      : '전반적으로는 속도를 조절하고 정리하는 쪽이 더 유리합니다.';
+      ? '전반적으로는 추진 신호가 있지만, 우선순위를 좁혀 운영할 때 체감 안정성이 높아집니다.'
+      : '전반적으로는 속도를 조절하고 정리 기준을 먼저 세우는 쪽이 더 유리합니다.';
   if (contextLabel) {
     const quotedQuestion = /[?？]$/.test(contextLabel) ? contextLabel : `${contextLabel}?`;
     return `질문 "${quotedQuestion}"에 대한 카드 흐름은 ${keywordLine} ${flowLine}`;
@@ -2166,6 +2175,42 @@ function buildSummaryFocus({ spreadName, firstItem, lastItem, context = '', cont
     return '이 연애 흐름은 카드별 결론을 서두르기보다 현재 신호와 다음 행동을 짧게 연결해 읽는 방식이 안정적입니다. 오늘은 감정 1개와 요청 1개를 분리해 전달하는 연습에 집중해보세요.';
   }
   return `먼저 ${firstItem.position.name}의 ${firstItem.card.nameKo} 카드를 중심에 두고, 마지막 ${lastItem.position.name}의 ${lastItem.card.nameKo} 카드를 결론으로 잡아보세요. ${contextTone.mainHint}`;
+}
+
+function buildSummaryTheme({ spreadName, context = '', items = [], topKeywords = [] }) {
+  const intent = inferYearlyIntent(context);
+  const leadKeyword = topKeywords[0] || items[0]?.card?.keywords?.[0] || '흐름';
+  if (spreadName === '일별 운세') {
+    return `한 줄 테마: 오늘은 '${leadKeyword}' 신호를 기준으로 우선순위를 좁혀 운영하면 체감이 안정됩니다.`;
+  }
+  if (spreadName === '주별 운세') {
+    return `한 줄 테마: 이번 주는 '${leadKeyword}' 키워드를 중심으로 강한 날 실행, 약한 날 정비 리듬을 나눠 운영해보세요.`;
+  }
+  if (spreadName === '월별 운세') {
+    return `한 줄 테마: 이번 달은 '${leadKeyword}' 축을 중심으로 확장과 조절 타이밍을 분리하면 흐름이 선명해집니다.`;
+  }
+  if (spreadName === '연간 운세 (12개월)') {
+    return `한 줄 테마: 올해는 '${leadKeyword}' 키워드를 분기 기준으로 나눠 운영하면 변동성을 줄이기 좋습니다.`;
+  }
+  if (spreadName === '양자택일 (A/B)') {
+    return `한 줄 테마: 선택 판단은 '${leadKeyword}' 기준으로 유지 가능성과 소모도를 함께 비교하는 것이 핵심입니다.`;
+  }
+  if (spreadName === '3카드 스프레드') {
+    return `한 줄 테마: 세 장을 '${leadKeyword}' 한 축으로 연결해 읽으면 실행 문장이 훨씬 또렷해집니다.`;
+  }
+  if (spreadName === '켈틱 크로스') {
+    return `한 줄 테마: 켈틱 리딩은 '${leadKeyword}' 신호를 중심축-결과축으로 연결할 때 해석 일관성이 올라갑니다.`;
+  }
+  if (intent === 'relationship' || intent === 'relationship-repair') {
+    return `한 줄 테마: 지금은 '${leadKeyword}' 신호를 바탕으로 대화 속도와 감정 강도를 함께 조절하는 것이 핵심입니다.`;
+  }
+  if (intent === 'finance') {
+    return `한 줄 테마: 지금은 '${leadKeyword}' 신호를 기준으로 확장보다 손실 방어와 통제 기준을 먼저 두는 편이 좋습니다.`;
+  }
+  if (intent === 'social') {
+    return `한 줄 테마: 지금은 '${leadKeyword}' 신호를 태도 일관성으로 연결할 때 인상 흐름이 안정됩니다.`;
+  }
+  return `한 줄 테마: 이번 리딩은 '${leadKeyword}' 신호를 한 가지 행동 기준으로 고정할 때 가장 잘 활용됩니다.`;
 }
 
 function buildSummaryAction({ spreadName, level, context = '', firstItem = null, contextTone }) {
