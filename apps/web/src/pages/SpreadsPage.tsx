@@ -13,6 +13,24 @@ type ReviewChecklist = {
   condition: boolean;
 };
 
+type SpreadVisualPreset = {
+  scale: 'md' | 'lg' | 'xl';
+  rowHeight: number;
+  minColWidth: number;
+};
+
+const SPREAD_VISUAL_PRESETS: Record<string, SpreadVisualPreset> = {
+  'one-card': { scale: 'xl', rowHeight: 164, minColWidth: 138 },
+  'three-card': { scale: 'xl', rowHeight: 138, minColWidth: 98 },
+  'daily-fortune': { scale: 'xl', rowHeight: 136, minColWidth: 96 },
+  'choice-a-b': { scale: 'xl', rowHeight: 132, minColWidth: 94 },
+  'monthly-fortune': { scale: 'lg', rowHeight: 126, minColWidth: 90 },
+  'relationship-recovery': { scale: 'lg', rowHeight: 126, minColWidth: 90 },
+  'weekly-fortune': { scale: 'md', rowHeight: 114, minColWidth: 76 },
+  'yearly-fortune': { scale: 'md', rowHeight: 108, minColWidth: 72 },
+  'celtic-cross': { scale: 'md', rowHeight: 112, minColWidth: 74 }
+};
+
 export function SpreadsPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [variantId, setVariantId] = useState<string | null>(null);
@@ -72,6 +90,13 @@ export function SpreadsPage() {
 
   const drawItems = drawMutation.data?.items ?? [];
   const cardByPosition = new Map(drawItems.map((item) => [item.position.name, item]));
+  const spreadVisualPreset =
+    SPREAD_VISUAL_PRESETS[selected.id] ??
+    (selected.cardCount <= 5
+      ? { scale: 'xl', rowHeight: 132, minColWidth: 94 }
+      : selected.cardCount <= 8
+        ? { scale: 'lg', rowHeight: 120, minColWidth: 86 }
+        : { scale: 'md', rowHeight: 110, minColWidth: 74 });
   const choiceComparison = useMemo(() => {
     if (!drawMutation.data || selected?.id !== 'choice-a-b') return null;
     return buildChoiceComparison(drawMutation.data);
@@ -159,10 +184,10 @@ export function SpreadsPage() {
 
         <h4>스프레드 모양</h4>
         <div
-          className="spread-layout"
+          className={`spread-layout spread-layout-${spreadVisualPreset.scale}`}
           style={{
-            gridTemplateColumns: `repeat(${selected.layout.cols}, minmax(64px, 1fr))`,
-            gridTemplateRows: `repeat(${selected.layout.rows}, 92px)`
+            gridTemplateColumns: `repeat(${selected.layout.cols}, minmax(${spreadVisualPreset.minColWidth}px, 1fr))`,
+            gridTemplateRows: `repeat(${selected.layout.rows}, ${spreadVisualPreset.rowHeight}px)`
           }}
         >
           {selected.layout.slots.map((slot, idx) => (
