@@ -493,6 +493,7 @@ function summarizeWeeklyFortune({ items, context = '', level = 'beginner' }) {
     item,
     score: scoreWeeklyDayStrength(item, intent)
   }));
+  const riskTotal = dayScores.reduce((acc, row) => acc + scoreCardRisk(row.item), 0);
   const strongestDay = [...dayScores].sort((a, b) => b.score - a.score)[0];
   const weakestDay = [...dayScores].sort((a, b) => a.score - b.score)[0];
   const seed = hashText([
@@ -508,7 +509,11 @@ function summarizeWeeklyFortune({ items, context = '', level = 'beginner' }) {
 
   const mondayKeyword = monday?.card?.keywords?.[0] || '주간 흐름';
   const mondayLabel = monday?.card?.nameKo ? `${monday.card.nameKo} ${monday?.orientation === 'reversed' ? '역방향' : '정방향'}` : '신호 확인 필요';
-  const overallFlow = uprightCount >= reversedCount ? '전개가 열려 있는 주간' : '속도 조절이 필요한 주간';
+  const overallFlow = riskTotal >= 8 || reversedCount >= 3
+    ? '기회는 있으나 방어를 우선해야 하는 주간'
+    : uprightCount >= reversedCount
+      ? '전개가 열려 있는 주간'
+      : '속도 조절이 필요한 주간';
   const overallIntentLine = buildWeeklyIntentLine({ intent, orientation: monday?.orientation || 'upright', keyword: mondayKeyword });
   const strongestHint = strongestDay?.item?.card?.nameKo
     ? `강한 축은 ${strongestDay.dayLabel}(${strongestDay.item.card.nameKo})이고, 취약 축은 ${weakestDay.dayLabel}(${weakestDay?.item?.card?.nameKo || '-'})입니다.`
@@ -605,6 +610,7 @@ function summarizeWeeklyFortune({ items, context = '', level = 'beginner' }) {
     sunday,
     strongestDayLabel: strongestDay?.dayLabel || '월요일',
     weakestDayLabel: weakestDay?.dayLabel || '금요일',
+    riskTotal,
     seed: seed + 8
   });
 
@@ -753,11 +759,11 @@ function buildWeeklyActionGuide({
   sunday,
   strongestDayLabel = '월요일',
   weakestDayLabel = '금요일',
+  riskTotal = 0,
   seed = 0
 }) {
   const cards = [monday, tuesday, wednesday, thursday, friday, saturday, sunday].filter(Boolean);
   const reversedCount = cards.filter((item) => item?.orientation === 'reversed').length;
-  const riskTotal = cards.reduce((acc, item) => acc + scoreCardRisk(item), 0);
   const key = cards.map((item) => item?.card?.keywords?.[0]).filter(Boolean)[0] || '실행';
   const unstable = reversedCount >= 3 || riskTotal >= 8;
 

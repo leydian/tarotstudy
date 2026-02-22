@@ -1400,7 +1400,9 @@ function buildTarotConsultingInterpretation({
   const spreadGuide = buildSpreadConsultingGuide({ spreadId, positionName: position.name, positionPrompt, seed });
   const orientationGuide = buildOrientationCounselLine({ spreadId, positionName: position.name, cardName: card.nameKo, orientation, tone, seed });
   const keywordGuide = buildKeywordCounselLine({ card, focus, seed });
-  const contextLine = buildCoreContextLine({ spreadId, positionName: position.name, contextProfile, seed });
+  const contextLine = spreadId === 'weekly-fortune'
+    ? buildWeeklyContextLine({ positionName: position.name, seed })
+    : buildCoreContextLine({ spreadId, positionName: position.name, contextProfile, seed });
   const actionLine = buildTarotActionLine({ spreadId, positionName: position.name, contextProfile, orientation, seed });
   return polishTarotInterpretation([spreadGuide, orientationGuide, keywordGuide, contextLine, actionLine].join(' '));
 }
@@ -2187,9 +2189,19 @@ function buildCoreContextLine({ spreadId, positionName, contextProfile, seed }) 
     : [
       `${positionTopic} 질문 맥락상 ${contextProfile.anchor}`,
       `${positionName} 자리에서는 ${contextProfile.anchor}`,
-      `${positionTopic} 해석할 때는 ${contextProfile.anchor}`
+      `${positionTopic} 읽을 때는 ${contextProfile.anchor}`
     ];
   return pickVariant(`${seed}:core-context`, lines);
+}
+
+function buildWeeklyContextLine({ positionName, seed = '' }) {
+  const topic = withKoreanParticle(positionName, '은', '는');
+  const lines = [
+    `${topic} 이번 주 전체 리듬에서 해당 요일의 조정 포인트를 확인하는 구간입니다.`,
+    `${positionName}은 앞뒤 요일 카드와 연결해서 실행 강도를 맞추는 기준이 됩니다.`,
+    `${topic} 단독 해석보다 주간 흐름과 연결해서 읽을 때 정확도가 올라갑니다.`
+  ];
+  return pickVariant(`${seed}:weekly-context:${positionName}`, lines);
 }
 
 function buildSpreadCoreLead({ spreadId = 'default', positionName = '', seed = '' }) {
@@ -2206,6 +2218,10 @@ function buildSpreadCoreLead({ spreadId = 'default', positionName = '', seed = '
     'relationship-recovery': [
       `${topic} 관계 회복 대화 순서를 정하는 핵심 자리입니다.`,
       `${positionName} 자리에서 회복 흐름의 기준 신호를 짚어보겠습니다.`
+    ],
+    'weekly-fortune': [
+      `${topic} 주간 흐름에서 해당 요일의 핵심 조정 구간입니다.`,
+      `${positionName} 카드로 오늘 리듬의 강약을 먼저 확인해보겠습니다.`
     ],
     default: [
       `${topic} 전체 리딩의 연결 고리 역할을 합니다.`,
@@ -2583,7 +2599,7 @@ const SPREAD_READING_TEMPLATES = {
     positionFocus: {
       월요일: '주간 시동과 기준 고정',
       화요일: '초반 리듬 안정화',
-      수요일: '중반 변수 대응',
+      수요일: '중반 대응 포인트',
       목요일: '중반 정리와 마감 준비',
       금요일: '마감 품질과 정리',
       토요일: '회복과 재정비',
