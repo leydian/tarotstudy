@@ -1250,12 +1250,13 @@ function withObjectParticle(word = '') {
   return `${word}${hasFinalConsonant(word) ? '을' : '를'}`;
 }
 
-function buildKeywordEvidence(cardName = '') {
+function buildKeywordEvidence(cardName = '', factExample = '') {
   const keywords = (cardKeywordsByName.get(cardName) || []).slice(0, 2);
-  if (keywords.length === 0) return `${cardName} 키워드를 현재 상황 사실과 연결했습니다.`;
+  const factLine = factExample ? ` 예: ${factExample}` : '';
+  if (keywords.length === 0) return `${cardName} 키워드를 현재 상황 사실과 연결했습니다.${factLine}`;
   const keywordPhrase = keywords.join(', ');
   const obj = hasFinalConsonant(keywordPhrase) ? '을' : '를';
-  return `${cardName}의 핵심 키워드 "${keywordPhrase}"${obj} 현재 상황 사실과 연결했습니다.`;
+  return `${cardName}의 핵심 키워드 "${keywordPhrase}"${obj} 현재 상황 사실과 연결했습니다.${factLine}`;
 }
 
 function buildNovelConclusionByLesson(lessonId, blueprint) {
@@ -1279,15 +1280,48 @@ function buildNovelConclusionByLesson(lessonId, blueprint) {
   return '결론은 "오늘 20:00, 책상에서 핵심 작업 1개를 20분 실행한다"로 정했습니다.';
 }
 
-function buildConcreteFactExampleByLesson(lessonId) {
+function buildConcreteFactPairByLesson(lessonId) {
   const id = String(lessonId || '');
-  if (id.startsWith('ich-')) return '예: A안은 비용 3만원, B안은 7만원으로 기록해 유지 가능성을 비교했습니다.';
-  if (id.startsWith('eql-')) return '예: 어제 복기에서 라벨은 우세였지만 근거 2줄 중 1줄이 사실과 달랐습니다.';
-  if (id.startsWith('ubs-')) return '예: 감정이 올라간 상태에서 바로 답장해 충돌이 커진 기록이 있었습니다.';
-  if (id.startsWith('bt-')) return '예: 해야 할 항목 5개 중 실제 마감이 오늘인 항목은 1개였습니다.';
-  if (id.startsWith('ubr-')) return '예: 같은 작업을 3번 미뤄 실제 착수가 오후 11시로 밀렸습니다.';
-  if (id.startsWith('ayc-')) return '예: 지난주 계획 7개 중 완료는 3개라 실행 밀도를 먼저 높일 필요가 있었습니다.';
-  return '예: 오늘 일정표에서 미뤄진 항목 2개를 먼저 표시해 사실 근거로 사용했습니다.';
+  if (id.startsWith('ich-')) {
+    return [
+      'A안은 출퇴근 35분, B안은 70분으로 기록했습니다.',
+      '이번 달 유지 비용은 A안 3만원, B안 7만원으로 비교했습니다.'
+    ];
+  }
+  if (id.startsWith('eql-')) {
+    return [
+      '어제 라벨은 우세였지만 실제 실행은 0회였습니다.',
+      '근거 2줄 중 1줄은 일정표 기록과 맞지 않았습니다.'
+    ];
+  }
+  if (id.startsWith('ubs-')) {
+    return [
+      '감정이 올라간 직후 답장해 대화가 길어졌습니다.',
+      '속도를 낮췄을 때 같은 주제 대화 시간이 15분 줄었습니다.'
+    ];
+  }
+  if (id.startsWith('bt-')) {
+    return [
+      '해야 할 항목 5개 중 오늘 마감은 1개였습니다.',
+      '지난 3일 동안 첫 20분 착수에 성공한 날은 1일뿐이었습니다.'
+    ];
+  }
+  if (id.startsWith('ubr-')) {
+    return [
+      '같은 작업을 3번 미뤄 실제 착수가 오후 11시로 밀렸습니다.',
+      '방해 알림 4개가 켜져 있을 때 집중이 10분을 넘기지 못했습니다.'
+    ];
+  }
+  if (id.startsWith('ayc-')) {
+    return [
+      '지난주 계획 7개 중 완료는 3개였습니다.',
+      '고정 시간 없이 작성한 할 일은 절반 이상 미뤄졌습니다.'
+    ];
+  }
+  return [
+    '오늘 일정표에서 미뤄진 항목 2개를 먼저 표시했습니다.',
+    '실제 완료 항목은 1개라 우선순위 재정렬이 필요했습니다.'
+  ];
 }
 
 function buildConcreteExecutionByLesson(lessonId, action) {
@@ -1299,7 +1333,7 @@ function buildConcreteExecutionByLesson(lessonId, action) {
   if (id.startsWith('ubr-')) return '오늘 19:30, 방해 알림을 끄고 병목 작업 1개를 25분 집중으로 처리했습니다.';
   if (id.startsWith('acs-')) return '오늘 21:10, 질문을 변수 3개로 나누고 변수별 근거를 각 1줄씩 작성했습니다.';
   if (id.startsWith('ayc-')) return '오늘 21:00, 이번 주 계획표에 월·수·금 실행 슬롯 25분씩을 먼저 고정했습니다.';
-  return `오늘 20:00, 책상에서 ${action}을(를) 20분 안에 실행하도록 일정에 넣었습니다.`;
+  return `오늘 20:00, 책상에서 ${withObjectParticle(action)} 20분 안에 실행하도록 일정에 넣었습니다.`;
 }
 
 function buildStoryNovelByType({ lessonId, type, blueprint, cardPreview, a, b, c }) {
@@ -1309,16 +1343,16 @@ function buildStoryNovelByType({ lessonId, type, blueprint, cardPreview, a, b, c
   const checkCard = c || b || a;
   const characterTopic = withTopicParticle(blueprint.character);
   const aSubject = withSubjectParticle(a);
-  const keywordEvidenceA = buildKeywordEvidence(a);
-  const keywordEvidenceB = buildKeywordEvidence(supportCard);
-  const conclusion = buildNovelConclusionByLesson(lessonId, blueprint);
-  const factExample = buildConcreteFactExampleByLesson(lessonId);
+  const [factA, factB] = buildConcreteFactPairByLesson(lessonId);
+  const keywordEvidenceA = buildKeywordEvidence(a, factA);
+  const keywordEvidenceB = buildKeywordEvidence(supportCard, factB);
+  const conclusion = buildNovelConclusionByLesson(lessonId, blueprint).replace(/[.?!\s]+$/u, '');
   const execution = buildConcreteExecutionByLesson(lessonId, blueprint.action);
   return [
     `${characterTopic} 오늘 리딩이 어렵게 느껴졌습니다. 이유는 ${blueprint.situation} 때문이었습니다.`,
     `노트 첫 줄에 "${blueprint.question}"를 쓰자, 지금 다룰 핵심이 선명해졌습니다.`,
-    `${cards} 중에서는 ${aSubject} 가장 먼저 눈에 들어왔고, ${conclusion}`,
-    `${keywordEvidenceA} ${keywordEvidenceB} ${factExample} 그래서 근거 문장이 짧아졌고 해석이 퍼지지 않았습니다.`,
+    `${cards} 중에서는 ${aSubject} 가장 먼저 눈에 들어왔고, ${conclusion}.`,
+    `${keywordEvidenceA} ${keywordEvidenceB} 그래서 근거 문장이 짧아졌고 해석이 퍼지지 않았습니다.`,
     `${characterTopic} ${execution}`,
     `마지막에는 ${blueprint.review}만 확인하며 적중 1줄과 오차 1줄을 적었습니다. ${withTopicParticle(checkCard)} 다음 점검 카드로 남겼습니다.`
   ];
