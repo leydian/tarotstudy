@@ -1780,6 +1780,11 @@ function buildUnifiedActionLine({ text = '', spreadId = '', context = '', orient
       ? '지금은 화면을 끄고 바로 취침으로 들어가셔도 좋습니다.'
       : '지금은 바로 눕기보다 10분만 정리한 뒤 취침 여부를 다시 판단해 보세요.';
   }
+  if (spreadId === 'one-card') {
+    const group = detectOneCardQuestionGroup(context);
+    const hint = buildOneCardExecutionHint({ context, group, card: null, orientation });
+    return `실행은 ${hint}`;
+  }
 
   if (spreadId === 'choice-a-b') {
     const meta = inferChoiceContextMeta(context);
@@ -2515,6 +2520,26 @@ function buildOneCardYesNoConclusion({ group = 'general', card, orientation = 'u
     if (risk === 1) return '결론: 조건부 예. 소액·필수 결제만 먼저 하세요.';
     return '결론: 예. 예산 안이면 진행해도 괜찮아요.';
   }
+  if (group === 'alcohol') {
+    if (risk >= 2) return '결론: 아니오. 지금은 마시지 않는 쪽이 더 좋아요.';
+    if (risk === 1) return '결론: 조건부 예. 한 잔 이내로만 제한하세요.';
+    return '결론: 예. 다만 양은 작게 유지하는 편이 좋습니다.';
+  }
+  if (group === 'meal') {
+    if (risk >= 2) return '결론: 아니오. 지금은 과식보다 가벼운 식사로 조절하는 편이 좋아요.';
+    if (risk === 1) return '결론: 조건부 예. 양을 줄여 가볍게 드시면 괜찮아요.';
+    return '결론: 예. 지금 식사하셔도 괜찮아요.';
+  }
+  if (group === 'medicine') {
+    if (risk >= 2 || orientation === 'reversed') return '결론: 보류. 임의 복용보다 복용 기준을 먼저 확인하세요.';
+    if (risk === 1) return '결론: 조건부 예. 라벨 기준을 확인한 뒤 복용하세요.';
+    return '결론: 예. 복용 기준을 지키는 조건에서는 괜찮습니다.';
+  }
+  if (group === 'travel') {
+    if (risk >= 2) return '결론: 아니오. 지금은 이동을 미루는 편이 좋아요.';
+    if (risk === 1) return '결론: 조건부 예. 시간·비용·피로 기준을 확인한 뒤 움직이세요.';
+    return '결론: 예. 지금 이동해도 괜찮아요.';
+  }
   if (group === 'daily' && /(잠|수면|sleep)/i.test(String(context || ''))) {
     if (risk >= 2 || orientation === 'reversed') return '결론: 아니오. 지금 바로 눕기보다 10분만 정리하고 다시 봐요.';
     if (risk === 1) return '결론: 조건부 예. 10분 정리한 뒤 자는 쪽이 더 좋아요.';
@@ -2556,6 +2581,26 @@ function buildOneCardExecutionHint({ context = '', group = 'general', card, orie
     if (risk === 1) return '소액·필수 항목만 먼저 진행하고, 큰 금액은 하루 더 검토해 보세요.';
     return '예산 한도를 먼저 정한 뒤 진행해 보세요.';
   }
+  if (group === 'alcohol') {
+    if (risk >= 2) return '오늘은 음주를 미루고 물과 휴식으로 컨디션을 먼저 회복해 보세요.';
+    if (risk === 1) return '한 잔 이내로 제한하고, 추가 음주는 피하는 쪽이 좋겠습니다.';
+    return '마시더라도 양을 작게 유지하고 늦은 시간 추가 음주는 피하세요.';
+  }
+  if (group === 'meal') {
+    if (risk >= 2) return '지금은 자극적인 식사보다 가벼운 식사와 수분 보충을 먼저 권장합니다.';
+    if (risk === 1) return '양을 조금 줄여 천천히 드시고, 식후 컨디션을 짧게 확인해 보세요.';
+    return '균형 있는 식사로 가볍게 드시고, 과식만 피하시면 됩니다.';
+  }
+  if (group === 'medicine') {
+    if (risk >= 2 || orientation === 'reversed') return '임의 복용은 잠시 보류하고 복용 라벨, 용량, 복용 간격을 먼저 확인하세요.';
+    if (risk === 1) return '복용은 가능하지만 라벨의 용량/간격 기준을 먼저 확인한 뒤 진행하세요.';
+    return '복용 기준(용량/간격/금기)을 확인한 뒤 진행하시면 됩니다.';
+  }
+  if (group === 'travel') {
+    if (risk >= 2) return '지금은 이동을 미루고 일정·날씨·체력부터 다시 점검해 보세요.';
+    if (risk === 1) return '이동은 가능하지만 시간 여유와 피로도를 먼저 확인해 강도를 낮추세요.';
+    return '이동 전 필수 준비 1개만 점검하고 가볍게 출발하셔도 좋습니다.';
+  }
   if (group === 'daily') {
     if (risk >= 2 || orientation === 'reversed') return '오늘은 일정을 줄여 핵심 1개만 완료하고, 감정 소모를 키우는 약속 1개는 미루세요.';
     if (risk === 1) return '오늘은 우선순위 1개를 먼저 끝내고, 나머지는 짧은 시간 블록으로 나눠 확인하세요.';
@@ -2571,8 +2616,12 @@ function buildOneCardExecutionHint({ context = '', group = 'general', card, orie
 function detectOneCardQuestionGroup(context = '') {
   const normalized = String(context || '').toLowerCase();
   if (isSleepQuestion(normalized)) return 'daily';
-  if (/(커피|카페인|에너지드링크|에너지 드링크|수면|잠)/.test(normalized)) return 'caffeine';
+  if (/(커피|카페인|에너지드링크|에너지 드링크|아메리카노|라떼|콜드브루)/.test(normalized)) return 'caffeine';
+  if (/(술|음주|맥주|소주|와인|위스키|칵테일|한잔|한 잔)/.test(normalized)) return 'alcohol';
+  if (/(밥|식사|아침|점심|저녁|야식|먹을까|먹어도)/.test(normalized)) return 'meal';
+  if (/(약|복용|진통제|감기약|영양제|약을|먹어야)/.test(normalized)) return 'medicine';
   if (/(운동|헬스|러닝|달리기|조깅|산책|근력|유산소|필라테스|요가)/.test(normalized)) return 'exercise';
+  if (/(가도 될까|갈까|이동|출발|외출|운전|비행기|기차|버스|여행)/.test(normalized)) return 'travel';
   if (/(연락|문자|카톡|톡|dm|디엠|전화|답장|고백|메시지)/.test(normalized)) return 'contact';
   if (/(결제|구매|지출|주문|구독|환불|계약|할부|투자|송금|이체)/.test(normalized)) return 'payment';
   if (/(오늘|운세|하루|금일|오늘의)/.test(normalized)) return 'daily';

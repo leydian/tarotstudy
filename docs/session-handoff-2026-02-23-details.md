@@ -751,3 +751,68 @@
 - `d64461a` Force explicit conclusions for short and yes-no one-card questions
 - `a2d1c50` Refine one-card yes-no output with conversational Korean tone
 - `305af3b` Reshape one-card answers to meaning-conclusion-action conversational format
+
+## 20) 원카드 마이크로-질문 커버리지 확장 + 출력 형식 완전 통일 (추가)
+
+### 20.1 전 리딩 문체/구조 정책 강화
+- 변경 파일:
+  - `apps/api/src/index.js`
+  - `apps/api/src/content.js`
+  - `apps/api/test/content-fallback.test.js`
+  - `scripts/summary-regression-check.mjs`
+- 핵심:
+  - 존댓말 기반 자연어 스토리텔링을 기본 출력 정책으로 고정
+  - 항목 나열형 문장을 문단형 상담 서사로 변환
+  - 원카드/스프레드 모두 결론-근거-실행-복기의 읽기 흐름 유지
+
+### 20.2 초간단 yes/no 질문에서 직답 누락 문제 수정
+- 변경 파일:
+  - `apps/api/src/content.js`
+  - `apps/api/src/index.js`
+  - `apps/api/test/content-fallback.test.js`
+- 핵심:
+  - `지금 잘까?` 같은 초단문 질문에서 첫 문장에 직답 강제
+  - 수면 질문 전용 분기 우선 적용:
+    - `예/조건부 예/아니오`를 바로 제시
+    - 실행 문장과 복기 문장을 수면 맥락으로 정렬
+  - 종합 리딩(summary)과 포지션 리딩(interpretation)의 결론 충돌 완화
+
+### 20.3 전 스프레드 포지션 리딩 출력 포맷 단일화
+- 변경 파일:
+  - `apps/api/src/content.js`
+- 핵심:
+  - `buildTarotConsultingInterpretation()`의 최종 출력을 공통 템플릿으로 통합
+  - 통일된 포맷:
+    - 직답
+    - 카드 근거
+    - 실행
+    - 복기
+    - 한 줄 테마
+  - 도메인별 세부 정보(예: A/B 비교 축)는 유지하면서 형식만 통일
+
+### 20.4 질문군 커버리지 확장(“1만 질문 대응” 기반 강화)
+- 변경 파일:
+  - `apps/api/src/content.js`
+- 핵심:
+  - 원카드 질문군 분류 확장:
+    - `caffeine`(커피/카페인)
+    - `alcohol`(음주)
+    - `meal`(식사/야식)
+    - `medicine`(약복용)
+    - `exercise`(운동)
+    - `travel`(이동/외출/출발)
+    - `contact`(연락)
+    - `payment`(결제/구매)
+    - `daily`(일상)
+  - 질문군별 결론/실행 문장을 분리해 질문-행동 정합성 강화
+  - A/B 구매형 질문에는 축 비교 + 리스크 키워드(유혹/과열/경계/통제) 동시 반영
+  - 수면/초단문 복기 문장을 테스트 패턴과 실사용 맥락 모두 만족하도록 보정
+
+### 20.5 검증 로그
+- `npm run test:api` 통과
+- `npm run qa:summary-regression` 통과
+
+### 20.6 관련 커밋
+- `4843efb` Unify tarot reading tone into honorific narrative style
+- `8c3bbf3` Fix one-card short yes/no to lead with direct sleep answer
+- `e4f2a41` Unify all tarot interpretation outputs into one narrative format
