@@ -1260,15 +1260,46 @@ function buildKeywordEvidence(cardName = '') {
 
 function buildNovelConclusionByLesson(lessonId, blueprint) {
   const id = String(lessonId || '');
-  if (lessonNovelConclusionsById[id]) return lessonNovelConclusionsById[id];
-  if (id.startsWith('ich-')) return 'A와 B를 비교해 유지 가능성이 높은 선택 1개를 정했습니다.';
-  if (id.startsWith('eql-')) return '판정 라벨과 근거가 실제로 맞는지 먼저 점검하기로 정했습니다.';
-  if (id.startsWith('ubs-')) return '속도와 감정 중 오늘 먼저 다룰 축 1개를 정했습니다.';
-  if (id.startsWith('icb-')) return '질문의 핵심 축 1개를 먼저 고정하기로 정했습니다.';
-  if (id.startsWith('icv-')) return '지금 상황에서 맡을 역할 1개를 먼저 정했습니다.';
-  if (id.startsWith('fm-')) return '지금 단계를 1개로 확정하고 그에 맞는 행동을 정했습니다.';
-  if (id.startsWith('ubr-')) return '지금 바로 교정할 위험 신호 1개를 먼저 정했습니다.';
-  return `${withObjectParticle(blueprint.action)} 먼저 확정하기로 정했습니다.`;
+  if (id === 'bt-2') return '결론은 "오늘 20:30, 책상에서 발표 자료 1페이지를 15분 안에 수정한다"로 정했습니다.';
+  if (id.startsWith('ich-')) return '결론은 "A안(출퇴근 35분)을 선택하고 이번 주 5일 유지해 본다"로 정했습니다.';
+  if (id.startsWith('eql-')) return '결론은 "판정 라벨 1개를 고르고 근거 2줄이 실제 기록과 맞는지 바로 대조한다"로 정했습니다.';
+  if (id.startsWith('ubs-')) return '결론은 "오늘은 감정 정리 10분 후 실행 20분 순서로 진행한다"로 정했습니다.';
+  if (id.startsWith('icb-')) return '결론은 "질문 축을 1개만 고르고 그 축에 맞는 문장 2개만 쓴다"로 정했습니다.';
+  if (id.startsWith('icv-')) return '결론은 "오늘 회의에서는 진행 역할 1개만 맡아 발화 3회로 제한한다"로 정했습니다.';
+  if (id.startsWith('fm-')) return '결론은 "지금 단계를 시작으로 보고 20분 착수 1회를 바로 실행한다"로 정했습니다.';
+  if (id.startsWith('ubr-')) return '결론은 "지금 병목 1개를 지우기 위해 방해 알림 3개를 먼저 끈다"로 정했습니다.';
+  if (id.startsWith('ayc-')) return '결론은 "이번 주 월·수·금 21:00에 핵심 작업 25분씩 고정한다"로 정했습니다.';
+  if (id.startsWith('acs-')) return '결론은 "질문 변수를 3개로 쪼개고 1변수당 근거 1줄만 남긴다"로 정했습니다.';
+  if (id.startsWith('uip-')) return '결론은 "가설 1개와 반례 1개를 같은 페이지에 기록한다"로 정했습니다.';
+  if (id.startsWith('uis-')) return '결론은 "카드 3장을 원인-전환-결과 문장으로 1문단 연결한다"로 정했습니다.';
+  if (id.startsWith('fz-') || id.startsWith('bd-') || id.startsWith('bt-')) {
+    return '결론은 "오늘 20:00에 가장 작은 작업 1개를 20분 안에 끝낸다"로 정했습니다.';
+  }
+  if (lessonNovelConclusionsById[id]) return `결론은 "${lessonNovelConclusionsById[id]}"`;
+  return '결론은 "오늘 20:00, 책상에서 핵심 작업 1개를 20분 실행한다"로 정했습니다.';
+}
+
+function buildConcreteFactExampleByLesson(lessonId) {
+  const id = String(lessonId || '');
+  if (id.startsWith('ich-')) return '예: A안은 비용 3만원, B안은 7만원으로 기록해 유지 가능성을 비교했습니다.';
+  if (id.startsWith('eql-')) return '예: 어제 복기에서 라벨은 우세였지만 근거 2줄 중 1줄이 사실과 달랐습니다.';
+  if (id.startsWith('ubs-')) return '예: 감정이 올라간 상태에서 바로 답장해 충돌이 커진 기록이 있었습니다.';
+  if (id.startsWith('bt-')) return '예: 해야 할 항목 5개 중 실제 마감이 오늘인 항목은 1개였습니다.';
+  if (id.startsWith('ubr-')) return '예: 같은 작업을 3번 미뤄 실제 착수가 오후 11시로 밀렸습니다.';
+  if (id.startsWith('ayc-')) return '예: 지난주 계획 7개 중 완료는 3개라 실행 밀도를 먼저 높일 필요가 있었습니다.';
+  return '예: 오늘 일정표에서 미뤄진 항목 2개를 먼저 표시해 사실 근거로 사용했습니다.';
+}
+
+function buildConcreteExecutionByLesson(lessonId, action) {
+  const id = String(lessonId || '');
+  if (id.startsWith('ich-')) return '오늘 21:00, 노트 앱에서 A/B 비교표(비용·시간·피로) 3칸을 채우고 A안을 확정했습니다.';
+  if (id.startsWith('eql-')) return '오늘 20:40, 복기 노트에서 라벨 1개와 근거 2줄을 대조해 어긋난 1줄을 바로 수정했습니다.';
+  if (id.startsWith('ubs-')) return '오늘 19:50, 감정 정리 10분 후 핵심 작업 20분을 실행해 순서를 고정했습니다.';
+  if (id.startsWith('bt-2')) return '오늘 20:30, 책상에서 보고서 첫 단락 5줄을 15분 안에 수정했습니다.';
+  if (id.startsWith('ubr-')) return '오늘 19:30, 방해 알림을 끄고 병목 작업 1개를 25분 집중으로 처리했습니다.';
+  if (id.startsWith('acs-')) return '오늘 21:10, 질문을 변수 3개로 나누고 변수별 근거를 각 1줄씩 작성했습니다.';
+  if (id.startsWith('ayc-')) return '오늘 21:00, 이번 주 계획표에 월·수·금 실행 슬롯 25분씩을 먼저 고정했습니다.';
+  return `오늘 20:00, 책상에서 ${action}을(를) 20분 안에 실행하도록 일정에 넣었습니다.`;
 }
 
 function buildStoryNovelByType({ lessonId, type, blueprint, cardPreview, a, b, c }) {
@@ -1281,12 +1312,14 @@ function buildStoryNovelByType({ lessonId, type, blueprint, cardPreview, a, b, c
   const keywordEvidenceA = buildKeywordEvidence(a);
   const keywordEvidenceB = buildKeywordEvidence(supportCard);
   const conclusion = buildNovelConclusionByLesson(lessonId, blueprint);
+  const factExample = buildConcreteFactExampleByLesson(lessonId);
+  const execution = buildConcreteExecutionByLesson(lessonId, blueprint.action);
   return [
     `${characterTopic} 오늘 리딩이 어렵게 느껴졌습니다. 이유는 ${blueprint.situation} 때문이었습니다.`,
     `노트 첫 줄에 "${blueprint.question}"를 쓰자, 지금 다룰 핵심이 선명해졌습니다.`,
-    `${cards} 중에서는 ${aSubject} 가장 먼저 눈에 들어왔고, 결론은 "${conclusion}"`,
-    `${keywordEvidenceA} ${keywordEvidenceB} 그래서 근거 문장이 짧아졌고 해석이 퍼지지 않았습니다.`,
-    `${characterTopic} ${withObjectParticle(blueprint.action)} 일정에 넣고 시작 시간을 정했습니다.`,
+    `${cards} 중에서는 ${aSubject} 가장 먼저 눈에 들어왔고, ${conclusion}`,
+    `${keywordEvidenceA} ${keywordEvidenceB} ${factExample} 그래서 근거 문장이 짧아졌고 해석이 퍼지지 않았습니다.`,
+    `${characterTopic} ${execution}`,
     `마지막에는 ${blueprint.review}만 확인하며 적중 1줄과 오차 1줄을 적었습니다. ${withTopicParticle(checkCard)} 다음 점검 카드로 남겼습니다.`
   ];
 }
