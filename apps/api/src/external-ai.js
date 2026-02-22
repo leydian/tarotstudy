@@ -105,13 +105,18 @@ function makeCliGenerator({ timeoutMs, model, promptBuilder, command, workingDir
 }
 
 function buildPrompt({ card, level, context }) {
+  const levelGuide = level === 'intermediate'
+    ? '중급 관점: 카드 위치/상호작용, 조건 분기, 검증 가능한 행동 제안을 포함하세요.'
+    : '입문 관점: 핵심 키워드 고정, 쉬운 언어, 바로 실행 가능한 단일 행동 제안을 포함하세요.';
+
   return [
     '다음 타로 카드 설명을 JSON으로 생성하세요.',
     `카드: ${card.nameKo} (${card.name})`,
     `난이도: ${level}`,
+    levelGuide,
     context ? `질문 맥락: ${context}` : '질문 맥락: 일반 학습',
     `필수 키: ${sectionKeys.join(', ')}`,
-    '각 값은 한국어 2~4문장으로 작성하세요.',
+    '각 값은 한국어 3줄 이상으로 작성하고, 줄바꿈(\\n)을 포함하세요.',
     '반드시 단일 JSON 객체만 출력하세요.',
     'JSON 외 텍스트를 출력하지 마세요.'
   ].join('\n');

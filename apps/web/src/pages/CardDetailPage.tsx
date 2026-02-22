@@ -24,6 +24,12 @@ export function CardDetailPage() {
 
   const card = cardQuery.data;
   const explanation = explainMutation.data;
+  const renderMultiline = (value: string, keyPrefix: string) =>
+    value
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line, idx) => <p key={`${keyPrefix}-${idx}`}>{line}</p>);
 
   return (
     <section className="stack">
@@ -66,13 +72,13 @@ export function CardDetailPage() {
         {explanation && (
           <div className="stack">
             <p className="badge">source: {explanation.source}</p>
-            <section><h4>핵심 의미</h4><p>{explanation.sections.coreMeaning}</p></section>
-            <section><h4>상징 해석</h4><p>{explanation.sections.symbolism}</p></section>
-            <section><h4>정방향</h4><p>{explanation.sections.upright}</p></section>
-            <section><h4>역방향</h4><p>{explanation.sections.reversed}</p></section>
-            <section><h4>연애/관계</h4><p>{explanation.sections.love}</p></section>
-            <section><h4>일/학업</h4><p>{explanation.sections.career}</p></section>
-            <section><h4>실전 조언</h4><p>{explanation.sections.advice}</p></section>
+            <section><h4>핵심 의미</h4>{renderMultiline(explanation.sections.coreMeaning, 'core')}</section>
+            <section><h4>상징 해석</h4>{renderMultiline(explanation.sections.symbolism, 'symbol')}</section>
+            <section><h4>정방향</h4>{renderMultiline(explanation.sections.upright, 'upright')}</section>
+            <section><h4>역방향</h4>{renderMultiline(explanation.sections.reversed, 'reversed')}</section>
+            <section><h4>연애/관계</h4>{renderMultiline(explanation.sections.love, 'love')}</section>
+            <section><h4>일/학업</h4>{renderMultiline(explanation.sections.career, 'career')}</section>
+            <section><h4>실전 조언</h4>{renderMultiline(explanation.sections.advice, 'advice')}</section>
           </div>
         )}
       </article>

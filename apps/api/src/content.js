@@ -4,37 +4,675 @@ const TTL_FALLBACK_SOURCE = 'fallback';
 
 export function buildFallbackExplanation(card, level = 'beginner', context = '') {
   const contextLine = context?.trim()
-    ? `질문 맥락: ${context.trim()} 관점으로 읽을 때,`
-    : '일반 학습 맥락에서,';
+    ? `질문 맥락(${context.trim()})에 맞춰 보면,`
+    : '맥락 없이 기본 의미로 보면,';
 
   const arcanaLine =
     card.arcana === 'major'
       ? '메이저 아르카나는 삶의 큰 흐름과 심리적 전환점을 다룹니다.'
-      : `${card.suitKo} 수트는 ${suitTheme(card.suit)}을 상징합니다.`;
-
-  const depthLine =
-    level === 'intermediate'
-      ? '중급 관점에서는 카드 간 상호작용과 위치 의미(스프레드 맥락)를 함께 고려합니다.'
-      : '입문 관점에서는 카드의 핵심 키워드와 상황별 기본 의미를 먼저 고정합니다.';
+      : `${card.suitKo} 수트의 상징 영역은 ${suitTheme(card.suit)}입니다.`;
 
   const rankLine =
     card.rank
-      ? `${card.rankKo}의 단계는 ${rankStage(card.rank)}를 시사합니다.`
-      : '이 카드는 독립된 원형(Archetype)으로 읽습니다.';
+      ? `${card.rankKo} 단계는 ${rankStage(card.rank)} 맥락을 보여줍니다.`
+      : '메이저 카드는 독립된 원형으로 읽되, 지금 필요한 전환의 방향을 함께 봅니다.';
+
+  const primaryKeyword = card.keywords?.[0] || '핵심 에너지';
+  const profile = getFallbackCardProfile(card);
 
   return {
     cardId: card.id,
     source: TTL_FALLBACK_SOURCE,
     sections: {
-      coreMeaning: `${card.nameKo} (${card.name})의 핵심은 ${card.keywords.join(', ')}입니다. ${contextLine} 현재의 선택이 다음 전개를 크게 바꿀 수 있음을 시사합니다.`,
-      symbolism: `${arcanaLine} ${rankLine} 상징은 문자 그대로 예언이 아니라 심리적 방향성과 행동 패턴을 비추는 거울로 해석합니다.`,
-      upright: `정방향은 ${card.keywords[0]}이(가) 비교적 건강하게 발현되는 상태입니다. 필요한 행동을 작게라도 실행하면 카드의 장점이 강화됩니다.`,
-      reversed: `역방향은 ${card.keywords[0]} 에너지가 지연되거나 과잉/결핍으로 나타날 수 있음을 뜻합니다. 원인을 분해해 작은 교정 루틴을 만드는 것이 핵심입니다.`,
-      love: `연애/관계에서는 상대를 통제하기보다 현재 감정의 사실을 명확히 표현해야 합니다. ${card.keywords[1] ?? card.keywords[0]}의 균형이 관계의 질을 좌우합니다.`,
-      career: `일/학업에서는 우선순위를 1~2개로 압축하고, 실행 증거(기록/산출물)를 남기는 방식이 유리합니다. ${card.keywords[2] ?? card.keywords[0]} 테마가 성과의 기준이 됩니다.`,
-      advice: `${depthLine} 오늘의 실천 과제: 이 카드 키워드 중 가장 약한 항목 1개를 정해 20분 안에 수행 가능한 행동으로 바꿔보세요.`
+      coreMeaning: enforceMinLines([
+        `${card.nameKo} (${card.name})의 핵심은 ${card.keywords.join(', ')}입니다.`,
+        `${contextLine} ${profile.coreFocus}`,
+        level === 'intermediate'
+          ? '중급에서는 카드 위치와 인접 카드에 따라 의미 강도와 시점이 어떻게 달라지는지 먼저 확정하세요.'
+          : '입문에서는 핵심 키워드 1개를 오늘 상황 1개에 연결해 해석의 초점을 좁히세요.'
+      ].join('\n')),
+      symbolism: enforceMinLines([
+        arcanaLine,
+        `${rankLine} ${profile.symbolFocus}`,
+        level === 'intermediate'
+          ? '상징은 결론이 아니라 가설입니다. 관찰 가능한 사실과 충돌하는 해석은 버리고 남은 가설만 검증하세요.'
+          : '상징은 정답이 아니라 방향 힌트입니다. 어렵게 확장하기보다 지금 문제와 연결해 읽으세요.'
+      ].join('\n')),
+      upright: enforceMinLines([
+        `정방향은 "${primaryKeyword}" 에너지가 비교적 안정적으로 작동하는 흐름입니다.`,
+        level === 'intermediate'
+          ? `${profile.uprightIntermediate} 긍정 신호의 지속 조건(시간, 자원, 관계)을 같이 점검해야 과해석을 줄일 수 있습니다.`
+          : `${profile.uprightBeginner} 지금 바로 할 수 있는 작은 실행 1개를 정해 카드의 장점을 행동으로 옮기세요.`,
+        level === 'intermediate'
+          ? '실행 뒤에는 가설이 맞았는지 근거 1개를 남겨 다음 해석의 기준으로 삼으세요.'
+          : '실행 뒤에는 체감 변화 1가지를 짧게 기록해 다음 리딩의 기준으로 삼으세요.'
+      ].join('\n')),
+      reversed: enforceMinLines([
+        `역방향은 "${primaryKeyword}" 에너지가 지연되거나 과잉/결핍으로 나타날 가능성을 뜻합니다.`,
+        level === 'intermediate'
+          ? `${profile.reversedIntermediate} 원인을 내부 요인과 외부 제약으로 분리해 어디를 먼저 조정할지 우선순위를 정하세요.`
+          : `${profile.reversedBeginner} 원인을 한 번에 다 풀려 하지 말고, 가장 작은 교정 루틴 1개부터 시작하세요.`,
+        level === 'intermediate'
+          ? '교정 후에는 같은 질문으로 재평가해 흐름 변화와 남은 리스크를 함께 확인하세요.'
+          : '교정 후에는 같은 질문으로 다시 확인해 흐름 변화가 생겼는지 점검하세요.'
+      ].join('\n')),
+      love: enforceMinLines([
+        '연애/관계에서는 상대를 통제하기보다 내 감정의 사실과 요청을 분리해 전달하는 것이 중요합니다.',
+        profile.loveFocus,
+        level === 'intermediate'
+          ? '중급 관점에서는 대화 패턴의 반복 지점(회피, 과잉반응, 침묵)을 기록해 관계 리듬을 점검하세요.'
+          : '입문 관점에서는 오늘 전할 한 문장과 피할 한 문장을 먼저 정해 대화의 흔들림을 줄이세요.'
+      ].join('\n')),
+      career: enforceMinLines([
+        '일/학업에서는 우선순위를 1~2개로 압축하고 실행 증거(기록/산출물)를 남기는 방식이 유리합니다.',
+        profile.careerFocus,
+        level === 'intermediate'
+          ? '중급 관점에서는 기대 성과와 리스크를 같은 기준표로 비교해 의사결정 오류를 줄이세요.'
+          : '입문 관점에서는 오늘 20분 안에 끝낼 수 있는 단위로 쪼개서 시작하는 것이 핵심입니다.'
+      ].join('\n')),
+      advice: enforceMinLines([
+        level === 'intermediate'
+          ? '중급 관점에서는 카드 간 상호작용과 위치 의미를 함께 고려해 해석 강도를 조절합니다.'
+          : '입문 관점에서는 카드의 핵심 키워드와 상황별 기본 의미를 먼저 고정합니다.',
+        level === 'intermediate'
+          ? '실천 과제: 사실(관찰) → 해석(가설) → 행동(검증) 3단계로 문장을 작성해 복기 정확도를 올리세요.'
+          : '실천 과제: 이 카드 키워드 중 가장 약한 항목 1개를 정해 바로 실행 가능한 행동으로 바꾸세요.',
+        '실행 결과를 짧게 남기면 다음 카드 해석에서 일관성과 신뢰도가 함께 올라갑니다.'
+      ].join('\n'))
     }
   };
+}
+
+function getFallbackCardProfile(card) {
+  const defaultProfile = {
+    coreFocus: `지금은 "${card.keywords?.[0] || '핵심'}" 신호와 리스크 신호를 함께 읽어야 하는 구간입니다.`,
+    symbolFocus: '카드의 상징을 현재 결정의 기준으로 번역해 해석하면 문장이 훨씬 선명해집니다.',
+    uprightBeginner: '흐름이 열린 만큼 시작을 너무 늦추지 않는 편이 좋습니다.',
+    uprightIntermediate: '진행 속도보다 지속 조건을 먼저 고정해야 신호의 품질이 유지됩니다.',
+    reversedBeginner: '성급함과 회피가 교차할 수 있어 작은 단위 점검이 우선입니다.',
+    reversedIntermediate: '신호 약화의 원인이 타이밍인지 자원 부족인지 분리해 읽어야 정확합니다.',
+    loveFocus: `이 카드에서는 "${card.keywords?.[1] || card.keywords?.[0] || '핵심'}"을 말의 속도와 행동의 일관성으로 보여주는 것이 핵심입니다.`,
+    careerFocus: `이 카드의 첫 키워드 "${card.keywords?.[0] || '핵심'}"이 아이디어가 아니라 완료된 행동으로 남았는지가 성과 기준입니다.`
+  };
+
+  const majorProfiles = {
+    'The Fool': {
+      ...defaultProfile,
+      coreFocus: '지금은 가볍게 시작하되, 충동으로 크게 벌리지 않는 균형이 핵심인 구간입니다.',
+      symbolFocus: '가능성은 크지만 안전장치 없이 뛰어들면 시행착오 비용이 커질 수 있음을 함께 보여줍니다.',
+      uprightBeginner: '첫걸음을 떼는 용기가 실제 기회를 열어주는 타이밍입니다.',
+      uprightIntermediate: '초기 모멘텀을 살리되 철수 기준과 리스크 한도를 같이 정해야 안정적입니다.',
+      reversedBeginner: '준비 없는 돌진 또는 시작 미루기가 동시에 나타날 수 있습니다.',
+      reversedIntermediate: '자유를 확장하려는 의도와 현실 제약의 충돌 지점을 먼저 고정해야 합니다.',
+      loveFocus: '이 카드에서는 설렘의 속도와 신뢰의 속도를 맞추는 조율이 관계 안정감을 만듭니다.',
+      careerFocus: '새 프로젝트의 아이디어보다 첫 결과물을 언제, 어떤 기준으로 낼지 정한 계획이 성과 기준입니다.'
+    },
+    'The Magician': {
+      ...defaultProfile,
+      coreFocus: '지금은 의도한 것을 실제 결과로 전환할 수 있는 실행 창이 열려 있는 구간입니다.',
+      symbolFocus: '자원은 이미 손에 있으므로, 부족함보다 배치 순서와 집중력의 문제로 읽는 편이 정확합니다.',
+      uprightBeginner: '할 수 있는 일과 지금 해야 할 일을 분리하면 실행력이 빠르게 살아납니다.',
+      uprightIntermediate: '자원 배분과 우선순위를 정량화할수록 결과 재현성이 높아집니다.',
+      reversedBeginner: '말은 많은데 실행이 분산되거나, 반대로 성급한 실행으로 품질이 무너질 수 있습니다.',
+      reversedIntermediate: '능력 부족보다 자원 배치 오류와 집중력 분산이 성과 저하의 핵심 원인일 수 있습니다.',
+      loveFocus: '이 카드에서는 말로 설득하기보다 약속한 행동을 실제로 이행해 신뢰를 쌓는 것이 핵심입니다.',
+      careerFocus: '실행력이 강점인 카드이므로 계획보다 완료 지표(완료율, 재작업률)로 성과를 관리하는 것이 효과적입니다.'
+    },
+    'The High Priestess': {
+      ...defaultProfile,
+      coreFocus: '지금은 바깥의 속도보다 안쪽의 신호를 정확히 듣는 판단 구간입니다.',
+      symbolFocus: '정보가 부족해도 직감 단서가 이미 올라와 있으므로, 성급한 결론보다 관찰 기간을 확보하는 편이 유리합니다.',
+      uprightBeginner: '조용히 보는 시간이 오히려 정확한 선택을 만듭니다.',
+      uprightIntermediate: '데이터와 직관이 충돌할 때는 검증 순서를 먼저 설계해야 판단 오차가 줄어듭니다.',
+      reversedBeginner: '불안 때문에 확인되지 않은 해석을 단정할 수 있습니다.',
+      reversedIntermediate: '정보 비대칭이 커진 상태라 가설 검증 전까지 의사결정 규모를 줄이는 것이 안전합니다.',
+      loveFocus: '관계에서는 감정을 말하기 전, 내가 원하는 경계와 기대를 먼저 정리하면 오해가 줄어듭니다.',
+      careerFocus: '회의/의사결정 전에 확인 질문 목록을 만든 뒤 움직이면 시행착오 비용을 크게 줄일 수 있습니다.'
+    },
+    'The Empress': {
+      ...defaultProfile,
+      coreFocus: '지금은 성장을 키우는 환경을 만드는 것이 결과 자체만큼 중요한 시점입니다.',
+      symbolFocus: '풍요의 상징은 수확 이전의 돌봄 루틴을 뜻하므로, 지속 가능한 페이스 설계가 핵심입니다.',
+      uprightBeginner: '잘하는 것보다 꾸준히 돌보는 태도가 성과를 키웁니다.',
+      uprightIntermediate: '자원 투입 대비 회수 주기를 설계하면 성장 곡선을 안정적으로 관리할 수 있습니다.',
+      reversedBeginner: '과한 배려나 과소비로 에너지가 분산될 수 있습니다.',
+      reversedIntermediate: '돌봄 비용이 통제되지 않으면 수익성/회복성이 동시에 낮아질 수 있습니다.',
+      loveFocus: '관계에서는 따뜻함을 표현하되, 감정노동 한도를 함께 정해 균형을 지키는 것이 중요합니다.',
+      careerFocus: '결과 압박만 높이기보다 업무 환경과 협업 구조를 다듬어 생산성을 회복하는 접근이 효과적입니다.'
+    },
+    'The Emperor': {
+      ...defaultProfile,
+      coreFocus: '지금은 구조와 기준을 명확히 세워 흐름을 안정화해야 하는 구간입니다.',
+      symbolFocus: '권위의 상징은 통제가 목적이 아니라 책임 있는 운영 프레임 구축을 뜻합니다.',
+      uprightBeginner: '규칙 2~3개만 정해도 혼선이 크게 줄어듭니다.',
+      uprightIntermediate: '역할·권한·검토 주기를 문서화하면 리스크가 시스템 안에서 관리됩니다.',
+      reversedBeginner: '고집이나 과통제로 반발과 피로가 커질 수 있습니다.',
+      reversedIntermediate: '통제 지향이 과도하면 실행 속도와 창의성이 동시에 떨어질 수 있습니다.',
+      loveFocus: '관계에서는 기준을 말하되 명령형이 아니라 합의형 문장으로 바꾸는 것이 중요합니다.',
+      careerFocus: '조직/프로젝트에서는 책임 범위와 의사결정 권한을 선명히 나누는 것이 성과의 시작점입니다.'
+    },
+    'The Hierophant': {
+      ...defaultProfile,
+      coreFocus: '지금은 검증된 방식과 학습 체계를 활용해 안정적으로 전진하는 시점입니다.',
+      symbolFocus: '전통의 상징은 낡음이 아니라 재현 가능한 프로세스를 의미합니다.',
+      uprightBeginner: '기본기를 반복하면 불안이 줄고 정확도가 올라갑니다.',
+      uprightIntermediate: '표준 절차를 적용하되, 현재 맥락에 맞는 예외 규칙을 함께 정의해야 효율이 납니다.',
+      reversedBeginner: '형식만 따르고 의미를 놓치면 답답함이 커질 수 있습니다.',
+      reversedIntermediate: '관성이 강해지면 최적화 기회를 놓치므로 관행 검토 주기를 의도적으로 만들어야 합니다.',
+      loveFocus: '관계에서는 약속의 형식(빈도, 방식, 시간)을 맞추면 신뢰가 빠르게 회복됩니다.',
+      careerFocus: '멘토링·가이드·체크리스트를 활용하면 품질 편차를 줄이고 성과를 안정화할 수 있습니다.'
+    },
+    'The Lovers': {
+      ...defaultProfile,
+      coreFocus: '지금은 선택의 문제가 아니라 가치 정렬의 문제를 먼저 푸는 구간입니다.',
+      symbolFocus: '관계의 상징은 감정만이 아니라 선택 이후 책임 구조까지 포함합니다.',
+      uprightBeginner: '좋아 보이는 것보다 오래 지킬 수 있는 선택을 고르는 것이 중요합니다.',
+      uprightIntermediate: '대안별 기회비용을 비교해 가치 충돌을 수치화하면 결정 품질이 올라갑니다.',
+      reversedBeginner: '마음은 가는데 행동이 어긋나 갈등이 길어질 수 있습니다.',
+      reversedIntermediate: '내적 기준 불일치가 지속되면 반복 의사결정 오류가 발생하므로 기준 재정의가 필요합니다.',
+      loveFocus: '관계에서는 감정 표현과 실제 선택이 같은 방향인지 점검해야 신뢰가 유지됩니다.',
+      careerFocus: '진로/업무에서는 단기 효율보다 장기 가치와 정렬된 선택이 누적 성과를 만듭니다.'
+    },
+    'The Chariot': {
+      ...defaultProfile,
+      coreFocus: '지금은 방향성을 고정하고 추진력을 끌어올려야 하는 전진 구간입니다.',
+      symbolFocus: '전차의 상징은 속도보다 통제된 가속을 의미하므로, 목표와 제동 장치를 함께 가져가야 합니다.',
+      uprightBeginner: '우선순위 하나에 집중하면 추진력이 살아납니다.',
+      uprightIntermediate: '복수 목표를 병행할 때는 단계별 체크포인트를 두어 통제력을 유지해야 합니다.',
+      reversedBeginner: '급하게 밀어붙여 중심이 흔들릴 수 있습니다.',
+      reversedIntermediate: '추진력은 있으나 방향 일치가 깨지면 리소스 소모만 커질 위험이 있습니다.',
+      loveFocus: '관계에서는 감정의 속도보다 합의된 진도에 맞춰 움직일 때 안정감이 생깁니다.',
+      careerFocus: '프로젝트는 속도 목표와 품질 기준을 함께 관리해야 실제 완주율이 올라갑니다.'
+    },
+    Strength: {
+      ...defaultProfile,
+      coreFocus: '지금은 강하게 누르기보다 부드럽게 조율하는 힘이 필요한 구간입니다.',
+      symbolFocus: '힘의 상징은 통제가 아니라 감정과 본능을 길들이는 내적 리더십을 뜻합니다.',
+      uprightBeginner: '버티는 힘보다 흔들려도 다시 돌아오는 힘을 믿어도 됩니다.',
+      uprightIntermediate: '압박 상황에서 반응 지연 시간을 확보하면 판단 품질이 안정됩니다.',
+      reversedBeginner: '자책이나 과민 반응으로 에너지가 빠질 수 있습니다.',
+      reversedIntermediate: '감정 조절 실패가 성과 저하로 직결될 수 있어 회복 루틴 설계가 우선입니다.',
+      loveFocus: '관계에서는 이기려는 대화보다 상대 감정을 받아주고 요청을 명확히 말하는 방식이 효과적입니다.',
+      careerFocus: '업무에서는 강한 드라이브보다 지속 가능한 페이스 운영이 장기 성과를 만듭니다.'
+    },
+    'The Hermit': {
+      ...defaultProfile,
+      coreFocus: '지금은 외부 확장보다 내부 점검과 방향 재정렬이 필요한 시점입니다.',
+      symbolFocus: '등불의 상징은 즉답보다 탐색 과정을 통해 정답에 접근하는 태도를 의미합니다.',
+      uprightBeginner: '잠시 멈춰 보는 시간이 오히려 시행착오를 줄입니다.',
+      uprightIntermediate: '정보 과잉 환경에서는 선택 기준을 축소해 판단 피로를 관리해야 합니다.',
+      reversedBeginner: '고립이 길어지면 필요한 도움까지 차단할 수 있습니다.',
+      reversedIntermediate: '과도한 자기 확신 또는 과도한 의심이 동시에 나타날 수 있어 교차 검증이 필요합니다.',
+      loveFocus: '관계에서는 잠시 거리 두기가 필요할 수 있지만, 침묵만 길어지지 않게 의도를 설명하세요.',
+      careerFocus: '중요 결정 전에는 혼자 정리한 초안을 만든 뒤 외부 피드백으로 보정하는 방식이 안전합니다.'
+    },
+    'Wheel of Fortune': {
+      ...defaultProfile,
+      coreFocus: '지금은 통제 밖 변수와 타이밍 변동을 전제로 전략을 세워야 하는 구간입니다.',
+      symbolFocus: '수레바퀴의 상징은 운의 문제가 아니라 주기 변화를 읽고 대응 속도를 맞추는 능력을 뜻합니다.',
+      uprightBeginner: '흐름이 올 때 작게라도 올라타는 행동이 중요합니다.',
+      uprightIntermediate: '상승 구간에서는 확장 기준, 하락 구간에서는 방어 기준을 분리해 운용해야 합니다.',
+      reversedBeginner: '뜻밖의 지연이나 변수로 계획이 흔들릴 수 있습니다.',
+      reversedIntermediate: '외부 변동성이 커질 때는 고정비/리스크 노출을 선제적으로 줄여야 손실을 막을 수 있습니다.',
+      loveFocus: '관계는 분위기 기복이 생길 수 있으니, 감정 파도에 맞춘 대화 타이밍 조절이 필요합니다.',
+      careerFocus: '일/학업에서는 한 시나리오에 고정하지 말고 대안 플랜을 병행해야 회복 탄력성이 높아집니다.'
+    },
+    Justice: {
+      ...defaultProfile,
+      coreFocus: '지금은 감정보다 사실과 책임의 균형으로 판단해야 하는 구간입니다.',
+      symbolFocus: '정의의 상징은 벌점이 아니라 원인과 결과를 정확히 맞물리게 하는 정렬 작업입니다.',
+      uprightBeginner: '좋고 싫음을 잠시 내려두고 사실부터 정리하면 길이 보입니다.',
+      uprightIntermediate: '판단 근거를 문서화하면 이후 분쟁/재해석 비용을 크게 줄일 수 있습니다.',
+      reversedBeginner: '억울함이나 편향으로 판단이 흔들릴 수 있습니다.',
+      reversedIntermediate: '정보 선택 편향이 누적되면 의사결정 신뢰도가 급격히 떨어질 수 있습니다.',
+      loveFocus: '관계에서는 감정 표현과 책임 분담을 분리해 말할 때 갈등이 줄어듭니다.',
+      careerFocus: '업무에서는 기준 없는 유연성보다 명확한 룰과 예외 조건을 함께 두는 편이 효율적입니다.'
+    },
+    'The Hanged Man': {
+      ...defaultProfile,
+      coreFocus: '지금은 억지 전진보다 관점 전환과 보류 전략이 필요한 구간입니다.',
+      symbolFocus: '매달림의 상징은 정체가 아니라 다른 각도에서 문제를 재구성하는 시간을 의미합니다.',
+      uprightBeginner: '답이 안 보일 때는 멈춤이 후퇴가 아니라 준비일 수 있습니다.',
+      uprightIntermediate: '기회비용을 계산해 보류 기간의 목표와 종료 조건을 명확히 정해야 합니다.',
+      reversedBeginner: '미루기가 길어져 타이밍을 놓칠 수 있습니다.',
+      reversedIntermediate: '전환 시점 판단을 계속 지연하면 회복 비용이 커질 수 있으므로 결단 기준이 필요합니다.',
+      loveFocus: '관계에서는 즉시 결론보다 서로의 시각 차이를 확인하는 대화가 먼저입니다.',
+      careerFocus: '업무에서는 멈춤 기간에도 실험/학습 지표를 두어 정체를 학습 구간으로 바꾸세요.'
+    },
+    Death: {
+      ...defaultProfile,
+      coreFocus: '지금은 끝내야 할 것을 정리해야 다음 단계가 열리는 전환 구간입니다.',
+      symbolFocus: '죽음의 상징은 파괴가 아니라 구조 교체와 재출발의 신호로 읽는 것이 정확합니다.',
+      uprightBeginner: '놓아야 할 것 하나를 정하면 새 흐름이 빨리 들어옵니다.',
+      uprightIntermediate: '종료 기준을 선명히 하고 전환 플랜을 병행하면 충격 비용을 줄일 수 있습니다.',
+      reversedBeginner: '변화를 두려워해 낡은 패턴을 붙잡을 수 있습니다.',
+      reversedIntermediate: '전환 지연이 누적되면 기회비용이 급격히 커지므로 단계적 철수 전략이 필요합니다.',
+      loveFocus: '관계에서는 오래된 갈등 패턴을 끊는 합의가 있어야 회복이 시작됩니다.',
+      careerFocus: '일/학업에서는 비효율 루틴을 과감히 정리하고 새 운영 방식으로 전환해야 성과가 살아납니다.'
+    },
+    Temperance: {
+      ...defaultProfile,
+      coreFocus: '지금은 극단을 피하고 조율로 안정적인 합을 만들어야 하는 구간입니다.',
+      symbolFocus: '절제의 상징은 참음이 아니라 다른 요소를 섞어 최적 균형점을 찾는 운영 능력입니다.',
+      uprightBeginner: '조금씩 맞춰 가는 방식이 결국 가장 빠릅니다.',
+      uprightIntermediate: '리소스 배분 비율을 조정해 시스템 전체 효율을 높이는 접근이 효과적입니다.',
+      reversedBeginner: '과하거나 모자란 패턴이 반복될 수 있습니다.',
+      reversedIntermediate: '균형 실패가 누적되면 팀/개인 리듬 붕괴로 이어질 수 있어 조정 주기 설정이 필요합니다.',
+      loveFocus: '관계에서는 정답 싸움보다 서로의 리듬을 맞추는 실무적 합의가 중요합니다.',
+      careerFocus: '업무에서는 속도, 품질, 비용 중 하나만 키우기보다 균형 조합으로 운영해야 지속됩니다.'
+    },
+    'The Devil': {
+      ...defaultProfile,
+      coreFocus: '지금은 집착과 의존의 고리를 인식하고 끊어야 하는 점검 구간입니다.',
+      symbolFocus: '악마의 상징은 외부 억압보다 스스로 강화한 패턴의 반복성을 드러냅니다.',
+      uprightBeginner: '당장 끊기 어려워도 반복 패턴을 알아차리는 것부터 시작하면 됩니다.',
+      uprightIntermediate: '보상 구조를 재설계하지 않으면 같은 문제로 회귀할 가능성이 높습니다.',
+      reversedBeginner: '문제 인식은 생겼지만 실행이 흔들릴 수 있습니다.',
+      reversedIntermediate: '해방 시도가 반동으로 되돌아가지 않도록 대체 루틴과 트리거 관리가 필요합니다.',
+      loveFocus: '관계에서는 통제, 질투, 의존 패턴을 사실 기반으로 인정하고 경계를 재설정해야 합니다.',
+      careerFocus: '일/학업에서는 비효율 중독(과로, 미루기, 완벽주의)을 수치로 기록하면 교정이 빨라집니다.'
+    },
+    'The Tower': {
+      ...defaultProfile,
+      coreFocus: '지금은 감춰진 문제가 드러나며 구조 재정비가 불가피한 구간입니다.',
+      symbolFocus: '탑의 상징은 실패 예고가 아니라 허술한 기반을 빠르게 교체하라는 경고입니다.',
+      uprightBeginner: '흔들림이 왔을 때 변명보다 정리가 먼저입니다.',
+      uprightIntermediate: '충격 구간에서는 손실 제한, 우선 복구, 재발 방지 순서로 대응해야 피해를 줄일 수 있습니다.',
+      reversedBeginner: '문제를 축소하거나 회피해 더 크게 만들 수 있습니다.',
+      reversedIntermediate: '지연된 리셋은 복구 비용을 기하급수적으로 키우므로 조기 공개/조기 수정이 핵심입니다.',
+      loveFocus: '관계에서는 불편한 진실을 늦게 말할수록 신뢰 손상이 커지므로 타이밍 있게 정직해야 합니다.',
+      careerFocus: '업무에서는 문제 노출 후 책임 공방보다 원인 분해와 재발 방지 설계에 즉시 집중하세요.'
+    },
+    'The Star': {
+      ...defaultProfile,
+      coreFocus: '지금은 회복과 재신뢰를 통해 장기 흐름을 다시 세우는 구간입니다.',
+      symbolFocus: '별의 상징은 낙관이 아니라 상처 이후에도 방향을 잃지 않는 복원력을 뜻합니다.',
+      uprightBeginner: '조급함을 내려놓고 회복 루틴을 지키면 흐름이 되살아납니다.',
+      uprightIntermediate: '회복 구간에서는 성과보다 안정 지표를 먼저 관리해야 반등이 지속됩니다.',
+      reversedBeginner: '희망이 약해져 시도 자체를 줄일 수 있습니다.',
+      reversedIntermediate: '회복 신호를 과소평가하면 자기효능감 저하가 장기화될 수 있어 작은 성공 축적이 필요합니다.',
+      loveFocus: '관계에서는 상처 복구 속도를 맞추고 작은 신뢰 행동을 꾸준히 쌓는 것이 핵심입니다.',
+      careerFocus: '일/학업에서는 큰 목표보다 회복 가능한 루틴을 먼저 복구하면 성과가 뒤따릅니다.'
+    },
+    'The Moon': {
+      ...defaultProfile,
+      coreFocus: '지금은 불확실성과 감정 파도를 관리하며 사실을 선별해야 하는 구간입니다.',
+      symbolFocus: '달의 상징은 위험 자체보다 모호함이 판단을 왜곡하는 상황을 드러냅니다.',
+      uprightBeginner: '불안할수록 확인된 사실 3개부터 적어보는 것이 도움이 됩니다.',
+      uprightIntermediate: '노이즈와 신호를 분리하는 검증 루틴이 없으면 해석 신뢰도가 급격히 떨어집니다.',
+      reversedBeginner: '숨겨진 것이 드러나며 혼란이 커질 수 있습니다.',
+      reversedIntermediate: '착시가 걷히는 구간이므로 기존 가설을 적극 폐기하고 모델을 갱신해야 합니다.',
+      loveFocus: '관계에서는 추측보다 확인 질문을 늘려 오해를 줄이는 것이 우선입니다.',
+      careerFocus: '업무에서는 불명확한 요구사항을 문서로 고정해 재작업 비용을 줄이세요.'
+    },
+    'The Sun': {
+      ...defaultProfile,
+      coreFocus: '지금은 명확성, 활력, 가시적 성과가 함께 살아나는 확장 구간입니다.',
+      symbolFocus: '태양의 상징은 운 좋은 결과보다 투명한 소통과 일관된 실행의 누적 효과를 뜻합니다.',
+      uprightBeginner: '잘되는 흐름을 숨기지 말고 드러내면 더 큰 기회가 옵니다.',
+      uprightIntermediate: '성과 가시화를 체계화하면 협업 신뢰와 의사결정 속도가 함께 올라갑니다.',
+      reversedBeginner: '자신감 과잉으로 세부 점검을 놓칠 수 있습니다.',
+      reversedIntermediate: '성과 신호가 있어도 리스크 관리가 약하면 반납 구간이 빨리 올 수 있습니다.',
+      loveFocus: '관계에서는 솔직하고 따뜻한 표현이 관계의 온도를 빠르게 회복시킵니다.',
+      careerFocus: '일/학업에서는 잘된 사례를 재현 가능한 프로세스로 정리하면 성과가 안정적으로 유지됩니다.'
+    },
+    Judgement: {
+      ...defaultProfile,
+      coreFocus: '지금은 과거 경험을 재평가해 결단으로 전환해야 하는 호출 구간입니다.',
+      symbolFocus: '심판의 상징은 비난이 아니라 깨어난 인식으로 다음 단계를 선택하라는 신호입니다.',
+      uprightBeginner: '미뤄둔 결정을 더 늦추기보다 기준을 정해 선택하는 편이 좋습니다.',
+      uprightIntermediate: '회고 데이터를 바탕으로 전략을 재구성하면 같은 실수를 크게 줄일 수 있습니다.',
+      reversedBeginner: '후회나 자기비판으로 결정을 미룰 수 있습니다.',
+      reversedIntermediate: '재평가를 회피하면 전환 타이밍을 놓치므로 결단 데드라인 설정이 필요합니다.',
+      loveFocus: '관계에서는 반복 갈등을 다시 꺼내는 이유를 명확히 하고 새 합의를 도출해야 합니다.',
+      careerFocus: '진로/업무에서는 과거 성과와 실패를 근거로 다음 선택을 명확히 문장화하세요.'
+    },
+    'The World': {
+      ...defaultProfile,
+      coreFocus: '지금은 한 주기를 완성하고 다음 단계로 자연스럽게 연결하는 마무리 구간입니다.',
+      symbolFocus: '세계의 상징은 끝이 아니라 통합입니다. 성과와 배움을 묶어 다음 사이클의 기반으로 전환해야 합니다.',
+      uprightBeginner: '잘 끝내는 힘이 다음 시작을 더 쉽게 만듭니다.',
+      uprightIntermediate: '종결 리포트와 전환 계획을 함께 만들면 완성의 가치가 다음 성과로 이어집니다.',
+      reversedBeginner: '마무리가 느슨해져 성취감이 반감될 수 있습니다.',
+      reversedIntermediate: '종결 기준이 불명확하면 다음 단계 진입이 지연되므로 완료 조건을 명시해야 합니다.',
+      loveFocus: '관계에서는 현재 단계의 성과와 한계를 함께 정리할 때 다음 합의가 선명해집니다.',
+      careerFocus: '업무에서는 완료 정의와 인수인계 기준을 명확히 해야 주기 완결의 효과가 극대화됩니다.'
+    }
+  };
+
+  if (card.arcana === 'major' && majorProfiles[card.name]) {
+    return majorProfiles[card.name];
+  }
+  if (card.arcana === 'minor') {
+    return buildMinorProfile(card, defaultProfile);
+  }
+  return defaultProfile;
+}
+
+function buildMinorProfile(card, defaultProfile) {
+  const suitProfiles = {
+    Wands: {
+      core: '행동력과 추진을 현실 행동으로 전환하는',
+      symbol: '완드의 불 원소는 시작 에너지와 추진 속도를 높이지만 과열 리스크도 함께 키웁니다.',
+      love: '관계에서는 감정의 온도를 올리되, 상대의 속도와 합을 맞추는 조율이 필요합니다.',
+      career: '일/학업에서는 아이디어보다 실행 속도와 완주율 관리가 성과를 좌우합니다.'
+    },
+    Cups: {
+      core: '감정 흐름과 관계 신호를 안정적으로 다루는',
+      symbol: '컵의 물 원소는 공감과 연결을 강화하지만 경계가 흐려질 때 소모가 커질 수 있습니다.',
+      love: '관계에서는 감정 공감과 요청 전달의 균형을 맞출수록 신뢰가 안정됩니다.',
+      career: '일/학업에서는 팀 분위기와 소통 품질이 실제 성과 변동에 직접 영향을 줍니다.'
+    },
+    Swords: {
+      core: '판단력과 의사소통 정확도를 높여야 하는',
+      symbol: '소드의 공기 원소는 명확한 사고를 돕지만 과도한 경직이나 비판으로 번질 수 있습니다.',
+      love: '관계에서는 해석보다 사실 확인을 우선해야 불필요한 갈등을 줄일 수 있습니다.',
+      career: '일/학업에서는 문제 정의와 기준 문서화가 재작업 비용을 크게 낮춥니다.'
+    },
+    Pentacles: {
+      core: '자원 운영과 현실 성과를 축적해야 하는',
+      symbol: '펜타클의 흙 원소는 안정과 축적에 강하지만 변화 대응이 늦어질 때 기회비용이 생깁니다.',
+      love: '관계에서는 말보다 일상적 이행과 책임 분담이 안정감을 만듭니다.',
+      career: '일/학업에서는 속도보다 지속 가능한 운영과 누적 결과 관리가 핵심입니다.'
+    }
+  };
+
+  const rankProfiles = {
+    Ace: {
+      core: '가능성의 씨앗을 작게라도 심어야 하는',
+      uprightBeginner: '작은 시작 1개를 바로 실행하면 흐름이 붙기 쉽습니다.',
+      uprightIntermediate: '초기 가설을 짧은 주기 실험으로 검증하면 확장 정확도가 올라갑니다.',
+      reversedBeginner: '시작을 미루거나 기대만 커져 실행이 지연될 수 있습니다.',
+      reversedIntermediate: '과도한 초기 기대가 자원 배치 오류로 이어질 수 있어 범위 통제가 필요합니다.'
+    },
+    Two: {
+      core: '선택과 균형을 맞춰야 하는',
+      uprightBeginner: '두 선택지 중 기준 1개만 먼저 정하면 결정이 쉬워집니다.',
+      uprightIntermediate: '트레이드오프를 수치화해 균형점을 찾으면 재결정 비용이 줄어듭니다.',
+      reversedBeginner: '우유부단으로 타이밍을 놓칠 수 있습니다.',
+      reversedIntermediate: '균형 집착이 오히려 실행 지연을 만들 수 있어 우선순위 고정이 필요합니다.'
+    },
+    Three: {
+      core: '협업과 확장을 준비해야 하는',
+      uprightBeginner: '혼자 하던 방식을 공유 가능한 형태로 바꾸면 성장 폭이 커집니다.',
+      uprightIntermediate: '협업 인터페이스를 명확히 설계하면 확장 비용을 크게 줄일 수 있습니다.',
+      reversedBeginner: '역할 혼선으로 협업 피로가 커질 수 있습니다.',
+      reversedIntermediate: '책임 경계 불명확이 병목을 만들 수 있어 계약/정의가 필요합니다.'
+    },
+    Four: {
+      core: '구조를 안정화해 기반을 다져야 하는',
+      uprightBeginner: '기본 루틴을 고정하면 흔들림이 빠르게 줄어듭니다.',
+      uprightIntermediate: '안정 구간에서 표준화하면 이후 변동 대응력이 올라갑니다.',
+      reversedBeginner: '고정된 방식에 갇혀 답답함이 생길 수 있습니다.',
+      reversedIntermediate: '과도한 보수성으로 개선 타이밍을 놓칠 위험이 있습니다.'
+    },
+    Five: {
+      core: '충돌과 손실을 관리하며 재정비해야 하는',
+      uprightBeginner: '갈등을 피하기보다 핵심 쟁점 1개를 명확히 꺼내는 편이 낫습니다.',
+      uprightIntermediate: '손실 원인을 구조적으로 분해하면 회복 계획 수립이 빨라집니다.',
+      reversedBeginner: '감정 소모가 커져 판단이 흐려질 수 있습니다.',
+      reversedIntermediate: '방어적 대응이 길어지면 회복 속도가 더 늦어질 수 있습니다.'
+    },
+    Six: {
+      core: '회복과 흐름 회귀를 안정적으로 만들어야 하는',
+      uprightBeginner: '작은 회복 신호를 놓치지 않으면 흐름이 다시 살아납니다.',
+      uprightIntermediate: '회복 구간 지표를 분리 관리하면 반등 품질을 높일 수 있습니다.',
+      reversedBeginner: '과거 패턴으로 되돌아가 진전이 더뎌질 수 있습니다.',
+      reversedIntermediate: '회복 착시를 경계하고 지속 조건을 확인해야 합니다.'
+    },
+    Seven: {
+      core: '점검과 전략 수정을 통해 정렬해야 하는',
+      uprightBeginner: '지금 방식이 맞는지 체크리스트로 점검하면 오류가 줄어듭니다.',
+      uprightIntermediate: '전략 가정의 유효기간을 설정하면 수정 타이밍을 놓치지 않습니다.',
+      reversedBeginner: '의심이 커져 실행 자체를 멈출 수 있습니다.',
+      reversedIntermediate: '전술 과다로 큰 방향을 잃을 수 있어 상위 목표 재고정이 필요합니다.'
+    },
+    Eight: {
+      core: '반복 훈련과 숙련을 축적해야 하는',
+      uprightBeginner: '반복이 지루해도 숙련 구간은 꾸준함이 답입니다.',
+      uprightIntermediate: '피드백 루프를 짧게 돌릴수록 실력 상승 곡선이 가팔라집니다.',
+      reversedBeginner: '같은 실수를 반복하며 자신감이 떨어질 수 있습니다.',
+      reversedIntermediate: '반복은 많지만 개선률이 낮을 수 있어 훈련 설계 전환이 필요합니다.'
+    },
+    Nine: {
+      core: '완성 직전 조율이 필요한',
+      uprightBeginner: '거의 끝난 만큼 마무리 품질 점검이 중요합니다.',
+      uprightIntermediate: '완성 직전 리스크를 줄이는 미세 조정이 전체 성과를 좌우합니다.',
+      reversedBeginner: '막판 불안으로 과도하게 손보며 흐름을 해칠 수 있습니다.',
+      reversedIntermediate: '과최적화로 일정/비용이 늘어날 수 있어 종료 기준 고정이 필요합니다.'
+    },
+    Ten: {
+      core: '주기를 완결하고 다음 단계로 넘겨야 하는',
+      uprightBeginner: '끝맺음을 분명히 하면 다음 시작이 쉬워집니다.',
+      uprightIntermediate: '완료 정의와 인수인계를 구조화하면 성과 재현성이 높아집니다.',
+      reversedBeginner: '마무리가 느슨해 피로가 누적될 수 있습니다.',
+      reversedIntermediate: '완결 지연이 전체 사이클 효율을 떨어뜨릴 수 있습니다.'
+    },
+    Page: {
+      core: '탐색과 학습을 실제 경험으로 연결해야 하는',
+      uprightBeginner: '처음이라도 시도 횟수를 늘리면 감이 빠르게 잡힙니다.',
+      uprightIntermediate: '학습 로그를 남기면 탐색 품질과 전이 학습 속도가 올라갑니다.',
+      reversedBeginner: '호기심은 큰데 실행이 산만해질 수 있습니다.',
+      reversedIntermediate: '기초 검증 없이 확장하면 학습 부채가 빠르게 커질 수 있습니다.'
+    },
+    Knight: {
+      core: '추진력을 관리하며 실험을 전진시켜야 하는',
+      uprightBeginner: '속도가 붙을 때 방향 체크를 병행하면 실수를 줄일 수 있습니다.',
+      uprightIntermediate: '실험 단위를 통제하면 추진력과 품질을 함께 유지할 수 있습니다.',
+      reversedBeginner: '급한 추진으로 마찰이나 누락이 생길 수 있습니다.',
+      reversedIntermediate: '속도 편향이 리스크 노출을 키울 수 있어 제동 규칙이 필요합니다.'
+    },
+    Queen: {
+      core: '내면화와 성숙으로 운영 안정성을 높여야 하는',
+      uprightBeginner: '급히 흔들리기보다 중심을 지키는 태도가 유리합니다.',
+      uprightIntermediate: '정서/상황 신호를 함께 읽어 의사결정 정밀도를 높일 수 있습니다.',
+      reversedBeginner: '감정 기복으로 흐름이 들쭉날쭉해질 수 있습니다.',
+      reversedIntermediate: '내부 기준 과신이 외부 피드백 차단으로 이어질 수 있습니다.'
+    },
+    King: {
+      core: '책임 운영과 의사결정 일관성을 확보해야 하는',
+      uprightBeginner: '결정한 기준을 끝까지 지키면 결과가 안정됩니다.',
+      uprightIntermediate: '권한과 책임의 경계를 명확히 해야 운영 효율이 높아집니다.',
+      reversedBeginner: '통제 과다나 책임 회피가 동시에 나타날 수 있습니다.',
+      reversedIntermediate: '결정 피로가 누적되면 판단 품질이 떨어져 위임 설계가 필요합니다.'
+    }
+  };
+
+  const suit = suitProfiles[card.suit] || suitProfiles.Wands;
+  const rank = rankProfiles[card.rank] || rankProfiles.Page;
+  const nuance = getMinorSuitRankNuance(card.suit, card.rank);
+  const keyword0 = card.keywords?.[0] || '핵심';
+  const keyword1 = card.keywords?.[1] || keyword0;
+
+  return {
+    ...defaultProfile,
+    coreFocus: `${card.suitKo} ${card.rankKo} 카드는 ${suit.core} 시점입니다. ${rank.core} 구간입니다. ${nuance.core}`,
+    symbolFocus: `${suit.symbol} ${nuance.symbol}`,
+    uprightBeginner: `${rank.uprightBeginner} "${keyword0}" 키워드를 하루 행동 1개에 연결해 보세요. ${nuance.upright}`,
+    uprightIntermediate: `${rank.uprightIntermediate} "${keyword0}" 키워드가 실제 성과 지표로 남는지 확인하세요. ${nuance.upright}`,
+    reversedBeginner: `${rank.reversedBeginner} "${keyword1}" 주제를 무리 없이 다시 세우는 것이 우선입니다. ${nuance.reversed}`,
+    reversedIntermediate: `${rank.reversedIntermediate} 내부/외부 원인을 분리해 교정 우선순위를 정하세요. ${nuance.reversed}`,
+    loveFocus: `${suit.love} ${card.rankKo} 단계에서는 "${keyword1}" 키워드가 관계 온도 조절의 핵심 변수입니다. ${nuance.love}`,
+    careerFocus: `${suit.career} ${card.rankKo} 단계에서는 "${keyword0}" 키워드를 완료 기준으로 문서화해야 효과가 큽니다. ${nuance.career}`
+  };
+}
+
+function getMinorSuitRankNuance(suit, rank) {
+  const defaultNuance = {
+    core: '현재 흐름에 맞는 작고 구체적인 행동 정의가 품질을 좌우합니다.',
+    symbol: '카드 상징을 추상어로 두지 말고 오늘의 행동 문장으로 번역해 보세요.',
+    upright: '오늘 안에 확인 가능한 단위로 실행하면 카드 메시지가 훨씬 선명해집니다.',
+    reversed: '문제를 크게 해석하기보다 재현 가능한 원인 1개를 먼저 잡는 편이 유리합니다.',
+    love: '상대 해석보다 합의 가능한 행동 약속을 먼저 세우면 흔들림이 줄어듭니다.',
+    career: '성과 정의를 수치나 증거 기반으로 고정하면 의사결정 편차를 줄일 수 있습니다.'
+  };
+
+  const bySuit = {
+    Wands: {
+      Ace: {
+        core: '아이디어 점화를 실제 첫 실행으로 연결하는 순간이 핵심입니다.',
+        symbol: '불씨를 키우되 번지지 않게 범위를 통제해야 합니다.',
+        upright: '첫 시도는 완성보다 착수가 중요합니다.',
+        reversed: '열정 분산을 막기 위해 목표를 1개로 제한하세요.',
+        love: '설렘 표현은 빠르게, 약속 속도는 천천히 맞추는 편이 좋습니다.',
+        career: '새 과제는 착수 시각과 완료 기준을 동시에 정해 두세요.'
+      },
+      Two: {
+        core: '확장과 보류 사이 균형점을 잡는 판단이 중요합니다.',
+        symbol: '불 원소의 팽창을 제어하면 선택 오류를 줄일 수 있습니다.',
+        upright: 'A/B 비교 기준을 하나로 고정해 보세요.',
+        reversed: '욕심이 커질수록 실행 우선순위를 잃기 쉽습니다.',
+        love: '밀당보다 관계 속도 합의가 먼저입니다.',
+        career: '동시 진행 과제를 줄이면 성과 밀도가 올라갑니다.'
+      },
+      Three: {
+        core: '개인 추진력을 팀 확장 구조로 전환하는 구간입니다.',
+        symbol: '성장 신호가 보일 때 협업 인터페이스를 정해야 합니다.',
+        upright: '역할 분담을 한 문장으로 명확히 하세요.',
+        reversed: '협업 기대치 불일치가 마찰을 키울 수 있습니다.',
+        love: '관계에서도 함께 그리는 계획이 중요해집니다.',
+        career: '성과 공유 방식(보고/리뷰)을 먼저 정하면 속도가 납니다.'
+      },
+      Four: {
+        core: '축적한 추진력을 안정된 기반으로 고정해야 하는 시점입니다.',
+        symbol: '불의 에너지를 구조 안에 담아야 지속성이 생깁니다.',
+        upright: '고정 루틴 1개를 만들어 보세요.',
+        reversed: '안정 욕구가 도전을 과도하게 막을 수 있습니다.',
+        love: '관계의 안전감을 만드는 반복 행동이 필요합니다.',
+        career: '반복 가능한 실행 패턴을 표준화해 두세요.'
+      },
+      Five: {
+        core: '경쟁과 충돌을 학습 에너지로 전환해야 하는 구간입니다.',
+        symbol: '마찰은 실패가 아니라 조정 포인트를 드러냅니다.',
+        upright: '갈등 원인 1개를 사실로 정리하세요.',
+        reversed: '승부욕 과잉이 협업 관계를 해칠 수 있습니다.',
+        love: '감정 싸움보다 대화 규칙을 먼저 세우세요.',
+        career: '논쟁은 결론·근거·담당으로 마무리해야 합니다.'
+      },
+      Six: {
+        core: '추진력의 성과를 가시화해 다음 동력으로 연결하는 단계입니다.',
+        symbol: '인정받는 흐름에서 오만을 경계해야 합니다.',
+        upright: '작은 승리 기록이 자신감을 지탱합니다.',
+        reversed: '성과 집착이 팀 균형을 무너뜨릴 수 있습니다.',
+        love: '칭찬과 인정의 표현이 관계 온도를 높입니다.',
+        career: '성과를 공개 기준으로 공유하면 동력이 유지됩니다.'
+      },
+      Seven: {
+        core: '방어와 고집 사이에서 전략적 버팀을 선택해야 합니다.',
+        symbol: '높은 위치는 우위이자 피로의 시작점일 수 있습니다.',
+        upright: '지킬 기준 1개를 분명히 하세요.',
+        reversed: '방어 과잉은 기회 상실로 이어질 수 있습니다.',
+        love: '감정 방어벽을 낮추는 대화가 필요합니다.',
+        career: '우선순위 재정렬 없이는 소모전이 길어집니다.'
+      },
+      Eight: {
+        core: '기회 타이밍을 놓치지 않는 속도 조절이 중요합니다.',
+        symbol: '빠른 전개일수록 명확한 의사결정 규칙이 필요합니다.',
+        upright: '결정 지연을 줄이면 흐름이 붙습니다.',
+        reversed: '성급한 이동이 누락을 만들 수 있습니다.',
+        love: '빠른 감정 전개엔 경계 합의가 필요합니다.',
+        career: '짧은 주기 점검으로 품질 저하를 막으세요.'
+      },
+      Nine: {
+        core: '지친 상태에서도 포기하지 않는 마지막 버팀이 핵심입니다.',
+        symbol: '방어 자세는 경험의 축적을 보여줍니다.',
+        upright: '휴식과 실행의 간격을 설계하세요.',
+        reversed: '피로 누적이 과민 반응으로 나타날 수 있습니다.',
+        love: '상처 반응을 인정하면 갈등이 줄어듭니다.',
+        career: '막판엔 품질보다 지속 가능성을 우선하세요.'
+      },
+      Ten: {
+        core: '과부하 신호를 읽고 부담 구조를 재배치해야 합니다.',
+        symbol: '불 원소가 과적되면 추진이 아니라 소진으로 바뀝니다.',
+        upright: '짐을 분산하면 완주율이 올라갑니다.',
+        reversed: '책임 과잉이 의욕 저하를 만들 수 있습니다.',
+        love: '관계 짐을 혼자 지지 않도록 분담하세요.',
+        career: '업무 과부하는 우선순위 재설계로 풀어야 합니다.'
+      },
+      Page: {
+        core: '새로운 영감과 실험을 빠르게 테스트해야 하는 단계입니다.',
+        symbol: '호기심은 자산이지만 방향 없는 시도는 소모가 됩니다.',
+        upright: '짧은 실험 1회를 바로 실행하세요.',
+        reversed: '흥미 위주 선택으로 완성이 늦어질 수 있습니다.',
+        love: '설렘 전달은 좋지만 과장 표현은 줄이세요.',
+        career: '아이디어는 검증 루프 안에서 관리하세요.'
+      },
+      Knight: {
+        core: '강한 추진력을 제어 가능한 전진으로 바꿔야 합니다.',
+        symbol: '속도는 장점이지만 제동장치 없는 질주는 위험합니다.',
+        upright: '목표를 향해 밀되 점검 주기를 지키세요.',
+        reversed: '성급함이 관계·성과 마찰을 키울 수 있습니다.',
+        love: '강한 표현 전에 상대 수용도를 확인하세요.',
+        career: '실행 속도와 품질 기준을 동시에 명시하세요.'
+      },
+      Queen: {
+        core: '열정을 내면화해 안정적인 영향력으로 전환하는 단계입니다.',
+        symbol: '불의 에너지를 성숙하게 다루면 지속성이 생깁니다.',
+        upright: '감정 기복보다 꾸준함을 선택하세요.',
+        reversed: '의욕 저하가 길어지면 동력이 꺼질 수 있습니다.',
+        love: '따뜻함을 유지하되 경계를 분명히 하세요.',
+        career: '팀 동기 관리가 성과 지속성을 만듭니다.'
+      },
+      King: {
+        core: '비전과 실행을 통합해 책임 있게 리드해야 하는 단계입니다.',
+        symbol: '통제된 불은 조직을 움직이는 동력이 됩니다.',
+        upright: '결정 기준을 명확히 공표하세요.',
+        reversed: '독단이 커지면 실행 반발이 늘어납니다.',
+        love: '주도권보다 상호 존중의 리듬이 중요합니다.',
+        career: '리더십은 방향 제시와 자원 배분의 정밀도에서 드러납니다.'
+      }
+    },
+    Cups: {
+      Ace: { core: '감정의 새 흐름이 열리는 시점입니다.', symbol: '감정 수용력은 관계 회복의 출발점입니다.', upright: '진심 표현 1개를 먼저 해보세요.', reversed: '감정 과잉/회피를 동시에 경계하세요.', love: '호감 표현은 구체적일수록 전달됩니다.', career: '팀 공감대 형성이 실행 저항을 줄입니다.' },
+      Two: { core: '상호 교감과 1:1 정렬이 핵심입니다.', symbol: '대칭 관계의 균형이 품질을 좌우합니다.', upright: '합의 문장 1개를 명확히 하세요.', reversed: '기대치 불일치가 상처를 키울 수 있습니다.', love: '서로 원하는 속도를 맞춰보세요.', career: '협업 파트너와 기준을 선명히 맞추세요.' },
+      Three: { core: '정서적 확장과 연대가 강화되는 구간입니다.', symbol: '즐거움은 연결을 만들지만 분산도 만들 수 있습니다.', upright: '기쁨을 공유하되 경계를 지키세요.', reversed: '관계 소음이 본질을 흐릴 수 있습니다.', love: '함께 즐기는 시간이 신뢰를 키웁니다.', career: '팀 시너지는 역할 명확화와 함께 갈 때 오래갑니다.' },
+      Four: { core: '감정 포화 속에서 의미 재탐색이 필요한 시점입니다.', symbol: '무감동은 거절이 아니라 재정렬 신호일 수 있습니다.', upright: '무기력의 원인을 한 줄로 적어보세요.', reversed: '놓친 기회를 뒤늦게 볼 수 있습니다.', love: '권태 신호를 대화로 전환하세요.', career: '동기 저하 원인을 과제 설계에서 점검하세요.' },
+      Five: { core: '상실 감정을 건강하게 소화해야 하는 구간입니다.', symbol: '남은 자원을 보는 시선 전환이 회복을 만듭니다.', upright: '잃은 것과 남은 것을 분리하세요.', reversed: '슬픔 회피가 회복 지연을 만듭니다.', love: '미련보다 회복 행동을 먼저 정하세요.', career: '실패 복기는 책임 추궁보다 학습 정리에 집중하세요.' },
+      Six: { core: '과거 정서와 현재 행동을 연결해 회복하는 단계입니다.', symbol: '추억은 위안이지만 회귀 고정은 위험합니다.', upright: '좋았던 패턴을 현재에 맞게 재사용하세요.', reversed: '과거 미화가 현재 판단을 가릴 수 있습니다.', love: '과거 얘기는 현재 약속으로 연결하세요.', career: '이전 성공 패턴을 현재 조건에 맞게 수정하세요.' },
+      Seven: { core: '감정적 선택지가 많아 분별력이 필요한 구간입니다.', symbol: '환상과 현실 구분이 핵심 과제입니다.', upright: '가능성 목록을 줄여 우선순위를 정하세요.', reversed: '달콤한 선택이 실행력을 갉아먹을 수 있습니다.', love: '기대와 현실을 문장으로 분리하세요.', career: '아이디어 풀을 평가 기준으로 선별하세요.' },
+      Eight: { core: '정서적 거리두기와 다음 단계 이동이 필요한 시점입니다.', symbol: '떠남은 포기가 아니라 성장 전환일 수 있습니다.', upright: '정리할 관계/습관 1개를 선택하세요.', reversed: '미련 때문에 전환이 지연될 수 있습니다.', love: '관계 방향을 솔직히 재합의하세요.', career: '현 구조의 한계를 인정하고 재배치를 추진하세요.' },
+      Nine: { core: '정서적 만족과 감사가 성숙하게 쌓이는 구간입니다.', symbol: '만족은 성취의 신호지만 안주 경계가 필요합니다.', upright: '성취를 인정하고 다음 목표를 가볍게 정하세요.', reversed: '과욕이 만족을 잠식할 수 있습니다.', love: '고마움 표현이 관계 만족도를 높입니다.', career: '성과 보상과 다음 과제를 균형 있게 설계하세요.' },
+      Ten: { core: '관계 완결성과 정서적 안정의 정점에 가까운 단계입니다.', symbol: '지속 가능한 행복은 일상 운영에서 완성됩니다.', upright: '함께 유지할 루틴을 합의하세요.', reversed: '겉평화 아래 미해결 이슈가 남을 수 있습니다.', love: '가족/장기 관계의 역할 합의가 중요합니다.', career: '팀 안정감을 해치지 않는 성과 운영이 필요합니다.' },
+      Page: { core: '감정 학습과 공감 탐색이 시작되는 단계입니다.', symbol: '작은 감정 신호를 읽는 능력이 자랍니다.', upright: '느낀 점을 짧게 기록해 보세요.', reversed: '감정 과해석으로 오해가 생길 수 있습니다.', love: '섬세한 표현이 호감을 키웁니다.', career: '피드백 수용 태도가 성장 속도를 높입니다.' },
+      Knight: { core: '감정을 행동으로 전달하는 추진 단계입니다.', symbol: '로맨틱한 에너지와 현실 조율이 동시에 필요합니다.', upright: '진심 전달은 구체적 행동과 함께 하세요.', reversed: '감정 과몰입이 현실 판단을 흐릴 수 있습니다.', love: '고백/제안은 시점과 맥락을 맞추세요.', career: '관계 중심 설득은 실행 계획과 함께 제시하세요.' },
+      Queen: { core: '깊은 공감과 내면 안정으로 관계를 지지하는 단계입니다.', symbol: '정서적 수용력은 치유와 연결의 기반입니다.', upright: '감정 경청이 해법을 열 수 있습니다.', reversed: '감정 흡수 과다로 소진될 수 있습니다.', love: '돌봄과 경계 설정을 같이 가져가세요.', career: '팀 정서 관리를 하되 역할 경계는 분명히 하세요.' },
+      King: { core: '감정을 성숙하게 운영하며 신뢰를 만드는 단계입니다.', symbol: '안정된 정서는 리더십의 중요한 기반입니다.', upright: '차분한 판단이 관계 신뢰를 높입니다.', reversed: '감정 억압이 거리감을 만들 수 있습니다.', love: '공감과 결정의 균형을 맞추세요.', career: '감정 리더십과 업무 기준을 함께 운영하세요.' }
+    },
+    Swords: {
+      Ace: { core: '판단의 선명함이 열리는 시작 구간입니다.', symbol: '사실 기반 사고가 혼선을 줄입니다.', upright: '문제 정의를 한 문장으로 고정하세요.', reversed: '성급한 단정이 오류를 키울 수 있습니다.', love: '추측보다 확인 질문을 우선하세요.', career: '핵심 이슈를 명확히 선언하고 시작하세요.' },
+      Two: { core: '결정을 미루기 쉬운 균형 구간입니다.', symbol: '정적은 평화처럼 보여도 결단 지연일 수 있습니다.', upright: '결정 데드라인을 먼저 정하세요.', reversed: '회피가 길어질수록 비용이 커집니다.', love: '침묵 대신 입장 표명이 필요합니다.', career: '의사결정 기준을 문서로 남기세요.' },
+      Three: { core: '상처 인식과 진실 수용이 필요한 구간입니다.', symbol: '아픈 사실을 회피하면 회복이 늦어집니다.', upright: '불편한 사실 1개를 인정하세요.', reversed: '상처 재생산 패턴을 끊어야 합니다.', love: '감정 상처를 사실로 정리해 대화하세요.', career: '실패 원인을 명확히 기록해 재발을 막으세요.' },
+      Four: { core: '휴식과 재정비로 판단력을 회복해야 하는 시점입니다.', symbol: '멈춤은 비효율이 아니라 복구 전략입니다.', upright: '강제 휴식 시간을 확보하세요.', reversed: '과로가 지속되면 판단 품질이 급락합니다.', love: '갈등 후 재정비 시간을 합의하세요.', career: '리프레시 없는 질주는 품질 저하를 부릅니다.' },
+      Five: { core: '승패 집착을 내려놓고 손실을 최소화해야 하는 구간입니다.', symbol: '이긴 논쟁이 진 전략이 될 수 있습니다.', upright: '핵심 손실을 먼저 계산하세요.', reversed: '자존심 싸움이 관계/성과를 동시에 해칩니다.', love: '이기려는 말보다 회복 문장이 필요합니다.', career: '갈등 해결의 목표를 성과 회복으로 고정하세요.' },
+      Six: { core: '혼란을 벗어나 안정 구간으로 이동하는 단계입니다.', symbol: '이동은 도피가 아니라 재배치일 수 있습니다.', upright: '이전 대비 안정 지표를 확인하세요.', reversed: '미정리 이슈가 발목을 잡을 수 있습니다.', love: '거리 조절과 안전한 대화 환경이 필요합니다.', career: '전환 계획에 리스크 완충 장치를 넣으세요.' },
+      Seven: { core: '전략적 대응과 정보 비대칭 관리가 필요한 구간입니다.', symbol: '영리함은 유효하지만 신뢰 손실을 동반할 수 있습니다.', upright: '숨길 것과 공유할 것을 분리하세요.', reversed: '단기 이득이 장기 신뢰를 깎을 수 있습니다.', love: '회피성 소통을 줄여야 오해가 줄어듭니다.', career: '전략은 윤리·신뢰 기준 안에서 운용하세요.' },
+      Eight: { core: '인지적 제약을 풀고 선택 가능성을 회복해야 하는 단계입니다.', symbol: '묶임의 상당수는 해석 프레임에서 발생합니다.', upright: '가능한 선택지를 다시 적어보세요.', reversed: '자기 제한 문장이 행동을 막을 수 있습니다.', love: '고정관념을 내려놓고 사실을 확인하세요.', career: '막힌 문제는 가정 변경으로 풀릴 수 있습니다.' },
+      Nine: { core: '불안과 과잉 사고를 관리해야 하는 구간입니다.', symbol: '야간 사고 루프는 현실보다 크게 느껴질 수 있습니다.', upright: '걱정 항목을 행동 항목으로 바꾸세요.', reversed: '불안 회피가 문제를 더 키울 수 있습니다.', love: '불안 투사를 줄이고 요청을 분명히 하세요.', career: '리스크 리스트와 대응안을 1:1로 매칭하세요.' },
+      Ten: { core: '한계 지점을 인정하고 회복 경로를 설계해야 하는 단계입니다.', symbol: '끝은 손실이자 재시작의 기준점입니다.', upright: '완전히 끝낼 것을 정해 정리하세요.', reversed: '소진 부정을 멈추고 회복 계획을 세우세요.', love: '감정 바닥을 인정해야 회복 대화가 시작됩니다.', career: '실패 데이터를 회복 로드맵으로 전환하세요.' },
+      Page: { core: '새 관점과 학습 사고가 열리는 탐색 구간입니다.', symbol: '질문 품질이 성장 속도를 결정합니다.', upright: '좋은 질문 1개를 만들고 검증하세요.', reversed: '정보 과잉으로 본질을 놓칠 수 있습니다.', love: '말의 뉘앙스를 확인해 오해를 줄이세요.', career: '학습 노트를 구조화하면 판단력이 빨리 늡니다.' },
+      Knight: { core: '강한 주장과 속도 있는 판단이 등장하는 단계입니다.', symbol: '결단력은 강점이지만 충돌 리스크를 동반합니다.', upright: '핵심 메시지를 간결하게 전달하세요.', reversed: '직선적 태도가 관계 저항을 키울 수 있습니다.', love: '정확한 말과 배려의 톤을 같이 챙기세요.', career: '빠른 추진 전 이해관계자 정렬이 필요합니다.' },
+      Queen: { core: '명확함과 통찰로 기준을 세우는 성숙 단계입니다.', symbol: '냉정함은 단절이 아니라 명료함의 기술입니다.', upright: '감정과 사실을 분리해 판단하세요.', reversed: '비판 과잉이 협업을 경직시킬 수 있습니다.', love: '솔직함은 유지하되 상처 표현은 줄이세요.', career: '기준 중심 피드백이 팀 품질을 높입니다.' },
+      King: { core: '전략적 판단과 구조적 의사결정이 핵심인 단계입니다.', symbol: '논리 체계는 복잡한 문제를 단순화합니다.', upright: '결정 원칙을 먼저 선언하세요.', reversed: '논리 과신이 현실 맥락을 누락할 수 있습니다.', love: '원칙과 공감을 함께 가져가세요.', career: '전략 문서화로 의사결정 일관성을 확보하세요.' }
+    },
+    Pentacles: {
+      Ace: { core: '현실 자원 기반의 시작점이 열리는 구간입니다.', symbol: '가능성은 자원 확보와 실행 설계에서 현실화됩니다.', upright: '작은 투자/행동을 즉시 실행하세요.', reversed: '기회가 와도 실행 준비가 부족할 수 있습니다.', love: '말보다 실제 배려 행동이 관계를 안정시킵니다.', career: '초기 자원 배분안을 명확히 하세요.' },
+      Two: { core: '복수 자원을 균형 운영해야 하는 시점입니다.', symbol: '유연한 리듬이 흔들림 대응력을 만듭니다.', upright: '시간·돈·에너지 균형을 재점검하세요.', reversed: '멀티태스킹 과부하를 경계하세요.', love: '관계와 개인 일정의 균형이 필요합니다.', career: '업무 우선순위를 주기적으로 재배치하세요.' },
+      Three: { core: '기술·협업·품질이 결합되는 생산 단계입니다.', symbol: '실력은 협업 구조 속에서 증폭됩니다.', upright: '피드백을 반영해 완성도를 올리세요.', reversed: '평가 기준 불일치가 품질 저하를 부를 수 있습니다.', love: '함께 만드는 경험이 신뢰를 높입니다.', career: '협업 규격과 품질 기준을 먼저 합의하세요.' },
+      Four: { core: '자원 보호와 통제 욕구가 커지는 구간입니다.', symbol: '안정 추구는 필요하지만 경직은 기회 상실을 부릅니다.', upright: '지킬 것과 풀어줄 것을 구분하세요.', reversed: '불안 기반 통제가 관계를 좁힐 수 있습니다.', love: '소유감보다 신뢰 기반 경계가 중요합니다.', career: '리스크 관리와 투자 유연성을 함께 유지하세요.' },
+      Five: { core: '결핍 체감 속에서 회복 자원을 찾아야 하는 단계입니다.', symbol: '부족함 인식은 도움 요청의 출발점이 될 수 있습니다.', upright: '도움 받을 채널 1개를 확보하세요.', reversed: '수치심이 회복 행동을 막을 수 있습니다.', love: '힘든 상태를 숨기지 말고 공유하세요.', career: '손실 구간에서는 생존 지표를 먼저 지키세요.' },
+      Six: { core: '주고받음의 균형과 자원 순환이 중요한 구간입니다.', symbol: '지원은 힘이지만 의존 구조를 만들 수도 있습니다.', upright: '지원의 조건과 기간을 명확히 하세요.', reversed: '불균형 교환이 관계 피로를 키울 수 있습니다.', love: '배려의 균형을 점검하세요.', career: '지원/성과의 교환 구조를 투명하게 설계하세요.' },
+      Seven: { core: '투입 대비 회수 시점을 점검해야 하는 단계입니다.', symbol: '기다림은 수동이 아니라 전략적 관찰입니다.', upright: '성과 측정 기준을 재확인하세요.', reversed: '조급함으로 성급한 결정을 내릴 수 있습니다.', love: '관계 투자와 기대 회수의 간격을 조율하세요.', career: '중간 평가 없이 지속 투자하지 마세요.' },
+      Eight: { core: '숙련을 실무 성과로 축적하는 구간입니다.', symbol: '정교한 반복이 경쟁력을 만듭니다.', upright: '작업 품질 체크리스트를 운영하세요.', reversed: '반복 피로로 품질 하락이 생길 수 있습니다.', love: '작은 실천의 꾸준함이 신뢰를 만듭니다.', career: '숙련 지표(속도·오류율)를 함께 추적하세요.' },
+      Nine: { core: '자립성과 결과 안정성이 높아지는 성숙 단계입니다.', symbol: '독립은 성취이지만 고립으로 흐르지 않게 관리해야 합니다.', upright: '성과를 즐기되 유지 전략을 세우세요.', reversed: '성취 과시가 관계 거리를 만들 수 있습니다.', love: '자립성과 친밀감의 균형이 중요합니다.', career: '성과 유지 비용을 미리 계산해 두세요.' },
+      Ten: { core: '장기 안정과 유산 구조를 설계하는 완결 단계입니다.', symbol: '축적된 자원은 운영 구조가 있을 때 가치가 커집니다.', upright: '장기 운영 원칙을 문서화하세요.', reversed: '형식적 안정이 실제 취약성을 가릴 수 있습니다.', love: '가족/장기 계획의 역할 분담을 명확히 하세요.', career: '장기 포트폴리오와 위험 분산을 점검하세요.' },
+      Page: { core: '현실 감각 기반의 학습 시작점이 열리는 단계입니다.', symbol: '작은 실습이 큰 신뢰를 만듭니다.', upright: '배운 것을 바로 적용해 보세요.', reversed: '준비만 하다 실행을 놓칠 수 있습니다.', love: '사소한 배려 행동이 관계를 바꿉니다.', career: '기초 역량을 빠르게 실무에 연결하세요.' },
+      Knight: { core: '꾸준함과 성실함으로 결과를 쌓아야 하는 단계입니다.', symbol: '느려 보여도 누적이 강한 카드입니다.', upright: '정해진 루틴을 묵직하게 지키세요.', reversed: '관성화로 개선을 놓칠 수 있습니다.', love: '약속 이행의 일관성이 신뢰를 만듭니다.', career: '안정 실행과 개선 실행을 분리 운영하세요.' },
+      Queen: { core: '현실 감각과 돌봄 운영이 동시에 필요한 성숙 단계입니다.', symbol: '실용적 돌봄은 주변 안정성을 높입니다.', upright: '실행 가능한 배려를 설계하세요.', reversed: '돌봄 과부하로 자기 소진이 생길 수 있습니다.', love: '생활 리듬을 맞추는 배려가 중요합니다.', career: '운영 안정성과 팀 케어를 함께 챙기세요.' },
+      King: { core: '자원 통제와 책임 경영이 핵심인 리더 단계입니다.', symbol: '현실 리더십은 숫자와 사람을 함께 다룹니다.', upright: '장기 기준과 단기 실행을 연결하세요.', reversed: '안전 집착이 혁신 지연을 만들 수 있습니다.', love: '안정 제공과 감정 소통을 같이 가져가세요.', career: '재무/운영 지표 기반 의사결정을 고도화하세요.' }
+    }
+  };
+
+  return bySuit[suit]?.[rank] ?? defaultNuance;
 }
 
 function suitTheme(suit) {
@@ -75,7 +713,7 @@ export function normalizeExternalSections(raw, cardId) {
     if (typeof raw[key] !== 'string' || raw[key].trim().length < 10) {
       return null;
     }
-    sections[key] = raw[key].trim();
+    sections[key] = enforceMinLines(raw[key].trim());
   }
   return {
     cardId,
@@ -84,23 +722,79 @@ export function normalizeExternalSections(raw, cardId) {
   };
 }
 
+function enforceMinLines(text, minLines = 3) {
+  const lines = String(text || '')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  if (lines.length >= minLines) {
+    return lines.join('\n');
+  }
+
+  const sentenceLines = String(text || '')
+    .split(/(?<=[.!?])\s+/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const merged = sentenceLines.length > lines.length ? sentenceLines : lines;
+
+  while (merged.length < minLines) {
+    merged.push('실전 적용은 작은 행동 단위로 검증해 보세요.');
+  }
+  return merged.join('\n');
+}
+
 export async function buildCardExplanation({ cardId, level, context, cache, externalGenerator }) {
   const card = getCardById(cardId);
   if (!card) return null;
 
-  const cacheKey = `explain:${cardId}:${level}:${context || ''}`;
+  const cacheKey = `explain:v4:${cardId}:${level}:${context || ''}`;
   const cached = cache.get(cacheKey);
   if (cached) return { ...cached, source: 'cache' };
+  const fallback = buildFallbackExplanation(card, level, context);
 
-  let generated = null;
-  if (externalGenerator) {
-    generated = await externalGenerator(card, level, context);
+  if (!externalGenerator) {
+    cache.set(cacheKey, fallback);
+    return fallback;
   }
 
-  const normalized = normalizeExternalSections(generated, cardId);
-  const finalValue = normalized ?? buildFallbackExplanation(card, level, context);
-  cache.set(cacheKey, finalValue);
-  return finalValue;
+  const generatedFast = await tryGenerateWithTimeout({
+    externalGenerator,
+    card,
+    level,
+    context,
+    timeoutMs: 350
+  });
+  const normalizedFast = normalizeExternalSections(generatedFast, cardId);
+  if (normalizedFast) {
+    cache.set(cacheKey, normalizedFast);
+    return normalizedFast;
+  }
+
+  cache.set(cacheKey, fallback);
+  void Promise.resolve(externalGenerator(card, level, context))
+    .then((raw) => {
+      const normalized = normalizeExternalSections(raw, cardId);
+      if (normalized) {
+        cache.set(cacheKey, normalized);
+      }
+    })
+    .catch(() => {});
+  return fallback;
+}
+
+async function tryGenerateWithTimeout({ externalGenerator, card, level, context, timeoutMs }) {
+  let timer = null;
+  try {
+    return await Promise.race([
+      externalGenerator(card, level, context),
+      new Promise((resolve) => {
+        timer = setTimeout(() => resolve(null), timeoutMs);
+      })
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
 }
 
 export function chooseReadingExperimentVariant(seed = '') {
