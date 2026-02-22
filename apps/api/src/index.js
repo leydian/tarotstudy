@@ -1,7 +1,7 @@
 import dotenv from 'dotenv';
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
-import { cards, getCardById } from './data/cards.js';
+import { cards, getCardById, buildCardDescriptions } from './data/cards.js';
 import { courses, lessonsByCourse, getCourseById, getLessonById } from './data/courses.js';
 import { spreads } from './data/spreads.js';
 import { buildCardExplanation, buildSpreadReading, chooseReadingExperimentVariant } from './content.js';
@@ -202,7 +202,8 @@ app.get('/api/courses/:courseId/lessons', async (request, reply) => {
 });
 
 app.get('/api/cards', async (request) => {
-  const { arcana, suit, difficulty, q } = request.query;
+  const { arcana, suit, difficulty, q, context = '', variantSeed = '' } = request.query;
+  const rotationSeed = String(variantSeed || new Date().toISOString().slice(0, 10));
 
   return cards.filter((card) => {
     if (arcana && card.arcana !== arcana) return false;
@@ -214,19 +215,31 @@ app.get('/api/cards', async (request) => {
       if (!hay.includes(keyword)) return false;
     }
     return true;
-  });
+  }).map((card) => ({
+    ...card,
+    descriptions: buildCardDescriptions(card, {
+      context: String(context || ''),
+      variantSeed: rotationSeed
+    })
+  }));
 });
 
 app.get('/api/cards/:cardId', async (request, reply) => {
   const { cardId } = request.params;
+  const { context = '', variantSeed = '' } = request.query || {};
   const card = getCardById(cardId);
   if (!card) {
     reply.code(404);
     return { message: 'Card not found' };
   }
+  const rotationSeed = String(variantSeed || new Date().toISOString().slice(0, 10));
 
   return {
     ...card,
+    descriptions: buildCardDescriptions(card, {
+      context: String(context || ''),
+      variantSeed: rotationSeed
+    }),
     relatedCardIds: cards
       .filter((candidate) => candidate.id !== card.id)
       .filter((candidate) =>

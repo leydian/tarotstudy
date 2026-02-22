@@ -86,22 +86,27 @@ function enrichCard(card) {
     imageUrl: imageSources[0],
     imageSources,
     imageAttribution: IMAGE_ATTRIBUTION,
-    descriptions: {
-      beginner: buildBeginnerDescription(card),
-      intermediate: buildIntermediateDescription(card)
-    }
+    descriptions: buildCardDescriptions(card)
   };
 }
 
-function buildBeginnerDescription(card) {
+export function buildCardDescriptions(card, { context = '', variantSeed = '' } = {}) {
+  return {
+    beginner: buildBeginnerDescription(card, { context, variantSeed }),
+    intermediate: buildIntermediateDescription(card, { context, variantSeed })
+  };
+}
+
+function buildBeginnerDescription(card, { context = '', variantSeed = '' } = {}) {
+  const contextProfile = inferBasicContextProfile(context);
   return [
-    buildBeginnerKeywordLine(card),
-    buildBeginnerFlowLine(card),
-    buildBeginnerLearningPoint(card)
+    buildBeginnerKeywordLine(card, { contextProfile, variantSeed }),
+    buildBeginnerFlowLine(card, { contextProfile, variantSeed }),
+    buildBeginnerLearningPoint(card, { contextProfile, variantSeed })
   ].join('\n');
 }
 
-function buildBeginnerKeywordLine(card) {
+function buildBeginnerKeywordLine(card, { contextProfile, variantSeed }) {
   const keyword = card.keywords?.[0] || '핵심';
   const keyword2 = card.keywords?.[1] || keyword;
   const keyword3 = card.keywords?.[2] || keyword;
@@ -135,10 +140,12 @@ function buildBeginnerKeywordLine(card) {
   const variants = card.arcana === 'major'
     ? majorVariants
     : (minorBySuit[card.suit] || majorVariants);
-  return pickCardVariant(card.id, 'beginner-keyword-line', variants);
+  const line = pickCardVariant(card.id, 'beginner-keyword-line', variants, variantSeed);
+  if (!contextProfile || contextProfile.id === 'general') return line;
+  return `${line} ${contextProfile.keywordHint}`;
 }
 
-function buildBeginnerFlowLine(card) {
+function buildBeginnerFlowLine(card, { contextProfile, variantSeed }) {
   const majorVariants = [
     `${card.nameKo} 카드는 인생의 큰 전환을 다루므로 정방향에서는 흐름이 열리고, 역방향에서는 멈춤 신호가 먼저 드러날 수 있습니다.`,
     `${card.nameKo} 카드는 태도와 선택의 축을 보여줍니다. 정방향은 전개가 비교적 자연스럽고, 역방향은 지연·과잉·회피를 점검해야 합니다.`,
@@ -168,10 +175,12 @@ function buildBeginnerFlowLine(card) {
   const variants = card.arcana === 'major'
     ? majorVariants
     : (minorBySuit[card.suit] || majorVariants);
-  return pickCardVariant(card.id, 'beginner-flow-line', variants);
+  const line = pickCardVariant(card.id, 'beginner-flow-line', variants, variantSeed);
+  if (!contextProfile || contextProfile.id === 'general') return line;
+  return `${line} ${contextProfile.flowHint}`;
 }
 
-function buildBeginnerLearningPoint(card) {
+function buildBeginnerLearningPoint(card, { contextProfile, variantSeed }) {
   const keyword = card.keywords?.[0] || '핵심';
   const keyword2 = card.keywords?.[1] || keyword;
 
@@ -182,12 +191,16 @@ function buildBeginnerLearningPoint(card) {
     `입문 학습 포인트: "${keyword2}" 키워드가 대화/일정/감정 중 어디에서 가장 크게 드러났는지 체크해 보세요.`
   ];
 
-  const minorVariants = buildMinorLearningPointVariants(card, keyword, keyword2);
+  const minorVariants = buildMinorLearningPointVariants(card, keyword, keyword2, contextProfile);
   const variants = card.arcana === 'major' ? majorVariants : minorVariants;
-  return pickCardVariant(card.id, 'beginner-learning-point', variants);
+  let line = pickCardVariant(card.id, 'beginner-learning-point', variants, variantSeed);
+  if (card.arcana === 'major' && contextProfile && contextProfile.id !== 'general') {
+    line = `${line} ${contextProfile.learningHint}`;
+  }
+  return line;
 }
 
-function buildMinorLearningPointVariants(card, keyword, keyword2) {
+function buildMinorLearningPointVariants(card, keyword, keyword2, contextProfile) {
   const suitGuides = {
     Wands: {
       focus: '추진 에너지와 실행 우선순위',
@@ -226,18 +239,23 @@ function buildMinorLearningPointVariants(card, keyword, keyword2) {
 
   const suit = suitGuides[card.suit] || suitGuides.Wands;
   const rankHint = rankGuides[card.rank] || '지금 카드 흐름에 맞는 작은 실행을 반복해 보세요.';
+  const comboFocus = getMinorSuitRankFocus(card.suit, card.rank);
+  const contextTail = contextProfile && contextProfile.id !== 'general'
+    ? ` ${contextProfile.learningHint}`
+    : '';
 
   return [
-    `입문 학습 포인트: ${card.nameKo} 카드는 ${suit.focus} 중심으로 읽는 카드입니다. ${rankHint} ${suit.action}`,
-    `입문 학습 포인트: ${card.rankKo} 단계에서는 ${rankHint} 오늘은 "${keyword}" 관련 행동 1개를 정해 실행 결과를 1줄로 남겨보세요.`,
-    `입문 학습 포인트: ${card.suitKo} 수트 학습에서는 ${suit.focus} 중심 접근이 기본입니다. ${card.nameKo}에서는 ${rankHint} 실행 후 체감 변화를 짧게 기록하세요.`,
-    `입문 학습 포인트: ${card.nameKo}를 볼 때 "${keyword2}" 키워드를 먼저 잡고, ${rankHint} ${suit.action}`
+    `입문 학습 포인트: ${card.nameKo} 카드는 ${suit.focus} 중심으로 읽는 카드입니다. ${comboFocus} ${rankHint} ${suit.action}${contextTail}`,
+    `입문 학습 포인트: ${card.rankKo} 단계에서는 ${comboFocus} ${rankHint} 오늘은 "${keyword}" 관련 행동 1개를 정해 실행 결과를 1줄로 남겨보세요.${contextTail}`,
+    `입문 학습 포인트: ${card.suitKo} 수트 학습에서는 ${suit.focus} 중심 접근이 기본입니다. ${card.nameKo}에서는 ${comboFocus} ${rankHint} 실행 후 체감 변화를 짧게 기록하세요.${contextTail}`,
+    `입문 학습 포인트: ${card.nameKo}를 볼 때 "${keyword2}" 키워드를 먼저 잡고, ${comboFocus} ${rankHint} ${suit.action}${contextTail}`
   ];
 }
 
-function pickCardVariant(cardId, salt, variants) {
+function pickCardVariant(cardId, salt, variants, variantSeed = '') {
   if (!Array.isArray(variants) || variants.length === 0) return '';
-  const seed = `${cardId}:${salt}`;
+  const rotationSeed = String(variantSeed || '');
+  const seed = `${cardId}:${salt}:${rotationSeed}`;
   let hash = 0;
   for (let i = 0; i < seed.length; i += 1) {
     hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
@@ -245,16 +263,92 @@ function pickCardVariant(cardId, salt, variants) {
   return variants[hash % variants.length];
 }
 
-function buildIntermediateDescription(card) {
+function buildIntermediateDescription(card, { context = '' } = {}) {
   const rankLine = card.rank
     ? `${card.rankKo} 단계는 ${rankStage(card.rank)} 맥락을 덧붙입니다.`
     : '원형 카드이므로 개인 심리·상황 구조·타이밍의 3축으로 분해해 해석합니다.';
+  const contextProfile = inferBasicContextProfile(context);
 
   return [
     `${card.nameKo}를 중급 관점에서 볼 때, 단일 키워드보다 카드 위치(과거/현재/미래)와 인접 카드의 상호작용을 우선 평가합니다.`,
-    `${rankLine} 같은 카드라도 질문 범주(연애/일/관계)에 따라 긍정 신호와 경고 신호를 분리해서 기록하세요.`,
+    `${rankLine} 같은 카드라도 질문 범주(연애/일/관계)에 따라 긍정 신호와 경고 신호를 분리해서 기록하세요.${contextProfile.id !== 'general' ? ` ${contextProfile.flowHint}` : ''}`,
     `중급 학습 포인트: "사실(관찰) → 해석(가설) → 조언(행동)" 3단계로 문장을 구성하면 리딩 일관성이 크게 높아집니다.`
   ].join('\n');
+}
+
+function inferBasicContextProfile(context = '') {
+  const text = String(context || '').toLowerCase();
+  const profiles = [
+    {
+      id: 'career',
+      keywords: ['이직', '직장', '회사', '업무', '면접', '커리어', '프로젝트'],
+      keywordHint: '커리어 맥락이라면 키워드를 실행 증거(산출물/일정)와 연결해 읽어보세요.',
+      flowHint: '일정/역할/성과 기준을 같이 보면 해석 정확도가 올라갑니다.',
+      learningHint: '기록할 때는 성과 지표 1개를 함께 남겨보세요.'
+    },
+    {
+      id: 'relationship',
+      keywords: ['연애', '관계', '재회', '갈등', '소통', '상대'],
+      keywordHint: '관계 맥락이라면 키워드를 대화 장면 1개와 연결해 읽는 편이 좋습니다.',
+      flowHint: '감정 사실과 요청 문장을 분리하면 오해를 줄일 수 있습니다.',
+      learningHint: '대화 전/후 감정 변화를 짧게 기록해 보세요.'
+    },
+    {
+      id: 'finance',
+      keywords: ['돈', '재정', '지출', '소비', '수입', '저축', '투자'],
+      keywordHint: '재정 맥락이라면 키워드를 지출/저축 선택과 연결해 해석해 보세요.',
+      flowHint: '손실 방어 기준과 실행 기준을 함께 두면 해석이 안정됩니다.',
+      learningHint: '금액/빈도 중 1개를 숫자로 기록하면 복기가 쉬워집니다.'
+    },
+    {
+      id: 'study',
+      keywords: ['공부', '시험', '학습', '자격증', '과제', '준비'],
+      keywordHint: '학습 맥락이라면 키워드를 반복 주기와 연결해 보는 것이 효과적입니다.',
+      flowHint: '학습량보다 복기 품질을 먼저 보면 개선이 빨라집니다.',
+      learningHint: '학습 전/후 이해도 변화를 한 줄로 남겨보세요.'
+    }
+  ];
+
+  for (const profile of profiles) {
+    if (profile.keywords.some((keyword) => text.includes(keyword))) {
+      return profile;
+    }
+  }
+
+  return {
+    id: 'general',
+    keywordHint: '',
+    flowHint: '',
+    learningHint: ''
+  };
+}
+
+function getMinorSuitRankFocus(suit, rank) {
+  const suitFocus = {
+    Wands: '추진 흐름을 유지하면서 과열을 통제하는',
+    Cups: '감정 교류를 안정적으로 다루는',
+    Swords: '판단 정확도와 소통 명료도를 높이는',
+    Pentacles: '현실 운영과 결과 누적을 강화하는'
+  };
+  const rankFocus = {
+    Ace: '시동 구간',
+    Two: '균형 조정 구간',
+    Three: '협업 확장 구간',
+    Four: '기반 고정 구간',
+    Five: '갈등 재정비 구간',
+    Six: '회복 연결 구간',
+    Seven: '점검 보정 구간',
+    Eight: '숙련 축적 구간',
+    Nine: '완성 조율 구간',
+    Ten: '마무리 전환 구간',
+    Page: '탐색 학습 구간',
+    Knight: '추진 관리 구간',
+    Queen: '내면 안정 구간',
+    King: '운영 책임 구간'
+  };
+  const s = suitFocus[suit] || '핵심 흐름을 점검하는';
+  const r = rankFocus[rank] || '성장 구간';
+  return `${s} ${r}이라는 점을 같이 기억해 두세요.`;
 }
 
 function getImagePath(card) {
