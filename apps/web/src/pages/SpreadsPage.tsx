@@ -104,10 +104,10 @@ export function SpreadsPage() {
   const drawItems = drawMutation.data?.items ?? [];
   const cardByPosition = new Map(drawItems.map((item) => [item.position.name, item]));
   const spreadVisualPreset =
-    SPREAD_VISUAL_PRESETS[selected.id] ??
-    (selected.cardCount <= 5
+    (selected ? SPREAD_VISUAL_PRESETS[selected.id] : null) ??
+    ((selected?.cardCount ?? 1) <= 5
       ? { scale: 'xl', rowHeight: 132, minColWidth: 94 }
-      : selected.cardCount <= 8
+      : (selected?.cardCount ?? 1) <= 8
         ? { scale: 'lg', rowHeight: 120, minColWidth: 86 }
         : { scale: 'md', rowHeight: 110, minColWidth: 74 });
   const choiceComparison = useMemo(() => {
