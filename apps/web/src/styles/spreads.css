@@ -44,6 +44,10 @@
   background: var(--reading-bg);
 }
 
+.card-reversed {
+  transform: rotate(180deg);
+}
+
 .spread-slot-link {
   display: inline-flex;
   flex-direction: column;

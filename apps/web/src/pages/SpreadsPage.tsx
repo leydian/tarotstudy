@@ -286,7 +286,7 @@ export function SpreadsPage() {
                           sources={drawn.card.imageSources}
                           cardId={drawn.card.id}
                           alt={drawn.card.nameKo}
-                          className="spread-slot-thumb"
+                          className={`spread-slot-thumb ${drawn.orientation === 'reversed' ? 'card-reversed' : ''}`}
                           loading="lazy"
                         />
                         <strong className="spread-slot-name">{drawn.card.nameKo}</strong>
@@ -426,7 +426,7 @@ export function SpreadsPage() {
                       sources={item.card.imageSources}
                       cardId={item.card.id}
                       alt={item.card.nameKo}
-                      className="tarot-thumb"
+                      className={`tarot-thumb ${item.orientation === 'reversed' ? 'card-reversed' : ''}`}
                       loading="lazy"
                     />
                   <div>
