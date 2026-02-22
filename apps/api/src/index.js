@@ -372,35 +372,40 @@ function pickRandomCards(deck, count) {
 }
 
 function summarizeSpread({ spreadId = '', spreadName, items, context = '', level = 'beginner' }) {
+  const normalizedContext = normalizeContextForSpread({ spreadName, context });
   let rawSummary = '';
   if (spreadId === 'yearly-fortune') {
-    rawSummary = summarizeYearlyFortune({ items, context, level });
-    return finalizeSpreadSummary({ spreadName, items, context, rawSummary });
+    rawSummary = summarizeYearlyFortune({ items, context: normalizedContext, level });
+    return finalizeSpreadSummary({ spreadName, items, context: normalizedContext, rawSummary });
   }
   if (spreadId === 'weekly-fortune') {
-    rawSummary = summarizeWeeklyFortune({ items, context, level });
-    return finalizeSpreadSummary({ spreadName, items, context, rawSummary });
+    rawSummary = summarizeWeeklyFortune({ items, context: normalizedContext, level });
+    return finalizeSpreadSummary({ spreadName, items, context: normalizedContext, rawSummary });
+  }
+  if (spreadId === 'monthly-fortune') {
+    rawSummary = summarizeMonthlyFortune({ items, context: normalizedContext, level });
+    return finalizeSpreadSummary({ spreadName, items, context: normalizedContext, rawSummary });
   }
   if (spreadId === 'three-card') {
-    rawSummary = summarizeThreeCard({ items, context, level });
-    return finalizeSpreadSummary({ spreadName, items, context, rawSummary });
+    rawSummary = summarizeThreeCard({ items, context: normalizedContext, level });
+    return finalizeSpreadSummary({ spreadName, items, context: normalizedContext, rawSummary });
   }
   if (spreadId === 'relationship-recovery') {
-    rawSummary = summarizeRelationshipRecovery({ items, context, level });
-    return finalizeSpreadSummary({ spreadName, items, context, rawSummary });
+    rawSummary = summarizeRelationshipRecovery({ items, context: normalizedContext, level });
+    return finalizeSpreadSummary({ spreadName, items, context: normalizedContext, rawSummary });
   }
   if (spreadId === 'celtic-cross') {
-    rawSummary = summarizeCelticCross({ items, context, level });
-    return finalizeSpreadSummary({ spreadName, items, context, rawSummary });
+    rawSummary = summarizeCelticCross({ items, context: normalizedContext, level });
+    return finalizeSpreadSummary({ spreadName, items, context: normalizedContext, rawSummary });
   }
-  const contextTone = inferSummaryContextTone(context);
+  const contextTone = inferSummaryContextTone(normalizedContext);
   const topKeywords = pickTopKeywords(items, 3);
   const keywordText = topKeywords.join(', ');
   const uprightCount = items.filter((item) => item.orientation === 'upright').length;
   const reversedCount = items.length - uprightCount;
   const leadLine = buildSummaryLead({
     spreadName,
-    context,
+    context: normalizedContext,
     firstItem: items[0],
     topKeywords,
     uprightCount,
@@ -411,19 +416,19 @@ function summarizeSpread({ spreadId = '', spreadName, items, context = '', level
     firstItem: items[0],
     lastItem: items[items.length - 1],
     items,
-    context,
+    context: normalizedContext,
     contextTone
   });
   const actionLine = buildSummaryAction({
     spreadName,
     level,
-    context,
+    context: normalizedContext,
     firstItem: items[0],
     contextTone
   });
-  const themeLine = buildSummaryTheme({ spreadName, context, items, topKeywords });
+  const themeLine = buildSummaryTheme({ spreadName, context: normalizedContext, items, topKeywords });
   rawSummary = polishSummary([leadLine, focusLine, actionLine, themeLine].filter(Boolean).join(' '));
-  return finalizeSpreadSummary({ spreadName, items, context, rawSummary });
+  return finalizeSpreadSummary({ spreadName, items, context: normalizedContext, rawSummary });
 }
 
 function finalizeSpreadSummary({ spreadName = '', items = [], context = '', rawSummary = '' }) {
@@ -458,27 +463,60 @@ function analyzeSpreadSignal(items = []) {
   const total = scored.reduce((acc, row) => acc + row.score, 0);
   const uprightRatio = scored.filter((row) => row.item?.orientation === 'upright').length / scored.length;
   const avgRisk = scored.reduce((acc, row) => acc + row.risk, 0) / scored.length;
-  const label = Math.abs(total) < 0.7
+  let label = Math.abs(total) < 0.7
     ? '박빙'
     : (total > 1.2 && uprightRatio >= 0.52 && avgRisk < 2.1)
       ? '우세'
       : '조건부';
+  const hasHighRiskReversed = scored.some((row) => row.item?.orientation === 'reversed' && row.risk >= 2);
+  const severeRiskCount = scored.filter((row) => row.risk >= 3).length;
+  if (label === '우세' && (hasHighRiskReversed || severeRiskCount >= 2 || avgRisk >= 1.6)) {
+    label = '조건부';
+  }
 
-  const topEvidence = [...scored]
-    .sort((a, b) => Math.abs(b.score) - Math.abs(a.score))
-    .slice(0, 3)
-    .map((row) => {
-      const position = row.item?.position?.name || '포지션';
-      const card = row.item?.card?.nameKo || '카드';
-      const keyword = row.item?.card?.keywords?.[0] || '핵심';
-      const orientation = row.item?.orientation === 'upright' ? '정방향' : '역방향';
-      const reason = row.score >= 0
-        ? `가용 에너지가 ${keyword} 축에서 살아 있음`
-        : `${keyword} 축의 소모/지연 리스크가 큼`;
-      return { position, card, keyword, orientation, reason };
-    });
+  const sorted = [...scored].sort((a, b) => Math.abs(b.score) - Math.abs(a.score));
+  const positive = sorted.filter((row) => row.score >= 0);
+  const negative = sorted.filter((row) => row.score < 0);
+  const picks = [];
+  if (positive[0]) picks.push(positive[0]);
+  if (negative[0]) picks.push(negative[0]);
+  for (const row of sorted) {
+    if (picks.length >= 3) break;
+    if (picks.includes(row)) continue;
+    const hasSamePosition = picks.some((picked) => picked.item?.position?.name === row.item?.position?.name);
+    if (hasSamePosition) continue;
+    picks.push(row);
+  }
+  while (picks.length < 3 && sorted[picks.length]) {
+    picks.push(sorted[picks.length]);
+  }
+
+  const topEvidence = picks.slice(0, 3).map((row) => {
+    const position = row.item?.position?.name || '포지션';
+    const card = row.item?.card?.nameKo || '카드';
+    const keyword = row.item?.card?.keywords?.[0] || '핵심';
+    const orientation = row.item?.orientation === 'upright' ? '정방향' : '역방향';
+    const reason = buildSpreadEvidenceReason({ position, keyword, score: row.score });
+    return { position, card, keyword, orientation, reason };
+  });
 
   return { label, topEvidence };
+}
+
+function buildSpreadEvidenceReason({ position = '', keyword = '핵심', score = 0 }) {
+  if (score >= 0) {
+    if (/월간 테마|현재 상황|현재 관계 상태|현재/.test(position)) {
+      return `${keyword} 기준축을 안정적으로 잡아주는 신호`;
+    }
+    if (/1주차|2주차|가까운 미래|행동/.test(position)) {
+      return `${keyword} 축에서 실행 탄력이 확인됨`;
+    }
+    return `가용 에너지가 ${keyword} 축에서 살아 있음`;
+  }
+  if (/3주차|결과|교차\/장애|거리\/갈등/.test(position)) {
+    return `${keyword} 축의 소모가 누적되기 쉬워 완급 조절이 필요함`;
+  }
+  return `${keyword} 축의 소모/지연 리스크가 큼`;
 }
 
 function pickSpreadLexicon(spreadName = '', intent = 'general') {
@@ -1172,8 +1210,63 @@ function buildWeeklyDayLine({
       : `"${keyword}" 흐름이 흔들릴 수 있어 속도 조절이 먼저입니다.`;
   })();
 
+  const uniqueIntentHint = pickDistinctWeeklyPhrase(intentHint, `${dayLabel}:intent:${seed}`, memory);
   const dayHint = pickDistinctWeeklyPhrase(open ? openHint : adjustHint, `${dayLabel}:hint:${seed}`, memory);
-  return `${label}은 ${rolePrefix} ${intentHint} ${dayHint}`.trim();
+  return `${label}은 ${rolePrefix} ${uniqueIntentHint} ${dayHint}`.trim();
+}
+
+function summarizeMonthlyFortune({ items, context = '', level = 'beginner' }) {
+  const pick = (name) => items.find((item) => item.position?.name === name) || null;
+  const theme = pick('월간 테마');
+  const week1 = pick('1주차');
+  const week2 = pick('2주차');
+  const week3 = pick('3주차');
+  const week4 = pick('4주차·정리');
+  const intent = inferYearlyIntent(context);
+  const tone = inferSummaryContextTone(context);
+  const uprightCount = items.filter((item) => item.orientation === 'upright').length;
+  const topKeyword = pickTopKeywords(items, 1)[0] || theme?.card?.keywords?.[0] || '월간 흐름';
+  const unstable = [week3, week4].some((item) => item?.orientation === 'reversed' || scoreCardRisk(item) >= 2);
+  const monthLabel = intent === 'relationship'
+    ? (uprightCount >= 3 ? '관계 진전 여지가 있으나 중반 리스크 관리가 필요한 달' : '속도 조절과 오해 관리가 우선인 달')
+    : uprightCount >= 3
+      ? '실행 여지가 살아 있으나 중반 완급 조절이 중요한 달'
+      : '정비 우선 운영이 필요한 달';
+  const cardLabel = (item) => item?.card?.nameKo
+    ? `${item.card.nameKo} ${item.orientation === 'reversed' ? '역방향' : '정방향'}`
+    : '신호 확인 필요';
+  const weekHint = (item, role) => {
+    if (!item) return `${role}는 카드 신호 확인이 필요합니다.`;
+    const keyword = item.card?.keywords?.[0] || '흐름';
+    const open = item.orientation !== 'reversed' && scoreCardRisk(item) < 2;
+    if (open) return `${role}(${cardLabel(item)})는 "${keyword}" 축이 열려 있어 실행 리듬을 붙이기 좋습니다.`;
+    return `${role}(${cardLabel(item)})는 "${keyword}" 축 마찰이 있어 속도보다 정비를 우선해야 합니다.`;
+  };
+  const bridge = (() => {
+    if (unstable) {
+      return '주별 운세와 연결할 때는 3주차 성격으로 보고, 주중에는 결론보다 확인 질문을 먼저 두는 운영이 맞습니다.';
+    }
+    return '주별 운세와 연결할 때는 1~2주차 성격으로 보고, 힘이 실리는 요일에 짧고 일관된 실행을 붙이면 체감이 좋아집니다.';
+  })();
+  const action = buildSummaryAction({
+    spreadName: '월별 운세',
+    level,
+    context,
+    firstItem: theme,
+    contextTone: tone
+  });
+  const overall = [
+    `월간 테마 카드는 ${cardLabel(theme)}이고, 핵심 키워드는 "${topKeyword}"입니다.`,
+    `전체적으로는 ${monthLabel}으로 보입니다.`
+  ].join(' ');
+
+  return [
+    `총평: ${overall}`,
+    `주차 흐름: ${weekHint(week1, '1주차')} ${weekHint(week2, '2주차')} ${weekHint(week3, '3주차')} ${weekHint(week4, '4주차·정리')}`,
+    `월-주 연결: ${bridge}`,
+    `실행 가이드: ${action}`,
+    `한 줄 테마: 이번 달은 '${topKeyword}' 기준으로 초반 실행-중반 완급-후반 정리 리듬을 분리하면 안정적입니다.`
+  ].join('\n\n');
 }
 
 function buildWeeklyActionGuide({
@@ -2771,6 +2864,24 @@ function splitSentences(text = '') {
 
 function normalizeContextText(context = '') {
   return String(context || '').trim().replace(/[.!?]+$/g, '');
+}
+
+function normalizeContextForSpread({ spreadName = '', context = '' }) {
+  let text = normalizeContextText(context);
+  if (!text) return '';
+  if (spreadName === '월별 운세') {
+    text = text
+      .replace(/이번\s*주/gi, '이번 달')
+      .replace(/금주/gi, '이번 달')
+      .replace(/주별\s*운세/gi, '월별 운세');
+  }
+  if (spreadName === '주별 운세') {
+    text = text
+      .replace(/이번\s*달/gi, '이번 주')
+      .replace(/이달/gi, '이번 주')
+      .replace(/월별\s*운세/gi, '주별 운세');
+  }
+  return text;
 }
 
 function isYesNoQuestion(text = '') {
