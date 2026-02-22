@@ -356,20 +356,26 @@ function pickRandomCards(deck, count) {
 }
 
 function summarizeSpread({ spreadId = '', spreadName, items, context = '', level = 'beginner' }) {
+  let rawSummary = '';
   if (spreadId === 'yearly-fortune') {
-    return summarizeYearlyFortune({ items, context, level });
+    rawSummary = summarizeYearlyFortune({ items, context, level });
+    return finalizeSpreadSummary({ spreadName, items, context, rawSummary });
   }
   if (spreadId === 'weekly-fortune') {
-    return summarizeWeeklyFortune({ items, context, level });
+    rawSummary = summarizeWeeklyFortune({ items, context, level });
+    return finalizeSpreadSummary({ spreadName, items, context, rawSummary });
   }
   if (spreadId === 'three-card') {
-    return summarizeThreeCard({ items, context, level });
+    rawSummary = summarizeThreeCard({ items, context, level });
+    return finalizeSpreadSummary({ spreadName, items, context, rawSummary });
   }
   if (spreadId === 'relationship-recovery') {
-    return summarizeRelationshipRecovery({ items, context, level });
+    rawSummary = summarizeRelationshipRecovery({ items, context, level });
+    return finalizeSpreadSummary({ spreadName, items, context, rawSummary });
   }
   if (spreadId === 'celtic-cross') {
-    return summarizeCelticCross({ items, context, level });
+    rawSummary = summarizeCelticCross({ items, context, level });
+    return finalizeSpreadSummary({ spreadName, items, context, rawSummary });
   }
   const contextTone = inferSummaryContextTone(context);
   const topKeywords = pickTopKeywords(items, 3);
@@ -400,7 +406,106 @@ function summarizeSpread({ spreadId = '', spreadName, items, context = '', level
     contextTone
   });
   const themeLine = buildSummaryTheme({ spreadName, context, items, topKeywords });
-  return polishSummary([leadLine, focusLine, actionLine, themeLine].filter(Boolean).join(' '));
+  rawSummary = polishSummary([leadLine, focusLine, actionLine, themeLine].filter(Boolean).join(' '));
+  return finalizeSpreadSummary({ spreadName, items, context, rawSummary });
+}
+
+function finalizeSpreadSummary({ spreadName = '', items = [], context = '', rawSummary = '' }) {
+  const decisionBlock = buildSpreadDecisionBlock({ spreadName, items, context });
+  const merged = [decisionBlock, rawSummary].filter(Boolean).join('\n\n');
+  return polishSummaryRhythm(merged);
+}
+
+function buildSpreadDecisionBlock({ spreadName = '', items = [], context = '' }) {
+  if (!Array.isArray(items) || !items.length) return '';
+  const intent = inferYearlyIntent(context);
+  const analysis = analyzeSpreadSignal(items);
+  const lexicon = pickSpreadLexicon(spreadName, intent);
+  const lead = analysis.label === '우세'
+    ? `${lexicon.main} 기준으로 전개 여지가 비교적 선명합니다.`
+    : analysis.label === '박빙'
+      ? `${lexicon.main} 기준이 비슷해 미세 조정이 결과를 가를 가능성이 큽니다.`
+      : `${lexicon.main} 구간의 마찰 신호가 있어 조건부 접근이 맞습니다.`;
+  const evidence = analysis.topEvidence.slice(0, 3).map((entry, idx) =>
+    `근거 ${idx + 1}: ${entry.position}(${entry.card}, ${entry.orientation}, '${entry.keyword}') · ${entry.reason}`
+  );
+  return [`판정: ${analysis.label} · ${lead}`, ...evidence].join('\n');
+}
+
+function analyzeSpreadSignal(items = []) {
+  const scored = items.map((item) => {
+    const risk = scoreCardRisk(item);
+    const orientationBase = item?.orientation === 'upright' ? 1.1 : -1.0;
+    const score = orientationBase - (risk * 0.35);
+    return { item, score, risk };
+  });
+  const total = scored.reduce((acc, row) => acc + row.score, 0);
+  const uprightRatio = scored.filter((row) => row.item?.orientation === 'upright').length / scored.length;
+  const avgRisk = scored.reduce((acc, row) => acc + row.risk, 0) / scored.length;
+  const label = Math.abs(total) < 0.7
+    ? '박빙'
+    : (total > 1.2 && uprightRatio >= 0.52 && avgRisk < 2.1)
+      ? '우세'
+      : '조건부';
+
+  const topEvidence = [...scored]
+    .sort((a, b) => Math.abs(b.score) - Math.abs(a.score))
+    .slice(0, 3)
+    .map((row) => {
+      const position = row.item?.position?.name || '포지션';
+      const card = row.item?.card?.nameKo || '카드';
+      const keyword = row.item?.card?.keywords?.[0] || '핵심';
+      const orientation = row.item?.orientation === 'upright' ? '정방향' : '역방향';
+      const reason = row.score >= 0
+        ? `가용 에너지가 ${keyword} 축에서 살아 있음`
+        : `${keyword} 축의 소모/지연 리스크가 큼`;
+      return { position, card, keyword, orientation, reason };
+    });
+
+  return { label, topEvidence };
+}
+
+function pickSpreadLexicon(spreadName = '', intent = 'general') {
+  const base = {
+    main: '핵심 흐름'
+  };
+  if (spreadName === '양자택일 (A/B)') return { main: '선택 유지성' };
+  if (spreadName === '3카드 스프레드') return { main: '상황-행동-결과 연결' };
+  if (spreadName === '일별 운세') return { main: '하루 운영 리듬' };
+  if (spreadName === '주별 운세') return { main: '요일별 완급' };
+  if (spreadName === '월별 운세') return { main: '월간 운영 축' };
+  if (spreadName === '연간 운세 (12개월)') return { main: '분기별 전략 축' };
+  if (spreadName === '켈틱 크로스') return { main: '서사 중심축' };
+  if (spreadName === '관계 회복 5카드') return { main: '회복 대화 구조' };
+  if (intent === 'finance') return { main: '손실 방어와 지속성' };
+  if (intent === 'relationship' || intent === 'relationship-repair') return { main: '대화 지속성' };
+  return base;
+}
+
+function polishSummaryRhythm(raw = '') {
+  const text = String(raw || '').trim();
+  if (!text) return text;
+  const paragraphs = text.split('\n\n').map((p) => p.trim()).filter(Boolean);
+  const seen = new Set();
+  const normalized = (s) => String(s || '')
+    .replace(/\s+/g, ' ')
+    .replace(/[“”"'`]/g, '')
+    .replace(/[!?.,]+$/g, '')
+    .trim();
+
+  const refined = paragraphs.map((paragraph) => {
+    const sentences = splitSentences(paragraph);
+    const uniqueSentences = [];
+    for (const sentence of sentences) {
+      const key = normalized(sentence);
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      uniqueSentences.push(sentence.trim());
+    }
+    return uniqueSentences.join(' ').trim();
+  }).filter(Boolean);
+
+  return refined.join('\n\n');
 }
 
 function summarizeThreeCard({ items, context = '', level = 'beginner' }) {
