@@ -473,20 +473,54 @@ function getCardNames(cardIds = [], limit = 6) {
 }
 
 function buildNovelExampleCardNamesByLessonId() {
-  const lessonIds = courses.flatMap((course) => (lessonsByCourse[course.id] || []).map((lesson) => lesson.id));
-  const allCardNames = cards.map((card) => card.nameKo);
-  const deckSize = allCardNames.length;
-  const offsetB = 17;
-  const offsetC = 31;
+  const lessons = courses.flatMap((course) => lessonsByCourse[course.id] || []);
+  const allCardNames = cards.map((card) => card.nameKo).filter(Boolean);
   const map = new Map();
+  const usedPrimary = new Set();
 
-  lessonIds.forEach((lessonId, index) => {
-    const base = index % deckSize;
-    map.set(lessonId, [
-      allCardNames[base],
-      allCardNames[(base + offsetB) % deckSize],
-      allCardNames[(base + offsetC) % deckSize]
-    ]);
+  function hashText(text = '') {
+    let hash = 0;
+    for (const ch of text) {
+      hash = ((hash * 33) + ch.charCodeAt(0)) >>> 0;
+    }
+    return hash;
+  }
+
+  function pickCard(options, startIndex, blocked = new Set()) {
+    if (options.length === 0) return '';
+    const len = options.length;
+    for (let i = 0; i < len; i += 1) {
+      const candidate = options[(startIndex + i) % len];
+      if (!blocked.has(candidate)) return candidate;
+    }
+    return options[startIndex % len];
+  }
+
+  lessons.forEach((lesson) => {
+    const optionNames = getCardNames(lesson.cardIds, lesson.cardIds?.length || 6)
+      .filter(Boolean);
+    const baseOptions = optionNames.length > 0 ? optionNames : allCardNames;
+    const start = hashText(lesson.id) % baseOptions.length;
+
+    let primary = '';
+    for (let i = 0; i < baseOptions.length; i += 1) {
+      const candidate = baseOptions[(start + i) % baseOptions.length];
+      if (!usedPrimary.has(candidate)) {
+        primary = candidate;
+        break;
+      }
+    }
+    if (!primary) primary = pickCard(baseOptions, start);
+
+    const blocked = new Set([primary]);
+    const secondStart = (start + Math.max(1, Math.floor(baseOptions.length / 2))) % baseOptions.length;
+    const second = pickCard(baseOptions, secondStart, blocked);
+    blocked.add(second);
+    const thirdStart = (start + Math.max(2, Math.floor((baseOptions.length * 2) / 3))) % baseOptions.length;
+    const third = pickCard(baseOptions, thirdStart, blocked);
+
+    usedPrimary.add(primary);
+    map.set(lesson.id, [primary, second, third]);
   });
 
   return map;
