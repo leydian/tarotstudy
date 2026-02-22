@@ -1252,7 +1252,7 @@ function withObjectParticle(word = '') {
 
 function buildKeywordEvidence(cardName = '', factExample = '') {
   const keywords = (cardKeywordsByName.get(cardName) || []).slice(0, 2);
-  const factLine = factExample ? ` 예: ${factExample}` : '';
+  const factLine = factExample ? ` 실제로는 ${factExample}` : '';
   if (keywords.length === 0) return `${cardName} 키워드를 현재 상황 사실과 연결했습니다.${factLine}`;
   const keywordPhrase = keywords.join(', ');
   const obj = hasFinalConsonant(keywordPhrase) ? '을' : '를';
@@ -1320,7 +1320,7 @@ function buildConcreteFactPairByLesson(lessonId) {
   }
   return [
     '오늘 일정표에서 미뤄진 항목 2개를 먼저 표시했습니다.',
-    '실제 완료 항목은 1개라 우선순위 재정렬이 필요했습니다.'
+    '완료 항목은 1개뿐이라 우선순위 재정렬이 필요했습니다.'
   ];
 }
 
@@ -1336,6 +1336,32 @@ function buildConcreteExecutionByLesson(lessonId, action) {
   return `오늘 20:00, 책상에서 ${withObjectParticle(action)} 20분 안에 실행하도록 일정에 넣었습니다.`;
 }
 
+function buildReviewExampleByLesson(lessonId) {
+  const id = String(lessonId || '');
+  if (id.startsWith('bt-')) {
+    return {
+      hit: '20:30에 15분 수정을 완료해 실제로 작업이 시작됐다.',
+      miss: '수정은 했지만 마감 전 최종 점검 1회를 빼먹었다.'
+    };
+  }
+  if (id.startsWith('ich-')) {
+    return {
+      hit: 'A안 기준표를 채운 뒤 선택이 흔들리지 않았다.',
+      miss: '비용은 비교했지만 피로 지표를 숫자로 남기지 못했다.'
+    };
+  }
+  if (id.startsWith('eql-')) {
+    return {
+      hit: '라벨과 근거를 대조해 어긋난 문장 1줄을 바로 고쳤다.',
+      miss: '근거 출처를 캡처로 남기지 않아 다음 확인에 시간이 걸렸다.'
+    };
+  }
+  return {
+    hit: '정한 시간에 핵심 행동 1개를 실제로 실행했다.',
+    miss: '복기 문장 2줄 중 1줄이 추상적으로 남아 다음 기준이 흐려졌다.'
+  };
+}
+
 function buildStoryNovelByType({ lessonId, type, blueprint, cardPreview, a, b, c }) {
   void type;
   const cards = cardPreview || '카드';
@@ -1348,13 +1374,14 @@ function buildStoryNovelByType({ lessonId, type, blueprint, cardPreview, a, b, c
   const keywordEvidenceB = buildKeywordEvidence(supportCard, factB);
   const conclusion = buildNovelConclusionByLesson(lessonId, blueprint).replace(/[.?!\s]+$/u, '');
   const execution = buildConcreteExecutionByLesson(lessonId, blueprint.action);
+  const reviewExample = buildReviewExampleByLesson(lessonId);
   return [
     `${characterTopic} 오늘 리딩이 어렵게 느껴졌습니다. 이유는 ${blueprint.situation} 때문이었습니다.`,
     `노트 첫 줄에 "${blueprint.question}"를 쓰자, 지금 다룰 핵심이 선명해졌습니다.`,
     `${cards} 중에서는 ${aSubject} 가장 먼저 눈에 들어왔고, ${conclusion}.`,
-    `${keywordEvidenceA} ${keywordEvidenceB} 그래서 근거 문장이 짧아졌고 해석이 퍼지지 않았습니다.`,
+    `${keywordEvidenceA} ${keywordEvidenceB} 이 두 근거를 붙이자 해석이 길어지지 않고 방향이 또렷해졌습니다.`,
     `${characterTopic} ${execution}`,
-    `마지막에는 ${blueprint.review}만 확인하며 적중 1줄과 오차 1줄을 적었습니다. ${withTopicParticle(checkCard)} 다음 점검 카드로 남겼습니다.`
+    `마지막에는 ${withObjectParticle(blueprint.review)} 기준으로 기록을 남겼습니다. 먼저 "${reviewExample.hit}"라는 성과를 확인했고, 이어서 "${reviewExample.miss}"라는 보정점을 적었습니다. 그리고 ${checkCard} 카드는 다음 리딩 시작 전에 먼저 확인할 카드로 메모해 두었습니다.`
   ];
 }
 
