@@ -225,6 +225,41 @@ export const spreads = [
     ]
   },
   {
+    id: 'relationship-recovery',
+    name: '관계 회복 5카드',
+    level: 'beginner',
+    cardCount: 5,
+    purpose: '관계 거리감의 원인과 회복 행동을 분리해 7일 실행 계획으로 연결합니다.',
+    whenToUse: [
+      '재회 가능성과 대화 재개 타이밍을 구조적으로 보고 싶을 때',
+      '갈등 이후 감정 해석보다 행동 우선순위를 정리하고 싶을 때',
+      '상대 신호와 내 행동 계획을 분리해 오판을 줄이고 싶을 때'
+    ],
+    positions: [
+      { name: '현재 관계 상태', meaning: '지금 관계 온도와 연결 상태' },
+      { name: '거리/갈등의 핵심', meaning: '반복되는 오해 또는 충돌의 중심 요인' },
+      { name: '상대 관점 신호', meaning: '상대 반응에서 읽히는 관심/방어 신호' },
+      { name: '회복 행동', meaning: '관계 회복을 위해 바로 실행할 행동' },
+      { name: '다음 7일 흐름', meaning: '이번 주 예상되는 관계 흐름과 주의점' }
+    ],
+    layout: {
+      cols: 3,
+      rows: 3,
+      slots: [
+        { position: '상대 관점 신호', col: 2, row: 1 },
+        { position: '거리/갈등의 핵심', col: 1, row: 2 },
+        { position: '현재 관계 상태', col: 2, row: 2 },
+        { position: '회복 행동', col: 3, row: 2 },
+        { position: '다음 7일 흐름', col: 2, row: 3 }
+      ]
+    },
+    studyGuide: [
+      '현재 관계 상태 카드를 기준으로 감정 추측과 사실 신호를 분리해 기록합니다.',
+      '회복 행동 카드를 오늘 실행 가능한 문장 1개로 번역합니다.',
+      '7일 뒤 실제 반응을 복기해 다음 리딩에서 행동 강도를 조정합니다.'
+    ]
+  },
+  {
     id: 'yearly-fortune',
     name: '연간 운세 (12개월)',
     level: 'intermediate',

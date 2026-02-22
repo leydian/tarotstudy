@@ -22,6 +22,12 @@ const imageFallbackStats = {
   byCard: {},
   recent: []
 };
+const spreadTelemetryStats = {
+  totalEvents: 0,
+  byType: {},
+  bySpread: {},
+  recent: []
+};
 let imageHealthSnapshot = null;
 const allowedOrigins = (process.env.CORS_ORIGIN
   || 'http://localhost:5173,http://127.0.0.1:5173')
@@ -43,6 +49,7 @@ await app.register(cors, {
 app.get('/api/health', async () => ({ ok: true }));
 app.get('/api/spreads', async () => spreads);
 app.get('/api/telemetry/image-fallback', async () => imageFallbackStats);
+app.get('/api/telemetry/spread-events', async () => spreadTelemetryStats);
 
 app.post('/api/telemetry/image-fallback', async (request, reply) => {
   const { stage = 'unknown', cardId = 'unknown', source = '' } = request.body || {};
@@ -61,6 +68,34 @@ app.post('/api/telemetry/image-fallback', async (request, reply) => {
     source: typeof source === 'string' ? source.slice(0, 180) : ''
   });
   imageFallbackStats.recent = imageFallbackStats.recent.slice(0, 50);
+
+  return { ok: true };
+});
+
+app.post('/api/telemetry/spread-events', async (request, reply) => {
+  const {
+    type = 'unknown',
+    spreadId = 'unknown',
+    level = 'unknown',
+    context = ''
+  } = request.body || {};
+
+  if (!['spread_drawn', 'spread_review_saved'].includes(String(type))) {
+    reply.code(400);
+    return { message: 'type must be spread_drawn or spread_review_saved' };
+  }
+
+  spreadTelemetryStats.totalEvents += 1;
+  spreadTelemetryStats.byType[type] = (spreadTelemetryStats.byType[type] || 0) + 1;
+  spreadTelemetryStats.bySpread[spreadId] = (spreadTelemetryStats.bySpread[spreadId] || 0) + 1;
+  spreadTelemetryStats.recent.unshift({
+    at: new Date().toISOString(),
+    type: String(type),
+    spreadId: String(spreadId),
+    level: String(level),
+    context: String(context).slice(0, 180)
+  });
+  spreadTelemetryStats.recent = spreadTelemetryStats.recent.slice(0, 80);
 
   return { ok: true };
 });
@@ -318,6 +353,9 @@ function summarizeSpread({ spreadId = '', spreadName, items, context = '', level
   if (spreadId === 'yearly-fortune') {
     return summarizeYearlyFortune({ items, context, level });
   }
+  if (spreadId === 'relationship-recovery') {
+    return summarizeRelationshipRecovery({ items, context, level });
+  }
   const contextTone = inferSummaryContextTone(context);
   const topKeywords = pickTopKeywords(items, 3);
   const keywordText = topKeywords.join(', ');
@@ -346,6 +384,44 @@ function summarizeSpread({ spreadId = '', spreadName, items, context = '', level
     contextTone
   });
   return polishSummary([leadLine, focusLine, actionLine].filter(Boolean).join(' '));
+}
+
+function summarizeRelationshipRecovery({ items, context = '', level = 'beginner' }) {
+  const pick = (name) => items.find((item) => item.position?.name === name) || null;
+  const current = pick('현재 관계 상태');
+  const friction = pick('거리/갈등의 핵심');
+  const signal = pick('상대 관점 신호');
+  const action = pick('회복 행동');
+  const week = pick('다음 7일 흐름');
+  const tone = inferSummaryContextTone(context);
+  const levelHint = level === 'intermediate' ? tone.intermediateHint : tone.beginnerHint;
+
+  const orientationLabel = (item) => {
+    if (!item) return '신호 확인 필요';
+    return item.orientation === 'upright' ? '열림 신호' : '조정 신호';
+  };
+  const keyword = (item) => item?.card?.keywords?.[0] || '관계 흐름';
+
+  const diagnosis = [
+    `핵심 진단: 현재 관계 상태(${current?.card?.nameKo || '-'})는 ${orientationLabel(current)}로 읽힙니다.`,
+    `거리/갈등의 핵심(${friction?.card?.nameKo || '-'})에서는 "${keyword(friction)}" 테마가 반복 포인트로 보입니다.`,
+    `상대 관점 신호(${signal?.card?.nameKo || '-'})는 ${orientationLabel(signal)}이므로 추측보다 반응 단서를 확인하는 접근이 유리합니다.`
+  ].join(' ');
+
+  const risk = [
+    `관계 리스크: 다음 7일 흐름(${week?.card?.nameKo || '-'}) 기준으로 "${keyword(week)}" 구간에서 감정 과속이 생기기 쉽습니다.`,
+    week?.orientation === 'upright'
+      ? '지금은 대화를 열 수 있는 창이 있으니 표현 강도만 낮추면 오해를 줄일 수 있습니다.'
+      : '지금은 결론을 서두르면 오해가 커질 수 있어 확인 대화와 속도 조절을 먼저 두는 편이 좋습니다.'
+  ].join(' ');
+
+  const plan = [
+    `7일 행동 계획: 회복 행동(${action?.card?.nameKo || '-'})을 기준으로 오늘 실행할 문장 1개를 먼저 정하세요.`,
+    '대화 전에는 사실 1개/요청 1개만 준비하고, 대화 후에는 상대 반응을 한 줄 복기로 남기세요.',
+    levelHint
+  ].join(' ');
+
+  return [diagnosis, risk, plan].join('\n\n');
 }
 
 function summarizeYearlyFortune({ items, context = '', level = 'beginner' }) {

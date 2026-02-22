@@ -63,6 +63,22 @@ export const api = {
       })
     });
   },
+  reportSpreadEvent(input: {
+    type: 'spread_drawn' | 'spread_review_saved';
+    spreadId: string;
+    level?: 'beginner' | 'intermediate';
+    context?: string;
+  }) {
+    return request<{ ok: boolean }>('/api/telemetry/spread-events', {
+      method: 'POST',
+      body: JSON.stringify({
+        type: input.type,
+        spreadId: input.spreadId,
+        level: input.level ?? 'beginner',
+        context: input.context ?? ''
+      })
+    });
+  },
   getImageFallbackStats() {
     return request<ImageFallbackStats>('/api/telemetry/image-fallback');
   },

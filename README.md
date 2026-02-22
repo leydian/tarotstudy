@@ -100,6 +100,8 @@ npm run dev:web -- --host 127.0.0.1 --port 5173
 ### 이미지 운영/관측 API
 - `POST /api/telemetry/image-fallback`
 - `GET /api/telemetry/image-fallback`
+- `POST /api/telemetry/spread-events`
+- `GET /api/telemetry/spread-events`
 - `GET /api/images/health-check`
 - `GET /api/images/alerts?failRateThreshold=20&minChecks=6`
 
@@ -107,8 +109,10 @@ npm run dev:web -- --host 127.0.0.1 --port 5173
 - 카드 이미지 다중 소스 fallback (`imageSources`) + 기본 SVG fallback
 - 카드 이미지 출처/라이선스 고지
 - 스프레드 실전 드로우 및 포지션별 리딩 생성
+- 관계 회복 5카드 스프레드(`relationship-recovery`) 제공
 - 양자택일 비교 카드(A/B 근미래/결과) + 가중치 기반 결론/신뢰도
 - 스프레드 복기 기록(맞음/부분맞음/다름 + 메모) 저장
+- 관계 회복 스프레드 draw/복기 이벤트 텔레메트리 수집
 - 대시보드 정확도 리포트(전체/스프레드 유형별)
 - 리딩 템플릿 A/B 실험(`readingExperiment`)
 

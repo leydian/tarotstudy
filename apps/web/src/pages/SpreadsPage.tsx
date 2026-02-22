@@ -53,6 +53,12 @@ export function SpreadsPage() {
         summary: data.summary,
         items: data.items
       });
+      sendSpreadEvent({
+        type: 'spread_drawn',
+        spreadId: data.spreadId,
+        level: data.level,
+        context: data.context
+      });
     }
   });
 
@@ -66,6 +72,15 @@ export function SpreadsPage() {
     () => spreadHistory.filter((item) => item.spreadId === selected?.id).slice(0, 8),
     [spreadHistory, selected?.id]
   );
+  const sendSpreadEvent = (payload: {
+    type: 'spread_drawn' | 'spread_review_saved';
+    spreadId: string;
+    level: 'beginner' | 'intermediate';
+    context?: string;
+  }) => {
+    if (payload.spreadId !== 'relationship-recovery') return;
+    void api.reportSpreadEvent(payload).catch(() => {});
+  };
 
   if (spreadsQuery.isLoading) return <p>대표 스프레드를 불러오는 중...</p>;
   if (spreadsQuery.isError || !selected) return <p>스프레드 데이터를 불러오지 못했습니다.</p>;
@@ -74,7 +89,7 @@ export function SpreadsPage() {
     <section className="stack">
       <article className="panel">
         <h2>대표 스프레드 학습</h2>
-        <p>양자택일, 일/주/월/년 운세, 켈틱 크로스까지 목적별로 선택해 학습하세요.</p>
+        <p>양자택일, 관계 회복, 일/주/월/년 운세, 켈틱 크로스까지 목적별로 선택해 학습하세요.</p>
         <div className="chip-wrap">
           {spreads.map((spread) => (
             <button
@@ -355,13 +370,22 @@ export function SpreadsPage() {
               <div className="filters">
                 <select
                   value={record.outcome ?? ''}
-                  onChange={(e) =>
+                  onChange={(e) => {
+                    const nextOutcome = (e.target.value || undefined) as 'matched' | 'partial' | 'different' | undefined;
                     reviewSpreadReading(
                       record.id,
-                      (e.target.value || undefined) as 'matched' | 'partial' | 'different' | undefined,
+                      nextOutcome,
                       reviewDraft[record.id] ?? record.reviewNote ?? ''
-                    )
-                  }
+                    );
+                    if (nextOutcome) {
+                      sendSpreadEvent({
+                        type: 'spread_review_saved',
+                        spreadId: record.spreadId,
+                        level: record.level,
+                        context: record.context
+                      });
+                    }
+                  }}
                 >
                   <option value="">결과 체감 선택</option>
                   <option value="matched">대체로 맞음</option>
@@ -375,13 +399,21 @@ export function SpreadsPage() {
                 />
                 <button
                   className="btn"
-                  onClick={() =>
+                  onClick={() => {
                     reviewSpreadReading(
                       record.id,
                       record.outcome,
                       reviewDraft[record.id] ?? record.reviewNote ?? ''
-                    )
-                  }
+                    );
+                    if (record.outcome) {
+                      sendSpreadEvent({
+                        type: 'spread_review_saved',
+                        spreadId: record.spreadId,
+                        level: record.level,
+                        context: record.context
+                      });
+                    }
+                  }}
                 >
                   복기 저장
                 </button>
