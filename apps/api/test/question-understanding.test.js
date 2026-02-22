@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   analyzeQuestionContextSync,
+  analyzeQuestionContextV2Sync,
   inferQuestionIntentEnhanced,
   parseChoiceOptions
 } from '../src/question-understanding/index.js';
@@ -40,4 +41,13 @@ test('choice parser avoids fake explicit A/B when options are missing', () => {
   const parsed = parseChoiceOptions('어느 쪽이 더 나을까?');
   assert.equal(parsed.hasChoice, false);
   assert.equal(parsed.mode, 'single');
+});
+
+test('analyzeQuestionContextV2Sync provides enriched fields for short utterances', () => {
+  const result = analyzeQuestionContextV2Sync('지금 잘까');
+  assert.equal(result.intent, 'daily');
+  assert.equal(result.questionType, 'yes_no');
+  assert.equal(result.subIntent, 'sleep');
+  assert.equal(typeof result.riskClass, 'string');
+  assert.equal(result.templateVersion, 'question-understanding-v2.5');
 });

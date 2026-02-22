@@ -606,3 +606,74 @@
   - choiceModeAccuracy: `100%`
   - pass: `true`
 - `npm run test:api` 통과
+
+## 18) 질문 이해/리딩 엔진 v2 구현 (전 스프레드 대응 기반)
+
+### 18.1 질문 이해 엔진 v2.5 추가
+- 변경 파일:
+  - `apps/api/src/question-understanding/index.js`
+  - `apps/api/src/question-understanding/short-utterance-rules.js` (신규)
+  - `apps/api/src/question-understanding/external-classifier.js`
+- 핵심:
+  - `analyzeQuestionContextV2Sync`, `analyzeQuestionContextV2` 추가
+  - v2 출력 필드 확장:
+    - `subIntent`, `domain`, `timeHorizon`, `riskClass`, `confidenceBand`, `templateVersion`
+  - 초단문 질문 보정:
+    - `지금 잘까`, `연락?`, `사도 돼?`, `today luck?` 등 짧은 질문 전용 규칙 추가
+  - 외부 분류기 적극 라우팅:
+    - 저신뢰(`QUESTION_UNDERSTANDING_EXTERNAL_THRESHOLD`, 기본 0.72) 또는 고위험(`riskClass=high`)이면 외부 분류 호출
+
+### 18.2 v2 API 엔드포인트 추가
+- 변경 파일:
+  - `apps/api/src/index.js`
+- 핵심:
+  - 질문 이해 v2:
+    - `POST /api/v2/question-understanding`
+    - 응답: `{ ok, analysis }`
+  - 스프레드 리딩 v2:
+    - `POST /api/v2/spreads/:spreadId/draw`
+    - 기존 draw 결과 + `readingV2` 블록 반환
+  - 기존 v1 엔드포인트는 유지(하위호환)
+
+### 18.3 리딩 엔진 v2 블록 추가
+- 변경 파일:
+  - `apps/api/src/index.js`
+- 핵심:
+  - 공통 draw 로직 분리(`performSpreadDraw`)
+  - `readingV2` 생성기 추가(`buildReadingV2`)
+    - `verdict`, `narrative`, `evidence`, `actionPlan`, `reviewPlan`, `safety`, `meta`, `summary`
+  - `READING_STYLE_MODE`(기본 `immersive_safe`) 반영
+
+### 18.4 프론트 타입/API 클라이언트 확장
+- 변경 파일:
+  - `apps/web/src/types.ts`
+  - `apps/web/src/lib/api.ts`
+- 핵심:
+  - 타입 추가:
+    - `QuestionUnderstandingV2`
+    - `SpreadReadingV2`
+    - `SpreadDrawResultV2`
+  - API 메서드 추가:
+    - `api.analyzeQuestionV2()`
+    - `api.drawSpreadV2()`
+
+### 18.5 평가/테스트 강화
+- 변경 파일:
+  - `apps/api/test/question-understanding.test.js`
+  - `scripts/question-understanding-eval-set.json`
+  - `scripts/question-understanding-eval.mjs`
+- 핵심:
+  - 초단문 케이스 포함 평가셋 확장: `25 -> 30`
+  - QA 기준 상향:
+    - intent/type/choice 정확도 각각 `>=97`
+    - 도메인별 floor 정확도 `>=97`
+  - v2 스키마 회귀 테스트 추가
+
+### 18.6 검증 로그
+- `npm run qa:question-understanding` 통과
+  - total: 30
+  - intent/type/choice/domainFloor: 모두 100%
+- `npm run test:api` 통과
+- `npm run typecheck:web` 통과
+- `npm run lint` 통과
+- `npm run docs:check-handoff` 통과

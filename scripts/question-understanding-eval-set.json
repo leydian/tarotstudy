@@ -23,5 +23,10 @@
   {"id":"q22","text":"어느 쪽이 더 나을까?","intent":"general","questionType":"yes_no","choiceMode":"single"},
   {"id":"q23","text":"A안이랑 B안 중 뭐가 좋을까?","intent":"general","questionType":"choice_ab","choiceMode":"explicit_ab"},
   {"id":"q24","text":"should I move now?","intent":"general","questionType":"yes_no","choiceMode":"single"},
-  {"id":"q25","text":"monthly luck for me","intent":"daily","questionType":"forecast","choiceMode":"single"}
+  {"id":"q25","text":"monthly luck for me","intent":"daily","questionType":"forecast","choiceMode":"single"},
+  {"id":"q26","text":"지금 잘까","intent":"daily","questionType":"yes_no","choiceMode":"single"},
+  {"id":"q27","text":"연락?","intent":"relationship","questionType":"yes_no","choiceMode":"single"},
+  {"id":"q28","text":"사도 돼?","intent":"finance","questionType":"yes_no","choiceMode":"single"},
+  {"id":"q29","text":"오늘 운세?","intent":"daily","questionType":"forecast","choiceMode":"single"},
+  {"id":"q30","text":"A안 B안 뭐가 나아?","intent":"general","questionType":"choice_ab","choiceMode":"explicit_ab"}
 ]

@@ -8,11 +8,13 @@ import type {
   LearningFunnelResponse,
   Lesson,
   NextActionsResponse,
+  QuestionUnderstandingV2,
   QuizPayload,
   QuizResult,
   ReviewInboxResponse,
   Spread,
   SpreadDrawResult,
+  SpreadDrawResultV2,
   TarotCard,
   UserProgressSnapshot
 } from '../types';
@@ -100,6 +102,32 @@ export const api = {
         variantId: input.variantId ?? '',
         level: input.level,
         context: input.context ?? ''
+      })
+    });
+  },
+  drawSpreadV2(input: {
+    spreadId: string;
+    variantId?: string | null;
+    level: 'beginner' | 'intermediate';
+    context?: string;
+    styleMode?: 'neutral' | 'immersive_safe';
+  }) {
+    return request<SpreadDrawResultV2>(`/api/v2/spreads/${input.spreadId}/draw`, {
+      method: 'POST',
+      body: JSON.stringify({
+        variantId: input.variantId ?? '',
+        level: input.level,
+        context: input.context ?? '',
+        styleMode: input.styleMode ?? 'immersive_safe'
+      })
+    });
+  },
+  analyzeQuestionV2(input: { text: string; mode?: 'legacy' | 'hybrid' | 'shadow' }) {
+    return request<{ ok: boolean; analysis: QuestionUnderstandingV2 }>('/api/v2/question-understanding', {
+      method: 'POST',
+      body: JSON.stringify({
+        text: input.text,
+        mode: input.mode ?? 'hybrid'
       })
     });
   },

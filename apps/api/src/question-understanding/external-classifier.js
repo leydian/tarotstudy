@@ -43,6 +43,10 @@ export async function classifyQuestionExternal(context = '', options = {}) {
       intent: parsed.intent,
       questionType: parsed.questionType,
       confidence: Number(parsed.confidence || 0.5),
+      subIntent: parsed.subIntent || null,
+      domain: parsed.domain || null,
+      timeHorizon: parsed.timeHorizon || null,
+      riskClass: parsed.riskClass || null,
       choice: parsed.choice || null,
       source: 'external_model'
     };

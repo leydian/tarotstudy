@@ -203,6 +203,88 @@ export interface SpreadDrawResult {
   summary: string;
 }
 
+export interface QuestionUnderstandingV2 {
+  text: string;
+  normalizedText: string;
+  intent: string;
+  subIntent: string;
+  domain: string;
+  questionType: 'yes_no' | 'forecast' | 'choice_ab' | 'open';
+  timeHorizon: 'immediate' | 'week' | 'month' | 'year' | 'unspecified';
+  riskClass: 'low' | 'medium' | 'high';
+  confidence: number;
+  confidenceBand: 'low' | 'medium' | 'high';
+  choice: {
+    mode: 'single' | 'explicit_ab';
+    hasChoice: boolean;
+    optionA: string;
+    optionB: string;
+    confidence?: number;
+    isPurchaseChoice?: boolean;
+    isLocationChoice?: boolean;
+    isWorkChoice?: boolean;
+  };
+  entities: {
+    timeHints: string[];
+    domainHints: string[];
+    locationCandidates: string[];
+    productCandidates: string[];
+  };
+  source: string;
+  templateVersion: string;
+}
+
+export interface SpreadReadingV2 {
+  verdict: {
+    label: '우세' | '조건부' | '박빙';
+    confidenceBand: 'low' | 'medium' | 'high';
+    cautionLevel: 'low' | 'medium' | 'high';
+    reason: string;
+  };
+  narrative: {
+    mode: string;
+    opening: string;
+    scene: string;
+    bridge: string;
+    closing: string;
+  };
+  evidence: Array<{
+    position: string;
+    card: string;
+    orientation: string;
+    keyword: string;
+    reason: string;
+  }>;
+  actionPlan: {
+    now: string;
+    today: string;
+    thisWeek: string;
+  };
+  reviewPlan: {
+    metric: string;
+    checkIn: string;
+    failSafe: string;
+  };
+  safety: {
+    disallowedToneTriggered: boolean;
+    downtoned: boolean;
+  };
+  meta: {
+    spreadId: string;
+    spreadName: string;
+    intent: string;
+    subIntent: string;
+    questionType: string;
+    source: string;
+    templateVersion: string;
+  };
+  summary: string;
+}
+
+export interface SpreadDrawResultV2 extends SpreadDrawResult {
+  readingV2: SpreadReadingV2;
+}
+
 export interface SpreadReviewRecord {
   id: string;
   spreadId: string;

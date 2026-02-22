@@ -27,6 +27,7 @@ function buildReport(rows, summary) {
   lines.push(`- intentAccuracy: ${summary.intentAccuracy}%`);
   lines.push(`- typeAccuracy: ${summary.typeAccuracy}%`);
   lines.push(`- choiceModeAccuracy: ${summary.choiceModeAccuracy}%`);
+  lines.push(`- domainFloorAccuracy: ${summary.domainFloorAccuracy}%`);
   lines.push(`- pass: ${summary.pass}`);
   lines.push('');
   lines.push('| id | intent(expected/pred) | type(expected/pred) | choiceMode(expected/pred) | pass |');
@@ -44,6 +45,7 @@ try {
   let intentOk = 0;
   let typeOk = 0;
   let choiceOk = 0;
+  const domainStats = new Map();
 
   for (const item of set) {
     const result = analyzeQuestionContextSync(item.text, { mode: 'hybrid', flag: true });
@@ -53,6 +55,11 @@ try {
     if (intentPass) intentOk += 1;
     if (typePass) typeOk += 1;
     if (choicePass) choiceOk += 1;
+    const domain = String(item.intent || 'general');
+    const row = domainStats.get(domain) || { total: 0, ok: 0 };
+    row.total += 1;
+    if (intentPass && typePass && choicePass) row.ok += 1;
+    domainStats.set(domain, row);
     rows.push({
       id: item.id,
       intentExpected: item.intent,
@@ -71,9 +78,12 @@ try {
     typeAccuracy: pct(typeOk, set.length),
     choiceModeAccuracy: pct(choiceOk, set.length)
   };
-  summary.pass = summary.intentAccuracy >= 95
-    && summary.typeAccuracy >= 95
-    && summary.choiceModeAccuracy >= 93;
+  const domainAccuracies = [...domainStats.values()].map((row) => pct(row.ok, row.total));
+  summary.domainFloorAccuracy = domainAccuracies.length ? Math.min(...domainAccuracies) : 100;
+  summary.pass = summary.intentAccuracy >= 97
+    && summary.typeAccuracy >= 97
+    && summary.choiceModeAccuracy >= 97
+    && summary.domainFloorAccuracy >= 97;
 
   ensureDir(outPath);
   fs.writeFileSync(outPath, buildReport(rows, summary), 'utf-8');
