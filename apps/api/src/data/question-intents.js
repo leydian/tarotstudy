@@ -624,6 +624,19 @@ const TOPIC_SERIES = [
   { id: 'longterm', label: '장기 운영' }
 ];
 
+const QUESTION_VARIANTS = [
+  { id: 'baseline', label: '핵심 질문' },
+  { id: 'action', label: '실행 우선' },
+  { id: 'risk', label: '리스크 점검' },
+  { id: 'timing', label: '타이밍 점검' },
+  { id: 'cost', label: '비용 효율' },
+  { id: 'energy', label: '에너지 관리' },
+  { id: 'priority', label: '우선순위' },
+  { id: 'review', label: '복기 포인트' },
+  { id: 'balance', label: '균형 운영' },
+  { id: 'longterm', label: '장기 관점' }
+];
+
 const TOPIC_INTENT_ANCHOR = {
   career: '커리어',
   relationship: '관계',
@@ -681,9 +694,9 @@ function normalizeQuestionBase(text = '') {
   return String(text || '').trim().replace(/[?？]\s*$/g, '');
 }
 
-function buildSeriesQuestion(baseQuestion = '', seriesLabel = '', intentAnchor = '운세') {
+function buildSeriesQuestion(baseQuestion = '', seriesLabel = '', variantLabel = '', intentAnchor = '운세') {
   const base = normalizeQuestionBase(baseQuestion);
-  return `${base} [${seriesLabel} · ${intentAnchor}]`.trim();
+  return `${base} [${seriesLabel} · ${variantLabel} · ${intentAnchor}]`.trim();
 }
 
 function buildQuestionBankByTopic() {
@@ -692,7 +705,11 @@ function buildQuestionBankByTopic() {
     for (const series of TOPIC_SERIES) {
       const seriesTopicId = `${topicId}__${series.id}`;
       const intentAnchor = TOPIC_INTENT_ANCHOR[topicId] ?? '운세';
-      const seriesQuestions = baseQuestions.map((question) => buildSeriesQuestion(question, series.label, intentAnchor));
+      const seriesQuestions = baseQuestions.flatMap((question) =>
+        QUESTION_VARIANTS.map((variant) =>
+          buildSeriesQuestion(question, series.label, variant.label, intentAnchor)
+        )
+      );
       entries.push([seriesTopicId, seriesQuestions]);
     }
   }

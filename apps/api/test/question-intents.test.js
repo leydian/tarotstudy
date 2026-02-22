@@ -6,18 +6,18 @@ import {
   inferQuestionIntent
 } from '../src/data/question-intents.js';
 
-test('predicted question bank provides 10000 questions', () => {
+test('predicted question bank provides 100000 questions', () => {
   const questions = getTarotPredictedQuestions();
-  assert.equal(questions.length, 10000);
+  assert.equal(questions.length, 100000);
   assert.equal(new Set(questions).size, questions.length, 'questions should be unique');
 });
 
-test('predicted question bank is grouped by topic with 10 items each', () => {
+test('predicted question bank is grouped by topic with 100 items each', () => {
   const byTopic = getTarotPredictedQuestionsByTopic();
   const entries = Object.entries(byTopic);
   assert.equal(entries.length, 1000);
   for (const [, questions] of entries) {
-    assert.equal(questions.length, 10);
+    assert.equal(questions.length, 100);
   }
 });
 
