@@ -401,6 +401,14 @@ function summarizeRelationshipRecovery({ items, context = '', level = 'beginner'
   const week = pick('다음 7일 흐름');
   const tone = inferSummaryContextTone(context);
   const levelHint = level === 'intermediate' ? tone.intermediateHint : tone.beginnerHint;
+  const intent = inferYearlyIntent(context);
+  const contextText = String(context || '').toLowerCase();
+  const repairMode = (() => {
+    if (/(재회|다시 만나|헤어|연락 재개|재접촉)/.test(contextText)) return 'reconnect';
+    if (/(사과|갈등|싸움|다툼|오해|서운|충돌)/.test(contextText)) return 'conflict';
+    if (/(거리|경계|빈도|장거리|부담|속도)/.test(contextText)) return 'distance';
+    return intent === 'relationship-repair' ? 'conflict' : 'general';
+  })();
 
   const cautionCardIds = new Set([
     'minor-swords-three', 'minor-swords-five', 'minor-swords-six', 'minor-swords-nine', 'minor-swords-ten',
@@ -414,6 +422,19 @@ function summarizeRelationshipRecovery({ items, context = '', level = 'beginner'
     return cautious ? '긴장 조정 신호' : '조정 신호';
   };
   const keyword = (item) => item?.card?.keywords?.[0] || '관계 흐름';
+  const combinedKeywords = [
+    ...(friction?.card?.keywords || []),
+    ...(week?.card?.keywords || []),
+    ...(action?.card?.keywords || [])
+  ].map((word) => String(word || '').toLowerCase());
+  const hasKeyword = (list) => list.some((word) => combinedKeywords.some((kw) => kw.includes(word)));
+  const riskTheme = (() => {
+    if (hasKeyword(['오해', '의심', '집착', '불안', '혼란', '달', '검', '소드'])) return 'misread';
+    if (hasKeyword(['속도', '충동', '지연', '멈춤', '정체', '기사', '전차'])) return 'timing';
+    if (hasKeyword(['거리', '경계', '방어', '권태', '서먹', '은둔'])) return 'distance';
+    if (hasKeyword(['실망', '후회', '상처', '탑', '악마'])) return 'hurt';
+    return 'general';
+  })();
   const variationSeed = hashText([
     context,
     current?.card?.id || '',
@@ -447,10 +468,46 @@ function summarizeRelationshipRecovery({ items, context = '', level = 'beginner'
       '감정 해석이 과열되기 쉬운 구간이라, 단정 대신 확인 질문 1개로 속도를 낮추는 편이 좋겠습니다.',
       '빠른 정리보다 오해 요인을 하나씩 줄이는 대화 설계가 먼저 필요해 보입니다.'
     ], variationSeed + 1);
+  const riskThemeLine = (() => {
+    if (riskTheme === 'misread') {
+      return pickByNumber([
+        '이번 주에는 마음 해석을 줄이고 사실 확인 질문을 늘리지 않으면 엇갈림이 커지기 쉽습니다.',
+        '감정 단정이 먼저 나오면 작은 문장도 공격처럼 들릴 수 있어 확인 루틴을 먼저 두는 편이 안전합니다.',
+        '추측 대화가 길어질수록 피로가 누적되는 구간이라, 관찰 가능한 사실 중심으로 대화를 정리하세요.'
+      ], variationSeed + 11);
+    }
+    if (riskTheme === 'timing') {
+      return pickByNumber([
+        '접촉 타이밍을 급히 당기면 반응이 닫힐 수 있어, 간격을 정해 두고 천천히 접근하는 편이 유리합니다.',
+        '지금은 속도 불일치가 갈등을 키우기 쉬워 먼저 대화 간격과 길이를 합의하는 단계가 필요합니다.',
+        '빠른 결론을 내리기보다 리듬을 맞추는 데 집중해야 다음 대화의 안정성이 올라갑니다.'
+      ], variationSeed + 12);
+    }
+    if (riskTheme === 'distance') {
+      return pickByNumber([
+        '거리감 자체보다 경계선이 불명확한 상태가 더 큰 리스크라, 허용 범위를 먼저 말로 확인하세요.',
+        '관계 온도차를 방치하면 침묵이 오해로 번지기 쉬우니 연락 규칙을 짧게라도 맞춰두는 게 좋습니다.',
+        '지금 구간은 접근보다 경계 조율이 우선이라, 불편 기준을 먼저 공유해야 소모를 줄일 수 있습니다.'
+      ], variationSeed + 13);
+    }
+    if (riskTheme === 'hurt') {
+      return pickByNumber([
+        '상처 기억이 활성화된 흐름이라 해명부터 길게 하면 방어가 커질 수 있어 짧은 인정부터 시작하세요.',
+        '후폭풍이 남아 있는 상태라 결론 대화보다 감정 안정 단계를 먼저 두는 편이 회복 확률을 높입니다.',
+        '미해결 감정이 다시 올라오기 쉬운 구간이므로 잘잘못 정리보다 진정 루틴이 먼저 필요합니다.'
+      ], variationSeed + 14);
+    }
+    return pickByNumber([
+      '핵심은 속도와 톤을 함께 조절하는 것이며, 하나만 밀어붙이면 반작용이 커질 수 있습니다.',
+      '관계 회복 신호가 있어도 단계 설계를 건너뛰면 오해가 다시 누적될 수 있습니다.',
+      '지금은 감정 표현과 사실 확인의 균형이 무너지지 않도록 대화 구조를 단순하게 유지하세요.'
+    ], variationSeed + 15);
+  })();
 
   const risk = [
     `관계 리스크: 다음 7일 흐름(${week?.card?.nameKo || '-'}) 기준으로 "${keyword(week)}" 구간에서 대화 오해가 커질 수 있는 타이밍이 보입니다.`,
-    riskActionLine
+    riskActionLine,
+    riskThemeLine
   ].join(' ');
 
   const planOpening = pickByNumber([
@@ -463,10 +520,39 @@ function summarizeRelationshipRecovery({ items, context = '', level = 'beginner'
     '대화 전에는 확인 질문 1개만 정하고, 대화 후에는 상대 반응과 내 감정 변화를 각각 한 줄씩 남기세요.',
     '연락 전에는 전달할 핵심 문장 1개만 적고, 이후에는 결과를 사실/해석으로 분리해 짧게 기록하세요.'
   ], variationSeed + 3);
+  const modePlan = (() => {
+    if (repairMode === 'reconnect') {
+      return pickByNumber([
+        '재접촉은 강도보다 예측 가능성이 중요하니, 연락 빈도와 응답 기대치를 먼저 짧게 합의하세요.',
+        '재회 시도 단계에서는 감정 호소보다 일정 제안이 효과적이므로 만남 시간과 주제를 미리 정리하세요.',
+        '다시 연결하는 주간에는 긴 설명보다 짧은 안부-확인-마무리 구조로 대화를 닫는 연습을 하세요.'
+      ], variationSeed + 21);
+    }
+    if (repairMode === 'conflict') {
+      return pickByNumber([
+        '갈등 회복은 사과 문장과 재발 방지 문장을 분리할 때 효과가 커지니 둘을 따로 준비하세요.',
+        '충돌 직후에는 주장보다 인정 문장이 우선이므로, 내 책임 1개를 먼저 명확히 말하는 순서를 고정하세요.',
+        '화해 시도에서는 설명 길이를 줄이고 확인 질문을 늘리는 쪽이 방어를 낮추니 대화 비율을 점검하세요.'
+      ], variationSeed + 22);
+    }
+    if (repairMode === 'distance') {
+      return pickByNumber([
+        '거리 조정 단계에서는 접촉 횟수보다 기준 합의가 중요하니, 부담되는 패턴 1개를 먼저 공유하세요.',
+        '관계 온도차를 줄이려면 기대치 문장을 먼저 맞춰야 하므로 연락 규칙을 짧게 문장으로 고정하세요.',
+        '경계 설정이 필요한 흐름이라 요청 가능한 범위와 보류할 범위를 나눠 기록하고 대화에 반영하세요.'
+      ], variationSeed + 23);
+    }
+    return pickByNumber([
+      '이번 주는 감정 표현과 사실 확인의 순서를 섞지 말고, 먼저 확인 후 요청하는 패턴으로 고정하세요.',
+      '관계 조율의 초점은 한 번의 긴 대화가 아니라 짧은 대화를 꾸준히 이어가는 리듬에 두세요.',
+      '회복 구간에서는 결론보다 관찰이 우선이므로, 반응 로그를 남기고 다음 문장을 조정해 실행하세요.'
+    ], variationSeed + 24);
+  })();
 
   const plan = [
     planOpening,
     planRoutine,
+    modePlan,
     levelHint
   ].join(' ');
 
