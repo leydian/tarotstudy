@@ -601,33 +601,105 @@ const BASE_QUESTION_BANK_BY_TOPIC = {
   ]
 };
 
-const QUESTION_VARIANT_SUFFIXES = [
-  '이번 주 기준으로 보면 어떤 선택이 맞을까?',
-  '이번 달 기준으로 보면 어떤 선택이 맞을까?',
-  '3개월 흐름까지 보면 어떤 결론이 맞을까?',
-  '리스크를 줄이는 기준으로 보면 어떻게 판단할까?',
-  '실행 순서를 고려하면 무엇부터 정할까?',
-  '주변 변수까지 포함하면 어느 쪽이 더 현실적일까?',
-  '감정 소모를 최소화하려면 어떤 선택이 맞을까?',
-  '비용 대비 효율 기준으로 보면 결론이 달라질까?',
-  '지속 가능성 중심으로 보면 어떤 판단이 유리할까?',
-  '지금 바로 실행한다면 첫 행동은 무엇일까?'
+const TOPIC_SERIES = [
+  { id: 'week', label: '이번 주 집중' },
+  { id: 'month', label: '이번 달 집중' },
+  { id: 'quarter', label: '3개월 확장' },
+  { id: 'risk', label: '리스크 관리' },
+  { id: 'execution', label: '실행 우선' },
+  { id: 'stability', label: '안정성 점검' },
+  { id: 'growth', label: '성장 관점' },
+  { id: 'cost', label: '비용 효율' },
+  { id: 'energy', label: '에너지 관리' },
+  { id: 'communication', label: '소통 관점' },
+  { id: 'timing', label: '타이밍 점검' },
+  { id: 'priority', label: '우선순위' },
+  { id: 'recovery', label: '회복 전략' },
+  { id: 'consistency', label: '지속성 점검' },
+  { id: 'quality', label: '품질 강화' },
+  { id: 'decision', label: '의사결정' },
+  { id: 'balance', label: '균형 운영' },
+  { id: 'review', label: '복기 중심' },
+  { id: 'preventive', label: '예방 관점' },
+  { id: 'longterm', label: '장기 운영' }
 ];
 
-function buildQuestionVariant(baseQuestion = '', variantSuffix = '') {
-  const base = String(baseQuestion || '').trim().replace(/[?？]\s*$/g, '');
-  return `${base} ${variantSuffix}`.trim();
+const TOPIC_INTENT_ANCHOR = {
+  career: '커리어',
+  relationship: '관계',
+  relationshipRepair: '관계 회복',
+  finance: '재정',
+  study: '학습',
+  health: '건강',
+  social: '인간관계',
+  daily: '운세',
+  choiceAB: '커리어',
+  generalLife: '운세',
+  family: '관계',
+  travel: '운세',
+  home: '운세',
+  creativity: '커리어',
+  spirituality: '건강',
+  pet: '관계',
+  entrepreneurship: '커리어',
+  legalAdmin: '재정',
+  eventPlanning: '인간관계',
+  community: '인간관계',
+  educationParenting: '학습',
+  vehicleMobility: '재정',
+  digitalLife: '운세',
+  languageLearning: '학습',
+  careerSwitch: '커리어',
+  volunteering: '인간관계',
+  contentCreation: '커리어',
+  environmentLifestyle: '운세',
+  networking: '인간관계',
+  sleepRecovery: '건강',
+  fashionStyle: '재정',
+  beautyCare: '건강',
+  friendship: '관계',
+  marriageLife: '관계',
+  pregnancyParentJourney: '건강',
+  seniorCare: '건강',
+  relocationAbroad: '커리어',
+  publicSpeaking: '커리어',
+  writingProject: '학습',
+  studyAbroad: '학습',
+  examInterview: '학습',
+  timeManagement: '운세',
+  habitBuilding: '건강',
+  mentalResilience: '건강',
+  debtRecovery: '재정',
+  retirementPlanning: '재정',
+  healthScreening: '건강',
+  hobbyBalance: '운세',
+  weekendPlanning: '운세',
+  homeCooking: '건강'
+};
+
+function normalizeQuestionBase(text = '') {
+  return String(text || '').trim().replace(/[?？]\s*$/g, '');
 }
 
-function expandQuestionSet(baseQuestions = []) {
-  return baseQuestions.flatMap((question) =>
-    QUESTION_VARIANT_SUFFIXES.map((suffix) => buildQuestionVariant(question, suffix))
-  );
+function buildSeriesQuestion(baseQuestion = '', seriesLabel = '', intentAnchor = '운세') {
+  const base = normalizeQuestionBase(baseQuestion);
+  return `${base} [${seriesLabel} · ${intentAnchor}]`.trim();
 }
 
-const QUESTION_BANK_BY_TOPIC = Object.fromEntries(
-  Object.entries(BASE_QUESTION_BANK_BY_TOPIC).map(([topic, questions]) => [topic, expandQuestionSet(questions)])
-);
+function buildQuestionBankByTopic() {
+  const entries = [];
+  for (const [topicId, baseQuestions] of Object.entries(BASE_QUESTION_BANK_BY_TOPIC)) {
+    for (const series of TOPIC_SERIES) {
+      const seriesTopicId = `${topicId}__${series.id}`;
+      const intentAnchor = TOPIC_INTENT_ANCHOR[topicId] ?? '운세';
+      const seriesQuestions = baseQuestions.map((question) => buildSeriesQuestion(question, series.label, intentAnchor));
+      entries.push([seriesTopicId, seriesQuestions]);
+    }
+  }
+  return Object.fromEntries(entries);
+}
+
+const QUESTION_BANK_BY_TOPIC = buildQuestionBankByTopic();
 
 const INTENT_KEYWORDS = {
   'relationship-repair': [

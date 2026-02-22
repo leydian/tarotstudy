@@ -94,7 +94,7 @@ npm run dev:web -- --host 127.0.0.1 --port 5173
 - `GET /api/cards/:cardId`
 - `POST /api/cards/:cardId/explain`
 - `GET /api/spreads`
-- `GET /api/questions/predicted?limit=5000`
+- `GET /api/questions/predicted?limit=10000`
 - `POST /api/spreads/:spreadId/draw`
 - `POST /api/quiz/generate`
 - `POST /api/quiz/grade`

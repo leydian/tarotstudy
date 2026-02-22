@@ -55,8 +55,8 @@ await app.register(cors, {
 app.get('/api/health', async () => ({ ok: true }));
 app.get('/api/spreads', async () => spreads);
 app.get('/api/questions/predicted', async (request) => {
-  const rawLimit = Number(request.query?.limit || 5000);
-  const safeLimit = Number.isFinite(rawLimit) ? Math.max(1, Math.min(10000, Math.floor(rawLimit))) : 5000;
+  const rawLimit = Number(request.query?.limit || 10000);
+  const safeLimit = Number.isFinite(rawLimit) ? Math.max(1, Math.min(20000, Math.floor(rawLimit))) : 10000;
   const questions = getTarotPredictedQuestions();
   return {
     total: questions.length,
