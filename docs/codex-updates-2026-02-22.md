@@ -463,3 +463,73 @@
 - `c7cf5bb` Prioritize conflict-repair context over social perception tone
 - `3b1d965` Refine one-card conflict-repair wording consistency
 - `3a96405` Diversify relationship-recovery readings by position and card tension
+
+---
+
+## 추가 업데이트 5 (코스 레슨 소설/퀴즈 출제 범위 전면 정비)
+
+### 1) 레슨 소설 품질 고도화 (`apps/api/src/data/courses.js`)
+- 전용 레슨 소설 생성 로직을 공통 템플릿에서 다중 규칙으로 개편:
+  - 레슨별 결론 문장 분기(42개 레슨 ID 기준)
+  - 카드 키워드 근거 문장에 실제 상황 사실 결합
+  - 실행 문장을 시간/장소/행동 단위로 구체화
+  - 복기 문장을 서술형으로 자연화(`적중:`/`오차:` 라벨 제거)
+- 소설 문체 정비:
+  - 체크리스트/로그형 문체 제거 후 서사형으로 통일
+  - 반복 문구 제거 및 레슨 맥락 기반 문장 다양화
+  - 조사 오류 보정(`유진는`, `...을(를)` 등)
+- 용어 일상화:
+  - 딱딱한 운영 용어를 실사용 표현으로 치환
+  - 예: `병목`→`막히는 지점`, `정합성`→`일치 정도`, `변수`→`요소`
+
+### 2) 레슨 소설 카드 선택 정합성 개선 (`apps/api/src/data/courses.js`)
+- 기존 문제:
+  - 소설 예시 카드가 전체 덱 기반으로 뽑혀 레슨 주제와 불일치
+  - 예: `완드/컵 비교` 레슨에 `악마`가 등장
+- 개선:
+  - 예시 카드를 레슨 `cardIds` 범위 내에서 우선 선택
+  - 전역 primary 카드 중복을 최소화하면서 레슨 맥락 유지
+  - 비교형 레슨에서 카드 편중을 줄이도록 선택 간격 로직 조정
+
+### 3) 레슨 상세 화면 중복 섹션 정리 (`apps/web/src/pages/LessonPage.tsx`)
+- `레슨 소설`이 있는 경우 중복이 큰 섹션 비노출:
+  - `레슨 진행 순서`
+  - `한 번에 읽는 실전 스크립트`
+- 화면 읽기 흐름 재정렬(학습 목표 → 소설 → 본문 → 이론 → 예시 → 체크리스트 …)
+
+### 4) 레슨 소개문(intro) 레슨별 맞춤화 (`apps/api/src/data/courses.js`)
+- 기존 문제:
+  - 전용 레슨 intro가 동일 문장으로 반복되어 요약 차별성이 낮음
+- 개선:
+  - 레슨 제목/요약/질문/실행 항목을 조합해 레슨별 intro 생성
+  - 조사 어색함이 없도록 문장 구조 단순화
+
+### 5) 퀴즈 출제 범위 정합성 개선 (`apps/api/src/quiz.js`)
+- 기존 문제:
+  - 레슨 퀴즈에서도 카드 풀이 24장으로 확장되어 레슨 범위를 벗어난 카드 출제
+  - 예: `fz-1`(0~5)에서 `힘(major-8)` 출제
+- 개선:
+  - `lessonMeta.lessonId`가 있는 레슨 퀴즈는 `lessonCards` 범위만 사용
+  - 레슨 외 일반 풀(`lessonMeta` 미지정)에서만 확장 풀 사용
+
+### 6) 점검 결과
+- 퀴즈 범위 점검:
+  - `fz-1` 10문항 생성 시 레슨 카드 범위 밖 출제 `0건`
+- 소설 문구 점검:
+  - 추상 마무리 문구(예: `해석이 길어지지 않고 방향이 또렷해졌습니다`) 제거
+  - 소설 근거 문장(4번째 줄) 42개 레슨 모두 상이(중복 최소화)
+  - `적중:`/`오차:` 라벨 0건
+  - 잔여 금지 용어(`병목`, `정합성`, `라벨`, `변수`, `보정점`) 0건
+
+### 7) 관련 커밋
+- `59a6c30` Reorder lesson sections for clearer learning flow
+- `e871be2` Align lesson novel cards with lesson topics
+- `6083da0` Branch lesson novel conclusions by lesson topic
+- `892b277` Make lesson novels concrete with explicit examples
+- `31178cc` Hide redundant lesson sections when novel is present
+- `f22baef` Make novel evidence lines concrete with explicit facts
+- `aa340e3` Naturalize novel endings with narrative review lines
+- `d0e6278` Rewrite lesson novels with everyday language and concrete context
+- `ccda0bb` Customize lesson intros and polish novel wording
+- `adb7e9d` Replace abstract novel lines with concrete decisions
+- `f01068e` Constrain quiz card scope and diversify lesson novel evidence
