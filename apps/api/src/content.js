@@ -3,6 +3,7 @@ import {
   analyzeQuestionContextSync,
   parseChoiceOptions as parseChoiceOptionsEnhanced
 } from './question-understanding/index.js';
+import { inferShortUtterance } from './question-understanding/short-utterance-rules.js';
 
 const TTL_FALLBACK_SOURCE = 'fallback';
 
@@ -1396,6 +1397,7 @@ export function buildSpreadReading({
   const tone = SPREAD_READING_TEMPLATES[spreadId] ?? SPREAD_READING_TEMPLATES.default;
   const style = READING_STYLE_AB[level]?.[experimentVariant] ?? READING_STYLE_AB[level]?.A;
   const contextProfile = inferContextProfile(context);
+  const shortHint = spreadId === 'one-card' ? inferShortUtterance(context) : null;
   const isDailyRelationship = spreadId === 'daily-fortune' && contextProfile.id === 'relationship';
   const isThreeCardSocial = spreadId === 'three-card' && contextProfile.id === 'social';
   const dailyRelationshipFocus = {
@@ -1453,19 +1455,21 @@ export function buildSpreadReading({
     seed
   });
 
-  const learningPointRaw = joinUniqueParts([
-    `[학습 리더] ${buildLearningCoachOpening({ positionName: position.name, spreadId, level, contextProfile, seed })}`,
-    `[학습 리더] ${buildLearningCoachFrame({ style, spreadId, positionName: position.name, level, seed })}`,
-    `[학습 리더] ${buildLearningCoachReview({
-      positionName: position.name,
-      cardName: card.nameKo,
-      orientation,
-      contextProfile,
-      style,
-      level,
-      seed
-    })}`
-  ]);
+  const learningPointRaw = shortHint
+    ? `[학습 리더] 오늘 질문(${normalizeClientQuestion(context) || '초간단 질문'})은 결론 1문장, 근거 1문장, 실행 1문장으로 짧게 정리하세요. [학습 리더] 복기 질문: 지금 행동 1개를 실행한 뒤 실제 체감이 카드 방향과 일치했는가?`
+    : joinUniqueParts([
+      `[학습 리더] ${buildLearningCoachOpening({ positionName: position.name, spreadId, level, contextProfile, seed })}`,
+      `[학습 리더] ${buildLearningCoachFrame({ style, spreadId, positionName: position.name, level, seed })}`,
+      `[학습 리더] ${buildLearningCoachReview({
+        positionName: position.name,
+        cardName: card.nameKo,
+        orientation,
+        contextProfile,
+        style,
+        level,
+        seed
+      })}`
+    ]);
   const learningPoint = compactLearningPoint({
     text: learningPointRaw,
     positionName: position.name
@@ -2273,6 +2277,30 @@ function buildCelticCrossInterpretation({
 }
 
 function buildOneCardInterpretation({ card, orientation, focus, context = '' }) {
+  const shortHint = inferShortUtterance(context);
+  if (shortHint) {
+    const group = detectOneCardQuestionGroup(context);
+    const risk = scoreOneCardRiskLight({ card, orientation });
+    const main = card.keywords?.[0] ?? '흐름';
+    const sub = card.keywords?.[1] ?? main;
+    const actionHint = buildOneCardExecutionHint({ context, group, card, orientation })
+      .split('. ')
+      .slice(0, 1)
+      .join('. ')
+      .trim();
+    const reviewHint = shortHint.subIntent === 'sleep'
+      ? '복기: 20분 뒤 몸/마음 진정도가 좋아졌는지 1줄로 기록하세요.'
+      : '복기: 실행 후 실제 반응을 1줄로 기록해 다음 판단 기준으로 쓰세요.';
+    const signalLine = risk >= 2 || orientation === 'reversed'
+      ? `핵심 키워드 '${main}' 신호가 예민해 ${sub} 기준으로 속도 조절이 필요합니다.`
+      : `핵심 키워드 '${main}' 신호가 열려 있어 ${sub} 기준으로 작게 실행하면 흐름을 살릴 수 있습니다.`;
+    return polishTarotInterpretation([
+      signalLine,
+      `실행: ${actionHint}`,
+      reviewHint
+    ].join(' '));
+  }
+
   const group = detectOneCardQuestionGroup(context);
   const risk = scoreOneCardRiskLight({ card, orientation });
   const main = card.keywords?.[0] ?? '흐름';
@@ -2323,10 +2351,16 @@ function buildOneCardEvidenceLine({ group = 'general', orientation = 'upright', 
 }
 
 function buildOneCardCoreMessage({ card, orientation, context = '' }) {
+  const shortHint = inferShortUtterance(context);
   const cardDirection = orientation === 'upright' ? '정방향' : '역방향';
   const normalizedContext = normalizeClientQuestion(context);
   const group = detectOneCardQuestionGroup(context);
   const verdict = buildOneCardDecisionLine({ group, card, orientation });
+  if (shortHint) {
+    const compactVerdict = verdict.replace(/^한 줄 결론은\s*/g, '').replace(/\.$/, '');
+    const shortQuestion = normalizedContext || String(context || '').trim() || '지금 질문';
+    return `"${shortQuestion}" 질문이네요. 카드는 '${card.nameKo} ${cardDirection}'입니다. 결론은 ${compactVerdict}입니다.`;
+  }
   const empathy = group === 'daily'
     ? (normalizedContext ? `"${normalizedContext}"에 대한 오늘 흐름을 함께 보겠습니다.` : '오늘 흐름을 카드 기준으로 차분히 정리해보겠습니다.')
     : (normalizedContext

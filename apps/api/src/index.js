@@ -23,6 +23,7 @@ import {
   analyzeQuestionContextV2Sync,
   parseChoiceOptions as parseChoiceOptionsEnhanced
 } from './question-understanding/index.js';
+import { inferShortUtterance } from './question-understanding/short-utterance-rules.js';
 
 dotenv.config();
 
@@ -572,6 +573,22 @@ function pickRandomCards(deck, count) {
 
 function summarizeSpread({ spreadId = '', spreadName, items, context = '', level = 'beginner' }) {
   const normalizedContext = normalizeContextForSpread({ spreadName, context });
+  if (spreadId === 'one-card' && inferShortUtterance(context)) {
+    const lead = items[0];
+    const keyword = lead?.card?.keywords?.[0] || '흐름';
+    const direction = lead?.orientation === 'upright' ? '정방향' : '역방향';
+    const analysis = analyzeSpreadSignal(items, analyzeQuestionContextSync(context).intent);
+    const action = analysis.label === '우세'
+      ? '지금 할 행동 1개만 정해서 바로 실행하세요.'
+      : analysis.label === '박빙'
+        ? '강도를 낮춰 행동 1개만 실행하고 반응을 확인하세요.'
+        : '10분 정리 후 다시 판단하세요.';
+    return [
+      `판정: ${analysis.label} · ${keyword} 신호(${direction}) 기준으로 속도 조절이 핵심입니다.`,
+      `실행: ${action}`,
+      '복기: 실행 후 실제 체감 변화를 1줄로 기록하세요.'
+    ].join('\n');
+  }
   let rawSummary = '';
   if (spreadId === 'yearly-fortune') {
     rawSummary = summarizeYearlyFortune({ items, context: normalizedContext, level });

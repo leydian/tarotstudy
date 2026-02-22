@@ -51,6 +51,27 @@ test('buildSpreadReading keeps learning persona separated', () => {
   assert.doesNotMatch(reading.interpretation, /\[학습 리더\]/);
 });
 
+test('buildSpreadReading compacts one-card output for short questions', () => {
+  const card = getCardById('minor-cups-three');
+  assert.ok(card, 'card should exist');
+
+  const reading = buildSpreadReading({
+    card,
+    spreadId: 'one-card',
+    position: { name: '핵심 메시지' },
+    orientation: 'upright',
+    level: 'beginner',
+    context: '지금 잘까?',
+    experimentVariant: 'A'
+  });
+
+  assert.match(reading.coreMessage, /질문이네요/);
+  assert.match(reading.interpretation, /실행:/);
+  assert.match(reading.interpretation, /복기:/);
+  assert.doesNotMatch(reading.interpretation, /카드 상징 키워드는/);
+  assert.ok(reading.learningPoint.includes('[학습 리더]'));
+});
+
 test('buildFallbackExplanation applies strong context branching across sections', () => {
   const card = getCardById('major-1');
   assert.ok(card, 'card should exist');
