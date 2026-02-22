@@ -1276,14 +1276,15 @@ export function buildSpreadReading({
   });
 
   const learningPoint = joinUniqueParts([
-    `[학습 리더] ${buildLearningCoachOpening({ positionName: position.name, seed })}`,
-    `[학습 리더] ${buildLearningCoachFrame({ style, spreadId, positionName: position.name, seed })}`,
+    `[학습 리더] ${buildLearningCoachOpening({ positionName: position.name, spreadId, level, contextProfile, seed })}`,
+    `[학습 리더] ${buildLearningCoachFrame({ style, spreadId, positionName: position.name, level, seed })}`,
     `[학습 리더] ${buildLearningCoachReview({
       positionName: position.name,
       cardName: card.nameKo,
       orientation,
       contextProfile,
       style,
+      level,
       seed
     })}`
   ]);
@@ -3545,18 +3546,23 @@ function splitSentences(text = '') {
   return chunks.map((chunk) => chunk.trim()).filter(Boolean);
 }
 
-function buildLearningCoachOpening({ positionName, seed }) {
+function buildLearningCoachOpening({ positionName, spreadId = 'default', level = 'beginner', contextProfile, seed }) {
   const topic = withKoreanParticle(positionName, '은', '는');
-  const lines = [
-    `${positionName} 복기는 정답 여부보다, 판단 근거를 분명히 남기는 데 집중해봅시다.`,
-    `${topic} 감으로 단정하기보다 관찰 가능한 증거를 먼저 붙여 훈련해보세요.`,
-    `${positionName} 학습 목표는 화려한 문장보다 재현 가능한 해석 루틴입니다.`,
-    `${positionName} 학습은 카드 해석 확장보다 근거 기록 습관을 만드는 데 초점을 맞추세요.`
-  ];
+  const lines = level === 'intermediate'
+    ? [
+      `${positionName} 중급 훈련 목표는 감상형 해석이 아니라, 가설과 반례를 같이 남기는 실험형 리딩입니다.`,
+      `${topic} 해석에서는 카드 키워드 1개를 중심 가설로 두고, 반례 가능성 1개를 반드시 같이 적어보세요.`,
+      `${spreadId} 중급 복기는 문장 퀄리티보다 지표 일치율(${contextProfile.trackMetric}) 개선에 집중하는 편이 정확합니다.`
+    ]
+    : [
+      `${positionName} 입문 복기는 정답 맞히기보다 카드 근거 1줄 + 행동 1줄을 바로 남기는 훈련이 핵심입니다.`,
+      `${topic} 감으로 단정하지 말고, 지금 보이는 사실 신호 1개만 먼저 적어 실전 감각을 만드세요.`,
+      `${positionName} 입문 학습 목표는 화려한 해석보다 오늘 1회 실행 가능한 리딩 루틴을 만드는 것입니다.`
+    ];
   return pickVariant(`${seed}:coach-open`, lines);
 }
 
-function buildLearningCoachFrame({ style, spreadId = 'default', positionName = '', seed }) {
+function buildLearningCoachFrame({ style, spreadId = 'default', positionName = '', level = 'beginner', seed }) {
   const spreadPositionFrame = (() => {
     if (spreadId === 'daily-fortune') {
       if (positionName === '오늘의 흐름') return '오늘의 흐름 카드는 당일 사건 1개를 골라 키워드와 실제 전개를 1:1로 대응해보세요.';
@@ -3584,7 +3590,7 @@ function buildLearningCoachFrame({ style, spreadId = 'default', positionName = '
       if (positionName === '결과') return '결과 카드는 확정이 아닌 조건부로 기록하고, 검증 지표 1개를 함께 남기세요.';
     }
     if (spreadId === 'choice-a-b') {
-      if (positionName === '현재 상황') return '현재 상황 카드는 A/B 공통 판단 기준 1개(시간·비용·감정)를 먼저 고정해보세요.';
+      if (positionName === '현재 상황') return '현재 상황 카드는 A/B 공통 판단 기준 1개(감정 소모·대화 안정성·오해 가능성)를 먼저 고정해보세요.';
       if (/A 선택 시 가까운 미래|B 선택 시 가까운 미래/.test(positionName)) return `${positionName} 카드는 단기 리스크 1개를 카드 키워드로 기록해 비교하세요.`;
       if (/A 선택 시 결과|B 선택 시 결과/.test(positionName)) return `${positionName} 카드는 유지 가능성 기준(지속성/소모도)을 카드 근거로 비교 기록하세요.`;
     }
@@ -3596,12 +3602,18 @@ function buildLearningCoachFrame({ style, spreadId = 'default', positionName = '
     }
     return '';
   })();
-  const lines = [
-    `리딩 결과 학습 기준: ${style.learningFrame}`,
-    `훈련 프레임: ${style.learningFrame}`,
-    `타로 학습 루틴: ${style.learningFrame}`,
-    `이번 카드 복기 기준은 다음과 같습니다. ${style.learningFrame}`
-  ].filter(Boolean);
+  const baseFrame = level === 'intermediate'
+    ? [
+      `훈련 프레임: ${style.learningFrame} 실전 규칙: 예측 문장 1개, 반례 문장 1개, 검증 지표 1개를 반드시 세트로 남기세요.`,
+      `타로 학습 루틴: ${style.learningFrame} 중급 루틴: 리딩 직후 가설을 확정하고, 24~72시간 내 반응 데이터로 판정 업데이트를 하세요.`,
+      `리딩 결과 학습 기준: ${style.learningFrame} 중급에서는 해석 정확도보다 의사결정 품질(오판 감소율)을 지표로 관리하세요.`
+    ]
+    : [
+      `훈련 프레임: ${style.learningFrame} 실전 규칙: 오늘은 카드 근거 1개와 실행 1개만 고정하고 바로 실행하세요.`,
+      `타로 학습 루틴: ${style.learningFrame} 입문 루틴: 10분 내 실행 가능한 행동으로 번역하고 그날 저녁 1회 복기하세요.`,
+      `리딩 결과 학습 기준: ${style.learningFrame} 입문에서는 해석 길이보다 실행 완료 여부를 우선 점검하세요.`
+    ];
+  const lines = baseFrame.filter(Boolean);
   const base = pickVariant(`${seed}:coach-frame`, lines);
   if (spreadPositionFrame) {
     return `${base} 포지션 학습 기준: ${spreadPositionFrame}`;
@@ -3609,14 +3621,23 @@ function buildLearningCoachFrame({ style, spreadId = 'default', positionName = '
   return base;
 }
 
-function buildLearningCoachReview({ positionName, cardName, orientation, contextProfile, style, seed }) {
+function buildLearningCoachReview({ positionName, cardName, orientation, contextProfile, style, level = 'beginner', seed }) {
   const direction = orientation === 'upright' ? '정방향' : '역방향';
-  const lines = [
-    `복기 질문: "${positionName}에서 읽은 ${cardName} ${direction} 해석을 ${contextProfile.trackMetric} 기준으로 점검했는가?"`,
-    `점검 질문: "${cardName} ${direction}의 핵심 키워드가 ${positionName} 실제 전개와 어떻게 맞았는가?"`,
-    `복기 질문: "${positionName} 리딩에서 카드 근거(키워드/방향/포지션)를 분리해 설명할 수 있는가?"`
-  ];
-  return `${pickVariant(`${seed}:coach-review-q`, lines)} 리딩 검증: ${style.reviewStep}`;
+  const lines = level === 'intermediate'
+    ? [
+      `복기 질문: "${positionName}의 ${cardName} ${direction} 가설에서 적중/오차를 만든 핵심 변수 1개는 무엇인가?"`,
+      `점검 질문: "${contextProfile.trackMetric} 기준으로 이 해석의 오차 원인을 정보 부족/과확장/검증 누락 중 어디로 분류할 수 있는가?"`,
+      `복기 질문: "${positionName} 리딩의 반례 시나리오를 사전에 적었고, 실제 반응으로 업데이트했는가?"`
+    ]
+    : [
+      `복기 질문: "${positionName}에서 읽은 ${cardName} ${direction} 해석이 실제 반응과 맞았는가?"`,
+      `점검 질문: "${cardName} ${direction}의 핵심 키워드 1개를 오늘 행동과 연결했는가?"`,
+      `복기 질문: "${positionName} 리딩에서 카드 근거 1개를 말로 설명할 수 있는가?"`
+    ];
+  const reviewStep = level === 'intermediate'
+    ? `${style.reviewStep} 추가 점검: 다음 리딩 전 반례 1개를 먼저 적고 시작하세요.`
+    : `${style.reviewStep} 추가 점검: 맞음/부분/다름 중 하나만 선택해도 좋으니 당일에 바로 기록하세요.`;
+  return `${pickVariant(`${seed}:coach-review-q`, lines)} 리딩 검증: ${reviewStep}`;
 }
 
 function withKoreanParticle(word = '', consonantParticle = '이', vowelParticle = '가') {
@@ -3651,15 +3672,15 @@ const READING_STYLE_AB = {
       uprightTail: '핵심은 행동을 단순화해 바로 시작하는 것입니다.',
       reversedTail: '핵심은 무리한 확장보다 손실을 줄이는 것입니다.',
       actionHint: '오늘 바로 실행 가능한 1단계 행동으로 줄이세요.',
-      learningFrame: '사실(카드/포지션)과 해석(의미 추론)을 한 문장씩 분리해 기록하세요.',
-      reviewStep: '24시간 뒤 카드 키워드 적중 여부를 맞음/부분맞음/다름으로 표시하고 근거 1줄을 남기세요.'
+      learningFrame: '입문 실전 프레임: 카드 근거 1개 + 실행 행동 1개 + 당일 체감 1개만 기록하세요.',
+      reviewStep: '당일 또는 24시간 내 맞음/부분맞음/다름 중 하나만 체크하고 이유 1줄을 남기세요.'
     },
     B: {
       uprightTail: '핵심은 리듬을 유지하며 작은 성공을 누적하는 것입니다.',
       reversedTail: '핵심은 일정/감정 소모를 먼저 줄여 회복 구간을 확보하는 것입니다.',
       actionHint: '실행 후 체감 변화를 10점 척도로 기록하세요.',
-      learningFrame: '키워드 3개 중 실제로 관찰된 증거 1개를 반드시 적어 과잉해석을 막으세요.',
-      reviewStep: '다음 리딩 전, 이번 해석이 실제 사건과 맞았는지 카드 근거 중심으로 1문장 평가하세요.'
+      learningFrame: '입문 관찰 프레임: 키워드 1개와 실제 사건 1개만 1:1로 연결해 과해석을 막으세요.',
+      reviewStep: '다음 리딩 전에 이번 해석의 적중 여부를 1문장으로만 평가하고 재실행 여부를 결정하세요.'
     }
   },
   intermediate: {
@@ -3667,15 +3688,15 @@ const READING_STYLE_AB = {
       uprightTail: '핵심 변수와 보조 변수를 분리해 의사결정 밀도를 높이세요.',
       reversedTail: '원인-증상 분리 후 병목 변수 하나를 먼저 제거해야 합니다.',
       actionHint: '7일 단기 플랜과 30일 중기 플랜을 분리해 기록하세요.',
-      learningFrame: '포지션별 가설을 세우고, 충돌하는 카드가 있으면 우선순위 규칙을 명시하세요.',
-      reviewStep: '가설 적중률을 주간 단위로 측정하고, 빗나간 경우 카드 근거 누락 지점을 함께 기록하세요.'
+      learningFrame: '중급 실험 프레임: 포지션별 가설·반례·검증 지표를 세우고 우선순위 규칙을 명시하세요.',
+      reviewStep: '주간 단위로 가설 적중률을 측정하고, 오차를 변수 누락/가중치 오류/검증 타이밍 문제로 분류하세요.'
     },
     B: {
       uprightTail: '카드 간 상호작용을 우선순위 테이블로 정리하면 정확도가 올라갑니다.',
       reversedTail: '역방향 신호는 구조적 리스크로 보고 완충 자원을 먼저 확보하세요.',
       actionHint: '가설-검증 루프를 다음 리딩 전까지 최소 1회 수행하세요.',
-      learningFrame: '현재/근미래/결과를 시간축으로 분리하고 각 구간의 실패 비용을 추정하세요.',
-      reviewStep: '복기 시 리딩 오류를 정보 부족/해석 과확장/카드 근거 누락 중 하나로 분류하세요.'
+      learningFrame: '중급 운영 프레임: 현재/근미래/결과를 시간축으로 분리하고 각 구간의 실패 비용과 완충 자원을 추정하세요.',
+      reviewStep: '복기 시 리딩 오류를 정보 부족/해석 과확장/카드 근거 누락/검증 지연 중 하나로 분류하세요.'
     }
   }
 };
