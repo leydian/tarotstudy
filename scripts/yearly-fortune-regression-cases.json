@@ -1,0 +1,116 @@
+[
+  {
+    "id": "career-job-timing",
+    "level": "intermediate",
+    "context": "올해 취업과 이직 시기",
+    "intent": "career",
+    "requiresTiming": true
+  },
+  {
+    "id": "career-new-grad-when",
+    "level": "intermediate",
+    "context": "신입 취업은 언제 지원서를 많이 넣는 게 좋아?",
+    "intent": "career",
+    "requiresTiming": true
+  },
+  {
+    "id": "career-switch-when",
+    "level": "intermediate",
+    "context": "이직은 언제부터 면접을 잡는 게 유리할까?",
+    "intent": "career",
+    "requiresTiming": true
+  },
+  {
+    "id": "career-offer-negotiation-when",
+    "level": "intermediate",
+    "context": "올해 오퍼 협상 타이밍은 언제가 좋아?",
+    "intent": "career",
+    "requiresTiming": true
+  },
+  {
+    "id": "career-portfolio-window",
+    "level": "intermediate",
+    "context": "포트폴리오 보완하고 본 지원을 넣을 시기를 알고 싶어",
+    "intent": "career",
+    "requiresTiming": true
+  },
+  {
+    "id": "career-interview-focus-window",
+    "level": "intermediate",
+    "context": "면접 집중 구간이 언제인지 알고 싶어",
+    "intent": "career",
+    "requiresTiming": true
+  },
+  {
+    "id": "relationship-flow",
+    "level": "intermediate",
+    "context": "올해 연애 관계 흐름",
+    "intent": "relationship"
+  },
+  {
+    "id": "finance-strategy",
+    "level": "intermediate",
+    "context": "올해 재정 운영 전략",
+    "intent": "finance"
+  },
+  {
+    "id": "relationship-reunion-timing",
+    "level": "intermediate",
+    "context": "재회 시도는 언제가 좋을까?",
+    "intent": "relationship"
+  },
+  {
+    "id": "relationship-conflict-repair",
+    "level": "intermediate",
+    "context": "갈등 이후 관계 회복 흐름",
+    "intent": "relationship"
+  },
+  {
+    "id": "relationship-marriage-direction",
+    "level": "intermediate",
+    "context": "결혼을 생각 중인데 관계 방향이 궁금해",
+    "intent": "relationship"
+  },
+  {
+    "id": "relationship-date-timing",
+    "level": "intermediate",
+    "context": "연애 관계에서 중요한 대화 타이밍이 언제가 좋을까?",
+    "intent": "relationship"
+  },
+  {
+    "id": "finance-spending-control",
+    "level": "intermediate",
+    "context": "지출 통제와 저축 균형을 어떻게 잡을까?",
+    "intent": "finance"
+  },
+  {
+    "id": "finance-investment-window",
+    "level": "intermediate",
+    "context": "투자 비중을 늘리기 좋은 시기가 있을까?",
+    "intent": "finance"
+  },
+  {
+    "id": "finance-income-stability",
+    "level": "intermediate",
+    "context": "올해 수입 안정성과 소비 리듬",
+    "intent": "finance"
+  },
+  {
+    "id": "general-life-direction",
+    "level": "intermediate",
+    "context": "올해 전반적인 삶의 방향 점검",
+    "intent": "general"
+  },
+  {
+    "id": "general-study-balance",
+    "level": "intermediate",
+    "context": "학습과 생활 밸런스를 어떻게 운영하면 좋을까?",
+    "intent": "general"
+  },
+  {
+    "id": "general-project-rhythm",
+    "level": "intermediate",
+    "context": "개인 프로젝트 리듬과 실행 속도 조절",
+    "intent": "general"
+  }
+]

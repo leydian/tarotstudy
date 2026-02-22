@@ -105,6 +105,28 @@ npm run dev:web -- --host 127.0.0.1 --port 5173
 - `GET /api/images/health-check`
 - `GET /api/images/alerts?failRateThreshold=20&minChecks=6`
 
+## 품질 게이트
+- API 텍스트 회귀 테스트:
+```bash
+npm run test:api
+```
+- 학습 리더 품질 자동 점검(필요 시 API 자동 기동):
+```bash
+npm run qa:learning-leader
+```
+- 연간운세 구조/톤 회귀 점검:
+```bash
+npm run qa:yearly-fortune
+```
+- 관계 회복 스프레드 변주/반복률 정량 점검:
+```bash
+npm run qa:relationship-recovery
+```
+- 전체 게이트 일괄 실행:
+```bash
+npm run verify:quality
+```
+
 ## 주요 기능
 - 카드 이미지 다중 소스 fallback (`imageSources`) + 기본 SVG fallback
 - 카드 이미지 출처/라이선스 고지
