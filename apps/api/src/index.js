@@ -1793,6 +1793,7 @@ function buildSummaryLead({
   reversedCount = 0
 }) {
   const contextLabel = normalizeContextText(context);
+  const intent = inferYearlyIntent(context);
   if (spreadName === '원카드') {
     const yesNo = buildYesNoVerdict({
       contextLabel,
@@ -1816,14 +1817,22 @@ function buildSummaryLead({
   const keywordLine = topKeywords.length
     ? `이번 흐름의 중심 키워드는 ${topKeywords.join(', ')}로 모입니다.`
     : '이번 흐름은 한 가지 키워드로 단정하기보다 전체 결을 함께 보는 편이 좋습니다.';
-  const flowLine = uprightCount >= reversedCount
-    ? '전반적으로는 밀어도 되는 흐름이 조금 더 강합니다.'
-    : '전반적으로는 속도를 조절하고 정리하는 쪽이 더 유리합니다.';
-  if (contextLabel) return `질문 "${contextLabel}"에 대한 카드 흐름은 ${keywordLine} ${flowLine}`;
+  const flowLine = intent === 'relationship'
+    ? (uprightCount >= reversedCount
+        ? '전반적으로는 대화의 문이 열릴 여지가 있어도, 감정 속도 조절이 함께 필요합니다.'
+        : '전반적으로는 결론을 서두르기보다 감정 온도를 맞추며 오해를 줄이는 쪽이 더 유리합니다.')
+    : uprightCount >= reversedCount
+      ? '전반적으로는 밀어도 되는 흐름이 조금 더 강합니다.'
+      : '전반적으로는 속도를 조절하고 정리하는 쪽이 더 유리합니다.';
+  if (contextLabel) {
+    const quotedQuestion = /[?？]$/.test(contextLabel) ? contextLabel : `${contextLabel}?`;
+    return `질문 "${quotedQuestion}"에 대한 카드 흐름은 ${keywordLine} ${flowLine}`;
+  }
   return `${spreadName} 스프레드의 전체 흐름을 보면 ${keywordLine} ${flowLine}`;
 }
 
 function buildSummaryFocus({ spreadName, firstItem, lastItem, context = '', contextTone }) {
+  const intent = inferYearlyIntent(context);
   if (!firstItem || !lastItem) return contextTone.mainHint;
   if (spreadName === '원카드' || firstItem.position.name === '핵심 메시지') {
     return `실행: ${buildOneCardActionLine({ context, firstItem })}`;
@@ -1832,6 +1841,9 @@ function buildSummaryFocus({ spreadName, firstItem, lastItem, context = '', cont
     return `양자택일에서는 현재 상황 카드로 판단 기준을 먼저 고정하고, A/B 결과 카드에서 내가 오래 유지할 수 있는 쪽을 우선 보세요. ${contextTone.mainHint}`;
   }
   if (spreadName === '일별 운세') {
+    if (intent === 'relationship') {
+      return `일간 연애운은 오늘의 흐름 카드로 감정 온도를 먼저 읽고, 주의할 점 카드로 오해 신호를 확인한 뒤, 행동 조언 카드에서 대화 문장 1개를 정하는 순서가 가장 안정적입니다. 상대 반응을 해석하려 하기보다 내 감정 1개와 요청 1개를 분리해 전달하면 흐름이 훨씬 자연스러워집니다.`;
+    }
     return `일별 운세는 오늘의 흐름 카드로 페이스를 잡고, 행동 조언 카드 한 줄만 실제 일정에 반영하면 충분합니다. ${contextTone.mainHint}`;
   }
   if (spreadName === '주별 운세') {
@@ -1850,12 +1862,16 @@ function buildSummaryFocus({ spreadName, firstItem, lastItem, context = '', cont
 }
 
 function buildSummaryAction({ spreadName, level, context = '', firstItem = null, contextTone }) {
+  const intent = inferYearlyIntent(context);
   const levelLine = level === 'intermediate' ? contextTone.intermediateHint : contextTone.beginnerHint;
   if (spreadName === '원카드') {
     const reviewLine = buildOneCardReviewLine({ context, firstItem });
     return `복기: ${reviewLine} ${levelLine}`;
   }
   if (spreadName === '일별 운세') {
+    if (intent === 'relationship') {
+      return `오늘은 답을 빨리 내리기보다 사실 확인 질문 1개를 먼저 두고, 감정 소모가 올라가면 대화 템포를 한 단계 늦추세요. ${levelLine}`;
+    }
     return `오늘은 맞추려 하기보다 리듬을 지키는 쪽이 더 좋습니다. ${levelLine}`;
   }
   if (spreadName === '주별 운세') {

@@ -1216,10 +1216,25 @@ export function buildSpreadReading({
 }) {
   const tone = SPREAD_READING_TEMPLATES[spreadId] ?? SPREAD_READING_TEMPLATES.default;
   const style = READING_STYLE_AB[level]?.[experimentVariant] ?? READING_STYLE_AB[level]?.A;
-  const focus = tone.positionFocus[position.name] ?? tone.defaultFocus;
   const contextProfile = inferContextProfile(context);
+  const isDailyRelationship = spreadId === 'daily-fortune' && contextProfile.id === 'relationship';
+  const dailyRelationshipFocus = {
+    '오늘의 흐름': '오늘 감정 온도와 대화 리듬',
+    '주의할 점': '오해 신호와 감정 소모 관리',
+    '행동 조언': '오늘 실천할 대화 행동 1개'
+  };
+  const dailyRelationshipPrompt = {
+    '오늘의 흐름': '오늘의 흐름 카드는 관계의 감정 온도와 대화 타이밍을 읽는 기준입니다.',
+    '주의할 점': '주의 카드는 오해가 커지기 쉬운 반응 패턴을 미리 알려주는 역할을 합니다.',
+    '행동 조언': '행동 조언 카드는 오늘 바로 써볼 대화 문장이나 태도 1개를 정하는 기준입니다.'
+  };
+  const focus = isDailyRelationship
+    ? (dailyRelationshipFocus[position.name] ?? tone.defaultFocus)
+    : (tone.positionFocus[position.name] ?? tone.defaultFocus);
   const seed = `${spreadId}:${position.name}:${card.id}:${orientation}:${context}:${experimentVariant}:${level}`;
-  const positionPrompt = tone.positionPrompts[position.name] ?? tone.defaultPrompt;
+  const positionPrompt = isDailyRelationship
+    ? (dailyRelationshipPrompt[position.name] ?? tone.defaultPrompt)
+    : (tone.positionPrompts[position.name] ?? tone.defaultPrompt);
   const coreMessage = buildNaturalCoreMessage({
     spreadId,
     card,
@@ -1276,14 +1291,6 @@ function inferContextProfile(context = '') {
   const text = String(context || '').toLowerCase();
   const profiles = [
     {
-      id: 'daily',
-      keywords: ['오늘', '운세', '하루', '금일', '오늘의'],
-      anchor: '오늘 가장 소모가 큰 구간 1개와 집중할 행동 1개를 먼저 정해야 합니다.',
-      interpretationHint: '넓은 인생 해석보다 오늘 실제 일정에 바로 적용되는 조언을 우선해야 효과가 큽니다.',
-      actionHint: '오늘 할 일 1개와 피할 소모 1개를 짝으로 정해 실천하세요.',
-      trackMetric: '하루 집중 유지율과 감정 소모도'
-    },
-    {
       id: 'career',
       keywords: ['이직', '직장', '회사', '업무', '승진', '프로젝트', '커리어', '창업', '면접'],
       anchor: '현실 제약(시간/성과/역할)을 먼저 고정해야 합니다.',
@@ -1298,6 +1305,14 @@ function inferContextProfile(context = '') {
       interpretationHint: '상대 반응을 추정하기보다 관찰 가능한 대화 패턴을 기준으로 읽어야 정확합니다.',
       actionHint: '요청 1개와 경계 1개를 분명히 말하는 방식이 좋습니다.',
       trackMetric: '대화의 명확성 및 감정 소모도'
+    },
+    {
+      id: 'daily',
+      keywords: ['오늘', '운세', '하루', '금일', '오늘의'],
+      anchor: '오늘 가장 소모가 큰 구간 1개와 집중할 행동 1개를 먼저 정해야 합니다.',
+      interpretationHint: '넓은 인생 해석보다 오늘 실제 일정에 바로 적용되는 조언을 우선해야 효과가 큽니다.',
+      actionHint: '오늘 할 일 1개와 피할 소모 1개를 짝으로 정해 실천하세요.',
+      trackMetric: '하루 집중 유지율과 감정 소모도'
     },
     {
       id: 'finance',
@@ -2208,8 +2223,8 @@ function buildSpreadCoreLead({ spreadId = 'default', positionName = '', seed = '
   const topic = withKoreanParticle(positionName, '은', '는');
   const linesBySpread = {
     'daily-fortune': [
-      `${topic} 오늘 리듬을 조정하는 핵심 포지션입니다.`,
-      `${positionName} 자리에서 오늘 운영 포인트를 먼저 확인해보겠습니다.`
+      `${topic} 오늘 체감 흐름을 읽는 핵심 자리입니다.`,
+      `${positionName} 자리에서 오늘의 감정과 선택 포인트를 먼저 살펴보겠습니다.`
     ],
     'choice-a-b': [
       `${topic} 선택 비교에서 유지 비용을 가르는 기준입니다.`,
@@ -2517,19 +2532,19 @@ const SPREAD_READING_TEMPLATES = {
     }
   },
   'daily-fortune': {
-    uprightLine: '정방향이면 오늘 일정은 비교적 매끄럽게 이어질 가능성이 큽니다.',
-    reversedLine: '역방향이면 오늘은 중간 소모 구간을 미리 비워두는 편이 안정적입니다.',
-    defaultPrompt: '일별 운세는 예측보다 하루 운영 전략을 정하는 데 쓰는 것이 좋습니다.',
-    defaultFocus: '하루 운영 전략',
+    uprightLine: '정방향이면 오늘 감정 흐름이 비교적 부드럽게 이어질 가능성이 큽니다.',
+    reversedLine: '역방향이면 오늘은 대화 속도를 늦추고 감정 소모를 먼저 줄이는 편이 안정적입니다.',
+    defaultPrompt: '일별 운세는 결과 예측보다 오늘의 감정 리듬과 행동 기준을 정하는 데 쓰는 것이 좋습니다.',
+    defaultFocus: '오늘 감정 리듬과 행동 기준',
     positionPrompts: {
-      '오늘의 흐름': '오늘의 흐름 카드는 하루 전반의 페이스를 정하는 기준입니다.',
-      '주의할 점': '주의 카드는 피해야 할 소모 구간을 미리 알려주는 역할을 합니다.',
-      '행동 조언': '행동 조언 카드는 오늘 반드시 실행할 단일 행동을 정하는 기준입니다.'
+      '오늘의 흐름': '오늘의 흐름 카드는 하루 전반의 감정 리듬을 읽는 기준입니다.',
+      '주의할 점': '주의 카드는 오해나 감정 소모가 커질 수 있는 포인트를 미리 알려주는 역할을 합니다.',
+      '행동 조언': '행동 조언 카드는 오늘 반드시 실천할 한 가지 태도나 문장을 정하는 기준입니다.'
     },
     positionFocus: {
-      '오늘의 흐름': '하루 페이스',
-      '주의할 점': '소모 관리',
-      '행동 조언': '즉시 실행'
+      '오늘의 흐름': '하루 감정 리듬',
+      '주의할 점': '오해 신호 관리',
+      '행동 조언': '실천할 한 가지 행동'
     }
   },
   default: {
