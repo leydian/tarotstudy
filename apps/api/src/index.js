@@ -1404,6 +1404,7 @@ function inferYearlyIntent(context = '') {
   if (/(친구|동료|사람들이|어떻게 생각|평판|인상|인간관계)/.test(text)) return 'social';
   if (/(연애|관계|재회|결혼|상대|썸)/.test(text)) return 'relationship';
   if (/(재정|재물|돈|지출|수입|저축|투자|소비|자산|현금흐름|가계부)/.test(text)) return 'finance';
+  if (/(오늘|운세|하루|금일|오늘의)/.test(text)) return 'daily';
   return 'general';
 }
 
@@ -1988,6 +1989,10 @@ function buildSummaryLead({
       ? (uprightCount >= reversedCount
           ? '주변 인식은 전반적으로 긍정적인 쪽에 가깝습니다.'
           : '주변 인식은 피로 신호가 비칠 수 있어 조절이 필요한 쪽에 가깝습니다.')
+      : intent === 'daily'
+        ? (uprightCount >= reversedCount
+            ? '오늘 흐름은 비교적 안정적인 쪽에 가깝습니다.'
+            : '오늘 흐름은 속도 조절이 필요한 쪽에 가깝습니다.')
       : uprightCount >= reversedCount
         ? '결론은 진행해도 되는 쪽에 가깝습니다.'
         : '결론은 속도를 늦추고 조절하는 쪽에 가깝습니다.';
@@ -2040,6 +2045,9 @@ function buildSummaryFocus({ spreadName, firstItem, lastItem, context = '', cont
     }
     if (intent === 'relationship') {
       return '연애 질문에서는 카드 한 장을 크게 해석하기보다, 오늘 내 감정 1개와 전달할 요청 1개를 분리해 읽는 방식이 가장 안정적입니다. 상대 마음을 단정하기보다 실제 반응을 확인하는 대화 한 번에 집중해보세요.';
+    }
+    if (intent === 'daily') {
+      return '오늘 운세 질문에서는 무엇을 밀지보다, 오늘 가장 중요한 우선순위 1개와 줄일 소모 1개를 함께 정하는 방식이 가장 정확합니다.';
     }
     return `실행: ${buildOneCardActionLine({ context, firstItem })}`;
   }
@@ -2319,8 +2327,12 @@ function normalizeContextText(context = '') {
 function isYesNoQuestion(text = '') {
   const normalized = String(text || '').trim();
   if (!normalized) return false;
-  if (/[?？]$/.test(normalized)) return true;
-  if (/(할까|될까|말까|해도 될까|괜찮을까|맞을까|좋을까|나을까|인가|일까)$/.test(normalized)) {
+  const lowered = normalized.toLowerCase();
+  const decisionPattern = /(할까|될까|말까|해도 될까|괜찮을까|맞을까|좋을까|나을까|가능할까|해도 되나|될지|인가|일까)/;
+  const infoPattern = /(운세|흐름|리딩|해석|전망|기운)/;
+  if (infoPattern.test(lowered) && !decisionPattern.test(lowered)) return false;
+  if (/[?？]$/.test(normalized)) return decisionPattern.test(lowered);
+  if (decisionPattern.test(lowered)) {
     return true;
   }
   return false;
