@@ -353,6 +353,9 @@ function summarizeSpread({ spreadId = '', spreadName, items, context = '', level
   if (spreadId === 'yearly-fortune') {
     return summarizeYearlyFortune({ items, context, level });
   }
+  if (spreadId === 'weekly-fortune') {
+    return summarizeWeeklyFortune({ items, context, level });
+  }
   if (spreadId === 'relationship-recovery') {
     return summarizeRelationshipRecovery({ items, context, level });
   }
@@ -460,6 +463,259 @@ function summarizeRelationshipRecovery({ items, context = '', level = 'beginner'
   ].join(' ');
 
   return [diagnosis, risk, plan].join('\n\n');
+}
+
+function summarizeWeeklyFortune({ items, context = '', level = 'beginner' }) {
+  const pick = (name) => items.find((item) => item.position?.name === name) || null;
+  const theme = pick('주간 테마');
+  const monTue = pick('월-화');
+  const wedThu = pick('수-목');
+  const friday = pick('금요일');
+  const saturday = pick('토요일');
+  const sunday = pick('일요일');
+  const advice = pick('주간 조언');
+  const intent = inferYearlyIntent(context);
+  const tone = inferSummaryContextTone(context);
+  const levelHint = level === 'intermediate' ? tone.intermediateHint : tone.beginnerHint;
+  const uprightCount = items.filter((item) => item.orientation === 'upright').length;
+  const reversedCount = items.length - uprightCount;
+  const seed = hashText([
+    context,
+    theme?.card?.id || '',
+    monTue?.card?.id || '',
+    wedThu?.card?.id || '',
+    friday?.card?.id || '',
+    saturday?.card?.id || '',
+    sunday?.card?.id || '',
+    advice?.card?.id || ''
+  ].join(':'));
+
+  const themeKeyword = theme?.card?.keywords?.[0] || '주간 흐름';
+  const themeLabel = theme?.card?.nameKo ? `${theme.card.nameKo} ${theme?.orientation === 'reversed' ? '역방향' : '정방향'}` : '신호 확인 필요';
+  const overallFlow = uprightCount >= reversedCount ? '전개가 열려 있는 주간' : '속도 조절이 필요한 주간';
+  const overallIntentLine = buildWeeklyIntentLine({ intent, orientation: theme?.orientation || 'upright', keyword: themeKeyword });
+
+  const overall = [
+    `이번 주의 중심 카드는 ${themeLabel}이며, 핵심 키워드는 "${themeKeyword}"입니다.`,
+    `전체적으로는 ${overallFlow}으로 보입니다.`,
+    overallIntentLine
+  ].join(' ');
+
+  const mondayLine = buildWeeklyDayLine({
+    item: monTue,
+    dayLabel: '월요일',
+    roleHint: '주간 시동',
+    intent,
+    openHint: '주 초반에는 일정과 우선순위를 빠르게 고정하면 흐름을 선점하기 좋습니다.',
+    adjustHint: '주 초반에는 무리한 확장보다 속도 조절과 기준 정리가 먼저입니다.',
+    seed: seed + 1
+  });
+  const tuesdayLine = buildWeeklyDayLine({
+    item: monTue,
+    dayLabel: '화요일',
+    roleHint: '초반 안정화',
+    intent,
+    openHint: '화요일에는 전날 정한 기준을 반복 실행하면 체감 안정성이 올라갑니다.',
+    adjustHint: '화요일에는 일정 과적재를 줄이고 실행 항목을 하나로 줄이는 편이 좋겠습니다.',
+    seed: seed + 2
+  });
+  const wednesdayLine = buildWeeklyDayLine({
+    item: wedThu,
+    dayLabel: '수요일',
+    roleHint: '중반 전환',
+    intent,
+    openHint: '수요일에는 외부 변수 대응 여지가 있어 핵심 한 가지를 밀어붙이기 좋은 구간입니다.',
+    adjustHint: '수요일에는 해석 충돌이나 피로 누적을 먼저 줄여야 후반 흐름이 살아납니다.',
+    seed: seed + 3
+  });
+  const thursdayLine = buildWeeklyDayLine({
+    item: wedThu,
+    dayLabel: '목요일',
+    roleHint: '중반 마무리',
+    intent,
+    openHint: '목요일에는 진행 중인 일을 정리해 금요일 마감 품질을 높이는 데 유리합니다.',
+    adjustHint: '목요일에는 진행 중인 이슈를 정리하고 충돌 요인을 줄이는 편이 좋겠습니다.',
+    seed: seed + 4
+  });
+  const fridayLine = buildWeeklyDayLine({
+    item: friday,
+    dayLabel: '금요일',
+    roleHint: '성과 점검',
+    intent,
+    openHint: '금요일에는 결과 확인과 마감 정리를 함께 잡으면 주간 완성도가 올라갑니다.',
+    adjustHint: '금요일에는 성과 집착보다 누락 정리와 손실 방어를 먼저 두는 편이 안전합니다.',
+    seed: seed + 5
+  });
+
+  const saturdayLine = buildWeeklyDayLine({
+    item: saturday,
+    dayLabel: '토요일',
+    roleHint: '회복/정비',
+    intent,
+    openHint: '토요일은 회복과 관계 정비를 균형 있게 가져가면 다음 주 체력이 남습니다.',
+    adjustHint: '토요일은 일정 과적재를 줄이고 회복 루틴을 먼저 고정하는 편이 좋겠습니다.',
+    seed: seed + 6
+  });
+  const sundayLine = buildWeeklyDayLine({
+    item: sunday,
+    dayLabel: '일요일',
+    roleHint: '복기/준비',
+    intent,
+    openHint: '일요일은 복기와 다음 주 준비를 짧게 끝내면 월요일 진입이 훨씬 부드러워집니다.',
+    adjustHint: '일요일은 감정 소모를 줄이고 다음 주 우선순위 1개만 남기는 편이 안정적입니다.',
+    seed: seed + 7
+  });
+
+  const adviceKeyword = advice?.card?.keywords?.[0] || '실행';
+  const adviceLabel = advice?.card?.nameKo ? `${advice.card.nameKo} ${advice?.orientation === 'reversed' ? '역방향' : '정방향'}` : '신호 확인 필요';
+  const actionGuide = advice?.orientation === 'reversed'
+    ? pickByNumber([
+      `주간 조언(${adviceLabel})은 "${adviceKeyword}" 구간의 과속을 멈추고, 실행 항목을 1개로 축소하라는 신호입니다.`,
+      `주간 조언(${adviceLabel})은 "${adviceKeyword}"에서 병목이 생기기 쉬우니, 선택지를 줄여 집중도를 높이라는 메시지입니다.`
+    ], seed + 6)
+    : pickByNumber([
+      `주간 조언(${adviceLabel})은 "${adviceKeyword}" 축을 중심으로 작은 실행을 매일 이어가면 체감이 커진다는 신호입니다.`,
+      `주간 조언(${adviceLabel})은 "${adviceKeyword}" 흐름을 살리기 위해 하루 1개 실행과 짧은 복기를 묶으라는 메시지입니다.`
+    ], seed + 8);
+
+  return [
+    `총평: ${overall}`,
+    `일별 흐름: ${mondayLine} ${tuesdayLine} ${wednesdayLine} ${thursdayLine} ${fridayLine} ${saturdayLine} ${sundayLine}`,
+    `실행 가이드: ${actionGuide} ${levelHint}`
+  ].join('\n\n');
+}
+
+function buildWeeklyIntentLine({ intent = 'general', orientation = 'upright', keyword = '흐름' }) {
+  if (intent === 'career') {
+    return orientation === 'upright'
+      ? `커리어 관점에서는 "${keyword}" 키워드가 살아 있어 외부 실행(지원/제안/협업)을 조금 넓혀보기 좋습니다.`
+      : `커리어 관점에서는 "${keyword}" 키워드가 조정 구간이라, 실행 수보다 완성도 점검을 우선하는 편이 좋겠습니다.`;
+  }
+  if (intent === 'relationship') {
+    return orientation === 'upright'
+      ? `관계 관점에서는 "${keyword}" 키워드가 열려 있어 짧고 명확한 대화 시도가 효과적일 수 있습니다.`
+      : `관계 관점에서는 "${keyword}" 키워드가 예민해 단정보다 확인 대화를 먼저 두는 편이 좋겠습니다.`;
+  }
+  if (intent === 'finance') {
+    return orientation === 'upright'
+      ? `재정 관점에서는 "${keyword}" 키워드가 열려 있어 계획형 지출/저축 리듬을 유지하기 좋습니다.`
+      : `재정 관점에서는 "${keyword}" 키워드가 흔들릴 수 있어 신규 지출보다 손실 방어를 먼저 두는 편이 안전합니다.`;
+  }
+  return orientation === 'upright'
+    ? `"${keyword}" 흐름이 살아 있어 우선순위를 정해 실행하면 주간 체감이 커질 수 있습니다.`
+    : `"${keyword}" 흐름이 조정 구간이라, 속도를 늦추고 핵심 하나에 집중하는 편이 좋겠습니다.`;
+}
+
+function buildWeeklyPositionLine({
+  item,
+  slot,
+  intent = 'general',
+  openHint = '',
+  adjustHint = '',
+  seed = 0
+}) {
+  const label = item?.card?.nameKo ? `${slot}(${item.card.nameKo} ${item.orientation === 'reversed' ? '역방향' : '정방향'})` : slot;
+  const keyword = item?.card?.keywords?.[0] || '흐름';
+  const open = item?.orientation !== 'reversed';
+
+  const intentHint = (() => {
+    if (intent === 'finance') {
+      return open
+        ? pickByNumber([
+          `"${keyword}" 기준으로 지출/저축 기준표를 유지하면 안정성이 올라갑니다.`,
+          `"${keyword}" 구간에서는 금액 한도를 먼저 정하면 흔들림이 줄어듭니다.`
+        ], seed)
+        : pickByNumber([
+          `"${keyword}" 구간에서 충동 지출이 늘 수 있어 결제 전 점검 루틴이 필요합니다.`,
+          `"${keyword}" 축에서는 비용 누수를 먼저 막아야 후반 안정성이 올라갑니다.`
+        ], seed);
+    }
+    if (intent === 'relationship') {
+      return open
+        ? pickByNumber([
+          `"${keyword}" 신호가 열려 있어 짧은 확인 대화를 시도해보기 좋습니다.`,
+          `"${keyword}" 축에서는 요청과 감정을 분리해 말하면 오해를 줄일 수 있습니다.`
+        ], seed)
+        : pickByNumber([
+          `"${keyword}" 구간에서는 해석 충돌이 생기기 쉬워 단정 문장을 줄이는 편이 좋습니다.`,
+          `"${keyword}" 축에서는 반응 확인 후 다음 대화를 여는 편이 안정적입니다.`
+        ], seed);
+    }
+    if (intent === 'career') {
+      return open
+        ? pickByNumber([
+          `"${keyword}" 신호가 살아 있어 외부 실행을 작은 단위로 늘리기 좋습니다.`,
+          `"${keyword}" 축에서는 제출/미팅/정리 중 하나를 확실히 완료하는 편이 좋습니다.`
+        ], seed)
+        : pickByNumber([
+          `"${keyword}" 구간에서는 실행 폭보다 품질 보완을 먼저 두는 편이 안정적입니다.`,
+          `"${keyword}" 축에서는 일정 과부하를 줄이고 핵심 산출물 완성도를 우선하세요.`
+        ], seed);
+    }
+    return open
+      ? `"${keyword}" 흐름이 열려 있어 핵심 한 가지를 밀어붙이기 좋습니다.`
+      : `"${keyword}" 흐름이 흔들릴 수 있어 속도 조절이 먼저입니다.`;
+  })();
+
+  const slotHint = open ? openHint : adjustHint;
+  return `${label}에서는 ${intentHint} ${slotHint}`;
+}
+
+function buildWeeklyDayLine({
+  item,
+  dayLabel,
+  roleHint = '',
+  intent = 'general',
+  openHint = '',
+  adjustHint = '',
+  seed = 0
+}) {
+  const label = item?.card?.nameKo ? `${dayLabel}(${item.card.nameKo} ${item.orientation === 'reversed' ? '역방향' : '정방향'})` : dayLabel;
+  const rolePrefix = roleHint ? `${roleHint} 관점에서` : '흐름 관점에서';
+  const keyword = item?.card?.keywords?.[0] || '흐름';
+  const open = item?.orientation !== 'reversed';
+
+  const intentHint = (() => {
+    if (intent === 'finance') {
+      return open
+        ? pickByNumber([
+          `"${keyword}" 신호가 살아 있어 금액 기준을 지키면 안정적으로 운영하기 좋습니다.`,
+          `"${keyword}" 축이 열려 있어 지출/저축 균형을 맞추면 체감 안정성이 올라갑니다.`
+        ], seed)
+        : pickByNumber([
+          `"${keyword}" 변동이 커질 수 있어 결제 전 점검을 먼저 두는 편이 좋겠습니다.`,
+          `"${keyword}" 구간에서는 손실 방어와 지출 축소를 우선하는 편이 안전합니다.`
+        ], seed);
+    }
+    if (intent === 'relationship') {
+      return open
+        ? pickByNumber([
+          `"${keyword}" 흐름이 열려 있어 짧은 확인 대화를 시도해보기 좋습니다.`,
+          `"${keyword}" 신호가 살아 있어 요청과 감정을 분리해 전달하면 반응을 읽기 쉽습니다.`
+        ], seed)
+        : pickByNumber([
+          `"${keyword}" 해석이 엇갈릴 수 있어 단정 문장을 줄이는 편이 좋겠습니다.`,
+          `"${keyword}" 구간에서는 반응 확인 후 다음 대화를 여는 편이 안정적입니다.`
+        ], seed);
+    }
+    if (intent === 'career') {
+      return open
+        ? pickByNumber([
+          `"${keyword}" 축이 열려 있어 외부 실행을 작은 단위로 이어가기 좋습니다.`,
+          `"${keyword}" 신호가 살아 있어 제출/정리/소통 중 핵심 1개를 밀어붙이기 좋습니다.`
+        ], seed)
+        : pickByNumber([
+          `"${keyword}" 마찰이 생길 수 있어 실행 수보다 품질 보완을 먼저 두는 편이 좋겠습니다.`,
+          `"${keyword}" 구간에서는 일정 과부하를 줄이고 핵심 산출물 완성도를 우선하세요.`
+        ], seed);
+    }
+    return open
+      ? `"${keyword}" 흐름이 열려 있어 핵심 한 가지를 밀어붙이기 좋습니다.`
+      : `"${keyword}" 흐름이 흔들릴 수 있어 속도 조절이 먼저입니다.`;
+  })();
+
+  const dayHint = open ? openHint : adjustHint;
+  return `${label}은 ${rolePrefix} ${intentHint} ${dayHint}`;
 }
 
 function summarizeCelticCross({ items, context = '', level = 'beginner' }) {
