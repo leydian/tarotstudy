@@ -426,21 +426,30 @@ function summarizeSpread({ spreadId = '', spreadName, items, context = '', level
     firstItem: items[0],
     contextTone
   });
+  const polishedActionLine = polishActionVoice({
+    line: actionLine,
+    spreadName,
+    context: normalizedContext
+  });
   const themeLine = buildSummaryTheme({ spreadName, context: normalizedContext, items, topKeywords });
-  rawSummary = polishSummary([leadLine, focusLine, actionLine, themeLine].filter(Boolean).join(' '));
+  rawSummary = polishSummary([leadLine, focusLine, polishedActionLine, themeLine].filter(Boolean).join(' '));
   return finalizeSpreadSummary({ spreadName, items, context: normalizedContext, rawSummary });
 }
 
 function finalizeSpreadSummary({ spreadName = '', items = [], context = '', rawSummary = '' }) {
   const decisionBlock = buildSpreadDecisionBlock({ spreadName, items, context });
-  const merged = [decisionBlock, rawSummary].filter(Boolean).join('\n\n');
+  const intent = inferYearlyIntent(context);
+  const shouldLeadWithNarrative = intent === 'relationship' || intent === 'relationship-repair';
+  const merged = shouldLeadWithNarrative
+    ? [rawSummary, decisionBlock].filter(Boolean).join('\n\n')
+    : [decisionBlock, rawSummary].filter(Boolean).join('\n\n');
   return polishSummaryRhythm(merged);
 }
 
 function buildSpreadDecisionBlock({ spreadName = '', items = [], context = '' }) {
   if (!Array.isArray(items) || !items.length) return '';
   const intent = inferYearlyIntent(context);
-  const analysis = analyzeSpreadSignal(items);
+  const analysis = analyzeSpreadSignal(items, intent);
   const lexicon = pickSpreadLexicon(spreadName, intent);
   const lead = analysis.label === '우세'
     ? `${lexicon.main} 기준으로 전개 여지가 비교적 선명합니다.`
@@ -453,7 +462,7 @@ function buildSpreadDecisionBlock({ spreadName = '', items = [], context = '' })
   return [`판정: ${analysis.label} · ${lead}`, ...evidence].join('\n');
 }
 
-function analyzeSpreadSignal(items = []) {
+function analyzeSpreadSignal(items = [], intent = 'general') {
   const scored = items.map((item) => {
     const risk = scoreCardRisk(item);
     const orientationBase = item?.orientation === 'upright' ? 1.1 : -1.0;
@@ -496,14 +505,26 @@ function analyzeSpreadSignal(items = []) {
     const card = row.item?.card?.nameKo || '카드';
     const keyword = row.item?.card?.keywords?.[0] || '핵심';
     const orientation = row.item?.orientation === 'upright' ? '정방향' : '역방향';
-    const reason = buildSpreadEvidenceReason({ position, keyword, score: row.score });
+    const reason = buildSpreadEvidenceReason({ position, keyword, score: row.score, intent });
     return { position, card, keyword, orientation, reason };
   });
 
   return { label, topEvidence };
 }
 
-function buildSpreadEvidenceReason({ position = '', keyword = '핵심', score = 0 }) {
+function buildSpreadEvidenceReason({ position = '', keyword = '핵심', score = 0, intent = 'general' }) {
+  if (intent === 'relationship' || intent === 'relationship-repair') {
+    if (score >= 0) {
+      if (/현재 관계 상태|현재 상황|상대 관점 신호|현재/.test(position)) {
+        return `"${keyword}" 신호가 살아 있어 대화 여지를 남겨주는 카드`;
+      }
+      return `"${keyword}" 신호가 있어 관계를 풀 실마리를 잡기 좋은 구간`;
+    }
+    if (/거리\/갈등|교차\/장애|결과|3주차|다음 7일/.test(position)) {
+      return `"${keyword}" 구간에서 오해가 커지기 쉬워 속도 조절이 필요함`;
+    }
+    return `"${keyword}" 구간에서 감정 피로가 누적될 수 있어 톤 조율이 필요함`;
+  }
   if (score >= 0) {
     if (/월간 테마|현재 상황|현재 관계 상태|현재/.test(position)) {
       return `${keyword} 기준축을 안정적으로 잡아주는 신호`;
@@ -745,6 +766,11 @@ function summarizeRelationshipRecovery({ items, context = '', level = 'beginner'
     `상대 관점 신호(${signal?.card?.nameKo || '-'})는 ${orientationLabel(signal)}로 읽혀, 해석 확정 대신 실제 반응 기록을 먼저 쌓는 편이 안전합니다.`,
     `상대 관점 신호(${signal?.card?.nameKo || '-'})는 ${orientationLabel(signal)}이어서, 결론을 서두르기보다 짧은 확인 대화부터 두는 편이 좋겠습니다.`
   ], variationSeed);
+  const empathyLine = pickByNumber([
+    '먼저, 재회를 바라는 마음이 큰 질문일수록 결론을 서두르기보다 서로의 속도를 맞추는 과정이 중요합니다.',
+    '이 질문은 마음이 크게 흔들릴 수 있는 주제라서, 카드도 정답 단정보다 대화 리듬 조절을 먼저 권하고 있습니다.',
+    '재회 질문에서는 가능성보다 타이밍과 대화 방식이 더 크게 작동하니, 오늘은 감정 소모를 줄이는 쪽으로 읽어보겠습니다.'
+  ], variationSeed + 40);
 
   const diagnosis = [
     `핵심 진단: 현재 관계 상태(${current?.card?.nameKo || '-'})는 ${orientationLabel(current)}로 읽힙니다.`,
@@ -882,15 +908,31 @@ function summarizeRelationshipRecovery({ items, context = '', level = 'beginner'
     `주간 마무리에서는 상대 관점 신호(${signal?.card?.nameKo || '-'}) 반응을 기준으로 다음 주 문장 톤을 조정하세요.`
   ], variationSeed + 4);
 
+  const reconnectTrack = pickByNumber([
+    '재회를 시도하고 싶다면: 안부 1문장 + 확인 질문 1문장으로 시작하고, 답을 재촉하지 않는 템포를 유지하세요.',
+    '재회를 열어보려면: 긴 설명 대신 짧은 연락 1회로 접점을 만들고, 상대 반응을 본 뒤 다음 대화를 여세요.',
+    '연결을 다시 만들고 싶다면: 하루 감정 정리 후 저강도 메시지 1개만 보내고, 반응 기록을 기준으로 다음 행동을 정하세요.'
+  ], variationSeed + 41);
+  const recoveryTrack = pickByNumber([
+    '지금은 나를 먼저 회복하고 싶다면: 연락 시도 횟수를 줄이고 수면/루틴/일상 리듬을 먼저 안정화하세요.',
+    '마음 회복을 우선한다면: 상대 해석을 멈추고 하루 1회 감정 기록으로 생각 과열을 낮추는 편이 좋습니다.',
+    '감정 소모가 크다면: 관계 결론을 잠시 보류하고, 내 생활 리듬을 되찾는 행동 1개를 매일 고정하세요.'
+  ], variationSeed + 42);
   const plan = [
     planOpening,
     planRoutine,
     modePlan,
+    `선택지: ${reconnectTrack} ${recoveryTrack}`,
     planCheckpoint,
     levelHint
   ].join(' ');
+  const closingLine = pickByNumber([
+    '마무리: 이번 주는 큰 결론보다, 오해를 줄이는 한 번의 대화 성공을 목표로 두면 훨씬 안정적입니다.',
+    '마무리: 재회 가능성은 속도보다 리듬에서 갈리니, 오늘은 짧고 안전한 대화 1회만 목표로 잡아보세요.',
+    '마무리: 관계의 방향을 당장 확정하기보다, 서로 덜 다치게 대화를 이어갈 기반을 먼저 만드는 것이 핵심입니다.'
+  ], variationSeed + 43);
 
-  return [diagnosis, risk, plan].join('\n\n');
+  return [empathyLine, diagnosis, risk, plan, closingLine].join('\n\n');
 }
 
 function summarizeWeeklyFortune({ items, context = '', level = 'beginner' }) {
@@ -1255,6 +1297,11 @@ function summarizeMonthlyFortune({ items, context = '', level = 'beginner' }) {
     firstItem: theme,
     contextTone: tone
   });
+  const polishedAction = polishActionVoice({
+    line: action,
+    spreadName: '월별 운세',
+    context
+  });
   const overall = [
     `월간 테마 카드는 ${cardLabel(theme)}이고, 핵심 키워드는 "${topKeyword}"입니다.`,
     `전체적으로는 ${monthLabel}으로 보입니다.`
@@ -1264,7 +1311,7 @@ function summarizeMonthlyFortune({ items, context = '', level = 'beginner' }) {
     `총평: ${overall}`,
     `주차 흐름: ${weekHint(week1, '1주차')} ${weekHint(week2, '2주차')} ${weekHint(week3, '3주차')} ${weekHint(week4, '4주차·정리')}`,
     `월-주 연결: ${bridge}`,
-    `실행 가이드: ${action}`,
+    `실행 가이드: ${polishedAction}`,
     `한 줄 테마: 이번 달은 '${topKeyword}' 기준으로 초반 실행-중반 완급-후반 정리 리듬을 분리하면 안정적입니다.`
   ].join('\n\n');
 }
@@ -2692,6 +2739,29 @@ function buildSummaryTheme({ spreadName, context = '', items = [], topKeywords =
   return `한 줄 테마: 이번 리딩은 '${leadKeyword}' 신호를 한 가지 행동 기준으로 고정할 때 가장 잘 활용됩니다.`;
 }
 
+function polishActionVoice({ line = '', spreadName = '', context = '' }) {
+  const raw = String(line || '').trim();
+  if (!raw) return raw;
+  const seed = hashText(`${spreadName}:${context}:${raw}`);
+  const dualLead = pickByNumber([
+    '상황별로 이렇게 보시면 됩니다',
+    '선택지는 두 가지로 정리됩니다',
+    '이번 흐름은 두 방향 중 하나를 고르면 됩니다',
+    '실행 방향을 두 축으로 나눠 보면 더 분명합니다'
+  ], seed);
+  let normalized = raw
+    .replace(/두 갈래(?:로 보시면 됩니다|로 정리됩니다| 운영이 좋습니다| 조언으로 정리됩니다|입니다)?/g, dualLead)
+    .replace(/우선하는 편이 좋습니다/g, '먼저 잡는 편이 안정적입니다')
+    .replace(/좋습니다\./g, '좋겠습니다.');
+
+  if (/(재회|연애|관계 회복|관계)/.test(`${context} ${spreadName}`)) {
+    normalized = normalized
+      .replace(/결론을 미루고/g, '결론을 잠시 늦추고')
+      .replace(/방어가 필요하다면/g, '지금 마음이 버겁다면');
+  }
+  return normalized;
+}
+
 function buildSummaryAction({ spreadName, level, context = '', firstItem = null, contextTone }) {
   const intent = inferYearlyIntent(context);
   const levelLine = level === 'intermediate' ? contextTone.intermediateHint : contextTone.beginnerHint;
@@ -2869,17 +2939,20 @@ function normalizeContextText(context = '') {
 function normalizeContextForSpread({ spreadName = '', context = '' }) {
   let text = normalizeContextText(context);
   if (!text) return '';
+  const hasComparisonIntent = /(비교|대비|vs|versus|각각|둘 다|차이)/i.test(text);
+  const hasMixedPeriod = /이번\s*주/.test(text) && /이번\s*달|이달/.test(text);
+  if (hasComparisonIntent || hasMixedPeriod) return text;
   if (spreadName === '월별 운세') {
     text = text
-      .replace(/이번\s*주/gi, '이번 달')
-      .replace(/금주/gi, '이번 달')
-      .replace(/주별\s*운세/gi, '월별 운세');
+      .replace(/^\s*이번\s*주\b/gi, '이번 달')
+      .replace(/^\s*금주\b/gi, '이번 달')
+      .replace(/^\s*주별\s*운세/gi, '월별 운세');
   }
   if (spreadName === '주별 운세') {
     text = text
-      .replace(/이번\s*달/gi, '이번 주')
-      .replace(/이달/gi, '이번 주')
-      .replace(/월별\s*운세/gi, '주별 운세');
+      .replace(/^\s*이번\s*달\b/gi, '이번 주')
+      .replace(/^\s*이달\b/gi, '이번 주')
+      .replace(/^\s*월별\s*운세/gi, '주별 운세');
   }
   return text;
 }

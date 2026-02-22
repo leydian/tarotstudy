@@ -133,6 +133,7 @@ export function SpreadsPage() {
               onClick={() => {
                 setSelectedId(spread.id);
                 setVariantId(null);
+                setDetailView('reading');
                 setReadingLevel(spread.level);
                 drawMutation.reset();
               }}
@@ -158,6 +159,7 @@ export function SpreadsPage() {
                   className={`chip-link ${activeVariant?.id === variant.id ? 'chip-on' : ''}`}
                   onClick={() => {
                     setVariantId(variant.id);
+                    setDetailView('reading');
                     drawMutation.reset();
                   }}
                 >
