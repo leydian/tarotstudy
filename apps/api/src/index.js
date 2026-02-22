@@ -1874,9 +1874,18 @@ function buildSummaryLead({
       uprightCount,
       reversedCount
     });
-    const keywordLine = topKeywords.length
+    let keywordLine = topKeywords.length
       ? `핵심 키워드는 ${topKeywords.join(', ')}입니다.`
       : '핵심 키워드는 카드의 기본 의미 그대로 읽는 편이 안정적입니다.';
+    if (intent === 'social' && topKeywords.length) {
+      const safeKeywords = topKeywords.filter((k) => !/(갈등|충돌|대립|불화)/.test(String(k)));
+      const riskKeywords = topKeywords.filter((k) => /(갈등|충돌|대립|불화)/.test(String(k)));
+      if (safeKeywords.length && riskKeywords.length) {
+        keywordLine = `핵심 키워드는 ${safeKeywords.join(', ')}이며, ${riskKeywords.join(', ')} 신호는 말투 조절 포인트로 보시면 좋겠습니다.`;
+      } else if (safeKeywords.length) {
+        keywordLine = `핵심 키워드는 ${safeKeywords.join(', ')}입니다.`;
+      }
+    }
     if (yesNo) {
       return `${yesNo.verdict} 이유: ${yesNo.reason}`;
     }
@@ -1920,7 +1929,9 @@ function buildSummaryFocus({ spreadName, firstItem, lastItem, context = '', cont
   if (!firstItem || !lastItem) return contextTone.mainHint;
   if (spreadName === '원카드' || firstItem.position.name === '핵심 메시지') {
     if (intent === 'social') {
-      return '사람들이 나를 어떻게 보는지 묻는 질문에서는 카드 의미를 크게 확장하기보다, 실제로 보이는 태도 신호를 우선 읽는 게 정확합니다. 오늘은 내 강점 1개와 줄일 반응 1개를 정해 인상을 안정적으로 관리해보세요.';
+      const cardName = firstItem.card?.nameKo || '이 카드';
+      const keyword = firstItem.card?.keywords?.[0] || '인상';
+      return `${cardName}의 "${keyword}" 신호를 기준으로 보면, 의도 해명보다 반복해서 보이는 태도 관리가 인상에 더 크게 작용합니다. 오늘은 강점 1개를 살리고 줄일 반응 1개를 정해 주변 체감을 안정적으로 맞춰보세요.`;
     }
     if (intent === 'finance') {
       return '재물 질문에서는 카드 한 장을 크게 확장하기보다, 오늘 지출 통제 1개와 확인할 숫자 1개를 같이 정하는 방식이 가장 실용적입니다. 기대 수익보다 현금흐름을 먼저 읽으면 판단이 훨씬 안정됩니다.';
@@ -2019,7 +2030,7 @@ function buildSummaryAction({ spreadName, level, context = '', firstItem = null,
   const levelLine = level === 'intermediate' ? contextTone.intermediateHint : contextTone.beginnerHint;
   if (spreadName === '원카드') {
     if (intent === 'social') {
-      return `오늘 대인운 조언은 두 갈래로 보시면 됩니다. 신뢰를 더 쌓고 싶다면 짧고 분명한 소통을 먼저 여세요. 피로가 크다면 설명을 줄이고 반응 템포를 낮춰 인상을 안정시키는 편이 좋습니다. ${levelLine}`;
+      return `오늘 대인운 조언은 두 갈래입니다: 신뢰를 더 쌓고 싶다면 짧고 분명한 소통을 먼저 여시고, 피로가 크다면 설명을 줄인 뒤 반응 템포를 낮춰 인상을 안정시키세요. ${levelLine}`;
     }
     if (intent === 'finance') {
       return `오늘 재물운 조언은 두 갈래로 보시면 됩니다. 기회를 잡고 싶다면 예산 상한 안에서 작은 집행 1건만 실행하세요. 방어가 필요하다면 비필수 결제 1건을 보류하고 현금흐름부터 점검하세요. ${levelLine}`;
