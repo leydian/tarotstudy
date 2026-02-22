@@ -106,6 +106,10 @@ npm run dev:web -- --host 127.0.0.1 --port 5173
 - `POST /api/spreads/:spreadId/draw`
 - `POST /api/quiz/generate`
 - `POST /api/quiz/grade`
+- `GET /api/learning/next-actions?userId=...`
+- `GET /api/reviews/inbox?userId=...&spreadId=...&limit=...`
+- `GET /api/analytics/funnel?window=7d|30d`
+- `POST /api/events/batch`
 
 ### 이미지 운영/관측 API
 - `POST /api/telemetry/image-fallback`

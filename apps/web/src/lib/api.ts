@@ -5,9 +5,12 @@ import type {
   ImageFallbackStats,
   ImageHealthCheckResult,
   LearningKpi,
+  LearningFunnelResponse,
   Lesson,
+  NextActionsResponse,
   QuizPayload,
   QuizResult,
+  ReviewInboxResponse,
   Spread,
   SpreadDrawResult,
   TarotCard,
@@ -141,6 +144,25 @@ export const api = {
   },
   getLearningKpi() {
     return request<LearningKpi>('/api/analytics/learning-kpi');
+  },
+  getLearningFunnel(window: '7d' | '30d' = '7d') {
+    return request<LearningFunnelResponse>(`/api/analytics/funnel?window=${window}`);
+  },
+  getNextActions(userId: string) {
+    return request<NextActionsResponse>(`/api/learning/next-actions?userId=${encodeURIComponent(userId)}`);
+  },
+  getReviewInbox(userId: string, params?: { spreadId?: string; limit?: number }) {
+    const search = new URLSearchParams();
+    search.set('userId', userId);
+    if (params?.spreadId) search.set('spreadId', params.spreadId);
+    if (params?.limit != null) search.set('limit', String(params.limit));
+    return request<ReviewInboxResponse>(`/api/reviews/inbox?${search.toString()}`);
+  },
+  reportEventsBatch(events: Array<Record<string, unknown>>) {
+    return request<{ ok: boolean; accepted: number; rejected: number }>('/api/events/batch', {
+      method: 'POST',
+      body: JSON.stringify({ events })
+    });
   },
   getUserProgress(userId: string) {
     return request<UserProgressSnapshot>(`/api/progress/${encodeURIComponent(userId)}`);

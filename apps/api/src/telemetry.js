@@ -20,6 +20,15 @@ function emptySpreadStats() {
   };
 }
 
+function emptyAppEventStats() {
+  return {
+    totalEvents: 0,
+    byType: {},
+    byPath: {},
+    recent: []
+  };
+}
+
 function safeReadJson(filePath) {
   try {
     if (!fs.existsSync(filePath)) return null;
@@ -55,12 +64,14 @@ export function createTelemetryStore({
   const state = {
     imageFallbackStats: { ...emptyImageStats(), ...(saved.imageFallbackStats || {}) },
     spreadTelemetryStats: { ...emptySpreadStats(), ...(saved.spreadTelemetryStats || {}) },
+    appEventStats: { ...emptyAppEventStats(), ...(saved.appEventStats || {}) },
     windowStartedAt
   };
 
   function resetState() {
     state.imageFallbackStats = emptyImageStats();
     state.spreadTelemetryStats = emptySpreadStats();
+    state.appEventStats = emptyAppEventStats();
     state.windowStartedAt = new Date().toISOString();
   }
 
@@ -102,6 +113,7 @@ export function createTelemetryStore({
     const payload = {
       imageFallbackStats: state.imageFallbackStats,
       spreadTelemetryStats: state.spreadTelemetryStats,
+      appEventStats: state.appEventStats,
       windowStartedAt: state.windowStartedAt,
       savedAt: new Date().toISOString()
     };
@@ -145,11 +157,33 @@ export function createTelemetryStore({
     return stats;
   }
 
+  function recordAppEvent({ type = 'unknown', path = '', userId = '', context = '' }) {
+    rotateIfNeeded();
+    const stats = state.appEventStats;
+    stats.totalEvents += 1;
+    stats.byType[type] = (stats.byType[type] || 0) + 1;
+    if (path) {
+      stats.byPath[path] = (stats.byPath[path] || 0) + 1;
+    }
+    stats.recent.unshift({
+      at: new Date().toISOString(),
+      type: String(type),
+      path: String(path || ''),
+      userId: String(userId || '').slice(0, 80),
+      context: String(context || '').slice(0, 180)
+    });
+    stats.recent = stats.recent.slice(0, 120);
+    persist();
+    return stats;
+  }
+
   return {
     filePath,
     getImageFallbackStats: () => state.imageFallbackStats,
     getSpreadTelemetryStats: () => state.spreadTelemetryStats,
+    getAppEventStats: () => state.appEventStats,
     recordImageFallbackEvent,
-    recordSpreadEvent
+    recordSpreadEvent,
+    recordAppEvent
   };
 }

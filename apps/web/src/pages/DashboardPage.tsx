@@ -26,6 +26,11 @@ export function DashboardPage() {
     queryFn: api.getLearningKpi,
     refetchInterval: 60000
   });
+  const learningFunnelQuery = useQuery({
+    queryKey: ['learning-funnel', '7d'],
+    queryFn: () => api.getLearningFunnel('7d'),
+    refetchInterval: 60000
+  });
 
   const weakCards = useMemo(() => {
     const cards = cardsQuery.data ?? [];
@@ -192,6 +197,21 @@ export function DashboardPage() {
                 {learningKpiQuery.data.stageDropoff.slice(0, 4).map((item) => (
                   <p key={item.stage}>
                     {item.stage}: 완료 {item.completionRate}% · 이탈 {item.dropoffFromPrev}%
+                  </p>
+                ))}
+              </div>
+            )}
+          </article>
+
+          <article className="panel">
+            <h3>학습 퍼널 (7일)</h3>
+            {learningFunnelQuery.isLoading && <p>퍼널 로딩 중...</p>}
+            {learningFunnelQuery.data && (
+              <div className="stack">
+                <p className="sub">활성 사용자: {learningFunnelQuery.data.users}</p>
+                {learningFunnelQuery.data.steps.map((step) => (
+                  <p key={step.id}>
+                    {step.label}: {step.users}명 · 이전 단계 대비 {step.conversionFromPrev}%
                   </p>
                 ))}
               </div>

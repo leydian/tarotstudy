@@ -46,6 +46,9 @@ export interface Course {
   description: string;
   level: string;
   lessonCount: number;
+  recommendedForPersona?: string[];
+  estimatedMinutes?: number;
+  difficultyConfidence?: number;
   lessonOutline: Array<{
     id: string;
     title: string;
@@ -215,6 +218,10 @@ export interface SpreadReviewRecord {
   outcome?: 'matched' | 'partial' | 'different';
   reviewNote?: string;
   reviewedAt?: string;
+  intentTag?: 'relationship' | 'career' | 'finance' | 'general';
+  riskLevel?: 'low' | 'medium' | 'high';
+  nextAction?: string;
+  templateVersion?: string;
 }
 
 export interface ImageFallbackStats {
@@ -289,5 +296,60 @@ export interface LearningKpi {
     spreadReviewSaved: number;
     spreadDrawn: number;
   };
+  reviewLatencyMedian?: number;
+  completionByStage?: Array<{
+    stage: string;
+    completedLessons: number;
+    totalLessons: number;
+  }>;
+  dropoffReasons?: Array<{
+    reason: string;
+    users: number;
+  }>;
   generatedAt: string;
+}
+
+export interface NextAction {
+  id: string;
+  type: 'next_lesson' | 'quiz_review' | 'spread_review' | 'routine_resume';
+  title: string;
+  description: string;
+  href: string;
+  priority: 'high' | 'medium' | 'low';
+  reason: string;
+}
+
+export interface NextActionsResponse {
+  userId: string;
+  generatedAt: string;
+  actions: NextAction[];
+}
+
+export interface ReviewInboxItem {
+  id: string;
+  spreadId: string;
+  spreadName: string;
+  variantName?: string | null;
+  context: string;
+  drawnAt: string;
+  summaryPreview: string;
+  suggestedAction: string;
+}
+
+export interface ReviewInboxResponse {
+  generatedAt: string;
+  total: number;
+  items: ReviewInboxItem[];
+}
+
+export interface LearningFunnelResponse {
+  generatedAt: string;
+  window: '7d' | '30d';
+  users: number;
+  steps: Array<{
+    id: string;
+    label: string;
+    users: number;
+    conversionFromPrev: number;
+  }>;
 }

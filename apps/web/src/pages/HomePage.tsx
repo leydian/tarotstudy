@@ -1,8 +1,8 @@
 import { Link } from 'react-router-dom';
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../lib/api';
-import { useProgressStore } from '../state/progress';
+import { getProgressUserId, useProgressStore } from '../state/progress';
 import { PageHero } from '../components/PageHero';
 import { KpiRow } from '../components/KpiRow';
 import type { RecommendationReason } from '../types';
@@ -11,9 +11,15 @@ export function HomePage() {
   const completedLessonIds = useProgressStore((s) => s.completedLessons);
   const quizHistory = useProgressStore((s) => s.quizHistory);
   const completedLessons = completedLessonIds.length;
+  const userId = getProgressUserId();
   const coursesQuery = useQuery({ queryKey: ['courses'], queryFn: api.getCourses });
+  const nextActionsQuery = useQuery({ queryKey: ['next-actions', userId], queryFn: () => api.getNextActions(userId) });
   const courses = coursesQuery.data ?? [];
   const completedSet = useMemo(() => new Set(completedLessonIds), [completedLessonIds]);
+
+  useEffect(() => {
+    void api.reportEventsBatch([{ type: 'home_viewed', path: '/', userId }]).catch(() => {});
+  }, [userId]);
 
   const avgScore = quizHistory.length
     ? Math.round(quizHistory.reduce((acc, item) => acc + item.percent, 0) / quizHistory.length)
@@ -86,12 +92,18 @@ export function HomePage() {
           <Link to="/dashboard" className="text-link">대시보드로 이동</Link>
         </article>
         <article className="panel content-side">
-          <h3>추천 학습 루트</h3>
-          <ol className="clean-list">
-            <li>입문 코어(메이저) 3개 레슨 완료</li>
-            <li>카드 도감에서 약점 카드 북마크</li>
-            <li>중급 비교 해석 퀴즈 반복</li>
-          </ol>
+          <h3>다음 액션</h3>
+          {nextActionsQuery.isLoading && <p className="sub">추천 액션 계산 중...</p>}
+          {!nextActionsQuery.isLoading && (
+            <ol className="clean-list">
+              {(nextActionsQuery.data?.actions || []).slice(0, 4).map((action) => (
+                <li key={action.id}>
+                  <strong>{action.title}</strong>
+                  <p className="sub">{action.description}</p>
+                </li>
+              ))}
+            </ol>
+          )}
         </article>
       </section>
     </section>

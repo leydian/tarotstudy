@@ -26,6 +26,10 @@ function getLocalUserId() {
   return next;
 }
 
+export function getProgressUserId() {
+  return getLocalUserId();
+}
+
 function loadInitial(): Pick<ProgressState, 'completedLessons' | 'weakCardIds' | 'quizHistory' | 'spreadHistory'> {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);

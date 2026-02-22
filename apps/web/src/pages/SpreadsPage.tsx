@@ -1,9 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { api } from '../lib/api';
 import { TarotImage } from '../components/TarotImage';
-import { useProgressStore } from '../state/progress';
+import { getProgressUserId, useProgressStore } from '../state/progress';
 import type { SpreadDrawResult } from '../types';
 import {
   buildChoiceComparison,
@@ -55,6 +55,7 @@ export function SpreadsPage() {
   const [historyQuery, setHistoryQuery] = useState('');
   const [expandedHistory, setExpandedHistory] = useState<Record<string, boolean>>({});
   const spreadsQuery = useQuery({ queryKey: ['spreads'], queryFn: api.getSpreads });
+  const userId = getProgressUserId();
   const spreadHistory = useProgressStore((s) => s.spreadHistory);
   const addSpreadReading = useProgressStore((s) => s.addSpreadReading);
   const reviewSpreadReading = useProgressStore((s) => s.reviewSpreadReading);
@@ -62,6 +63,11 @@ export function SpreadsPage() {
   const removeSpreadReadingsBySpreadId = useProgressStore((s) => s.removeSpreadReadingsBySpreadId);
   const spreads = spreadsQuery.data ?? [];
   const selected = spreads.find((spread) => spread.id === selectedId) ?? spreads[0] ?? null;
+  const reviewInboxQuery = useQuery({
+    queryKey: ['review-inbox', userId, selected?.id || 'all'],
+    queryFn: () => api.getReviewInbox(userId, { spreadId: selected?.id, limit: 10 }),
+    enabled: Boolean(userId)
+  });
 
   const activeVariant = useMemo(() => {
     if (!selected?.variants?.length) return null;
@@ -102,6 +108,14 @@ export function SpreadsPage() {
         level: data.level,
         context: data.context
       });
+      void api.reportEventsBatch([{
+        type: 'spread_drawn',
+        path: '/spreads',
+        userId,
+        spreadId: data.spreadId,
+        level: data.level,
+        context: data.context
+      }]).catch(() => {});
     }
   });
 
@@ -155,6 +169,10 @@ export function SpreadsPage() {
   }) => {
     void api.reportSpreadEvent(payload).catch(() => {});
   };
+
+  useEffect(() => {
+    void api.reportEventsBatch([{ type: 'spreads_viewed', path: '/spreads', userId }]).catch(() => {});
+  }, [userId]);
 
   if (spreadsQuery.isLoading) return <p>대표 스프레드를 불러오는 중...</p>;
   if (spreadsQuery.isError || !selected) return <p>스프레드 데이터를 불러오지 못했습니다.</p>;
@@ -482,6 +500,21 @@ export function SpreadsPage() {
                 이 스프레드 기록 전체 삭제
               </button>
             </div>
+            <article className="result-item">
+              <p><strong>서버 복기 인박스</strong></p>
+              {reviewInboxQuery.isLoading && <p className="sub">미복기 기록 동기화 중...</p>}
+              {!reviewInboxQuery.isLoading && (reviewInboxQuery.data?.items || []).length === 0 && (
+                <p className="sub">미복기 인박스가 비어 있습니다.</p>
+              )}
+              <ul className="clean-list reading-lines reading-lines-compact">
+                {(reviewInboxQuery.data?.items || []).slice(0, 3).map((item) => (
+                  <li key={`review-inbox-${item.id}`}>
+                    <strong>{item.variantName || item.spreadName}</strong> · {new Date(item.drawnAt).toLocaleString()}
+                    <p className="sub">{item.summaryPreview}</p>
+                  </li>
+                ))}
+              </ul>
+            </article>
             <div className="filters">
               <select value={historyTag} onChange={(e) => setHistoryTag(e.target.value as typeof historyTag)}>
                 <option value="all">전체 태그</option>
@@ -580,6 +613,14 @@ export function SpreadsPage() {
                             level: record.level,
                             context: record.context
                           });
+                          void api.reportEventsBatch([{
+                            type: 'spread_review_saved',
+                            path: '/spreads',
+                            userId,
+                            spreadId: record.spreadId,
+                            level: record.level,
+                            context: record.context
+                          }]).catch(() => {});
                         }
                       }}
                     >
@@ -640,6 +681,14 @@ export function SpreadsPage() {
                             level: record.level,
                             context: record.context
                           });
+                          void api.reportEventsBatch([{
+                            type: 'spread_review_saved',
+                            path: '/spreads',
+                            userId,
+                            spreadId: record.spreadId,
+                            level: record.level,
+                            context: record.context
+                          }]).catch(() => {});
                         }
                       }}
                     >

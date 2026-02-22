@@ -11,6 +11,7 @@ import { generateQuiz, gradeQuiz } from './quiz.js';
 import { createTelemetryStore } from './telemetry.js';
 import { createProgressStore } from './progress-store.js';
 import { buildLearningKpi } from './learning-kpi.js';
+import { buildLearningFunnel, buildNextActions, buildReviewInbox } from './learning-read-models.js';
 import {
   inferQuestionIntent,
   getTarotPredictedQuestions,
@@ -71,6 +72,43 @@ app.get('/api/analytics/learning-kpi', async () =>
     spreadTelemetryStats: telemetryStore.getSpreadTelemetryStats()
   })
 );
+app.get('/api/analytics/funnel', async (request) =>
+  buildLearningFunnel({
+    progressRows: progressStore.listAllProgress(),
+    window: request.query?.window === '30d' ? '30d' : '7d'
+  })
+);
+
+app.get('/api/learning/next-actions', async (request, reply) => {
+  const userId = String(request.query?.userId || '').trim();
+  if (!userId) {
+    reply.code(400);
+    return { message: 'userId query is required' };
+  }
+
+  const snapshot = progressStore.getUserProgress(userId);
+  return buildNextActions({
+    userId,
+    snapshot,
+    courses,
+    lessonsByCourse
+  });
+});
+
+app.get('/api/reviews/inbox', async (request, reply) => {
+  const userId = String(request.query?.userId || '').trim();
+  if (!userId) {
+    reply.code(400);
+    return { message: 'userId query is required' };
+  }
+
+  const snapshot = progressStore.getUserProgress(userId);
+  return buildReviewInbox({
+    snapshot,
+    spreadId: String(request.query?.spreadId || ''),
+    limit: Number(request.query?.limit || 20)
+  });
+});
 
 app.get('/api/progress/:userId', async (request, reply) => {
   const { userId } = request.params;
@@ -132,6 +170,59 @@ app.post('/api/telemetry/spread-events', async (request, reply) => {
     context
   });
   return { ok: true };
+});
+
+app.post('/api/events/batch', async (request, reply) => {
+  const events = Array.isArray(request.body?.events) ? request.body.events : [];
+  if (!events.length) {
+    reply.code(400);
+    return { message: 'events[] is required' };
+  }
+
+  let accepted = 0;
+  let rejected = 0;
+  for (const event of events.slice(0, 200)) {
+    const type = String(event?.type || '');
+    if (!type) {
+      rejected += 1;
+      continue;
+    }
+
+    if (type === 'spread_drawn' || type === 'spread_review_saved') {
+      telemetryStore.recordSpreadEvent({
+        type,
+        spreadId: String(event?.spreadId || 'unknown'),
+        level: String(event?.level || 'unknown'),
+        context: String(event?.context || '')
+      });
+      accepted += 1;
+      continue;
+    }
+
+    if (type === 'image_fallback') {
+      telemetryStore.recordImageFallbackEvent({
+        stage: String(event?.stage || event?.metadata?.stage || 'unknown'),
+        cardId: String(event?.cardId || event?.metadata?.cardId || 'unknown'),
+        source: String(event?.source || event?.metadata?.source || '')
+      });
+      accepted += 1;
+      continue;
+    }
+
+    telemetryStore.recordAppEvent({
+      type,
+      path: String(event?.path || event?.metadata?.path || ''),
+      userId: String(event?.userId || ''),
+      context: String(event?.context || '')
+    });
+    accepted += 1;
+  }
+
+  return {
+    ok: true,
+    accepted,
+    rejected
+  };
 });
 
 app.get('/api/images/health-check', async () => {
