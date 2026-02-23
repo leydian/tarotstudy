@@ -11,6 +11,7 @@ const CardDetailPage = lazy(() => import('./pages/CardDetailPage').then((m) => (
 const QuizPage = lazy(() => import('./pages/QuizPage').then((m) => ({ default: m.QuizPage })));
 const DashboardPage = lazy(() => import('./pages/DashboardPage').then((m) => ({ default: m.DashboardPage })));
 const SpreadsPage = lazy(() => import('./pages/SpreadsPage').then((m) => ({ default: m.SpreadsPage })));
+const ChatSpreadPage = lazy(() => import('./pages/ChatSpreadPage').then((m) => ({ default: m.ChatSpreadPage })));
 
 const routePreloaders = [
   () => import('./pages/HomePage'),
@@ -20,7 +21,8 @@ const routePreloaders = [
   () => import('./pages/CardDetailPage'),
   () => import('./pages/QuizPage'),
   () => import('./pages/DashboardPage'),
-  () => import('./pages/SpreadsPage')
+  () => import('./pages/SpreadsPage'),
+  () => import('./pages/ChatSpreadPage')
 ];
 
 export function App() {
@@ -60,6 +62,7 @@ export function App() {
               <Route path="/courses/:courseId/lessons/:lessonId" element={<LessonPage />} />
               <Route path="/library" element={<LibraryPage />} />
               <Route path="/spreads" element={<SpreadsPage />} />
+              <Route path="/chat" element={<ChatSpreadPage />} />
               <Route path="/cards/:cardId" element={<CardDetailPage />} />
               <Route path="/quiz/:lessonId" element={<QuizPage />} />
               <Route path="/dashboard" element={<DashboardPage />} />

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { api } from '../lib/api';
 import { TarotImage } from '../components/TarotImage';
 import { getProgressUserId, useProgressStore } from '../state/progress';
@@ -64,6 +64,7 @@ const SPREAD_VISUAL_PRESETS: Record<string, SpreadVisualPreset> = {
 };
 
 export function SpreadsPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [variantId, setVariantId] = useState<string | null>(null);
   const [context, setContext] = useState('');
@@ -205,6 +206,44 @@ export function SpreadsPage() {
     void api.reportEventsBatch([{ type: 'spreads_viewed', path: '/spreads', userId }]).catch(() => {});
   }, [userId]);
 
+  useEffect(() => {
+    if (!spreads.length) return;
+    const spreadIdParam = searchParams.get('spreadId');
+    const levelParam = searchParams.get('level');
+    const contextParam = searchParams.get('context');
+    const variantParam = searchParams.get('variantId');
+
+    const candidate = spreadIdParam ? spreads.find((spread) => spread.id === spreadIdParam) : null;
+    if (candidate) {
+      setSelectedId(candidate.id);
+      setVariantId(variantParam || candidate.variants?.[0]?.id || null);
+    } else if (!selectedId) {
+      setSelectedId(spreads[0].id);
+      setVariantId(spreads[0].variants?.[0]?.id || null);
+    }
+    if (levelParam === 'beginner' || levelParam === 'intermediate') {
+      setReadingLevel(levelParam);
+    }
+    if (contextParam && !context.trim()) {
+      setContext(contextParam);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [spreads]);
+
+  useEffect(() => {
+    if (!selected) return;
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set('spreadId', selected.id);
+      if (activeVariant?.id) next.set('variantId', activeVariant.id);
+      else next.delete('variantId');
+      next.set('level', readingLevel);
+      if (context.trim()) next.set('context', context.trim());
+      else next.delete('context');
+      return next;
+    });
+  }, [activeVariant?.id, context, readingLevel, selected, setSearchParams]);
+
   if (spreadsQuery.isLoading) return <p>대표 스프레드를 불러오는 중...</p>;
   if (spreadsQuery.isError || !selected) return <p>스프레드 데이터를 불러오지 못했습니다.</p>;
 
@@ -236,6 +275,14 @@ export function SpreadsPage() {
         <p className="badge">{selected.level === 'beginner' ? '입문 권장' : '중급 권장'} · {selected.cardCount}장</p>
         <h3>{selected.name}</h3>
         <p>{selected.purpose}</p>
+        <div className="chip-wrap">
+          <Link
+            to={`/chat?spreadId=${encodeURIComponent(selected.id)}&variantId=${encodeURIComponent(activeVariant?.id ?? '')}&level=${readingLevel}&context=${encodeURIComponent(context)}`}
+            className="chip-link"
+          >
+            챗 리딩으로 전환
+          </Link>
+        </div>
 
         {selected.variants && selected.variants.length > 0 && (
           <>
@@ -1019,4 +1066,3 @@ function withRoParticle(word: string) {
   if (jong === 0 || jong === 8) return '로';
   return '으로';
 }
-

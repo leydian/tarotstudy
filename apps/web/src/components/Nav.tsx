@@ -6,6 +6,7 @@ const links = [
   { to: '/courses', label: '코스' },
   { to: '/library', label: '카드 도감' },
   { to: '/spreads', label: '대표 스프레드' },
+  { to: '/chat', label: '챗 리딩' },
   { to: '/dashboard', label: '대시보드' }
 ];
 
