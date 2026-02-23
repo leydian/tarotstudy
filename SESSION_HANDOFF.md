@@ -39,6 +39,60 @@
   - 시험/합격 템플릿을 면접/지원/이직/오퍼 질문까지 동일 프레임으로 확장
 
 ## 3) 금일 추가 반영 (최신)
+- 스프레드 선택 제거 + 챗 리딩 V3 도입/보강 + 100문항 품질 게이트 구축 (2026-02-23 latest)
+  - 관련 커밋:
+    - `82036af` feat: remove spread picker and refine chat reading narrative
+    - `e4727b2` feat: add immersive reading v3 across spreads and chat rendering
+    - `f6f60a4` fix: improve contextual v3 narration and chatbot verdict mapping
+    - `9c9cd88` feat: improve reading v3 domain context and add 100-prompt quality gate
+  - 변경 파일:
+    - `apps/web/src/pages/SpreadsPage.tsx`
+    - `apps/web/src/pages/ChatSpreadPage.tsx`
+    - `apps/web/src/lib/api.ts`
+    - `apps/web/src/types.ts`
+    - `apps/api/src/index.js`
+    - `apps/api/test/reading-v3-style.test.js`
+    - `apps/api/test/reading-v3-context-coverage.test.js`
+  - 핵심 변경:
+    - 스프레드 페이지에서 수동 스프레드 선택 칩 제거
+      - 질문 기반 자동 추천 리딩 흐름으로 단순화
+    - 챗봇 요약 렌더를 `readingV3` 우선으로 전환
+      - `bridge/verdict/evidence/caution/action/checkin` 구조화 응답 사용
+    - `/api/spreads/:spreadId/draw`와 `/api/v2/spreads/:spreadId/draw`에 `readingV3` 공통 반환
+    - `finalizeSpreadSummary()` 중복 판정 블록 결합 억제
+      - raw summary에 판정 문구가 이미 있을 때 재삽입 방지
+    - `readingV3` 생성기 개편:
+      - 도메인 판별(`study/career/relationship/finance/health/compare/action/general`)
+      - 도메인별 실행문(`buildImmediateActionV3`) 분리
+      - 도메인별 주의문(`buildCautionV3`) 분리
+      - 도메인별 체크인(`buildCheckinV3`) 분리
+      - 시점 질문 타이밍 단서(`buildTimingCueV3`) 강제
+      - 스프레드별 근거문장 강화(`weekly/monthly/celtic/relationship-recovery/choice-a-b`)
+    - 챗봇 verdict 배지 보정
+      - `HOLD`를 `no` 계열이 아닌 `maybe` 계열로 매핑
+  - 품질 지표(100문항 실험 기준):
+    - 개선 전:
+      - `genericActionUsed`: 80/100
+      - `genericCautionUsed`: 57/100
+      - `domainActionMiss`: 43/100
+      - `timingMismatch`: 0/100
+    - 개선 후:
+      - `genericActionUsed`: 11/100
+      - `genericCautionUsed`: 7/100
+      - `domainActionMiss`: 3/100
+      - `timingMismatch`: 0/100
+  - 테스트/검증:
+    - `npm run typecheck:web` 통과
+    - `npm run test:web` 통과
+    - `npm run test:api` 통과
+    - 신규 품질 게이트:
+      - `apps/api/test/reading-v3-context-coverage.test.js`
+      - 임계치:
+        - `genericActionUsed <= 25`
+        - `genericCautionUsed <= 30`
+        - `domainActionMiss <= 10`
+        - `timingMismatch === 0`
+
 - 리드모델 기반 학습 API 확장 + 퍼널/인박스 화면 연동 (사용자/기획/개발 페르소나 후속 2차)
   - 파일:
     - `apps/api/src/learning-read-models.js`

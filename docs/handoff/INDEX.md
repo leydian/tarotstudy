@@ -47,12 +47,19 @@
 - 질문 이해 엔진 1차(의도분기+선택지 파싱+hybrid 모드): `docs/session-handoff-2026-02-23-details.md`
 - 스타일 분리(`theme/layout/spreads`) + 공통 컴포넌트(`PageHero`/`KpiRow`): `docs/session-handoff-2026-02-23-details.md`
 - QA 케이스셋 자동 갱신 + 문서 무결성 검사 자동화: `docs/session-handoff-2026-02-23-details.md`
+- 챗 리딩 `readingV3` 전면 도입(몰입형 구조 + 도메인별 실행/주의/체크인): `SESSION_HANDOFF.md`
+- 챗 리딩 문맥 커버리지 100문항 품질 게이트(`reading-v3-context-coverage`): `SESSION_HANDOFF.md`
+- 스프레드 선택 UI 제거 + 질문 기반 자동 추천 고정: `SESSION_HANDOFF.md`
 - 질문 뱅크 `100,000/1,000` 확장: `docs/codex-updates-2026-02-22.md`
 - 학습 리더 코치 실전형(입문/중급 차등 강화): `docs/session-handoff-2026-02-23-details.md`
 - QA/회귀/텔레메트리 운영: `docs/handoff/details/quality-gates-telemetry-2026-02-22.md`
 - 문서 분리 기준/운영 규칙: `docs/handoff/details/docs-ops-structure-2026-02-22.md`
 
 ## 5) 최근 핵심 커밋
+- `9c9cd88` Improve reading v3 domain context and add 100-prompt quality gate
+- `f6f60a4` Improve contextual v3 narration and chatbot verdict mapping
+- `e4727b2` Add immersive reading v3 across spreads and chat rendering
+- `82036af` Remove spread picker and refine chat reading narrative
 - `b041618` Improve spread question understanding with hybrid intent parsing
 - `6584a26` Add full-spread summary regression QA and quality gate wiring
 - `cf7642a` Refocus intermediate guide text for tarot-reader training
