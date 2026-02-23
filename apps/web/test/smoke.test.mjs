@@ -33,3 +33,16 @@ test('Spreads page reports draw and review telemetry', () => {
   assert.equal(source.includes("type: 'spread_review_saved'"), true);
   assert.equal(source.includes('api.reportSpreadEvent'), true);
 });
+
+test('Chat and card views expose export controls', () => {
+  const chatSource = read('apps/web/src/pages/ChatSpreadPage.tsx');
+  const spreadsSource = read('apps/web/src/pages/SpreadsPage.tsx');
+  const exportSource = read('apps/web/src/lib/reading-export.ts');
+
+  assert.equal(chatSource.includes('TXT 내보내기'), true);
+  assert.equal(chatSource.includes('PDF 내보내기'), true);
+  assert.equal(spreadsSource.includes('TXT 내보내기'), true);
+  assert.equal(spreadsSource.includes('PDF 내보내기'), true);
+  assert.equal(exportSource.includes('실행 체크리스트'), true);
+  assert.equal(exportSource.includes('카드 근거'), true);
+});

@@ -31,6 +31,15 @@ type ChatMessage =
     payload: SpreadDrawResult;
   };
 
+type DialogueSpeaker = 'tarot' | 'learning';
+type DialoguePurpose = 'bridge' | 'verdict' | 'evidence' | 'caution' | 'action' | 'coach' | 'detail';
+type DialogueTurn = {
+  speaker: DialogueSpeaker;
+  purpose: DialoguePurpose;
+  text: string;
+  dedupeKey: string;
+};
+
 const STARTER_PROMPTS = [
   '시험 합격할 수 있을까?',
   '이번 주 관계 흐름을 보고 싶어',
@@ -465,11 +474,11 @@ function buildStructuredSummary(reading: SpreadDrawResult) {
     const quarterLines = toParagraphBlocks(yearly.quarterly);
     const monthlyLines = yearly.monthly.map((line) => compactLine(line));
     const monthItems = toMonthlyItems(monthlyLines);
-    const highlights = [
+    const highlights = ensureDistinctHighlights([
       { title: '핵심 결론', body: firstMeaningfulLine(yearly.overall) },
       { title: '지금 할 일', body: firstMeaningfulLine(yearly.closing || quarterLines[0] || yearly.overall) },
       { title: '주의 포인트', body: findCautionLine([...quarterLines, ...monthlyLines]) }
-    ];
+    ], [yearly.overall, yearly.closing, ...quarterLines, ...monthlyLines]);
     const actionPlan = buildActionPlan([yearly.closing, ...quarterLines, yearly.overall].join(' '));
     return {
       highlights,
@@ -486,11 +495,11 @@ function buildStructuredSummary(reading: SpreadDrawResult) {
   const monthly = parseMonthlySummary(summary);
   if (monthly) {
     const weekLines = monthly.weekly.map((line) => compactLine(line));
-    const highlights = [
+    const highlights = ensureDistinctHighlights([
       { title: '핵심 결론', body: firstMeaningfulLine(monthly.overall) },
       { title: '이번 달 실행', body: firstMeaningfulLine(monthly.actionGuide || monthly.bridge) },
       { title: '주의 포인트', body: findCautionLine([...weekLines, monthly.bridge, monthly.actionGuide]) }
-    ];
+    ], [monthly.overall, monthly.actionGuide, monthly.bridge, ...weekLines]);
     const actionPlan = buildActionPlan([monthly.actionGuide, monthly.bridge, monthly.overall].join(' '));
     return {
       highlights,
@@ -507,11 +516,11 @@ function buildStructuredSummary(reading: SpreadDrawResult) {
   const weekly = parseWeeklySummary(summary);
   if (weekly) {
     const dailyLines = weekly.daily.map((line) => compactLine(line));
-    const highlights = [
+    const highlights = ensureDistinctHighlights([
       { title: '핵심 결론', body: firstMeaningfulLine(weekly.overall) },
       { title: '이번 주 실행', body: firstMeaningfulLine(weekly.actionGuide || dailyLines[0] || weekly.overall) },
       { title: '주의 포인트', body: findCautionLine([...dailyLines, weekly.actionGuide]) }
-    ];
+    ], [weekly.overall, weekly.actionGuide, weekly.theme, ...dailyLines]);
     const actionPlan = buildActionPlan([weekly.actionGuide, weekly.theme, weekly.overall].join(' '));
     return {
       highlights,
@@ -567,6 +576,29 @@ function buildGenericHighlights(lines: string[]) {
   ];
 }
 
+function ensureDistinctHighlights(
+  highlights: Array<{ title: string; body: string }>,
+  fallbackPool: string[]
+) {
+  const used = new Set<string>();
+  return highlights.map((item) => {
+    let body = compactLine(item.body);
+    let key = normalizeDialogKey(body);
+    if (!key || used.has(key)) {
+      const replacement = fallbackPool
+        .map((line) => compactLine(line))
+        .find((line) => {
+          const candidateKey = normalizeDialogKey(line);
+          return Boolean(candidateKey) && !used.has(candidateKey);
+        }) || body;
+      body = replacement;
+      key = normalizeDialogKey(body);
+    }
+    if (key) used.add(key);
+    return { ...item, body };
+  });
+}
+
 function buildActionPlan(text: string) {
   const blocks = toParagraphBlocks(text);
   const joined = blocks.join(' ');
@@ -603,58 +635,76 @@ function buildQuickDialog(
   const bridge = buildTarotBridge(reading.context);
   const evidence = buildCardEvidenceLead(reading.items);
   const learningGuide = buildLearningGuide(reading);
-  return [
-    { speaker: 'tarot' as const, text: bridge },
-    { speaker: 'tarot' as const, text: softenLine(`핵심 흐름은 ${core}`) },
-    { speaker: 'tarot' as const, text: softenLine(`근거 카드는 ${evidence}`) },
-    { speaker: 'tarot' as const, text: softenLine(`주의 포인트는 ${caution}`) },
-    { speaker: 'tarot' as const, text: softenLine(`지금 실행 기준은 ${action}`) },
-    { speaker: 'learning' as const, text: learningGuide },
-    { speaker: 'learning' as const, text: softenLine(`실행 확인은 이번 주 ${actionPlan.thisWeek}`) }
+  const turns: DialogueTurn[] = [
+    buildTurn('tarot', 'bridge', bridge),
+    buildTurn('tarot', 'verdict', `핵심 흐름은 ${core}`),
+    buildTurn('tarot', 'evidence', `근거 카드는 ${evidence}`),
+    buildTurn('tarot', 'caution', `주의 포인트는 ${caution}`),
+    buildTurn('tarot', 'action', `지금 실행 기준은 ${action}`),
+    buildTurn('learning', 'coach', learningGuide),
+    buildTurn('learning', 'coach', `실행 확인은 이번 주 ${actionPlan.thisWeek}`)
   ];
+  return dedupeTurns(turns);
 }
 
 function buildSectionDialog(line: string, sectionTitle: string, index = 0) {
   const chunks = toParagraphBlocks(line);
-  if (!chunks.length) return [{ speaker: 'tarot' as const, text: softenLine(line) }];
+  if (!chunks.length) return [buildTurn('tarot', 'detail', line)];
 
   return chunks.flatMap((chunk, chunkIdx) => {
-    const tarotTurn = { speaker: 'tarot' as const, text: softenLine(chunk) };
+    const tarotTurn = buildTurn('tarot', 'detail', chunk);
     const learningHint = maybeBuildLearningHint(chunk, sectionTitle, index, chunkIdx);
-    return learningHint ? [tarotTurn, { speaker: 'learning' as const, text: learningHint }] : [tarotTurn];
+    return learningHint ? [tarotTurn, learningHint] : [tarotTurn];
   });
 }
 
 function buildDialogFromLines(lines: string[], sectionTitle: string) {
-  const seen = new Set<string>();
-  const turns: Array<{ speaker: 'tarot' | 'learning'; text: string }> = [];
+  const turns: DialogueTurn[] = [];
   let learningCount = 0;
   lines.forEach((line, lineIdx) => {
     buildSectionDialog(line, sectionTitle, lineIdx).forEach((turn) => {
-      const key = normalizeDialogKey(turn.text);
-      if (!key || seen.has(`${turn.speaker}:${key}`)) return;
+      if (!turn.dedupeKey) return;
       if (turn.speaker === 'learning' && learningCount >= 2) return;
-      seen.add(`${turn.speaker}:${key}`);
       turns.push(turn);
       if (turn.speaker === 'learning') learningCount += 1;
     });
   });
-  return turns;
+  return dedupeTurns(turns);
 }
 
 function maybeBuildLearningHint(text: string, sectionTitle: string, lineIndex: number, chunkIndex: number) {
   const joined = `${sectionTitle} ${text}`;
   const isActionBlock = /실행|행동|루틴|체크|점검|복기|우선순위|가이드|정리/.test(joined);
   const shouldShow = isActionBlock ? lineIndex % 2 === 0 && chunkIndex === 0 : lineIndex % 4 === 0 && chunkIndex === 0;
-  if (!shouldShow) return '';
+  if (!shouldShow) return null;
   const noun = extractPrimaryNoun(joined);
   if (/주의|리스크|소모|충돌|지연|불안|조절/.test(joined)) {
-    return softenLine(`학습리더 팁: ${noun}는 오늘 15분 점검 후 '맞음/어긋남'을 1줄로 기록하고 내일 같은 기준으로 다시 비교해요`);
+    return buildTurn('learning', 'coach', `${noun}는 오늘 15분 점검 후 '맞음/어긋남'을 1줄로 기록하고 내일 같은 기준으로 다시 비교해요`);
   }
   if (isActionBlock) {
-    return softenLine(`학습리더 팁: ${noun}는 25분 실행 + 5분 기록 1세트로 진행하고, 완료율(%) 숫자 1개를 남겨요`);
+    return buildTurn('learning', 'coach', `${noun}는 25분 실행 + 5분 기록 1세트로 진행하고, 완료율(%) 숫자 1개를 남겨요`);
   }
-  return softenLine('학습리더 팁: 핵심 문장 1줄, 근거 카드 1장, 다음 행동 1개를 함께 적어두면 복기 정확도가 올라가요');
+  return buildTurn('learning', 'coach', '핵심 문장 1줄, 근거 카드 1장, 다음 행동 1개를 함께 적어두면 복기 정확도가 올라가요');
+}
+
+function buildTurn(speaker: DialogueSpeaker, purpose: DialoguePurpose, text: string): DialogueTurn {
+  const normalized = softenLine(text);
+  return {
+    speaker,
+    purpose,
+    text: normalized,
+    dedupeKey: `${speaker}:${purpose}:${normalizeDialogKey(normalized)}`
+  };
+}
+
+function dedupeTurns(turns: DialogueTurn[]) {
+  const seen = new Set<string>();
+  return turns.filter((turn) => {
+    if (!turn.dedupeKey) return false;
+    if (seen.has(turn.dedupeKey)) return false;
+    seen.add(turn.dedupeKey);
+    return true;
+  });
 }
 
 function softenLine(text: string) {
