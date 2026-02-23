@@ -19,6 +19,13 @@
   --shadow-soft: 0 10px 30px rgba(86, 60, 33, 0.12);
   --reading-bg: #ffffff;
   --reading-line: #ded3c3;
+  --fs-body: 1rem;
+  --fs-body-sm: 0.9375rem;
+  --fs-caption: 0.8125rem;
+  --fs-label: 0.875rem;
+  --lh-body: 1.68;
+  --lh-tight: 1.45;
+  --lh-relaxed: 1.78;
 }
 
 :root[data-theme='dark'] {
@@ -42,6 +49,13 @@
   --shadow-soft: 0 14px 36px rgba(0, 0, 0, 0.35);
   --reading-bg: #231d18;
   --reading-line: #51463a;
+  --fs-body: 1rem;
+  --fs-body-sm: 0.9375rem;
+  --fs-caption: 0.8125rem;
+  --fs-label: 0.875rem;
+  --lh-body: 1.68;
+  --lh-tight: 1.45;
+  --lh-relaxed: 1.78;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -66,6 +80,13 @@
     --shadow-soft: 0 14px 36px rgba(0, 0, 0, 0.35);
     --reading-bg: #231d18;
     --reading-line: #51463a;
+    --fs-body: 1rem;
+    --fs-body-sm: 0.9375rem;
+    --fs-caption: 0.8125rem;
+    --fs-label: 0.875rem;
+    --lh-body: 1.68;
+    --lh-tight: 1.45;
+    --lh-relaxed: 1.78;
   }
 }
 
@@ -76,6 +97,8 @@
 body {
   margin: 0;
   font-family: 'Pretendard', 'Noto Sans KR', sans-serif;
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
   color: var(--ink-0);
   background:
     radial-gradient(circle at 14% 18%, rgba(210, 174, 138, 0.35) 0%, transparent 36%),

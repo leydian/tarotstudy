@@ -70,7 +70,7 @@ h4 {
 .eyebrow {
   color: var(--mag-accent);
   letter-spacing: 0.18em;
-  font-size: 0.7rem;
+  font-size: var(--fs-caption);
   font-weight: 700;
 }
 
@@ -149,7 +149,7 @@ h4 {
 }
 
 .page-hero p {
-  line-height: 1.72;
+  line-height: var(--lh-relaxed);
   color: color-mix(in srgb, var(--mag-ink) 70%, var(--mag-muted));
 }
 
@@ -287,7 +287,7 @@ h4 {
 
 .chat-side-main {
   margin: 0;
-  line-height: 1.58;
+  line-height: var(--lh-body);
 }
 
 .chat-side-card .clean-list {
@@ -345,7 +345,7 @@ h4 {
 .chat-natural-paragraph,
 .reading-digest-body,
 .lesson-prose-paragraph {
-  line-height: 1.78;
+  line-height: var(--lh-relaxed);
 }
 
 .sub,

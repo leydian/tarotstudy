@@ -1494,3 +1494,97 @@
     width: 100%;
   }
 }
+
+/* Readability normalization */
+.reading-prose,
+.chat-natural-paragraph,
+.chat-dialog-bubble,
+.reading-digest-body,
+.history-summary {
+  line-height: var(--lh-relaxed);
+}
+
+.reading-digest-title,
+.chat-layout-title,
+.chat-evidence-text,
+.timeline-step .sub,
+.history-row p,
+.review-check-item,
+.evidence-chip,
+.line-tag,
+.chat-dialog-speaker,
+.chat-spread-slot-label,
+.chat-month-title {
+  font-size: var(--fs-label);
+}
+
+.spread-slot-orientation,
+.verdict-badge,
+.badge {
+  font-size: var(--fs-caption);
+}
+
+.spread-layout-side .spread-slot-position,
+.spread-layout-side .spread-slot-name {
+  white-space: normal;
+  text-overflow: clip;
+  overflow: hidden;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.chat-dialog-bubble,
+.chat-natural-bubble,
+.history-digest,
+.natural-flow-card,
+.natural-flow-lead {
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+.chat-dialog-tarot .chat-dialog-bubble,
+.chat-dialog-learning .chat-dialog-bubble,
+.chat-summary-card-deep,
+.chat-natural-bubble {
+  background-image: none;
+}
+
+/* Auto-recommendation mode: hide legacy manual spread controls */
+.panel:has(.spread-draw-controls) > h4:has(+ .chip-wrap:not(.view-toggle)),
+.panel:has(.spread-draw-controls) > h4:has(+ .spread-layout),
+.panel:has(.spread-draw-controls) > .spread-layout {
+  display: none;
+}
+
+.panel:has(.spread-draw-controls) > h3 + p {
+  line-height: var(--lh-body);
+}
+
+.panel:has(.spread-draw-controls) .spread-draw-controls input::placeholder {
+  font-size: var(--fs-body-sm);
+}
+
+@media (max-width: 820px) {
+  .reading-digest-title,
+  .chat-layout-title,
+  .chat-evidence-text,
+  .timeline-step .sub,
+  .history-row p,
+  .review-check-item,
+  .evidence-chip,
+  .line-tag,
+  .chat-dialog-speaker,
+  .chat-spread-slot-label,
+  .chat-month-title {
+    font-size: var(--fs-caption);
+  }
+
+  .spread-slot-orientation,
+  .verdict-badge,
+  .badge {
+    font-size: 0.75rem;
+  }
+}

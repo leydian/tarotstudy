@@ -33,7 +33,7 @@
   color: var(--ink-1);
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  font-size: 0.78rem;
+  font-size: var(--fs-caption);
   margin: 0 0 6px;
 }
 
@@ -235,7 +235,7 @@ input {
   border-radius: 999px;
   border: 1px solid var(--line);
   padding: 3px 10px;
-  font-size: 0.78rem;
+  font-size: var(--fs-caption);
   font-weight: 700;
 }
 
@@ -272,9 +272,18 @@ input {
   background: var(--reading-bg);
   border-radius: 999px;
   padding: 7px 12px;
-  display: inline-block;
+  display: -webkit-box;
   cursor: pointer;
   color: var(--ink-0);
+  max-width: 100%;
+  white-space: normal;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+  line-height: var(--lh-tight);
+  text-align: left;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
 }
 
 .chip-link.chip-on {
@@ -334,13 +343,15 @@ input {
 
 .sub {
   margin-top: -4px;
+  font-size: var(--fs-label);
+  line-height: var(--lh-body);
   color: var(--ink-1);
 }
 
 .image-attribution {
   margin: 8px 0 0;
   color: var(--ink-1);
-  font-size: 0.85rem;
+  font-size: var(--fs-label);
 }
 
 .image-attribution a {
@@ -412,8 +423,8 @@ input {
 
 .reading-line {
   margin: 0 0 10px;
-  line-height: 1.64;
-  font-size: 0.98rem;
+  line-height: var(--lh-body);
+  font-size: var(--fs-body-sm);
 }
 
 .reading-index {
