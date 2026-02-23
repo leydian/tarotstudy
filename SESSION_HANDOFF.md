@@ -39,6 +39,17 @@
   - 시험/합격 템플릿을 면접/지원/이직/오퍼 질문까지 동일 프레임으로 확장
 
 ## 3) 금일 추가 반영 (최신)
+- 톤 파이프라인 근본 정규화(`readingModel v1`) + 채널 일원화 (2026-02-23 latest 3)
+  - 관련 커밋:
+    - `25a0396` Unify persona tone pipeline across UI and export
+    - `65d48e0` Add API-driven readingModel and route UI/export through normalized channels
+  - 핵심:
+    - `/api/spreads/:spreadId/draw` 응답에 `readingModel` 채널(`card/chatQuick/chatDetail/export`) 추가
+    - 프론트 챗/카드뷰/TXT/PDF가 `readingModel` 우선 소비로 전환
+    - `summary`/`readingV3`/`tonePayload`는 하위 호환 유지
+  - 상세 문서:
+    - `docs/session-handoff-2026-02-23-reading-model-v1-details.md`
+
 - 관계 주간 판정 안정화 + 타로 코어 품질 게이트 상향 (2026-02-23 latest 2)
   - 관련 커밋:
     - `3dc8c68` Calibrate weekly relationship verdicts to reduce over-conservative holds
