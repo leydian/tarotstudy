@@ -17,6 +17,12 @@ interface ProgressState {
 
 const STORAGE_KEY = 'tarot-study-progress-v1';
 const USER_ID_KEY = 'tarot-study-user-id-v1';
+const SYNC_DEBOUNCE_MS = 1200;
+type PersistSnapshot = Pick<ProgressState, 'completedLessons' | 'weakCardIds' | 'quizHistory' | 'spreadHistory'>;
+let pendingSyncSnapshot: PersistSnapshot | null = null;
+let syncTimer: number | null = null;
+let syncInFlight = false;
+let lifecycleBound = false;
 
 function getLocalUserId() {
   const saved = localStorage.getItem(USER_ID_KEY);
@@ -30,7 +36,7 @@ export function getProgressUserId() {
   return getLocalUserId();
 }
 
-function loadInitial(): Pick<ProgressState, 'completedLessons' | 'weakCardIds' | 'quizHistory' | 'spreadHistory'> {
+function loadInitial(): PersistSnapshot {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return { completedLessons: [], weakCardIds: [], quizHistory: [], spreadHistory: [] };
@@ -46,14 +52,89 @@ function loadInitial(): Pick<ProgressState, 'completedLessons' | 'weakCardIds' |
   }
 }
 
-function persist(state: Pick<ProgressState, 'completedLessons' | 'weakCardIds' | 'quizHistory' | 'spreadHistory'>) {
+function persistLocal(state: PersistSnapshot) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+function buildSyncPayload(state: PersistSnapshot) {
+  return { ...state, updatedAt: new Date().toISOString() };
+}
+
+function sendSyncWithBeacon(state: PersistSnapshot) {
+  if (typeof navigator === 'undefined' || typeof navigator.sendBeacon !== 'function') return false;
   const userId = getLocalUserId();
-  void fetch(`/api/progress/${encodeURIComponent(userId)}/sync`, {
+  const payload = buildSyncPayload(state);
+  const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
+  return navigator.sendBeacon(`/api/progress/${encodeURIComponent(userId)}/sync`, blob);
+}
+
+async function sendSync(state: PersistSnapshot, keepalive = false) {
+  const userId = getLocalUserId();
+  await fetch(`/api/progress/${encodeURIComponent(userId)}/sync`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ ...state, updatedAt: new Date().toISOString() })
-  }).catch(() => {});
+    body: JSON.stringify(buildSyncPayload(state)),
+    keepalive
+  });
+}
+
+async function flushSync({ keepalive = false }: { keepalive?: boolean } = {}) {
+  if (syncInFlight || !pendingSyncSnapshot) return;
+  const snapshot = pendingSyncSnapshot;
+  pendingSyncSnapshot = null;
+  syncInFlight = true;
+
+  try {
+    await sendSync(snapshot, keepalive);
+  } catch {
+    pendingSyncSnapshot = snapshot;
+  } finally {
+    syncInFlight = false;
+    if (pendingSyncSnapshot && syncTimer == null) {
+      syncTimer = window.setTimeout(() => {
+        syncTimer = null;
+        void flushSync();
+      }, SYNC_DEBOUNCE_MS);
+    }
+  }
+}
+
+function bindLifecycleSync() {
+  if (lifecycleBound || typeof window === 'undefined') return;
+  lifecycleBound = true;
+
+  const flushWithBestEffort = () => {
+    if (!pendingSyncSnapshot) return;
+    if (sendSyncWithBeacon(pendingSyncSnapshot)) {
+      pendingSyncSnapshot = null;
+      return;
+    }
+    void flushSync({ keepalive: true });
+  };
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') flushWithBestEffort();
+  });
+  window.addEventListener('pagehide', flushWithBestEffort);
+  window.addEventListener('beforeunload', flushWithBestEffort);
+}
+
+function queueSync(state: PersistSnapshot) {
+  bindLifecycleSync();
+  pendingSyncSnapshot = state;
+
+  if (syncTimer != null) {
+    window.clearTimeout(syncTimer);
+  }
+  syncTimer = window.setTimeout(() => {
+    syncTimer = null;
+    void flushSync();
+  }, SYNC_DEBOUNCE_MS);
+}
+
+function persist(state: PersistSnapshot) {
+  persistLocal(state);
+  queueSync(state);
 }
 
 export const useProgressStore = create<ProgressState>((set, get) => ({

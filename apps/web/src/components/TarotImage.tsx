@@ -62,6 +62,9 @@ export function TarotImage({ src, sources, alt, cardId, onError, onLoad, ...prop
       src={candidates[0] || FALLBACK_IMAGE}
       data-source-index="0"
       alt={alt}
+      loading={props.loading ?? 'lazy'}
+      decoding={props.decoding ?? 'async'}
+      fetchPriority={props.fetchPriority ?? 'low'}
       onError={handleError}
       onLoad={handleLoad}
       {...props}
