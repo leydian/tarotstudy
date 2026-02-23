@@ -41,7 +41,7 @@ test('unsupported explicit persona is rejected by onepager policy', () => {
   }, /unsupported explicit persona/);
 });
 
-test('policy prompt steering is reflected in tarot interpretation', () => {
+test('policy prompt steering uses style adaptation without boilerplate append', () => {
   const reading = buildSpreadReading({
     card: cloneCard(cards[11]),
     spreadId: 'three-card',
@@ -52,5 +52,7 @@ test('policy prompt steering is reflected in tarot interpretation', () => {
     experimentVariant: 'A'
   });
 
-  assert.match(reading.interpretation, /(흐름을 강조|안정을 주는 방향|불안을 키우는 단정은 내려놓고)/);
+  assert.match(reading.interpretation, /(확인|차분|보류|완충)/);
+  assert.doesNotMatch(reading.interpretation, /불안을 키우는 단정은 내려놓고/);
+  assert.doesNotMatch(reading.interpretation, /질문\(".*"\)\s*기준으로/);
 });

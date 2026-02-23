@@ -140,6 +140,9 @@ export function buildReadingModel({
         specificityScore: 0,
         repetitionScore: 0,
         templateScore: 0,
+        grammarScore: 0,
+        redundancyScore: 0,
+        personaInjectionMode: 'style_profile',
         rewriteApplied: false
       }
     }
@@ -199,6 +202,22 @@ function scoreTemplate(text = '') {
   return Math.max(0, Math.min(100, templateHits * 20));
 }
 
+function scoreGrammar(text = '') {
+  const raw = normalizeLine(text);
+  if (!raw) return 100;
+  let score = 100;
+  const grammarErrors = (raw.match(/(흐름는|타이밍이에요\.)/g) || []).length;
+  score -= Math.min(40, grammarErrors * 20);
+  return Math.max(0, Math.min(100, score));
+}
+
+function scoreRedundancy(text = '') {
+  const lines = splitSentences(text).map((line) => line.toLowerCase().replace(/[^0-9a-zA-Z가-힣]/g, ''));
+  if (!lines.length) return 0;
+  const duplicate = lines.length - new Set(lines).size;
+  return Math.max(0, Math.min(100, duplicate * 30));
+}
+
 function rewriteModelLines(lines = [], context = '') {
   const normalizedContext = normalizeLine(context);
   const out = [];
@@ -235,15 +254,19 @@ function enforceModelQualityProfileB(model) {
   let specificityScore = scoreSpecificity(context);
   let repetitionScore = scoreRepetition(context);
   let templateScore = scoreTemplate(context);
+  let grammarScore = scoreGrammar(context);
+  let redundancyScore = scoreRedundancy(context);
   let rewriteApplied = false;
 
-  if (naturalnessScore < 80 || specificityScore < 72 || repetitionScore > 30 || templateScore > 0) {
+  if (naturalnessScore < 80 || specificityScore < 72 || repetitionScore > 30 || templateScore > 0 || grammarScore < 90 || redundancyScore > 25) {
     workingLines = rewriteModelLines(sourceLines, context);
     const rewritten = workingLines.join(' ');
     naturalnessScore = scoreNaturalness(rewritten);
     specificityScore = scoreSpecificity(rewritten);
     repetitionScore = scoreRepetition(rewritten);
     templateScore = scoreTemplate(rewritten);
+    grammarScore = scoreGrammar(rewritten);
+    redundancyScore = scoreRedundancy(rewritten);
     rewriteApplied = true;
   }
 
@@ -255,6 +278,9 @@ function enforceModelQualityProfileB(model) {
     specificityScore,
     repetitionScore,
     templateScore,
+    grammarScore,
+    redundancyScore,
+    personaInjectionMode: 'style_profile',
     rewriteApplied
   };
 }

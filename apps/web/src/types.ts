@@ -409,6 +409,9 @@ export interface ReadingModel {
       specificityScore: number;
       repetitionScore: number;
       templateScore: number;
+      grammarScore: number;
+      redundancyScore: number;
+      personaInjectionMode: 'style_profile';
       rewriteApplied: boolean;
     };
   };

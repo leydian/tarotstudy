@@ -38,6 +38,7 @@ test('reading model enforces quality profile and records quality meta', () => {
   assert.ok(readingModel.meta?.quality);
   assert.equal(readingModel.meta.quality.templateScore, 0);
   assert.equal(readingModel.meta.quality.rewriteApplied, true);
+  assert.equal(readingModel.meta.quality.personaInjectionMode, 'style_profile');
   assert.equal(readingModel.meta.source, 'model-native');
   assert.ok(Array.isArray(readingModel.channel.card.blocks));
   assert.ok(readingModel.channel.card.blocks.length >= 3);

@@ -1079,7 +1079,8 @@ function buildReadingV3({
       intent: analysis.intent,
       subIntent: analysis.subIntent,
       verdictLabel: calibratedSignalLabel,
-      timeHorizon: analysis.timeHorizon
+      timeHorizon: analysis.timeHorizon,
+      riskBand: inferPrimaryRiskBand({ primaryKeyword, evidence, items })
     }),
     checkin: buildCheckinV3({
       context,
@@ -1132,6 +1133,19 @@ function buildReadingV3({
       duplicateRateMax: 0.34
     }
   };
+}
+
+function inferPrimaryRiskBand({ primaryKeyword = '', evidence = [], items = [] }) {
+  const merged = [
+    String(primaryKeyword || ''),
+    ...evidence.map((item) => String(item?.keyword || '')),
+    ...items.slice(0, 3).map((item) => `${item?.card?.nameKo || ''} ${item?.orientation || ''}`)
+  ].join(' ');
+  const reversedCount = items.filter((item) => item?.orientation === 'reversed').length;
+  if (reversedCount >= 2) return 'high';
+  if (/(불안|모호|지연|충돌|오해|리스크|달|소드 8|컵 7)/.test(merged)) return 'high';
+  if (/(조절|균형|박빙|긴장|신중)/.test(merged)) return 'mid';
+  return 'low';
 }
 
 function calibrateVerdictLabelForRelationshipWeekly({
@@ -1290,7 +1304,8 @@ function buildImmediateActionV3({
   intent = 'general',
   subIntent = 'general',
   verdictLabel = '조건부',
-  timeHorizon = 'unspecified'
+  timeHorizon = 'unspecified',
+  riskBand = 'low'
 }) {
   const domain = resolveReadingDomain({ intent, context });
   const timing = buildTimingCueV3({ context, spreadId, timeHorizon });
@@ -1308,6 +1323,9 @@ function buildImmediateActionV3({
     return softenAbsolutes(`${timing ? `${timing} ` : ''}결정 확장은 멈추고 지원서 품질 항목 1개(성과수치/경험문장)만 보완하세요.`);
   }
   if (domain === 'relationship') {
+    if (riskBand === 'high') {
+      return softenAbsolutes(`${timing ? `${timing} ` : ''}메시지 전송을 서두르지 말고 확인 질문 1개를 문장으로 먼저 적은 뒤 10분 후 다시 읽어보세요.`);
+    }
     if (verdictLabel === '우세') return softenAbsolutes(`${timing ? `${timing} ` : ''}사실 1문장 + 요청 1문장 형식으로 짧은 메시지 1회만 보내고 반응을 관찰하세요.`);
     if (verdictLabel === '박빙') return softenAbsolutes(`${timing ? `${timing} ` : ''}상대 마음 추측 대신 확인 질문 1개만 보내고 추가 메시지는 보류하세요.`);
     return softenAbsolutes(`${timing ? `${timing} ` : ''}연락은 잠시 보류하고 보낼 문장을 1문장으로 줄여 내일 같은 시간에 재검토하세요.`);

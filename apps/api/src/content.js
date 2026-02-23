@@ -20,10 +20,6 @@ const POLICY_DEFAULT_PERSONA = PERSONA_POLICY.personaResolution.defaultPersona;
 const POLICY_SUPPORTED_PERSONA_KEYS = new Set(
   PERSONA_POLICY.personaResolution.supportedPersonas.map((item) => `${item.group}:${item.id}`)
 );
-const POLICY_TAROT_PROMPT_LINES = PERSONA_POLICY.roles.tarotLeaderPrompt
-  .split('\n')
-  .map((line) => line.trim())
-  .filter(Boolean);
 const POLICY_COMMON_RULE_LINES = PERSONA_POLICY.roles.commonRulesPrompt
   .split('\n')
   .map((line) => line.trim())
@@ -1860,7 +1856,10 @@ export function buildSpreadReading({
     spreadId,
     positionName: position.name,
     context,
+    cardId: card?.id || '',
     cardName: card?.nameKo || '',
+    cardSuit: card?.suit || '',
+    cardArcana: card?.arcana || '',
     orientation,
     focus,
     personaGroup,
@@ -2030,7 +2029,10 @@ function applyTarotPersonaPipeline({
   spreadId = '',
   positionName = '',
   context = '',
+  cardId = '',
   cardName = '',
+  cardSuit = '',
+  cardArcana = '',
   orientation = 'upright',
   focus = '',
   personaGroup = '',
@@ -2038,7 +2040,13 @@ function applyTarotPersonaPipeline({
 }) {
   const preset = getTarotNarrativePreset(spreadId);
   const skipNarrativeRewrite = spreadId === 'one-card';
-  const symbolicCue = resolveTarotSymbolicCue({ cardName, focus });
+  const symbolicCue = resolveTarotSymbolicCue({
+    cardId,
+    cardName,
+    suit: cardSuit,
+    arcana: cardArcana,
+    focus
+  });
   const persona = resolveReaderPersonaProfile({ context, personaGroup, personaId });
   let nextCore = enforceTarotPersonaText(coreMessage);
   let nextInterpretation = enforceTarotPersonaText(interpretation);
@@ -2048,30 +2056,37 @@ function applyTarotPersonaPipeline({
       spreadId,
       positionName,
       context,
+      cardId,
       cardName,
+      cardSuit,
+      cardArcana,
       orientation,
       focus,
       symbolicCue,
       preset,
-      maxSentences: 4
+      maxSentences: 3
     });
     nextInterpretation = rewriteTarotAsNarrative({
       text: nextInterpretation,
       spreadId,
       positionName,
       context,
+      cardId,
       cardName,
+      cardSuit,
+      cardArcana,
       orientation,
       focus,
       symbolicCue,
       preset,
-      maxSentences: preset === 'short' ? 5 : 7
+      maxSentences: 3
     });
   }
 
   const adapted = applyPersonaAdaptation({
     coreMessage: nextCore,
     interpretation: nextInterpretation,
+    spreadId,
     context,
     orientation,
     persona
@@ -2081,22 +2096,24 @@ function applyTarotPersonaPipeline({
 
   const guardrailCore = enforceTarotGuardrails(nextCore);
   const guardrailInterpretation = enforceTarotGuardrails(nextInterpretation);
+  const qualityCore = enforceKoreanQualityGate(guardrailCore.text);
+  const qualityInterpretation = enforceKoreanQualityGate(guardrailInterpretation.text);
   const coreEvidenceCount = countTarotEvidenceSignals(guardrailCore.text);
   const interpretationEvidenceCount = countTarotEvidenceSignals(guardrailInterpretation.text);
-  const merged = [guardrailCore.text, guardrailInterpretation.text].join(' ');
+  const merged = [qualityCore.text, qualityInterpretation.text].join(' ');
   const personaFitScore = scorePersonaFitForTarot({ text: merged, persona });
   const evidenceStructureScore = scoreEvidenceStructure(merged);
   const actionClarityScore = scoreActionClarity(merged);
   return {
-    coreMessage: guardrailCore.text,
-    interpretation: guardrailInterpretation.text,
+    coreMessage: qualityCore.text,
+    interpretation: qualityInterpretation.text,
     meta: {
       narrativePreset: preset,
-      guardrailApplied: guardrailCore.applied || guardrailInterpretation.applied,
+      guardrailApplied: guardrailCore.applied || guardrailInterpretation.applied || qualityCore.rewriteApplied || qualityInterpretation.rewriteApplied,
       evidenceCount: coreEvidenceCount + interpretationEvidenceCount,
-      tarotPurityScore: scoreTarotPurity([guardrailCore.text, guardrailInterpretation.text].join(' ')),
-      learningNaturalnessScore: scoreTarotNaturalness(guardrailInterpretation.text),
-      repetitionRisk: scoreLearningRepetitionRisk(guardrailInterpretation.text),
+      tarotPurityScore: scoreTarotPurity([qualityCore.text, qualityInterpretation.text].join(' ')),
+      learningNaturalnessScore: scoreTarotNaturalness(qualityInterpretation.text),
+      repetitionRisk: scoreLearningRepetitionRisk(qualityInterpretation.text),
       voiceProfile: 'calm-oracle',
       storyDensity: preset === 'short' ? 'mid' : 'high',
       symbolHits: countTarotSymbolSignals(merged),
@@ -2140,54 +2157,70 @@ function resolveReaderPersonaProfile({ context = '', personaGroup = '', personaI
   return { group: POLICY_DEFAULT_PERSONA.group, id: POLICY_DEFAULT_PERSONA.id, source: 'inferred' };
 }
 
-function buildPolicySteeringLines({ context = '' }) {
-  const out = [];
-  if (POLICY_TAROT_PROMPT_LINES[1]) {
-    out.push(POLICY_TAROT_PROMPT_LINES[1]);
+function applyPersonaAdaptation({ coreMessage = '', interpretation = '', spreadId = '', context = '', orientation = 'upright', persona }) {
+  const key = `${persona?.group || ''}:${persona?.id || ''}`;
+  const styleProfile = getPersonaStyleProfile(key, context, spreadId);
+  const coreSentences = splitSentences(String(coreMessage || '').trim())
+    .map((line) => applyPersonaStyleToSentence(line, styleProfile))
+    .filter(Boolean)
+    .slice(0, styleProfile.coreMaxSentences);
+  const interpretationSentences = splitSentences(String(interpretation || '').trim())
+    .map((line) => applyPersonaStyleToSentence(line, styleProfile))
+    .filter(Boolean)
+    .slice(0, styleProfile.interpretationMaxSentences);
+
+  const nextCore = coreSentences.join(' ');
+  let nextInterpretation = interpretationSentences.join(' ');
+  if (spreadId === 'choice-a-b') {
+    const meta = inferChoiceContextMeta(context);
+    const purchaseLike = meta.isPurchaseChoice || /(살까|구매|결제|브랜드|샤넬|버버리|가방|신발)/.test(String(context || ''));
+    const axes = Array.isArray(meta.axes) ? [...meta.axes] : ['시간', '비용', '감정 소모', '지속 가능성'];
+    if (purchaseLike) {
+      for (let i = 0; i < axes.length; i += 1) {
+        if (/즉시 만족도/.test(axes[i])) axes[i] = '3개월 후 만족도';
+      }
+    }
+    const axesText = `${axes[0]}, ${axes[1]}, ${axes[2]}, ${axes[3]}`;
+    if (!new RegExp(axes.map((axis) => escapeRegex(axis)).join('|')).test(nextInterpretation)) {
+      nextInterpretation = `${nextInterpretation} 비교 기준은 ${axesText}입니다.`.replace(/\s{2,}/g, ' ').trim();
+    }
+    if (purchaseLike && !/(유혹|과열|경계|통제)/.test(nextInterpretation)) {
+      nextInterpretation = `${nextInterpretation} 유혹·과열 신호는 경계와 통제 기준으로 함께 점검해 주세요.`.replace(/\s{2,}/g, ' ').trim();
+    }
   }
-  if (/(불안|걱정|초조|두려)/.test(String(context || '')) && POLICY_TAROT_PROMPT_LINES[3]) {
-    out.push(POLICY_TAROT_PROMPT_LINES[3]);
+  if (orientation === 'reversed' && !/(완충|정비|속도|보류|확인)/.test(nextInterpretation)) {
+    nextInterpretation = `${nextInterpretation} 지금은 완충 행동 1개를 먼저 두는 편이 안정적입니다.`.trim();
   }
-  return out;
+  return { coreMessage: nextCore, interpretation: nextInterpretation };
 }
 
-function applyPersonaAdaptation({ coreMessage = '', interpretation = '', context = '', orientation = 'upright', persona }) {
-  let nextCore = String(coreMessage || '').trim();
-  let nextInterpretation = String(interpretation || '').trim();
-  const extraLines = [];
-  extraLines.push(...buildPolicySteeringLines({ context }));
-
-  const byPersona = {
-    'user:beginner': '어렵게 넓히지 말고 오늘 실행 1개만 고정하면 흐름이 선명해집니다.',
-    'user:anxious': '불안을 키우는 단정은 내려놓고, 확인 가능한 근거 1개부터 차분히 점검해보세요.',
-    'user:decisive': '결정은 시간·비용·소모 기준 3개로 같은 표에서 비교하면 흔들림이 줄어듭니다.',
-    'user:relationship': '대화는 사실 1개, 감정 1개, 요청 1개 순서로 전달하면 오해를 줄일 수 있습니다.',
-    'user:career_shift': '전환 판단은 타이밍보다 준비도와 리스크 완충 계획을 함께 봐야 정확합니다.',
-    'user:study_opt': '학습은 25분 실행 + 5분 복기 1세트를 고정하면 체감 정확도가 올라갑니다.',
-    'planner:pm': '가설-실험-지표(선행/후행)를 한 줄씩 분리하면 의사결정 품질이 올라갑니다.',
-    'planner:service_planner': '정책 일관성, UX 흐름, 예외 처리 기준을 같은 문장 구조로 맞추는 것이 핵심입니다.',
-    'developer:backend': '신뢰성은 오류율/SLO와 복구 절차를 함께 점검할 때 현실적으로 개선됩니다.',
-    'developer:frontend': '표현 일관성은 컴포넌트 규칙, 가독성 기준, 접근성 체크를 함께 맞출 때 안정됩니다.',
-    'domain-expert:counselor': '해석 전달은 진단형 단정보다 안전한 선택 문장과 내담자 자율성 보장을 우선하세요.',
-    'domain-expert:learning_coach': '목표-실행-피드백-보정 4단 루프를 짧게 반복하면 학습 유지력이 올라갑니다.',
-    'domain-expert:data_analyst': '지표는 신뢰도와 편향 가능성을 같이 보고 조건부 결론으로 정리하는 편이 안전합니다.'
+function getPersonaStyleProfile(key = '', context = '', spreadId = '') {
+  const hasAnxiety = /(불안|걱정|초조|두려)/.test(String(context || ''));
+  const base = {
+    coreMaxSentences: 3,
+    interpretationMaxSentences: 4,
+    directiveness: 'mid',
+    metaphorDensity: 'mid'
   };
-
-  const key = `${persona?.group || ''}:${persona?.id || ''}`;
-  const tailored = byPersona[key];
-  if (tailored) extraLines.push(tailored);
-
-  if (orientation === 'reversed' && !/(완충|정비|속도)/.test(nextInterpretation)) {
-    extraLines.push('지금은 속도보다 완충 행동 1개를 먼저 두는 편이 결과 안정성에 유리합니다.');
+  if (spreadId === 'one-card') {
+    return { ...base, interpretationMaxSentences: 6, coreMaxSentences: 4 };
   }
-  if (String(context || '').trim() && !/질문\(".*"\)/.test(nextInterpretation)) {
-    extraLines.push(`질문("${normalizeClientQuestion(context)}") 기준으로 근거와 실행을 분리해 읽어보세요.`);
-  }
-  if (extraLines.length) {
-    nextInterpretation = `${nextInterpretation} ${extraLines.join(' ')}`.replace(/\s{2,}/g, ' ').trim();
-  }
+  if (key === 'user:beginner') return { ...base, directiveness: 'high', metaphorDensity: 'low' };
+  if (key === 'user:anxious' || hasAnxiety) return { ...base, directiveness: 'low', metaphorDensity: 'low' };
+  if (key === 'user:relationship') return { ...base, directiveness: 'mid', metaphorDensity: 'low' };
+  if (key.startsWith('developer:') || key.startsWith('planner:')) return { ...base, directiveness: 'high', metaphorDensity: 'low' };
+  return base;
+}
 
-  return { coreMessage: nextCore, interpretation: nextInterpretation };
+function applyPersonaStyleToSentence(text = '', profile = {}) {
+  let line = String(text || '').replace(/\s{2,}/g, ' ').trim();
+  if (!line) return '';
+  if (profile.directiveness === 'low') {
+    line = line
+      .replace(/바로 움직여볼 타이밍(입니다|이에요)\.?/g, '지금은 확인을 먼저 두는 편이 좋습니다.')
+      .replace(/지금 바로 가능한 행동 1개만 고정해 작게 시작해 보세요\.?/g, '오늘은 확인 가능한 행동 1개만 가볍게 시도해보세요.');
+  }
+  return line.replace(/\s{2,}/g, ' ').trim();
 }
 
 function scoreEvidenceStructure(text = '') {
@@ -2249,44 +2282,46 @@ function rewriteTarotAsNarrative({
   spreadId = '',
   positionName = '',
   context = '',
+  cardId = '',
   cardName = '',
+  cardSuit = '',
+  cardArcana = '',
   orientation = 'upright',
   focus = '',
   symbolicCue = '',
   preset = 'linked',
-  maxSentences = 5
+  maxSentences = 3
 }) {
-  const baseSentences = splitSentences(text).filter(Boolean);
-  if (!baseSentences.length) return text;
-  const story = [...baseSentences];
-  const cue = symbolicCue || resolveTarotSymbolicCue({ cardName, focus });
-  const sceneLead = preset === 'timeline'
-    ? `지금 질문 흐름은 ${positionName || '현재 구간'}의 장면을 시간축으로 읽을 때 가장 또렷해집니다.`
-    : `지금 질문 장면은 ${positionName || '현재 구간'}에서 핵심 신호를 먼저 붙잡는 국면입니다.`;
-  const contextClean = normalizeClientQuestion(context);
-  const contextLine = contextClean
-    ? `질문("${contextClean}")을 놓고 보면, 지금은 ${focus || '핵심 흐름'}을 차분히 정렬해야 하는 첫 장면입니다.`
-    : sceneLead;
-  if (!story.some((line) => TAROT_SCENE_CUES.test(line))) {
-    story.unshift(contextLine);
+  const baseSentences = splitSentences(text).map((line) => String(line || '').trim()).filter(Boolean);
+  const cue = symbolicCue || resolveTarotSymbolicCue({
+    cardId,
+    cardName,
+    suit: cardSuit,
+    arcana: cardArcana,
+    focus
+  });
+  const riskBand = inferTarotRiskBand({ cardName, focus, orientation, context });
+  const narrative = [];
+  const first = baseSentences.find((line) => /(카드|정방향|역방향|키워드|근거|포지션)/.test(line));
+  const second = baseSentences.find((line) => /(가능성|조건|지금은|우선|보류|완충|조절)/.test(line));
+  const third = baseSentences.find((line) => /(실행|행동|점검|기록|확인)/.test(line));
+  if (first) narrative.push(first);
+  if (second && second !== first) narrative.push(second);
+  if (third && third !== second && third !== first) narrative.push(third);
+
+  if (!narrative.length) {
+    narrative.push(`${positionName || '이 자리'}에서는 ${cardName || '이 카드'} ${orientation === 'reversed' ? '역방향' : '정방향'} 근거가 우선입니다.`);
   }
-  if (!story.some((line) => TAROT_SYMBOL_CUES.test(line))) {
-    story.splice(Math.min(1, story.length), 0, `${cardName || '이번 카드'}의 상징 ${cue}는 지금 해석의 중심축을 잡아줍니다.`);
+  if (!narrative.some((line) => TAROT_SYMBOL_CUES.test(line))) {
+    const cueObject = withKoreanParticle(cue, '을', '를');
+    narrative.splice(Math.min(1, narrative.length), 0, `${cardName || '이번 카드'}의 상징 ${cueObject} 기준으로 의미를 좁혀보세요.`);
   }
-  if (!story.some((line) => TAROT_CONDITIONAL_CUES.test(line))) {
-    story.push(orientation === 'upright'
-      ? `${cardName || '이번 카드'} 신호가 이어진다면, 근미래 전개는 유력하고 작은 실행부터 시작할 가능성이 큽니다.`
-      : `${cardName || '이번 카드'} 신호를 보면, 지금은 속도를 낮출 때 더 현실적인 전개로 정리될 가능성이 큽니다.`);
+  if (!narrative.some((line) => TAROT_ACTION_CUES.test(line))) {
+    narrative.push(riskBand === 'high'
+      ? '지금은 결론을 서두르지 말고 확인 질문 1개와 관찰 기록 1개만 남겨보세요.'
+      : '오늘은 실행 1개를 정하고 반응을 짧게 점검해보세요.');
   }
-  if (!story.some((line) => /(카드|근거|정방향|역방향|키워드|포지션)/.test(line))) {
-    story.push(`${cardName || '이번 카드'} 카드 근거를 포지션 기준으로 다시 확인하면 해석 정확도가 올라갑니다.`);
-  }
-  if (!story.some((line) => TAROT_ACTION_CUES.test(line))) {
-    story.push(orientation === 'upright'
-      ? '다음 막으로 넘어가기 전에 오늘 실행 1개와 관찰 지표 1개를 나란히 기록해보세요.'
-      : '다음 막으로 넘어가기 전에 오늘 줄일 소모 1개와 완충 행동 1개를 먼저 정해보세요.');
-  }
-  return story.slice(0, maxSentences).join(' ');
+  return narrative.slice(0, Math.max(2, Math.min(3, maxSentences))).join(' ');
 }
 
 function enforceTarotGuardrails(text = '') {
@@ -2337,25 +2372,103 @@ function detectTarotArcProgression(text = '') {
   return hasScene && hasSymbol && hasFlow && hasAction ? 'scene-symbol-flow-action' : 'partial';
 }
 
-function resolveTarotSymbolicCue({ cardName = '', focus = '' }) {
+function resolveTarotSymbolicCue({ cardId = '', cardName = '', suit = '', arcana = '', focus = '' }) {
+  const cardById = cardId ? getCardById(cardId) : null;
+  const cardArcana = String(cardById?.arcana || arcana || '').trim().toLowerCase();
+  const cardSuit = String(cardById?.suit || suit || '').trim();
   const name = String(cardName || '').trim();
   const matchMajor = TAROT_SYMBOLIC_BY_MAJOR[name];
-  if (matchMajor) return `${matchMajor.noun}(${matchMajor.scene})을 통해 ${matchMajor.hint}`;
+  if (cardArcana === 'major' && matchMajor) return `${matchMajor.noun}(${matchMajor.scene})을 통해 ${matchMajor.hint}`;
+  if (cardSuit && TAROT_SYMBOLIC_BY_SUIT[cardSuit]) {
+    const suitMeta = TAROT_SYMBOLIC_BY_SUIT[cardSuit];
+    return `${suitMeta.noun}(${suitMeta.scene})을 따라 ${suitMeta.hint}`;
+  }
   const normalized = String(focus || '').toLowerCase();
-  if (/(컵|감정|연결|공감)/.test(normalized)) {
-    const cup = TAROT_SYMBOLIC_BY_SUIT.Cups;
-    return `${cup.noun}(${cup.scene})을 따라 ${cup.hint}`;
+  if (/(컵|감정|연결|공감)/.test(normalized)) return '물결(감정의 수면)을 따라 정서의 경계를 점검해보세요';
+  if (/(완드|열정|추진|행동)/.test(normalized)) return '불꽃(추진의 화로)을 따라 속도와 방향을 함께 보세요';
+  if (/(소드|판단|결정|갈등)/.test(normalized)) return '칼날(판단의 교차로)을 따라 사실과 해석을 분리해보세요';
+  if (/(펜타클|현실|재정|안정)/.test(normalized)) return '토대(현실의 바닥)를 따라 지속 가능성을 먼저 점검하세요';
+  return '핵심 신호를 기준으로 근거와 실행 순서를 먼저 정리해보세요';
+}
+
+function inferTarotRiskBand({ cardName = '', focus = '', orientation = 'upright', context = '' }) {
+  const text = `${cardName} ${focus} ${context}`.toLowerCase();
+  if (orientation === 'reversed') return 'high';
+  if (/(달|불안|모호|안개|망설|지연|두려|흔들)/.test(text)) return 'high';
+  if (/(갈등|충돌|압박|소모|리스크)/.test(text)) return 'mid';
+  return 'low';
+}
+
+function scoreKoreanGrammar(text = '') {
+  const raw = String(text || '').trim();
+  if (!raw) return 100;
+  let score = 100;
+  const patterns = [
+    /흐름는/g,
+    /흐름를/g,
+    /타이밍이에요\./g,
+    /신호가 열려 있어[^.?!]*좋은 타이밍/g,
+    /핵심부터 말하면,\s*핵심부터/g
+  ];
+  for (const pattern of patterns) {
+    const hit = (raw.match(pattern) || []).length;
+    if (hit) score -= Math.min(40, hit * 12);
   }
-  if (/(완드|열정|추진|행동)/.test(normalized)) {
-    const wand = TAROT_SYMBOLIC_BY_SUIT.Wands;
-    return `${wand.noun}(${wand.scene})을 따라 ${wand.hint}`;
+  return Math.max(0, Math.min(100, score));
+}
+
+function scoreRedundancy(text = '') {
+  const lines = splitSentences(text)
+    .map((line) => line.toLowerCase().replace(/[^0-9a-zA-Z가-힣]/g, ''))
+    .filter(Boolean);
+  if (!lines.length) return 0;
+  const dup = lines.length - new Set(lines).size;
+  return Math.max(0, Math.min(100, dup * 30));
+}
+
+function rewriteKoreanQuality(text = '') {
+  let out = String(text || '');
+  out = out
+    .replace(/흐름는/g, '흐름은')
+    .replace(/흐름를/g, '흐름을')
+    .replace(/신호가 열려 있어[^.?!]*좋은 타이밍(입니다|이에요)\.?/g, '신호가 보여 지금은 차분히 확인하는 편이 좋습니다.')
+    .replace(/핵심부터 말하면,\s*핵심부터/g, '핵심부터 말하면,')
+    .replace(/타이밍이에요\./g, '타이밍입니다.');
+  const sentences = splitSentences(out);
+  const seen = new Set();
+  const compacted = [];
+  const actionSentences = [];
+  for (const sentence of sentences) {
+    const key = sentence.toLowerCase().replace(/[^0-9a-zA-Z가-힣]/g, '');
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    if (/(실행|행동|비교|질문|점검)/.test(sentence)) actionSentences.push(sentence);
+    compacted.push(sentence);
   }
-  if (/(소드|판단|결정|갈등)/.test(normalized)) {
-    const sword = TAROT_SYMBOLIC_BY_SUIT.Swords;
-    return `${sword.noun}(${sword.scene})을 따라 ${sword.hint}`;
+  const picked = compacted.slice(0, 3);
+  if (actionSentences.length && !picked.some((line) => /(실행|행동|비교|질문|점검)/.test(line))) {
+    if (picked.length >= 3) picked[2] = actionSentences[0];
+    else picked.push(actionSentences[0]);
   }
-  const pentacle = TAROT_SYMBOLIC_BY_SUIT.Pentacles;
-  return `${pentacle.noun}(${pentacle.scene})을 따라 ${pentacle.hint}`;
+  return picked.join(' ');
+}
+
+function enforceKoreanQualityGate(text = '') {
+  const original = String(text || '').trim();
+  let grammarScore = scoreKoreanGrammar(original);
+  let redundancyScore = scoreRedundancy(original);
+  if (grammarScore >= 88 && redundancyScore <= 25) {
+    return { text: original, grammarScore, redundancyScore, rewriteApplied: false };
+  }
+  const rewritten = rewriteKoreanQuality(original);
+  grammarScore = scoreKoreanGrammar(rewritten);
+  redundancyScore = scoreRedundancy(rewritten);
+  return {
+    text: rewritten,
+    grammarScore,
+    redundancyScore,
+    rewriteApplied: true
+  };
 }
 
 function scoreTarotPurity(text = '') {
@@ -2598,19 +2711,38 @@ function buildUnifiedInterpretationNarrative({
     .replace(/^결론:\s*/g, '')
     .trim());
   const conclusionTone = detectConclusionTone(normalizedConclusion);
+  const riskBand = inferTarotRiskBand({
+    cardName: card?.nameKo || '',
+    focus: keyword,
+    orientation,
+    context
+  });
 
   const empathyLine = isYesNo
     ? buildEmpathyLeadLine({ conclusionTone, group, context })
     : '';
   const answerLine = isYesNo
     ? `답부터 말씀드리면, ${normalizedConclusion || (orientation === 'upright' ? '예, 진행하셔도 괜찮습니다.' : '아니오, 지금은 정비를 먼저 하시는 편이 좋습니다.')}`
-    : (orientation === 'upright'
-      ? '핵심부터 말하면, 지금은 흐름을 살려 바로 움직여볼 타이밍입니다.'
-      : '핵심부터 말씀드리면, 지금은 속도를 낮추고 정비를 먼저 두시는 편이 안정적입니다.');
+    : (riskBand === 'high'
+      ? '핵심부터 말하면, 지금은 결론을 서두르지 말고 확인 단서를 먼저 모으는 편이 안전합니다.'
+      : orientation === 'upright'
+        ? '핵심부터 말하면, 지금은 흐름을 살려 바로 움직여볼 타이밍입니다.'
+        : '핵심부터 말씀드리면, 지금은 속도를 낮추고 정비를 먼저 두시는 편이 안정적입니다.');
 
   const focusObject = withKoreanParticle(focus || '핵심 흐름', '을', '를');
   const meaningLine = buildCardMeaningDetailLine({ card, orientation, keyword, group });
-  const evidenceLine = `${card?.nameKo || '이번 카드'} 카드는 지금 질문에서 "${keyword}" 신호를 보여주고 있고, ${focusObject} 기준으로 읽으실 때 판단이 가장 선명해집니다. ${meaningLine}`;
+  const choiceMeta = spreadId === 'choice-a-b' ? inferChoiceContextMeta(context) : null;
+  const choiceAxes = Array.isArray(choiceMeta?.axes) ? [...choiceMeta.axes] : [];
+  const purchaseLike = spreadId === 'choice-a-b' && (choiceMeta?.isPurchaseChoice || /(살까|구매|결제|브랜드|샤넬|버버리|가방|신발)/.test(String(context || '')));
+  if (purchaseLike) {
+    for (let i = 0; i < choiceAxes.length; i += 1) {
+      if (/즉시 만족도/.test(choiceAxes[i])) choiceAxes[i] = '3개월 후 만족도';
+    }
+  }
+  const choiceAxisHint = spreadId === 'choice-a-b' && choiceAxes.length >= 4
+    ? ` 비교 기준은 ${choiceAxes[0]}, ${choiceAxes[1]}, ${choiceAxes[2]}, ${choiceAxes[3]}입니다.`
+    : '';
+  const evidenceLine = `${card?.nameKo || '이번 카드'} 카드는 지금 질문에서 "${keyword}" 신호를 보여주고 있고, ${focusObject} 기준으로 읽으실 때 판단이 가장 선명해집니다.${choiceAxisHint} ${meaningLine}`;
   const actionLine = buildUnifiedActionLine({ text, spreadId, context, orientation, sleepQuestion });
   const recheckLine = buildRecheckGuideLine({ group, conclusionTone, sleepQuestion });
   const reviewLine = sleepQuestion
@@ -2637,10 +2769,17 @@ function buildUnifiedActionLine({ text = '', spreadId = '', context = '', orient
 
   if (spreadId === 'choice-a-b') {
     const meta = inferChoiceContextMeta(context);
-    const riskHint = meta.isPurchaseChoice
-      ? '유혹·과열 신호는 경계와 통제 기준으로 함께 점검해 주세요.'
+    const purchaseLike = meta.isPurchaseChoice || /(살까|구매|결제|브랜드|샤넬|버버리|가방|신발)/.test(String(context || ''));
+    const axes = Array.isArray(meta.axes) ? [...meta.axes] : ['시간', '비용', '감정 소모', '성장 여지', '지속 가능성'];
+    if (purchaseLike) {
+      for (let i = 0; i < axes.length; i += 1) {
+        if (/즉시 만족도/.test(axes[i])) axes[i] = '3개월 후 만족도';
+      }
+    }
+    const riskHint = purchaseLike
+      ? '유혹·과열 신호는 경계와 통제 기준으로 함께 점검해 주세요'
       : '';
-    return `실행은 ${meta.axes[0]}, ${meta.axes[1]}, ${meta.axes[2]} 그리고 ${meta.axes[3]} 기준으로 A/B를 같은 체크리스트로 비교해 보세요. ${riskHint}`.trim();
+    return `실행은 ${axes[0]}, ${axes[1]}, ${axes[2]} 그리고 ${axes[3]} 기준으로 A/B를 같은 체크리스트로 비교해 보세요${riskHint ? `, ${riskHint}` : ''}.`.trim();
   }
 
   const actionMatch = String(text || '').match(/실행 문장:\s*([^.!?]+[.!?]?)/);
