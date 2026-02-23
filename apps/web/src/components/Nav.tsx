@@ -28,8 +28,10 @@ export function Nav() {
       <div className="brand">
         <p className="brand-eyebrow">Tarot Study Lab</p>
         <h1>타로 학습 웹앱</h1>
+        <p className="sub">Storytelling Study Workspace</p>
       </div>
       <div className="topbar-actions">
+        <p className="eyebrow">Navigation</p>
         <nav>
           {links.map((link) => (
             <NavLink
