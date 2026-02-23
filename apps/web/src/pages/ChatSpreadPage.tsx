@@ -21,7 +21,7 @@ type ChatMessage =
   };
 
 const STARTER_PROMPTS = [
-  '오늘 재물운, 지출 중심으로 봐줘',
+  '시험 합격할 수 있을까?',
   '이번 주 관계 흐름을 보고 싶어',
   '올해 커리어 타이밍을 분기별로 알려줘'
 ];
@@ -40,7 +40,7 @@ export function ChatSpreadPage() {
   const [variantId, setVariantId] = useState<string>(selectedVariantFromQuery);
   const [readingLevel, setReadingLevel] = useState<'beginner' | 'intermediate'>(levelFromQuery);
   const [input, setInput] = useState<string>(contextFromQuery);
-  const [showEvidence, setShowEvidence] = useState<boolean>(false);
+  const [showEvidence, setShowEvidence] = useState<boolean>(true);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const logRef = useRef<HTMLDivElement | null>(null);
 
@@ -122,12 +122,12 @@ export function ChatSpreadPage() {
 
   return (
     <section className="stack">
-      <article className="panel">
+      <article className="panel chat-top-panel">
         <div className="chat-page-header">
           <div>
             <p className="badge">대화형 스프레드</p>
             <h2>타로 챗 리딩</h2>
-            <p>질문을 입력하면 기존 스프레드 리딩을 말풍선 방식으로 보여줍니다.</p>
+            <p>원카드/스프레드 결과를 챗봇 톤으로 재구성해 보여줍니다.</p>
           </div>
           <div className="chip-wrap">
             <Link
@@ -170,16 +170,16 @@ export function ChatSpreadPage() {
             <option value="intermediate">중급 리딩</option>
           </select>
           <button className="btn" onClick={() => setShowEvidence((prev) => !prev)}>
-            {showEvidence ? '근거 접기' : '근거 보기'}
+            {showEvidence ? '근거 접기' : '근거 펼치기'}
           </button>
         </div>
       </article>
 
-      <article className="panel chat-shell">
+      <article className="panel chat-shell chat-shell-dark">
         <div className="chat-log" ref={logRef}>
           {messages.length === 0 && (
             <div className="chat-empty">
-              <p>아직 대화가 없습니다. 아래 추천 질문을 눌러 시작해보세요.</p>
+              <p>아직 대화가 없습니다. 아래 추천 질문으로 시작해보세요.</p>
               <div className="chip-wrap">
                 {STARTER_PROMPTS.map((prompt) => (
                   <button key={prompt} className="chip-link" onClick={() => setInput(prompt)}>{prompt}</button>
@@ -193,6 +193,12 @@ export function ChatSpreadPage() {
               key={message.id}
               message={message}
               showEvidence={showEvidence}
+              isPending={drawMutation.isPending}
+              onRedraw={(question) => {
+                if (!question.trim() || drawMutation.isPending) return;
+                setInput(question);
+                drawMutation.mutate(question);
+              }}
             />
           ))}
         </div>
@@ -201,7 +207,7 @@ export function ChatSpreadPage() {
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="질문을 입력하세요 (예: 이번 주 재정 흐름 알려줘)"
+            placeholder="무엇이든 물어보세요"
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -236,7 +242,17 @@ export function ChatSpreadPage() {
   );
 }
 
-function ChatBubble({ message, showEvidence }: { message: ChatMessage; showEvidence: boolean }) {
+function ChatBubble({
+  message,
+  showEvidence,
+  onRedraw,
+  isPending
+}: {
+  message: ChatMessage;
+  showEvidence: boolean;
+  onRedraw: (question: string) => void;
+  isPending: boolean;
+}) {
   if (message.type === 'text') {
     return (
       <div className="chat-row chat-row-user">
@@ -249,64 +265,102 @@ function ChatBubble({ message, showEvidence }: { message: ChatMessage; showEvide
 
   const reading = message.payload;
   const keywords = Array.from(new Set(reading.items.flatMap((item) => item.card.keywords || []))).filter(Boolean);
-  const summaryCardTitle = reading.context?.trim()
-    ? `요약 카드 · ${reading.context.trim()}`
-    : `요약 카드 · ${reading.spreadName}`;
+  const spotlight = reading.items[0] || null;
+  const verdict = inferVerdict(reading.summary);
+  const keyQuestion = reading.context?.trim() || '질문';
 
   return (
     <div className="chat-row chat-row-assistant">
-      <article className="chat-bubble chat-bubble-assistant">
-        <p className="chat-meta">{reading.spreadName} · {reading.level === 'beginner' ? '입문' : '중급'} 리딩</p>
-        <p>{pickLeadLine(reading.summary)}</p>
+      <article className="chat-bubble chat-bubble-assistant chat-reading-bubble">
+        <div className="chat-question-box">
+          <p className="chat-question-label">질문</p>
+          <p className="chat-question-text">{keyQuestion}</p>
+        </div>
 
-        <section className="chat-summary-card">
-          <h5>{summaryCardTitle}</h5>
+        {spotlight && (
+          <section className="chat-spotlight-card">
+            <TarotImage
+              src={spotlight.card.imageUrl}
+              sources={spotlight.card.imageSources}
+              cardId={spotlight.card.id}
+              alt={spotlight.card.nameKo}
+              className={`chat-spotlight-thumb ${spotlight.orientation === 'reversed' ? 'card-reversed' : ''}`}
+              loading="lazy"
+            />
+            <p className="chat-spotlight-name">{spotlight.card.nameKo}</p>
+          </section>
+        )}
+
+        <div className="chat-verdict-wrap">
+          <span className={`chat-verdict-pill chat-verdict-${verdict.kind}`}>{verdict.label}</span>
+        </div>
+
+        <section className="chat-summary-card chat-summary-card-deep">
           <UnifiedSummaryView spreadId={reading.spreadId} summary={reading.summary} keywords={keywords} />
         </section>
 
         {showEvidence && (
-          <section className="chat-evidence-block">
-            <h5>근거 보기</h5>
-            <div className="chat-evidence-grid">
-              {reading.items.map((item) => {
-                const orientationLabel = item.orientation === 'reversed' ? '역방향' : '정방향';
-                return (
-                  <article key={`${item.position.name}-${item.card.id}`} className="chat-evidence-card">
-                    <div className="chat-evidence-head">
-                      <TarotImage
-                        src={item.card.imageUrl}
-                        sources={item.card.imageSources}
-                        cardId={item.card.id}
-                        alt={item.card.nameKo}
-                        className={`chat-evidence-thumb ${item.orientation === 'reversed' ? 'card-reversed' : ''}`}
-                        loading="lazy"
-                      />
-                      <div>
-                        <p><strong>{item.position.name}</strong></p>
-                        <p className="sub">{item.card.nameKo} · {orientationLabel}</p>
-                        <p className="sub">키워드: {item.card.keywords.join(' · ')}</p>
-                      </div>
-                    </div>
-                    <p className="chat-evidence-text">
-                      {renderHighlightedText(normalizeDisplayText(item.interpretation), item.card.keywords || [], `chat-evidence-${item.card.id}`)}
-                    </p>
-                  </article>
-                );
-              })}
+          <section className="chat-evidence-block chat-evidence-inline">
+            <h5>카드 근거</h5>
+            <div className="chat-card-strip">
+              {reading.items.map((item, idx) => (
+                <article key={`${item.position.name}-${item.card.id}-${idx}`} className="chat-card-strip-item">
+                  <TarotImage
+                    src={item.card.imageUrl}
+                    sources={item.card.imageSources}
+                    cardId={item.card.id}
+                    alt={item.card.nameKo}
+                    className={`chat-strip-thumb ${item.orientation === 'reversed' ? 'card-reversed' : ''}`}
+                    loading="lazy"
+                  />
+                  <p className="sub"><strong>{item.position.name}</strong> · {item.orientation === 'reversed' ? '역방향' : '정방향'}</p>
+                  <p className="chat-evidence-text">
+                    {renderHighlightedText(normalizeDisplayText(item.interpretation), item.card.keywords || [], `chat-evidence-${item.card.id}-${idx}`)}
+                  </p>
+                </article>
+              ))}
             </div>
           </section>
         )}
+
+        <div className="chat-reading-actions">
+          <button
+            className="btn primary"
+            disabled={isPending}
+            onClick={() => onRedraw(keyQuestion)}
+          >
+            다시 뽑기
+          </button>
+        </div>
       </article>
     </div>
   );
 }
 
-function pickLeadLine(summary: string) {
-  const lines = String(summary || '')
-    .split(/\n\n+|\n+/)
-    .map((line) => line.trim())
-    .filter(Boolean);
-  return lines[0]?.replace(/^[^:]{1,20}:\s*/g, '') || '이번 흐름을 대화형으로 정리해드릴게요.';
+function inferVerdict(summary: string): { kind: 'yes' | 'no' | 'maybe'; label: string } {
+  const raw = String(summary || '').replace(/\s+/g, ' ').trim();
+  if (!raw) return { kind: 'maybe', label: 'MAYBE' };
+
+  const lower = raw.toLowerCase();
+  const conclusionWindow = (raw.match(/결론[^.!\n]{0,48}/g) || []).join(' ');
+  const conclusionLower = conclusionWindow.toLowerCase();
+
+  if (/조건부\s*예/.test(conclusionWindow) || /조건부\s*예/.test(lower)) {
+    return { kind: 'maybe', label: 'CONDITIONAL YES' };
+  }
+  if (/결론[^.!\n]{0,24}(아니오|보류)/.test(conclusionWindow) || /결론[^.!\n]{0,24}(아니오|보류)/.test(lower)) {
+    return { kind: 'no', label: 'NO' };
+  }
+  if (/결론[^.!\n]{0,24}예/.test(conclusionWindow) || /결론[^.!\n]{0,24}예/.test(lower)) {
+    return { kind: 'yes', label: 'YES' };
+  }
+
+  if (/1차 판정은 우세|판정은 우세|우세/.test(raw)) return { kind: 'yes', label: 'YES' };
+  if (/1차 판정은 조건부|판정은 조건부|박빙/.test(raw)) return { kind: 'maybe', label: 'MAYBE' };
+
+  if (/\byes\b/.test(conclusionLower)) return { kind: 'yes', label: 'YES' };
+  if (/\bno\b/.test(conclusionLower)) return { kind: 'no', label: 'NO' };
+  return { kind: 'maybe', label: 'MAYBE' };
 }
 
 function buildFollowupQuestions({
