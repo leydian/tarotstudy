@@ -264,6 +264,7 @@ function ChatBubble({
   }
 
   const reading = message.payload;
+  const sanitizedSummary = sanitizeSummaryForChat(reading.summary);
   const keywords = Array.from(new Set(reading.items.flatMap((item) => item.card.keywords || []))).filter(Boolean);
   const spotlight = reading.items[0] || null;
   const verdict = inferVerdict(reading.summary);
@@ -272,11 +273,6 @@ function ChatBubble({
   return (
     <div className="chat-row chat-row-assistant">
       <article className="chat-bubble chat-bubble-assistant chat-reading-bubble">
-        <div className="chat-question-box">
-          <p className="chat-question-label">질문</p>
-          <p className="chat-question-text">{keyQuestion}</p>
-        </div>
-
         {spotlight && (
           <section className="chat-spotlight-card">
             <TarotImage
@@ -296,7 +292,7 @@ function ChatBubble({
         </div>
 
         <section className="chat-summary-card chat-summary-card-deep">
-          <UnifiedSummaryView spreadId={reading.spreadId} summary={reading.summary} keywords={keywords} />
+          <UnifiedSummaryView spreadId={reading.spreadId} summary={sanitizedSummary} keywords={keywords} />
         </section>
 
         {showEvidence && (
@@ -361,6 +357,21 @@ function inferVerdict(summary: string): { kind: 'yes' | 'no' | 'maybe'; label: s
   if (/\byes\b/.test(conclusionLower)) return { kind: 'yes', label: 'YES' };
   if (/\bno\b/.test(conclusionLower)) return { kind: 'no', label: 'NO' };
   return { kind: 'maybe', label: 'MAYBE' };
+}
+
+function sanitizeSummaryForChat(summary = '') {
+  const raw = String(summary || '').trim();
+  if (!raw) return raw;
+  const lines = raw
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line && line !== '오늘의 테마');
+
+  return lines
+    .join('\n')
+    .replace(/(^|\s)오늘의 테마는\s*/g, '$1')
+    .replace(/(^|\n)오늘의 테마:\s*/g, '$1')
+    .trim();
 }
 
 function buildFollowupQuestions({

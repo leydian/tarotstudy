@@ -938,24 +938,6 @@
   box-shadow: 0 14px 28px rgba(8, 8, 14, 0.42);
 }
 
-.chat-question-box {
-  border: 1px solid color-mix(in srgb, #6a4fcb 35%, var(--line));
-  border-radius: 12px;
-  background: linear-gradient(135deg, #181a24 0%, #141623 100%);
-  padding: 10px 12px;
-}
-
-.chat-question-label {
-  font-size: 0.72rem;
-  color: #9ea4bf;
-  margin-bottom: 5px !important;
-}
-
-.chat-question-text {
-  font-weight: 700;
-  color: #ebedf8;
-}
-
 .chat-meta {
   font-size: 0.78rem;
   color: var(--ink-2);
@@ -1142,6 +1124,59 @@
   background: #191b2a;
   border: 1px solid color-mix(in srgb, #6a4fcb 38%, var(--line));
   color: #f2f4ff;
+}
+
+:root[data-theme='light'] .chat-shell-dark {
+  background: linear-gradient(180deg, #f5f7ff 0%, #eef3ff 100%);
+  border-color: color-mix(in srgb, #4f6de6 28%, var(--line));
+}
+
+:root[data-theme='light'] .chat-empty {
+  background: #f7f9ff;
+}
+
+:root[data-theme='light'] .chat-reading-bubble {
+  background: linear-gradient(180deg, #f8f9ff 0%, #f2f5ff 100%);
+  border-color: color-mix(in srgb, #4f6de6 28%, var(--line));
+  box-shadow: 0 10px 18px rgba(58, 72, 134, 0.12);
+}
+
+:root[data-theme='light'] .chat-spotlight-card {
+  background: #f9faff;
+  border-color: color-mix(in srgb, #4f6de6 24%, var(--line));
+}
+
+:root[data-theme='light'] .chat-spotlight-name {
+  color: var(--ink-0);
+}
+
+:root[data-theme='light'] .chat-summary-card-deep {
+  background: linear-gradient(165deg, #ffffff 0%, #f4f7ff 100%);
+  border-color: color-mix(in srgb, #4f6de6 20%, var(--line));
+}
+
+:root[data-theme='light'] .chat-summary-card-deep .reading-prose {
+  color: var(--ink-0);
+}
+
+:root[data-theme='light'] .chat-evidence-inline h5 {
+  color: var(--ink-0);
+}
+
+:root[data-theme='light'] .chat-card-strip-item {
+  background: #fbfcff;
+  border-color: color-mix(in srgb, #4f6de6 18%, var(--line));
+}
+
+:root[data-theme='light'] .chat-shell-dark .chat-composer {
+  background: #f3f6ff;
+  border-top-color: color-mix(in srgb, #4f6de6 20%, var(--line));
+}
+
+:root[data-theme='light'] .chat-composer input {
+  background: #fff;
+  color: var(--ink-0);
+  border-color: color-mix(in srgb, #4f6de6 24%, var(--line));
 }
 
 @media (max-width: 820px) {
