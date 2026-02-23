@@ -343,44 +343,23 @@ export function SpreadsPage() {
             <div className="reading-dual-panel">
               <article className="result-item reading-summary">
                 <h5 className="reading-block-title">타로 리더 종합 리딩</h5>
-                {selected.id === 'yearly-fortune'
-                  ? <YearlySummaryView summary={drawMutation.data.summary} />
-                  : selected.id === 'weekly-fortune'
-                    ? <WeeklySummaryView summary={drawMutation.data.summary} />
-                    : selected.id === 'monthly-fortune'
-                      ? <MonthlySummaryView summary={drawMutation.data.summary} keywords={emphasisKeywords} />
-                    : (
-                    <div className="reading-prose-wrap">
-                      {toParagraphBlocks(drawMutation.data.summary).map((block, idx) => (
-                        <p key={`summary-block-${idx}`} className="reading-prose">
-                          {renderHighlightedText(normalizeDisplayText(block), emphasisKeywords, `summary-${idx}`)}
-                        </p>
-                      ))}
-                    </div>
-                  )}
+                <UnifiedSummaryView
+                  spreadId={selected.id}
+                  summary={drawMutation.data.summary}
+                  keywords={emphasisKeywords}
+                />
               </article>
               <article className="result-item reading-coach">
                 <h5 className="reading-block-title">종합 학습 내역</h5>
-                <ul className="reading-lines">
-                  {buildLearningDigest(drawMutation.data.items).map((line, idx) => (
-                    <li key={`learning-digest-${idx}`} className="reading-digest-item">
-                      {(() => {
-                        const digest = splitDigestLine(line);
-                        const bodyBlocks = toParagraphBlocks(digest.body || line);
-                        return (
-                          <>
-                            {digest.title && <strong className="reading-digest-title">{digest.title}</strong>}
-                            {bodyBlocks.map((block, blockIdx) => (
-                              <p key={`digest-block-${idx}-${blockIdx}`} className="reading-digest-body">
-                                {renderHighlightedText(normalizeDisplayText(block), emphasisKeywords, `digest-${idx}-${blockIdx}`)}
-                              </p>
-                            ))}
-                          </>
-                        );
-                      })()}
-                    </li>
-                  ))}
-                </ul>
+                <NaturalFlowView
+                  blocks={buildLearningDigest(drawMutation.data.items).map((line) => {
+                    const digest = splitDigestLine(line);
+                    return digest.body || line;
+                  })}
+                  keywords={emphasisKeywords}
+                  keyBase="learning-digest"
+                  compact
+                />
               </article>
             </div>
 
@@ -485,13 +464,12 @@ export function SpreadsPage() {
                   <div className="reading-columns">
                     <div className="reader-block">
                       <h5 className="reading-block-title">타로 리더 리딩</h5>
-                      <div className="reading-prose-wrap">
-                        {toParagraphBlocks(mergeTarotMessage(item.coreMessage, item.interpretation)).map((block, idx) => (
-                          <p key={`item-tarot-${item.position.name}-${idx}`} className="reading-prose">
-                            {renderHighlightedText(block, item.card.keywords || [], `tarot-${item.position.name}-${idx}`)}
-                          </p>
-                        ))}
-                      </div>
+                      <NaturalFlowView
+                        blocks={toParagraphBlocks(mergeTarotMessage(item.coreMessage, item.interpretation))}
+                        keywords={item.card.keywords || []}
+                        keyBase={`tarot-${item.position.name}`}
+                        compact
+                      />
                     </div>
                     <div className="learning-point">
                       <h5 className="reading-block-title">학습 코치 요약</h5>
@@ -782,15 +760,7 @@ function CoachSummaryView({
 }) {
   const sections = groupCoachSummary(lines, context);
   const paragraphs = buildCoachNarrativeParagraphs(sections, context);
-  return (
-    <div className="coach-narrative-wrap">
-      {paragraphs.map((text, idx) => (
-        <p key={`coach-narrative-${idx}`} className="coach-narrative-paragraph">
-          {renderHighlightedText(text, context.keywords, `coach-${context.positionName}-${idx}`)}
-        </p>
-      ))}
-    </div>
-  );
+  return <NaturalFlowView blocks={paragraphs} keywords={context.keywords} keyBase={`coach-${context.positionName}`} compact />;
 }
 
 function splitCoachLineForDisplay(text: string) {
@@ -1349,6 +1319,103 @@ function MonthlySummaryView({ summary, keywords }: { summary: string; keywords: 
             {renderHighlightedText(parsed.theme, keywords, 'monthly-theme', { tierLimits: { high: 1, mid: 1, low: 0 } })}
           </p>
         </section>
+      )}
+    </div>
+  );
+}
+
+function UnifiedSummaryView({
+  spreadId,
+  summary,
+  keywords
+}: {
+  spreadId: string;
+  summary: string;
+  keywords: string[];
+}) {
+  const blocks = buildSummaryNaturalBlocks({ spreadId, summary });
+  return <NaturalFlowView blocks={blocks} keywords={keywords} keyBase={`summary-${spreadId}`} />;
+}
+
+function buildSummaryNaturalBlocks({ spreadId, summary }: { spreadId: string; summary: string }) {
+  if (spreadId === 'yearly-fortune') {
+    const parsed = parseYearlySummary(summary);
+    if (parsed) {
+      return [
+        parsed.overall,
+        parsed.quarterly,
+        ...parsed.monthly,
+        parsed.closing
+      ].filter(Boolean);
+    }
+  }
+  if (spreadId === 'weekly-fortune') {
+    const parsed = parseWeeklySummary(summary);
+    if (parsed) {
+      return [
+        parsed.overall,
+        ...parsed.daily,
+        parsed.actionGuide,
+        parsed.theme
+      ].filter(Boolean);
+    }
+  }
+  if (spreadId === 'monthly-fortune') {
+    const parsed = parseMonthlySummary(summary);
+    if (parsed) {
+      return [
+        parsed.overall,
+        ...parsed.weekly,
+        parsed.bridge,
+        parsed.actionGuide,
+        parsed.theme
+      ].filter(Boolean);
+    }
+  }
+  const sections = String(summary || '')
+    .split(/\n\n+/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => line.replace(/^[가-힣A-Za-z0-9·\-\s()]{1,18}:\s*/g, ''));
+  return sections.length ? sections : toParagraphBlocks(summary);
+}
+
+function NaturalFlowView({
+  blocks,
+  keywords,
+  keyBase,
+  compact = false
+}: {
+  blocks: string[];
+  keywords: string[];
+  keyBase: string;
+  compact?: boolean;
+}) {
+  const normalized = (blocks || []).map((block) => String(block || '').trim()).filter(Boolean);
+  if (!normalized.length) return null;
+  const [lead, ...rest] = normalized;
+
+  return (
+    <div className={`natural-flow-wrap ${compact ? 'natural-flow-compact' : ''}`}>
+      <section className="natural-flow-lead">
+        {toParagraphBlocks(lead).map((line, idx) => (
+          <p key={`${keyBase}-lead-${idx}`} className="reading-prose">
+            {renderHighlightedText(line, keywords, `${keyBase}-lead-${idx}`, { tierLimits: { high: 1, mid: 1, low: 0 } })}
+          </p>
+        ))}
+      </section>
+      {rest.length > 0 && (
+        <div className="natural-flow-grid">
+          {rest.map((block, idx) => (
+            <article key={`${keyBase}-card-${idx}`} className="natural-flow-card">
+              {toParagraphBlocks(block).map((line, lineIdx) => (
+                <p key={`${keyBase}-line-${idx}-${lineIdx}`} className="reading-prose">
+                  {renderHighlightedText(line, keywords, `${keyBase}-line-${idx}-${lineIdx}`, { tierLimits: { high: 1, mid: 1, low: 0 } })}
+                </p>
+              ))}
+            </article>
+          ))}
+        </div>
       )}
     </div>
   );
