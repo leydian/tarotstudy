@@ -1,7 +1,7 @@
 # 세션 인수인계 문서 (메인)
 
 작성일: 2026-02-22  
-최종 갱신: 2026-02-23 (latest 7)  
+최종 갱신: 2026-02-23 (latest 8)  
 작업 경로: `/home/eunok/studycodex`
 
 ## 1) 문서 구조
@@ -39,6 +39,54 @@
   - 시험/합격 템플릿을 면접/지원/이직/오퍼 질문까지 동일 프레임으로 확장
 
 ## 3) 금일 추가 반영 (최신)
+- 답변 품질 고도화 4개 방안 일괄 적용 (2026-02-23 latest 8)
+  - 관련 커밋: (현재 세션)
+  - 변경 파일(핵심):
+    - `apps/api/src/external-ai.js`
+    - `apps/api/src/index.js`
+    - `apps/api/src/reading-model-builder.js`
+    - `apps/api/src/routes/spreads-v3.routes.js`
+  - 핵심 변경:
+    - **[방안 A] 외부 AI를 스프레드 draw 리딩에 연결**
+      - `external-ai.js`에 `makeSpreadReadingEnhancer` 추가 (API/CLI 모드 모두 지원)
+      - draw v1 · v2 · v3 라우트 핸들러에 `tryEnhanceReadingV3Bridge` 호출 추가
+      - `spreadReadingEnhancer` 설정 시 `readingV3.bridge` · `verdict.sentence`를 AI 생성값으로 대체
+      - AI 실패 또는 미설정 시 기존 템플릿 readingV3 그대로 유지 (fallback 보장)
+      - 활성화 조건: `EXTERNAL_AI_MODE=api` + `EXTERNAL_AI_URL` + `EXTERNAL_AI_KEY` 설정 (또는 `cli`)
+    - **[방안 B] evidence 문장 다양화**
+      - `buildImmersiveEvidenceLine`에 `isReversed` 변수 추가
+      - 역방향 카드: 지연·저항·재조정 신호 중심 메시지 적용
+      - 정방향 카드: 가능성·진행 중심 메시지 유지
+      - `/과거|원인|배경|근원|무의식/` 포지션 패턴 신규 추가
+      - 기존 `/현재|상황|문제/`, `/미래|결과/`, `/조언|행동|해결/` 분기에 역방향 branch 추가
+      - fallback: `index % 2` 2-옵션 → seed 기반 4-옵션 · 도메인별 힌트 다양화
+    - **[방안 C] 질문 원문(선택지)을 bridge/verdict에 직접 반영**
+      - `buildReadingV3`에서 `analysis.optionA` · `analysis.optionB` 추출
+      - `buildImmersiveBridge`에 `choiceA` · `choiceB` 파라미터 추가
+        - 선택지 있으면: `"A와 B 중 지금 흐름에 더 맞는 쪽을 카드 기준으로 짚겠습니다"` 형태 우선 적용
+      - `buildImmersiveVerdict`에 `choiceA` · `choiceB` 파라미터 추가
+        - 우세: `"A 쪽으로 흐름이 기울어 있습니다"` 형태
+        - 박빙: `"A와 B 신호가 팽팽합니다"` 형태
+        - 보류: `"A와 B 모두 조건 확인이 먼저입니다"` 형태
+    - **[방안 D] specificityScore 임계치 상향**
+      - `reading-model-builder.js` `enforceModelQualityProfileB` 트리거: `specificityScore < 72` → `< 80`
+      - 재작성 게이트 발동 빈도 증가 → 저구체성 문장이 더 많이 보정됨
+      - `rewriteModelLines` 개선: 고정 suffix 대신 `inferDomainHintFromContext` 함수 도입
+        - 학습/커리어/관계/재정/건강 도메인별 구체적 행동 hint로 대체
+        - 도메인 미매칭 시에도 기존과 동일한 행동 1개 고정 메시지 fallback
+  - 효과:
+    - AI 연결 환경: bridge/verdict가 AI 자연어 생성으로 대체되어 맥락 밀착도 크게 향상
+    - AI 미연결 환경: B·C·D 방안만 적용되어 역방향 카드 해석 차별화, 선택지 직접 반영, 재작성 게이트 강화로 품질 향상
+    - 다카드 스프레드에서 카드별 evidence 문장 다양성 개선
+    - 선택지 질문("A할까 B할까")에서 bridge/verdict가 선택지를 직접 언급
+  - 검증:
+    - `npm run lint` 통과
+    - `npm run typecheck:web` 통과
+    - `npm run test:api` 통과 (64/64)
+    - `npm run test:web` 통과 (13/13)
+    - `npm run qa:summary-regression` 통과 (100/100 케이스)
+    - `npm run qa:question-understanding` 통과 (3000케이스, 전 지표 100%)
+
 - 추천 질문 풀 실전형 확장 + CSS 가독성 전역 정규화 + 자동추천 화면 수동 흔적 최소화 (2026-02-23 latest 7)
   - 관련 커밋:
     - `aee3d3d` Expand chatbot starter question pool with real client utterances

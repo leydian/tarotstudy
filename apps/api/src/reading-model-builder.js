@@ -218,8 +218,19 @@ function scoreRedundancy(text = '') {
   return Math.max(0, Math.min(100, duplicate * 30));
 }
 
+function inferDomainHintFromContext(context = '') {
+  const text = String(context || '').toLowerCase();
+  if (/(시험|합격|공부|학습|기출|모의고사|오답|자격증)/.test(text)) return '취약 유형 1개와 오늘 풀 문항 수를 먼저 정하세요.';
+  if (/(이직|면접|지원|연봉|커리어|퇴사|오퍼)/.test(text)) return '지원서·답변 항목 1개를 오늘 완성 가능 상태로 고정하세요.';
+  if (/(연락|재회|연애|관계|대화|사과)/.test(text)) return '전달할 문장을 사실 1개 + 요청 1개로 줄여 준비하세요.';
+  if (/(지출|예산|결제|저축|투자|대출|돈)/.test(text)) return '비필수 지출 1건을 보류하고 한도 잔여액을 먼저 확인하세요.';
+  if (/(수면|잠|커피|운동|건강|컨디션)/.test(text)) return '오늘 회복 루틴 1개(수면·수분·호흡)만 고정하세요.';
+  return '오늘 할 행동 1개를 먼저 고정해보세요.';
+}
+
 function rewriteModelLines(lines = [], context = '') {
   const normalizedContext = normalizeLine(context);
+  const domainHint = inferDomainHintFromContext(normalizedContext);
   const out = [];
   const seen = new Set();
   for (const line of lines) {
@@ -230,11 +241,7 @@ function rewriteModelLines(lines = [], context = '') {
       .replace(/흐름이 좋습니다/g, '흐름이 안정적입니다')
       .replace(/정비를 먼저/g, '우선 정리부터');
     if (!/(오늘|이번 주|이번 달|내일|10분|1개|카드|정방향|역방향|근거)/.test(next)) {
-      if (normalizedContext) {
-        next = `${next} 지금 질문 맥락에서 오늘 할 행동 1개를 먼저 고정해보세요.`;
-      } else {
-        next = `${next} 오늘 할 행동 1개를 먼저 고정해보세요.`;
-      }
+      next = `${next} ${domainHint}`;
     }
     const key = next.toLowerCase().replace(/[^0-9a-zA-Z가-힣]/g, '');
     if (!key || seen.has(key)) continue;
@@ -258,7 +265,7 @@ function enforceModelQualityProfileB(model) {
   let redundancyScore = scoreRedundancy(context);
   let rewriteApplied = false;
 
-  if (naturalnessScore < 80 || specificityScore < 72 || repetitionScore > 30 || templateScore > 0 || grammarScore < 90 || redundancyScore > 25) {
+  if (naturalnessScore < 80 || specificityScore < 80 || repetitionScore > 30 || templateScore > 0 || grammarScore < 90 || redundancyScore > 25) {
     workingLines = rewriteModelLines(sourceLines, context);
     const rewritten = workingLines.join(' ');
     naturalnessScore = scoreNaturalness(rewritten);

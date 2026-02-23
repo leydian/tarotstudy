@@ -5,7 +5,7 @@ import { cards, getCardById, buildCardDescriptions } from './data/cards.js';
 import { courses, lessonsByCourse, getCourseById, getLessonById } from './data/courses.js';
 import { spreads } from './data/spreads.js';
 import { buildCardExplanation, buildSpreadReading, chooseReadingExperimentVariant } from './content.js';
-import { makeExternalGenerator } from './external-ai.js';
+import { makeExternalGenerator, makeSpreadReadingEnhancer } from './external-ai.js';
 import { TTLCache } from './cache.js';
 import { generateQuiz, gradeQuiz } from './quiz.js';
 import { createTelemetryStore } from './telemetry.js';
@@ -52,6 +52,7 @@ const summaryRepetitionMaxScore = Number(process.env.SUMMARY_REPETITION_MAX_SCOR
 const summaryTemplateMaxScore = Number(process.env.SUMMARY_TEMPLATE_MAX_SCORE || 36);
 const cache = new TTLCache(Number(process.env.CACHE_TTL_SECONDS || 86400));
 const externalGenerator = makeExternalGenerator(process.env);
+const spreadReadingEnhancer = makeSpreadReadingEnhancer(process.env);
 const telemetryStore = createTelemetryStore({
   filePath: process.env.TELEMETRY_STORE_PATH
 });
@@ -602,7 +603,7 @@ function inferSpreadDomain(spread) {
   return 'general';
 }
 
-registerSpreadsV3Routes(app, { performSpreadDraw });
+registerSpreadsV3Routes(app, { performSpreadDraw, spreadReadingEnhancer });
 
 app.post('/api/spreads/:spreadId/draw', async (request, reply) => {
   const { spreadId } = request.params;
@@ -611,6 +612,11 @@ app.post('/api/spreads/:spreadId/draw', async (request, reply) => {
   if (payload?.error) {
     reply.code(payload.error.status);
     return { message: payload.error.message };
+  }
+  // [방안 A] 외부 AI로 readingV3 bridge/verdict 보강
+  if (spreadReadingEnhancer && payload.readingV3) {
+    const enhanced = await tryEnhanceReadingV3Bridge({ enhancer: spreadReadingEnhancer, payload });
+    if (enhanced) payload.readingV3 = enhanced;
   }
   return payload;
 });
@@ -630,6 +636,11 @@ app.post('/api/v2/spreads/:spreadId/draw', async (request, reply) => {
   if (payload?.error) {
     reply.code(payload.error.status);
     return { message: payload.error.message };
+  }
+  // [방안 A] 외부 AI로 readingV3 bridge/verdict 보강
+  if (spreadReadingEnhancer && payload.readingV3) {
+    const enhanced = await tryEnhanceReadingV3Bridge({ enhancer: spreadReadingEnhancer, payload });
+    if (enhanced) payload.readingV3 = enhanced;
   }
 
   const renderingMode = String(styleMode || process.env.READING_STYLE_MODE || 'neutral').toLowerCase();
@@ -929,6 +940,31 @@ function buildOneCardSummaryConclusion({ orientation = 'upright', analysisLabel 
     : (isYesNo ? '결론: 아니오. 지금은 멈추고 정비부터 하는 게 좋아요.' : '결론: 지금은 멈추고 정비부터 하는 게 좋아요.');
 }
 
+// [방안 A] 외부 AI bridge/verdict 보강 헬퍼
+async function tryEnhanceReadingV3Bridge({ enhancer, payload }) {
+  if (!enhancer || !payload?.readingV3) return null;
+  try {
+    const cards = (payload.items || []).slice(0, 3).map((item) => ({
+      position: item?.position?.name || '',
+      cardName: item?.card?.nameKo || '',
+      orientation: item?.orientation || 'upright',
+      keyword: item?.card?.keywords?.[0] || ''
+    }));
+    const domain = resolveReadingDomain({ intent: '', context: String(payload.context || '') });
+    const v3label = payload.readingV3?.verdict?.label;
+    const verdictLabel = v3label === 'yes' ? '우세' : v3label === 'hold' ? '조건부' : '박빙';
+    const enhanced = await enhancer({ context: String(payload.context || ''), cards, domain, verdictLabel });
+    if (!enhanced) return null;
+    return {
+      ...payload.readingV3,
+      ...(enhanced.bridge ? { bridge: enhanced.bridge } : {}),
+      ...(enhanced.verdictSentence ? { verdict: { ...payload.readingV3.verdict, sentence: enhanced.verdictSentence } } : {})
+    };
+  } catch {
+    return null;
+  }
+}
+
 export function summarizeSpreadForQa(payload = {}) {
   return summarizeSpread(payload);
 }
@@ -1032,10 +1068,15 @@ function buildReadingV3({
   const primaryKeyword = primary?.card?.keywords?.[0] || '핵심 흐름';
   const normalizedContext = String(context || '').trim();
   const domain = resolveReadingDomain({ intent: analysis.intent, context });
+  // [방안 C] 선택지 파싱 결과 추출
+  const choiceA = String(analysis.optionA || '').trim();
+  const choiceB = String(analysis.optionB || '').trim();
   const bridge = buildImmersiveBridge({
     context: normalizedContext,
     signalLabel: calibratedSignalLabel,
-    domain
+    domain,
+    choiceA,
+    choiceB
   });
 
   const verdict = buildImmersiveVerdict({
@@ -1045,7 +1086,9 @@ function buildReadingV3({
     level,
     domain,
     spreadId,
-    timeHorizon: analysis.timeHorizon
+    timeHorizon: analysis.timeHorizon,
+    choiceA,
+    choiceB
   });
   const evidence = signal.topEvidence.slice(0, 3).map((entry, idx) => {
     const line = buildImmersiveEvidenceLine({
@@ -1184,11 +1227,21 @@ function buildImmersiveVerdict({
   level = 'beginner',
   domain = 'general',
   spreadId = '',
-  timeHorizon = 'unspecified'
+  timeHorizon = 'unspecified',
+  choiceA = '',
+  choiceB = ''
 }) {
   const yesNo = questionType === 'yes_no';
+  const hasChoices = Boolean(choiceA && choiceB);
   const timingCue = buildTimingCueV3({ context, spreadId, timeHorizon });
   if (label === '우세') {
+    // [방안 C] 선택지 있으면 선택지 기반 verdict 우선 적용
+    if (hasChoices) {
+      return {
+        label: 'yes',
+        sentence: softenAbsolutes(`"${choiceA}" 쪽으로 흐름이 기울어 있습니다. 실행 조건을 맞추면 결과 안정성이 높아집니다.`)
+      };
+    }
     return {
       label: 'yes',
       sentence: softenAbsolutes(
@@ -1199,6 +1252,13 @@ function buildImmersiveVerdict({
     };
   }
   if (label === '박빙') {
+    // [방안 C] 선택지 있으면 선택지 기반 verdict 우선 적용
+    if (hasChoices) {
+      return {
+        label: 'conditional',
+        sentence: softenAbsolutes(`"${choiceA}"와 "${choiceB}" 신호가 팽팽합니다. 실행 조건과 타이밍을 먼저 맞춰야 결과 차이가 납니다.`)
+      };
+    }
     return {
       label: 'conditional',
       sentence: softenAbsolutes(
@@ -1206,6 +1266,13 @@ function buildImmersiveVerdict({
           ? '결론은 조건부 가능입니다. 속도와 강도를 조절해야 결과가 살아납니다.'
           : '결론은 조건부 진행입니다. 작은 운영 차이가 체감 결과를 가릅니다.'
       )
+    };
+  }
+  // hold 분기
+  if (hasChoices) {
+    return {
+      label: 'hold',
+      sentence: softenAbsolutes(`지금은 "${choiceA}"와 "${choiceB}" 모두 조건 확인이 먼저입니다. 실행 기준을 정비한 뒤 다시 판단하세요.`)
     };
   }
   const studyHint = /(시험|합격|공부|학습|모의고사|기출)/.test(String(context || ''));
@@ -1225,8 +1292,15 @@ function buildImmersiveVerdict({
   };
 }
 
-function buildImmersiveBridge({ context = '', signalLabel = '조건부', domain = 'general' }) {
+function buildImmersiveBridge({ context = '', signalLabel = '조건부', domain = 'general', choiceA = '', choiceB = '' }) {
   const raw = String(context || '').trim();
+  // [방안 C] 선택지가 있으면 선택지 기반 bridge 우선 적용
+  if (choiceA && choiceB) {
+    const heavy = /(불안|걱정|무섭|망|실패|떨어|불가능|압박|막막)/.test(raw);
+    return heavy
+      ? `"${choiceA}"와 "${choiceB}" 사이에서 많이 고민되실 것 같아요. 카드 신호로 각 선택의 흐름을 차분히 살펴보겠습니다.`
+      : `"${choiceA}"와 "${choiceB}" 중 지금 흐름에 더 맞는 쪽을 카드를 기준으로 함께 짚어보겠습니다.`;
+  }
   if (!raw) {
     return signalLabel === '우세'
       ? '지금 흐름의 강점을 놓치지 않도록, 카드 신호를 차분히 정리해보겠습니다.'
@@ -1240,8 +1314,11 @@ function buildImmersiveBridge({ context = '', signalLabel = '조건부', domain 
 
 function buildImmersiveEvidenceLine({ spreadId = '', position = '', card = '', orientation = '정방향', keyword = '핵심', index = 0, intent = 'general', context = '' }) {
   const orientationKo = /역방향/.test(orientation) ? '역방향' : '정방향';
+  const isReversed = orientationKo === '역방향';
   if (spreadId === 'one-card') {
-    return `${position}의 ${card} ${orientationKo} 카드는 "${keyword}" 신호가 이번 질문의 핵심 기준이라는 뜻입니다.`;
+    return isReversed
+      ? `${position}의 ${card} ${orientationKo} 카드는 "${keyword}" 흐름이 지연되거나 재조정이 필요한 구간임을 알립니다.`
+      : `${position}의 ${card} ${orientationKo} 카드는 "${keyword}" 신호가 이번 질문의 핵심 기준이라는 뜻입니다.`;
   }
   if (spreadId === 'weekly-fortune' && /(월요일|화요일|수요일|목요일|금요일|토요일|일요일)/.test(position)) {
     return `${position}의 ${card} ${orientationKo} 카드는 요일별 강도를 조절해야 결과 편차를 줄일 수 있다는 신호입니다.`;
@@ -1268,18 +1345,50 @@ function buildImmersiveEvidenceLine({ spreadId = '', position = '', card = '', o
     if (/근원|무의식|의식/.test(position)) return `${position}의 ${card} ${orientationKo} 카드는 표면 결정 뒤에 있는 동기를 점검하라는 의미입니다.`;
     if (/미래|결과/.test(position)) return `${position}의 ${card} ${orientationKo} 카드는 현재 운영을 유지했을 때 이어질 가능성이 큰 전개를 보여줍니다.`;
   }
+  // [방안 B] 과거/원인/배경 포지션 특화
+  if (/과거|원인|배경|근원|무의식/.test(position)) {
+    return isReversed
+      ? `${position}의 ${card} ${orientationKo} 카드는 과거의 "${keyword}" 흐름이 현재까지 저항으로 남아 있어 원인 정리가 먼저입니다.`
+      : `${position}의 ${card} ${orientationKo} 카드는 "${keyword}"에서 비롯된 흐름이 현재 판단의 배경을 이루고 있습니다.`;
+  }
   if (/현재|상황|문제/.test(position)) {
-    return `${position}의 ${card} ${orientationKo} 카드는 "${keyword}" 축이 지금 판단의 중심에 있다는 신호입니다.`;
+    // [방안 B] 역방향 분기 추가
+    return isReversed
+      ? `${position}의 ${card} ${orientationKo} 카드는 "${keyword}" 흐름이 현재 막혀 있어 속도를 낮추고 관찰이 필요한 신호입니다.`
+      : `${position}의 ${card} ${orientationKo} 카드는 "${keyword}" 축이 지금 판단의 중심에 있다는 신호입니다.`;
   }
   if (/미래|결과/.test(position)) {
-    return `${position}의 ${card} ${orientationKo} 카드는 지금 선택을 이어갈 때 나타날 가능성이 큰 전개를 보여줍니다.`;
+    // [방안 B] 역방향 분기 추가
+    return isReversed
+      ? `${position}의 ${card} ${orientationKo} 카드는 현재 방향을 유지하면 "${keyword}" 관련 흐름이 기대와 다르게 전개될 가능성을 보여줍니다.`
+      : `${position}의 ${card} ${orientationKo} 카드는 지금 선택을 이어갈 때 나타날 가능성이 큰 전개를 보여줍니다.`;
   }
   if (/조언|행동|해결/.test(position)) {
-    return `${position}의 ${card} ${orientationKo} 카드는 부담을 줄이고 실행 강도를 조절하라는 힌트를 줍니다.`;
+    // [방안 B] 역방향 분기 추가
+    return isReversed
+      ? `${position}의 ${card} ${orientationKo} 카드는 현재 접근을 재검토하고 "${keyword}" 방향으로 조정하라는 힌트를 줍니다.`
+      : `${position}의 ${card} ${orientationKo} 카드는 부담을 줄이고 실행 강도를 조절하라는 힌트를 줍니다.`;
   }
-  return index % 2 === 0
-    ? `${position}의 ${card} ${orientationKo} 카드는 "${keyword}" 키워드가 이번 질문의 줄기를 잡는다는 뜻입니다.`
-    : `${position}의 ${card} ${orientationKo} 카드는 ${resolveReadingDomain({ intent, context }) === 'career' ? '속도보다 완성도를 먼저' : '결과보다 리듬을 먼저'} 점검하라는 신호로 읽힙니다.`;
+  // [방안 B] fallback 다양화: seed 기반 4개 옵션 + 도메인·역방향 반영
+  const evidenceSeed = buildSeed(`${position}:${card}:${orientation}:${keyword}:${index}`);
+  const domain = resolveReadingDomain({ intent, context });
+  if (isReversed) {
+    const reversedPool = [
+      `${position}의 ${card} ${orientationKo} 카드는 "${keyword}" 신호가 지연되거나 내부 저항이 있다는 것을 나타냅니다.`,
+      `${position}의 ${card} ${orientationKo} 카드는 "${keyword}" 흐름이 막혀 있어 강도를 낮추고 관찰이 필요한 구간입니다.`,
+      `${position}의 ${card} ${orientationKo} 카드는 기존 방향을 재점검해 "${keyword}" 기준을 다시 맞춰야 한다는 신호입니다.`,
+      `${position}의 ${card} ${orientationKo} 카드는 "${keyword}" 흐름의 역전 신호로, 한 박자 멈추고 조건을 재확인하라는 뜻입니다.`
+    ];
+    return softenAbsolutes(pickBySeed(reversedPool, evidenceSeed));
+  }
+  const domainHint = domain === 'career' ? '속도보다 완성도를 먼저' : domain === 'relationship' ? '감정보다 사실 확인을 먼저' : domain === 'study' ? '암기보다 이해를 먼저' : '결과보다 리듬을 먼저';
+  const uptightPool = [
+    `${position}의 ${card} ${orientationKo} 카드는 "${keyword}" 키워드가 이번 질문의 줄기를 잡는다는 뜻입니다.`,
+    `${position}의 ${card} ${orientationKo} 카드는 ${domainHint} 점검하라는 신호로 읽힙니다.`,
+    `${position}의 ${card} ${orientationKo} 카드는 "${keyword}" 흐름이 현재 질문의 핵심 변수로 작용하고 있다는 뜻입니다.`,
+    `${position}의 ${card} ${orientationKo} 카드는 "${keyword}" 신호를 기준으로 오늘 행동 1개를 먼저 고정하라는 메시지입니다.`
+  ];
+  return softenAbsolutes(pickBySeed(uptightPool, evidenceSeed));
 }
 
 function resolveReadingDomain({ intent = 'general', context = '' }) {

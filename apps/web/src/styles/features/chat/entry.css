@@ -1,23 +1,166 @@
 .chat-top-panel {
   background: linear-gradient(
     140deg,
-    color-mix(in srgb, var(--reading-bg) 88%, var(--accent-soft)),
-    color-mix(in srgb, var(--reading-bg) 84%, var(--accent-warm))
+    color-mix(in srgb, var(--mag-paper, var(--reading-bg)) 86%, var(--mag-accent-soft, var(--accent-soft))),
+    color-mix(in srgb, var(--mag-paper, var(--reading-bg)) 78%, var(--mag-paper-deep, var(--accent-warm)))
   );
 }
 
 .chat-shell {
   padding: 0;
   overflow: hidden;
-  border: 1px solid var(--reading-line);
+  border: 1px solid color-mix(in srgb, var(--mag-muted, var(--line)) 28%, transparent);
   background: linear-gradient(
-    165deg,
-    color-mix(in srgb, var(--reading-bg) 90%, var(--accent-soft)),
-    color-mix(in srgb, var(--reading-bg) 94%, var(--accent-warm))
+    162deg,
+    color-mix(in srgb, var(--mag-paper, var(--reading-bg)) 90%, var(--mag-paper-deep, var(--accent-soft))),
+    color-mix(in srgb, var(--mag-paper-deep, var(--reading-bg)) 68%, #121110)
   );
 }
 
 .chat-shell-dark {
-  background: radial-gradient(120% 90% at 20% 0%, #1a1531 0%, #100f1c 48%, #0a0a12 100%);
-  border-color: color-mix(in srgb, #7a58d8 35%, var(--line));
+  background:
+    radial-gradient(
+      120% 92% at 14% -6%,
+      color-mix(in srgb, var(--mag-accent, var(--brand-1)) 22%, transparent) 0%,
+      transparent 58%
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--mag-paper, var(--reading-bg)) 90%, #121110),
+      color-mix(in srgb, var(--mag-paper-deep, var(--reading-bg)) 70%, #100f0d)
+    );
+  border-color: color-mix(in srgb, var(--mag-muted, var(--line)) 34%, transparent);
+}
+
+.chat-column-sidebar {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--mag-paper, var(--reading-bg)) 92%, var(--mag-paper-deep, var(--accent-soft))),
+    color-mix(in srgb, var(--mag-paper-deep, var(--reading-bg)) 54%, var(--mag-paper, var(--reading-bg)))
+  );
+}
+
+.chat-side-card {
+  border: 1px solid color-mix(in srgb, var(--mag-muted, var(--line)) 26%, transparent);
+  background: color-mix(in srgb, var(--mag-paper, var(--reading-bg)) 92%, var(--mag-paper-deep, var(--accent-soft)));
+}
+
+.chat-empty {
+  border-color: color-mix(in srgb, var(--mag-muted, var(--line)) 30%, transparent);
+  background: color-mix(in srgb, var(--mag-paper, var(--reading-bg)) 82%, var(--mag-accent-soft, var(--accent-soft)));
+}
+
+.chat-reading-bubble,
+.chat-summary-card-deep,
+.chat-summary-accordion,
+.chat-natural-bubble,
+.chat-spread-layout-wrap,
+.chat-spotlight-card,
+.chat-card-strip-item {
+  border-color: color-mix(in srgb, var(--mag-accent, var(--brand-1)) 28%, var(--mag-muted, var(--line)));
+  background: color-mix(in srgb, var(--mag-paper, var(--reading-bg)) 88%, #13110f);
+}
+
+.chat-layout-title,
+.chat-summary-section-title,
+.chat-dialog-speaker,
+.chat-spread-slot-label {
+  color: color-mix(in srgb, var(--mag-ink, var(--ink-0)) 76%, var(--mag-muted, var(--ink-1)));
+}
+
+.chat-dialog-tarot .chat-dialog-speaker {
+  color: color-mix(in srgb, var(--mag-accent, var(--brand-1)) 78%, #f1dac6);
+}
+
+.chat-dialog-learning .chat-dialog-speaker {
+  color: color-mix(in srgb, var(--mag-olive, var(--brand-2)) 84%, #d7e0cb);
+}
+
+.chat-dialog-tarot .chat-dialog-bubble {
+  border-color: color-mix(in srgb, var(--mag-accent, var(--brand-1)) 34%, var(--mag-muted, var(--line)));
+  background: color-mix(in srgb, var(--mag-paper, var(--reading-bg)) 86%, #181410);
+}
+
+.chat-dialog-learning .chat-dialog-bubble {
+  border-color: color-mix(in srgb, var(--mag-olive, var(--brand-2)) 36%, var(--mag-muted, var(--line)));
+  background: color-mix(in srgb, var(--mag-paper, var(--reading-bg)) 86%, #161a14);
+}
+
+.chat-summary-card-deep .reading-prose,
+.chat-natural-paragraph,
+.chat-summary-accordion > summary,
+.chat-layout-title,
+.chat-month-title,
+.chat-spotlight-name {
+  color: var(--mag-ink, var(--ink-0));
+}
+
+.chat-composer {
+  background: color-mix(in srgb, var(--mag-paper, var(--reading-bg)) 86%, var(--mag-paper-deep, var(--accent-soft)));
+  border-top: 1px solid color-mix(in srgb, var(--mag-muted, var(--line)) 28%, transparent);
+}
+
+.chat-composer input {
+  background: color-mix(in srgb, var(--mag-paper, var(--reading-bg)) 90%, #171512);
+  border: 1px solid color-mix(in srgb, var(--mag-muted, var(--line)) 34%, transparent);
+  color: var(--mag-ink, var(--ink-0));
+}
+
+:root[data-theme='light'] .chat-shell-dark {
+  background:
+    radial-gradient(
+      120% 92% at 14% -6%,
+      color-mix(in srgb, var(--mag-accent, var(--brand-1)) 14%, transparent) 0%,
+      transparent 64%
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--mag-paper, var(--reading-bg)) 96%, #fff),
+      color-mix(in srgb, var(--mag-paper-deep, var(--reading-bg)) 46%, #f4eee5)
+    );
+  border-color: color-mix(in srgb, var(--mag-muted, var(--line)) 24%, transparent);
+}
+
+:root[data-theme='light'] .chat-column-sidebar {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--mag-paper, var(--reading-bg)) 96%, #fff),
+    color-mix(in srgb, var(--mag-paper-deep, var(--reading-bg)) 38%, #f7f2e8)
+  );
+}
+
+:root[data-theme='light'] .chat-side-card,
+:root[data-theme='light'] .chat-reading-bubble,
+:root[data-theme='light'] .chat-summary-card-deep,
+:root[data-theme='light'] .chat-summary-accordion,
+:root[data-theme='light'] .chat-natural-bubble,
+:root[data-theme='light'] .chat-spread-layout-wrap,
+:root[data-theme='light'] .chat-spotlight-card,
+:root[data-theme='light'] .chat-card-strip-item {
+  background: color-mix(in srgb, var(--mag-paper, var(--reading-bg)) 96%, #fff);
+}
+
+:root[data-theme='light'] .chat-dialog-tarot .chat-dialog-bubble {
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, var(--mag-paper, var(--reading-bg)) 97%, #fff),
+    color-mix(in srgb, var(--mag-accent-soft, var(--accent-soft)) 26%, #fff)
+  );
+}
+
+:root[data-theme='light'] .chat-dialog-learning .chat-dialog-bubble {
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, var(--mag-paper, var(--reading-bg)) 97%, #fff),
+    color-mix(in srgb, var(--mag-olive, var(--brand-2)) 14%, #fff)
+  );
+}
+
+:root[data-theme='light'] .chat-composer {
+  background: color-mix(in srgb, var(--mag-paper, var(--reading-bg)) 94%, #fbf8f2);
+}
+
+:root[data-theme='light'] .chat-composer input {
+  background: #fffdfa;
+}
 }
