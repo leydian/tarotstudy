@@ -225,6 +225,7 @@ function inferDomainHintFromContext(context = '') {
   if (/(연락|재회|연애|관계|대화|사과)/.test(text)) return '전달할 문장을 사실 1개 + 요청 1개로 줄여 준비하세요.';
   if (/(지출|예산|결제|저축|투자|대출|돈)/.test(text)) return '비필수 지출 1건을 보류하고 한도 잔여액을 먼저 확인하세요.';
   if (/(수면|잠|커피|운동|건강|컨디션)/.test(text)) return '오늘 회복 루틴 1개(수면·수분·호흡)만 고정하세요.';
+  if (/(일정|과부하|스케줄|우선순위|병목|태스크)/.test(text)) return '오늘 일정 중 삭제 또는 위임 가능한 항목 1개를 먼저 찾으세요.';
   return '오늘 할 행동 1개를 먼저 고정해보세요.';
 }
 
@@ -233,6 +234,7 @@ function rewriteModelLines(lines = [], context = '') {
   const domainHint = inferDomainHintFromContext(normalizedContext);
   const out = [];
   const seen = new Set();
+  let hintAppended = 0;
   for (const line of lines) {
     let next = normalizeLine(line)
       .replace(/두 갈래(로 보시면 됩니다|로 정리됩니다|입니다)?/g, '실행 기준은 두 단계로 나눠보면 좋습니다')
@@ -240,8 +242,12 @@ function rewriteModelLines(lines = [], context = '') {
       .replace(/운영이 좋습니다/g, '운영이 안정됩니다')
       .replace(/흐름이 좋습니다/g, '흐름이 안정적입니다')
       .replace(/정비를 먼저/g, '우선 정리부터');
-    if (!/(오늘|이번 주|이번 달|내일|10분|1개|카드|정방향|역방향|근거)/.test(next)) {
+    if (
+      hintAppended === 0 &&
+      !/(오늘|이번 주|이번 달|내일|10분|1개|카드|정방향|역방향|근거|조건부|흐름|신호|구간|줄이|덜어|삭제|위임|보류|고정|확인|기록|점검|실행|완료|기준|정리|우선)/.test(next)
+    ) {
       next = `${next} ${domainHint}`;
+      hintAppended += 1;
     }
     const key = next.toLowerCase().replace(/[^0-9a-zA-Z가-힣]/g, '');
     if (!key || seen.has(key)) continue;

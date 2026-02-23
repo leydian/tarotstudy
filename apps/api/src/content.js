@@ -4762,7 +4762,7 @@ function buildCoreContextLine({ spreadId, positionName, contextProfile, context 
   if (spreadId === 'three-card') {
     const options = [
       `${positionName} 해석에서는 카드 근거를 한 줄로 고정해 세 장 연결 문장의 중복을 줄여보세요.`,
-      `${positionName} 해석에서는 이 포지션이 시간축/문제축에서 어떤 역할인지 먼저 정해두는 편이 정확합니다.`
+      `${positionName} 해석에서는 이 카드가 세 장 흐름에서 원인인지 결과인지 먼저 구분해두는 편이 정확합니다.`
     ];
     return pickVariant(`${seed}:three-core-context:${positionName}`, options);
   }
@@ -4878,7 +4878,7 @@ function buildSpreadCoreLead({ spreadId = 'default', positionName = '', seed = '
     ],
     'three-card': [
       `${positionName} 카드는 세 장 연결 해석에서 역할이 분명한 기준 자리입니다.`,
-      `${positionName} 자리에서 시간축/문제축 해석의 핵심 신호를 먼저 확인해보겠습니다.`
+      `${positionName} 자리에서 이 카드가 전체 흐름 중 어느 단계를 담당하는지 먼저 살펴보겠습니다.`
     ],
     'choice-a-b': (() => {
       const byPosition = {

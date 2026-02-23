@@ -323,6 +323,31 @@ app.get('/api/images/alerts', async (request) => {
   };
 });
 
+// [방안 A] 외부 AI bridge/verdict 보강 헬퍼 — 라우트보다 먼저 정의
+async function tryEnhanceReadingV3Bridge({ enhancer, payload }) {
+  if (!enhancer || !payload?.readingV3) return null;
+  try {
+    const cards = (payload.items || []).slice(0, 3).map((item) => ({
+      position: item?.position?.name || '',
+      cardName: item?.card?.nameKo || '',
+      orientation: item?.orientation || 'upright',
+      keyword: item?.card?.keywords?.[0] || ''
+    }));
+    const domain = resolveReadingDomain({ intent: '', context: String(payload.context || '') });
+    const v3label = payload.readingV3?.verdict?.label;
+    const verdictLabel = v3label === 'yes' ? '우세' : v3label === 'hold' ? '조건부' : '박빙';
+    const enhanced = await enhancer({ context: String(payload.context || ''), cards, domain, verdictLabel });
+    if (!enhanced) return null;
+    return {
+      ...payload.readingV3,
+      ...(enhanced.bridge ? { bridge: enhanced.bridge } : {}),
+      ...(enhanced.verdictSentence ? { verdict: { ...payload.readingV3.verdict, sentence: enhanced.verdictSentence } } : {})
+    };
+  } catch {
+    return null;
+  }
+}
+
 function performSpreadDraw({
   spreadId,
   variantId = '',
@@ -940,31 +965,6 @@ function buildOneCardSummaryConclusion({ orientation = 'upright', analysisLabel 
     : (isYesNo ? '결론: 아니오. 지금은 멈추고 정비부터 하는 게 좋아요.' : '결론: 지금은 멈추고 정비부터 하는 게 좋아요.');
 }
 
-// [방안 A] 외부 AI bridge/verdict 보강 헬퍼
-async function tryEnhanceReadingV3Bridge({ enhancer, payload }) {
-  if (!enhancer || !payload?.readingV3) return null;
-  try {
-    const cards = (payload.items || []).slice(0, 3).map((item) => ({
-      position: item?.position?.name || '',
-      cardName: item?.card?.nameKo || '',
-      orientation: item?.orientation || 'upright',
-      keyword: item?.card?.keywords?.[0] || ''
-    }));
-    const domain = resolveReadingDomain({ intent: '', context: String(payload.context || '') });
-    const v3label = payload.readingV3?.verdict?.label;
-    const verdictLabel = v3label === 'yes' ? '우세' : v3label === 'hold' ? '조건부' : '박빙';
-    const enhanced = await enhancer({ context: String(payload.context || ''), cards, domain, verdictLabel });
-    if (!enhanced) return null;
-    return {
-      ...payload.readingV3,
-      ...(enhanced.bridge ? { bridge: enhanced.bridge } : {}),
-      ...(enhanced.verdictSentence ? { verdict: { ...payload.readingV3.verdict, sentence: enhanced.verdictSentence } } : {})
-    };
-  } catch {
-    return null;
-  }
-}
-
 export function summarizeSpreadForQa(payload = {}) {
   return summarizeSpread(payload);
 }
@@ -1068,9 +1068,9 @@ function buildReadingV3({
   const primaryKeyword = primary?.card?.keywords?.[0] || '핵심 흐름';
   const normalizedContext = String(context || '').trim();
   const domain = resolveReadingDomain({ intent: analysis.intent, context });
-  // [방안 C] 선택지 파싱 결과 추출
-  const choiceA = String(analysis.optionA || '').trim();
-  const choiceB = String(analysis.optionB || '').trim();
+  // [방안 C] 선택지 파싱 결과 추출 (hasChoice=true일 때만 활성화)
+  const choiceA = analysis.choice?.hasChoice ? String(analysis.choice?.optionA || '').trim() : '';
+  const choiceB = analysis.choice?.hasChoice ? String(analysis.choice?.optionB || '').trim() : '';
   const bridge = buildImmersiveBridge({
     context: normalizedContext,
     signalLabel: calibratedSignalLabel,
@@ -1406,6 +1406,7 @@ function resolveReadingDomain({ intent = 'general', context = '' }) {
   if (/(지출|수입|예산|결제|저축|투자|구독|환불|비상금|돈|대출|상환)/.test(text)) return 'finance';
   if (/(수면|잠|자도|커피|카페인|운동|야식|술|건강|휴식|식단|병원|스트레스)/.test(text)) return 'health';
   if (/(\\bvs\\b|\\bvs\\.\\b|비교|a안|b안|\\s대\\s|vs\\s)/.test(text)) return 'compare';
+  if (/(일정|과부하|스케줄|할 일|태스크|우선순위|업무량|병목)/.test(text)) return 'schedule';
   if (/(무엇|뭘|실행|당장|바로)/.test(text)) return 'action';
   return 'general';
 }
@@ -1453,6 +1454,11 @@ function buildImmediateActionV3({
     if (/(운동|헬스|러닝|산책)/.test(String(context || '').toLowerCase())) return softenAbsolutes(`${timing ? `${timing} ` : ''}운동은 10분 저강도로 시작하고 컨디션 점수 확인 후 강도를 조절하세요.`);
     return softenAbsolutes(`${timing ? `${timing} ` : ''}오늘은 회복 루틴 1개(수면/수분/호흡)만 고정해 컨디션을 먼저 안정시키세요.`);
   }
+  if (domain === 'schedule') {
+    if (verdictLabel === '우세') return softenAbsolutes(`${timing ? `${timing} ` : ''}오늘 일정 중 삭제하거나 위임할 수 있는 항목 1개를 먼저 찾아 지우세요.`);
+    if (verdictLabel === '박빙') return softenAbsolutes(`${timing ? `${timing} ` : ''}오늘 할 일 목록에서 마감이 없는 항목 1개를 내일 이후로 미루세요.`);
+    return softenAbsolutes(`${timing ? `${timing} ` : ''}가장 부담이 큰 일정 1개를 골라 취소하거나 축소하는 것부터 결정하세요.`);
+  }
   if (domain === 'action') {
     return softenAbsolutes(`${timing ? `${timing} ` : ''}지금 10분 안에 끝낼 수 있는 행동 1개만 정해서 완료 표시까지 남기세요.`);
   }
@@ -1487,6 +1493,11 @@ function buildCautionV3({ context = '', spreadId = '', domain = 'general', verdi
       박빙: ['작은 무리가 피로를 키울 수 있어 강도 조절이 핵심입니다.', '오늘은 체력 여유를 남기는 운영이 더 안전합니다.'],
       조건부: ['지금은 확장보다 회복 우선이 맞습니다.', '신체 신호를 무시하면 다음 리듬이 더 흔들릴 수 있습니다.']
     },
+    schedule: {
+      우세: ['일정이 줄더라도 핵심 마감만 먼저 지키는 쪽이 전체 리듬을 안정시킵니다.', '여유가 생겨도 곧바로 채우면 같은 과부하가 반복될 수 있습니다.'],
+      박빙: ['작은 일정 추가가 전체 흐름을 다시 무너뜨릴 수 있어 신규 투입을 잠시 멈추는 편이 안전합니다.', '지금은 완료 수보다 삭제 수를 먼저 늘리는 운영이 맞습니다.'],
+      조건부: ['지금은 새 일정을 수락하기 전 현재 목록을 먼저 줄이는 편이 맞습니다.', '과부하 신호가 반복되면 일정 자체를 줄여야 이후 리듬이 회복됩니다.']
+    },
     general: {
       우세: ['흐름이 좋아도 과신하면 리듬이 깨질 수 있어 일정한 속도가 필요합니다.', '좋은 구간일수록 기준을 고정해 과속을 막는 편이 안정적입니다.'],
       박빙: ['작은 과속이 결과를 크게 흔들 수 있어 강도 조절이 필요합니다.', '지금은 속도보다 정확도 기준을 먼저 두는 편이 안전합니다.'],
@@ -1505,6 +1516,7 @@ function buildCheckinV3({ context = '', intent = 'general', questionType = 'open
   if (domain === 'relationship') return '메시지 후 상대 반응(있음/없음)과 내 감정 변화를 1줄로 남기세요.';
   if (domain === 'finance') return '지출 금액과 한도 대비 잔여 금액을 숫자로 기록하세요.';
   if (domain === 'health') return '컨디션 점수(10점)와 피로 신호 1개를 기록하세요.';
+  if (domain === 'schedule') return '오늘 삭제하거나 위임한 일정 수와 실제 완료 수를 숫자로 기록하세요.';
   const metric = buildReviewMetric({ spreadId, questionType });
   return softenAbsolutes(`${metric} 기준으로 오늘 1회만 점검하세요.`);
 }
