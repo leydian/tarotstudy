@@ -286,7 +286,7 @@ export function ChatSpreadPage() {
 
           <aside className="chat-column chat-column-sidebar">
             <article className="chat-side-card">
-              <p className="eyebrow">Current Focus</p>
+              <p className="eyebrow">현재 컨텍스트</p>
               <h4>현재 컨텍스트</h4>
               <p className="chat-side-main">
                 {latestReading?.context?.trim() || input.trim() || '질문을 입력하면 분석 컨텍스트가 여기에 표시됩니다.'}
@@ -297,7 +297,7 @@ export function ChatSpreadPage() {
 
             {latestReading && (
               <article className="chat-side-card">
-                <p className="eyebrow">Action Checklist</p>
+                <p className="eyebrow">실행 체크리스트</p>
                 <h4>실행 체크리스트</h4>
                 <ul className="clean-list">
                   {toCanonicalChecklist(latestReading).filter(Boolean).slice(0, 3).map((line, idx) => (
@@ -310,7 +310,7 @@ export function ChatSpreadPage() {
             {!latestReading && (
               <>
                 <article className="chat-side-card">
-                  <p className="eyebrow">Prompt Bank</p>
+                  <p className="eyebrow">추천 질문</p>
                   <h4>바로 시작 질문</h4>
                   <div className="chip-wrap">
                     {sidebarStarterPrompts.map((prompt) => (
@@ -319,8 +319,8 @@ export function ChatSpreadPage() {
                   </div>
                 </article>
                 <article className="chat-side-card">
-                  <p className="eyebrow">Follow-up</p>
-                  <h4>다음 질문 추천</h4>
+                  <p className="eyebrow">추가 추천 질문</p>
+                  <h4>추가 추천 질문</h4>
                   <div className="chip-wrap">
                     {suggestionQuestions.map((question) => (
                       <button key={`follow-${question}`} className="chip-link" onClick={() => setInput(question)}>{question}</button>

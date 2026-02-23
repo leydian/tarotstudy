@@ -340,7 +340,7 @@ export function SpreadsPage() {
       <article className="panel">
         <div className="spread-page-header">
           {recommendedHint && <p className="sub spread-recommended-hint">자동 추천: {recommendedHint}</p>}
-          <div className="chip-wrap spread-header-actions">
+          <div className="spread-header-actions">
             {(() => {
               const chatSpreadId = activeDraw ? resolveDisplaySpreadId(activeDraw.spreadId, spreads) : selected.id;
               const chatLevel = activeDraw?.level ?? readingLevel;
@@ -351,7 +351,7 @@ export function SpreadsPage() {
               return (
                 <Link
                   to={`/chat?spreadId=${encodeURIComponent(chatSpreadId)}&variantId=${encodeURIComponent(activeVariant?.id ?? '')}&level=${chatLevel}&context=${encodeURIComponent(chatContext)}${extra}`}
-                  className="chip-link"
+                  className="btn"
                 >
                   챗 리딩으로 전환
                 </Link>
@@ -360,13 +360,13 @@ export function SpreadsPage() {
             {activeDraw && (
               <>
                 <button
-                  className="chip-link"
+                  className="btn"
                   onClick={() => exportReadingTxt(activeDraw, '카드뷰 모드')}
                 >
                   TXT 내보내기
                 </button>
                 <button
-                  className="chip-link"
+                  className="btn"
                   onClick={() => exportReadingPdf(activeDraw, '카드뷰 모드')}
                 >
                   PDF 내보내기
@@ -392,8 +392,8 @@ export function SpreadsPage() {
           </button>
         </div>
         {!activeDraw && (
-          <article className="result-item spread-prompt-card">
-            <p className="eyebrow">Prompt Bank</p>
+          <article className="spread-prompt-card">
+            <p className="eyebrow">질문 시작</p>
             <h4>추천 질문</h4>
             <div className="chip-wrap spread-prompt-bank">
               {spreadStarterPrompts.map((prompt) => (

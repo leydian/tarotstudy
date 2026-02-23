@@ -860,14 +860,6 @@
   line-height: 1.55;
 }
 
-.chat-page-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-
 .spread-page-header {
   display: flex;
   align-items: center;
@@ -884,34 +876,35 @@
 }
 
 .spread-header-actions {
+  display: flex;
+  flex-wrap: wrap;
   margin-left: auto;
   justify-content: flex-end;
   align-items: center;
   gap: 7px;
 }
 
-.spread-header-actions .chip-link {
-  -webkit-line-clamp: 1;
-  white-space: nowrap;
-  padding: 8px 11px;
-}
-
-.spread-page-header h3 {
-  margin-bottom: 10px;
-}
-
-.spread-page-header p {
-  margin-top: 0;
+.spread-header-actions .btn {
+  min-height: 38px;
+  padding: 8px 12px;
 }
 
 .spread-prompt-card {
-  margin-top: 6px;
-  border-top: 0;
-  padding-top: 6px;
+  margin-top: 12px;
+  border-top: 1px dashed var(--reading-line);
+  padding-top: 12px;
 }
 
-.spread-prompt-card h4 {
-  margin: 4px 0 10px;
+.spread-prompt-card > .eyebrow {
+  margin-bottom: 4px;
+}
+
+.spread-prompt-card > h4 {
+  margin: 0 0 10px;
+}
+
+.spread-prompt-card > .chip-wrap {
+  margin-top: 0;
 }
 
 .spread-prompt-bank {
@@ -1613,18 +1606,7 @@
   background-image: none;
 }
 
-/* Auto-recommendation mode: hide legacy manual spread controls */
-.panel:has(.spread-draw-controls) > h4:has(+ .chip-wrap:not(.view-toggle)),
-.panel:has(.spread-draw-controls) > h4:has(+ .spread-layout),
-.panel:has(.spread-draw-controls) > .spread-layout {
-  display: none;
-}
-
-.panel:has(.spread-draw-controls) > h3 + p {
-  line-height: var(--lh-body);
-}
-
-.panel:has(.spread-draw-controls) .spread-draw-controls input::placeholder {
+.spread-draw-controls input::placeholder {
   font-size: var(--fs-body-sm);
 }
 
