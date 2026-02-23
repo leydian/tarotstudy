@@ -3424,7 +3424,7 @@ function summarizeYearlyFortune({ items, context = '', level = 'beginner' }) {
   }).join(' ');
 
   const timingClose = isJobTimingQuestion
-    ? `취직 시기 관점으로 정리하면, 언제 무엇을 할지 기준은 분명합니다. ${strongest.label}에는 지원서 제출과 면접 일정을 본격적으로 열고, ${weakest.label}에는 이력서·포트폴리오 보완과 직무 정합성 점검에 집중해 주세요. ${levelHint}`
+    ? `취직 시기 관점으로 최종 정리하면, ${strongest.label}에는 지원 채널을 본격적으로 열어 면접과 최종 합격 가능성을 높이는 데 집중하세요. 반면 ${weakest.label}에는 이력서·포트폴리오 보완과 직무 분석 등 내실을 기하며 다음 기회를 준비하는 것이 좋습니다. ${levelHint}`
     : yearlyIntent === 'finance'
       ? `재물운 관점에서는 분기별 역할을 나눠 운영하시면 정확도가 올라갑니다. 탄력이 붙는 ${strongest.label}에는 계획형 집행 1~2개만 기준 안에서 실행하고, 조정이 필요한 ${weakest.label}에는 신규 지출을 줄이며 누수 점검과 현금 보존을 우선해 주세요. ${levelHint}`
       : `마지막으로 ${strongest.label}은 확장 구간, ${weakest.label}은 정비 구간으로 나눠 운영하시면 올해 리딩을 실제 행동으로 옮기기가 훨씬 수월해집니다. ${levelHint}`;
@@ -3442,8 +3442,8 @@ function summarizeYearlyFortune({ items, context = '', level = 'beginner' }) {
 
 function inferYearlyIntent(context = '') {
   const inferred = analyzeQuestionContextSync(context).intent;
-  if (inferred === 'career' && !isCareerTimingContext(context)) {
-    return 'general';
+  if (isCareerTimingContext(context)) {
+    return 'career';
   }
   if (inferred === 'health') return 'daily';
   return inferred;
@@ -3470,7 +3470,11 @@ function isCareerTimingContext(context = '') {
     '회사에 남',
     '옮기',
     '남는 게',
-    '남을까'
+    '남을까',
+    '시기',
+    '타이밍',
+    '추천',
+    '언제가 좋아'
   ];
   return hardCareerSignals.some((keyword) => text.includes(keyword));
 }
@@ -3873,22 +3877,22 @@ function buildMonthlyActionLine({ intent, mode, month, cardName, monthRole }) {
   if (intent === 'career') {
     if (mode === 'advance') {
       return pickByNumber([
-        `${role}에서는 지원서 제출 수를 조금 늘리고 면접 일정을 부드럽게 확장해보세요.`,
-        `${role} 기준으로 관심 공고 탐색을 넓히고 연락 채널을 한두 개 더 열어두시면 좋겠습니다.`,
-        `${role} 구간에서는 작은 지원을 꾸준히 넣으면서 면접 감각을 유지하는 방식이 잘 맞겠습니다.`
+        `${role}에서는 지원서 제출 수를 늘리고 면접 일정을 본격적으로 확장해 제출 가능한 상태로 고정하세요.`,
+        `${role}에는 이력서와 포트폴리오 탐색을 넓히고 채용 채널 한두 개를 더 열어 실제 지원으로 연결해 보세요.`,
+        `${role} 구간에서는 지원서 1건 또는 면접 답변 1개를 완성해 제출 가능한 상태로 고정하는 실행이 잘 맞겠습니다.`
       ], seed);
     }
     if (mode === 'balanced') {
       return pickByNumber([
-        `${role}에서는 지원과 보완을 1:1로 두고 제출 전 점검 체크리스트를 짧게 돌려보세요.`,
-        `${role} 구간에서는 지원은 유지하되 포트폴리오 문장 다듬기를 함께 가져가시면 안정적입니다.`,
-        `${role}에서는 바깥 움직임을 작게 유지하면서 면접 답변 완성도를 같이 올려보세요.`
+        `${role}에서는 지원과 서류 보완을 1:1로 두고, 면접 답변 항목 1개를 오늘 완성 가능한 상태로 만드세요.`,
+        `${role} 구간에서는 지원 활동은 유지하되, 이력서 성과 수치나 경험 문장 1개를 더 구체적으로 보완해 보세요.`,
+        `${role}에서는 바깥 움직임을 작게 유지하면서 직무 적합성 1건을 점검해 지원 품질을 안정시키세요.`
       ], seed);
     }
     return pickByNumber([
-      `${role}에서는 이력서 핵심 문장과 포트폴리오 흐름을 먼저 정리해두시면 다음 달이 수월합니다.`,
-      `${role} 구간에서는 지원 수 확대보다 면접 답변과 경력 서사 보완에 시간을 쓰는 편이 좋겠습니다.`,
-      `${role}에서는 직무 정합성 점검과 서류 완성도 보강을 우선해두시면 부담이 줄어듭니다.`
+      `${role}에서는 이력서 핵심 문장과 포트폴리오 흐름을 먼저 정리해 다음 달 지원을 위한 준비를 끝내 두세요.`,
+      `${role} 구간에서는 지원 수 확대보다 면접 답변 구조 보강과 직무 분석에 집중해 준비 품질을 높이는 편이 좋겠습니다.`,
+      `${role}에서는 결정 확장을 잠시 멈추고 지원서 품질 항목 1개(경력 서사/역량 증명)만 선별해 보완하세요.`
     ], seed);
   }
 
