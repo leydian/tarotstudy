@@ -818,18 +818,123 @@ function buildSpreadDecisionBlock({ spreadName = '', items = [], context = '' })
     ? prioritizeChoiceEvidence(items, analysis.topEvidence, intent)
     : analysis.topEvidence;
   const lexicon = pickSpreadLexicon(spreadName, intent);
-  const lead = analysis.label === '우세'
-    ? `${lexicon.main} 기준으로 앞으로 어떻게 풀릴지 비교적 또렷합니다.`
-    : analysis.label === '박빙'
-      ? `${lexicon.main} 기준이 비슷해서 작은 조정이 결과를 가를 가능성이 큽니다.`
-      : `${lexicon.main}에서 걸리는 부분이 있어 조건을 붙여 접근하는 편이 맞습니다.`;
-  const evidence = evidenceSource.slice(0, 3).map((entry) =>
-    `${entry.position}에서는 ${entry.card} ${entry.orientation} 카드의 "${entry.keyword}" 기운이 보였고, ${entry.reason}로 봅니다.`
-  );
+  const choiceMeta = spreadName === '양자택일 (A/B)' ? parseChoiceOptions(context) : null;
+  const lead = buildDecisionLead({
+    spreadName,
+    analysisLabel: analysis.label,
+    lexiconMain: lexicon.main,
+    choiceMeta
+  });
+  const contextHint = buildDecisionContextHint({ spreadName, intent, context, choiceMeta });
+  const evidence = evidenceSource.slice(0, 3).map((entry) => {
+    const prefix = buildEvidencePrefix({ position: entry.position, spreadName, choiceMeta });
+    const reason = buildEvidenceDetail({
+      position: entry.position,
+      keyword: entry.keyword,
+      orientation: entry.orientation,
+      score: /역방향/.test(entry.orientation) ? -0.1 : 0.1,
+      intent,
+      spreadName,
+      context
+    });
+    return `${prefix} ${entry.card} ${entry.orientation} 카드가 나왔고, ${reason}`;
+  });
   return [
-    `이번 리딩의 1차 판정은 ${analysis.label}이며, ${lead}`,
+    `이번 리딩의 1차 판정은 ${analysis.label}이며, ${lead} ${contextHint}`.trim(),
+    '판정 근거는 아래 카드 흐름에서 확인됩니다.',
     ...evidence
   ].join(' ');
+}
+
+function buildDecisionLead({ spreadName = '', analysisLabel = '조건부', lexiconMain = '핵심 흐름', choiceMeta = null }) {
+  if (spreadName === '양자택일 (A/B)' && choiceMeta) {
+    const a = choiceMeta.optionA || 'A안';
+    const b = choiceMeta.optionB || 'B안';
+    if (analysisLabel === '우세') return `${a}와 ${b}를 비교하면 한쪽 우세가 비교적 또렷합니다.`;
+    if (analysisLabel === '박빙') return `${a}와 ${b}의 장단이 비슷해서, 작은 조건 차이가 결과를 가를 가능성이 큽니다.`;
+    return `${a}와 ${b} 모두 걸리는 지점이 있어, 조건을 붙여 좁혀 가는 접근이 맞습니다.`;
+  }
+  if (analysisLabel === '우세') return `${lexiconMain} 기준으로 앞으로 어떻게 풀릴지 비교적 또렷합니다.`;
+  if (analysisLabel === '박빙') return `${lexiconMain} 기준이 비슷해서 작은 조정이 결과를 가를 가능성이 큽니다.`;
+  return `${lexiconMain}에서 걸리는 부분이 있어 조건을 붙여 접근하는 편이 맞습니다.`;
+}
+
+function buildDecisionContextHint({ spreadName = '', intent = 'general', context = '', choiceMeta = null }) {
+  if (spreadName === '양자택일 (A/B)' && choiceMeta) {
+    const a = choiceMeta.optionA || 'A안';
+    const b = choiceMeta.optionB || 'B안';
+    if (intent === 'career' || /(이직|취업|면접|직장|커리어|회사)/.test(String(context || ''))) {
+      return `이번 선택은 '${a} vs ${b}' 중 당장 좋아 보이는 쪽보다, 3개월 유지 가능성을 먼저 보는 게 핵심입니다.`;
+    }
+    if (intent === 'finance') {
+      return '이번 선택은 단기 이익보다 3개월 고정비·변동비를 함께 버틸 수 있는지 확인하는 게 핵심입니다.';
+    }
+    return '이번 선택은 당장 반응보다 실제로 오래 유지될 조건을 먼저 확인하는 게 핵심입니다.';
+  }
+  if (intent === 'career') return '지금은 속도보다 완성도와 지속 가능성을 같이 보는 쪽이 정확합니다.';
+  if (intent === 'relationship' || intent === 'relationship-repair') return '지금은 결론보다 대화 순서와 속도 조절이 더 크게 작동합니다.';
+  if (intent === 'finance') return '지금은 수익 확대보다 손실 관리와 현금흐름 안정이 먼저입니다.';
+  return '지금은 감보다 기준을 먼저 세우고 움직일 때 체감 오차가 줄어듭니다.';
+}
+
+function buildEvidencePrefix({ position = '', spreadName = '', choiceMeta = null }) {
+  if (spreadName === '양자택일 (A/B)' && choiceMeta) {
+    const a = choiceMeta.optionA || 'A안';
+    const b = choiceMeta.optionB || 'B안';
+    if (/현재 상황/.test(position)) return '현재 상황에서는';
+    if (/A 선택 시 결과/.test(position)) return `${a}를 고르면`;
+    if (/B 선택 시 결과/.test(position)) return `${b}를 고르면`;
+    if (/A 선택 시 가까운 미래/.test(position)) return `${a}를 고른 직후 흐름에서는`;
+    if (/B 선택 시 가까운 미래/.test(position)) return `${b}를 고른 직후 흐름에서는`;
+  }
+  return `${position}에서는`;
+}
+
+function buildEvidenceDetail({
+  position = '',
+  keyword = '핵심',
+  orientation = '정방향',
+  score = 0,
+  intent = 'general',
+  spreadName = '',
+  context = ''
+}) {
+  const open = !/역방향/.test(orientation) && score >= 0;
+  if (spreadName === '양자택일 (A/B)') {
+    if (/현재 상황/.test(position)) {
+      return open
+        ? `"${keyword}"을 먼저 기준으로 잡으면 선택이 덜 흔들립니다.`
+        : `"${keyword}"에서 머뭇거리기 쉬운 구간이라, 기준부터 좁혀야 판단이 선명해집니다.`;
+    }
+    if (/선택 시 결과/.test(position)) {
+      if (intent === 'career' || /(이직|취업|면접|직장|커리어|회사)/.test(String(context || ''))) {
+        return open
+          ? `"${keyword}" 흐름이 살아 있어 초반 적응 뒤에는 역할 확장 여지가 보입니다.`
+          : `"${keyword}" 쪽 피로가 쌓이기 쉬워, 통근·생활비·업무강도를 같이 보며 속도를 조절해야 합니다.`;
+      }
+      return open
+        ? `"${keyword}" 흐름이 살아 있어 실행 후 체감이 비교적 안정적으로 붙을 가능성이 큽니다.`
+        : `"${keyword}" 쪽에서 소모가 쌓이기 쉬워, 실행 강도를 낮추고 점검을 먼저 두는 편이 좋습니다.`;
+    }
+  }
+  if (intent === 'relationship' || intent === 'relationship-repair') {
+    return open
+      ? `"${keyword}" 흐름이 살아 있어 대화를 열 여지가 남아 있습니다.`
+      : `"${keyword}"에서 오해가 커지기 쉬워, 결론보다 확인 대화를 먼저 두는 편이 좋습니다.`;
+  }
+  if (intent === 'finance') {
+    return open
+      ? `"${keyword}" 흐름이 살아 있어 계획형 집행이 잘 맞을 가능성이 큽니다.`
+      : `"${keyword}" 쪽에서 지출 누수가 생기기 쉬워, 신규 집행보다 손실 점검이 먼저입니다.`;
+  }
+  if (intent === 'career') {
+    return open
+      ? `"${keyword}" 흐름이 살아 있어 실행을 이어갈 힘이 남아 있습니다.`
+      : `"${keyword}" 쪽에서 과부하가 생기기 쉬워, 속도를 낮추고 완성도를 먼저 챙겨야 합니다.`;
+  }
+  return open
+    ? `"${keyword}" 흐름이 살아 있어 해볼 만한 힘이 남아 있습니다.`
+    : `"${keyword}" 쪽에서 소모가 쌓이기 쉬워, 속도 조절과 정비를 먼저 두는 편이 좋습니다.`;
 }
 
 function applyNarrativeSummaryTone({ spreadId = '', summary = '' }) {
@@ -1015,28 +1120,28 @@ function buildSpreadEvidenceReason({ position = '', keyword = '핵심', score = 
   if (intent === 'relationship' || intent === 'relationship-repair') {
     if (score >= 0) {
       if (/현재 관계 상태|현재 상황|상대 관점 신호|현재/.test(position)) {
-        return `"${keyword}" 신호가 살아 있어 대화 여지를 남겨주는 카드`;
+        return `"${keyword}" 흐름이 살아 있어 대화 여지를 남겨줍니다`;
       }
-      return `"${keyword}" 신호가 있어 관계를 풀 실마리를 잡기 좋은 구간`;
+      return `"${keyword}" 흐름이 있어 관계를 풀 실마리를 잡기 좋은 구간입니다`;
     }
     if (/거리\/갈등|교차\/장애|결과|3주차|다음 7일/.test(position)) {
-      return `"${keyword}" 구간에서 오해가 커지기 쉬워 속도 조절이 필요함`;
+      return `"${keyword}" 구간에서 오해가 커지기 쉬워 속도 조절이 필요합니다`;
     }
-    return `"${keyword}" 구간에서 감정 피로가 누적될 수 있어 톤 조율이 필요함`;
+    return `"${keyword}" 구간에서 감정 피로가 누적될 수 있어 톤 조율이 필요합니다`;
   }
   if (score >= 0) {
     if (/월간 테마|현재 상황|현재 관계 상태|현재/.test(position)) {
-      return `${keyword} 기준을 잡아주어 흐름이 안정됨`;
+      return `${keyword} 기준을 잡아주어 흐름이 안정됩니다`;
     }
     if (/1주차|2주차|가까운 미래|행동/.test(position)) {
-      return `${keyword} 쪽으로 움직일 힘이 붙는 흐름`;
+      return `${keyword} 쪽으로 움직일 힘이 붙는 흐름입니다`;
     }
-    return `${keyword} 쪽으로 해볼 만한 힘이 남아 있음`;
+    return `${keyword} 쪽으로 해볼 만한 힘이 남아 있습니다`;
   }
   if (/3주차|결과|교차\/장애|거리\/갈등/.test(position)) {
-    return `${keyword} 쪽 피로가 쌓이기 쉬워 속도 조절이 필요함`;
+    return `${keyword} 쪽 피로가 쌓이기 쉬워 속도 조절이 필요합니다`;
   }
-  return `${keyword} 쪽에서 소모나 지연이 생길 가능성이 큼`;
+  return `${keyword} 쪽에서 소모나 지연이 생길 가능성이 큽니다`;
 }
 
 function pickSpreadLexicon(spreadName = '', intent = 'general') {
@@ -1783,7 +1888,6 @@ function summarizeMonthlyFortune({ items, context = '', level = 'beginner' }) {
   const uprightCount = items.filter((item) => item.orientation === 'upright').length;
   const topKeyword = pickTopKeywords(items, 1)[0] || theme?.card?.keywords?.[0] || '월간 흐름';
   const unstable = [week3, week4].some((item) => item?.orientation === 'reversed' || scoreCardRisk(item) >= 2);
-  const verdictLabel = uprightCount >= 3 ? '우세' : uprightCount === 2 ? '조건부' : '정비 우선';
   const monthLabel = intent === 'relationship'
     ? (uprightCount >= 3 ? '관계 진전 여지가 있으나 중반 리스크 관리가 필요한 달' : '속도 조절과 오해 관리가 우선인 달')
     : uprightCount >= 3
@@ -1832,7 +1936,6 @@ function summarizeMonthlyFortune({ items, context = '', level = 'beginner' }) {
     context
   });
   const overall = [
-    `이번 리딩의 1차 판정은 ${verdictLabel}입니다.`,
     `월간 테마 카드는 ${cardLabel(theme)}이고, 핵심 키워드는 "${topKeyword}"입니다.`,
     `전체적으로는 ${monthLabel}으로 읽힙니다.`
   ].join(' ');
