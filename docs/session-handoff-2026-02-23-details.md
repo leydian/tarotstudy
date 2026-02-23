@@ -1232,3 +1232,92 @@
     - `qa:relationship-recovery`, `qa:yearly-fortune`
     - `qa:question-understanding`, `qa:summary-regression`
     - `docs:check-handoff`
+
+## 25) 2026-02-23 최신 후속 10 (타로리더 스토리텔러 고도화 + 쉬운말/카드뷰 정합화)
+
+### 25.1 타로리더 스토리텔러 톤 강화 (백엔드+프론트)
+- 변경 파일:
+  - `apps/api/src/content.js`
+  - `apps/web/src/pages/ChatSpreadPage.tsx`
+  - `apps/web/src/types.ts`
+  - `apps/api/test/tarot-reader-style.test.js`
+  - `scripts/tarot-reader-quality-check.mjs`
+- 핵심:
+  - 타로 서사 4단(장면-상징-흐름-행동) 규칙 강화
+  - 상징 표현 확장(메이저/슈트 기반 상징 큐)
+  - 타로 메타 확장:
+    - `voiceProfile`
+    - `storyDensity`
+    - `symbolHits`
+    - `arcProgression`
+  - 챗 상세 대화를 카드 단위(포지션/정역/키워드/핵심/해석/다음흐름)로 확장
+  - 학습리더 개입을 상황형(리스크/실행 중심)으로 제한
+
+### 25.2 중학생~고등학생 난이도 쉬운말 적용
+- 변경 파일:
+  - `apps/web/src/pages/ChatSpreadPage.tsx`
+- 핵심:
+  - 타로리더 문체를 일상어로 완화
+    - 예: `판단 -> 결정`, `해석 -> 뜻풀이`, `리스크 -> 위험`
+  - 딱딱한 종결 어미 완화(`입니다/습니다` 축소)
+  - 문체는 쉬워졌지만 정보량은 유지하도록 문장 구조 조정
+
+### 25.3 상세 섹션 전면 통일
+- 변경 파일:
+  - `apps/web/src/pages/ChatSpreadPage.tsx`
+- 핵심:
+  - `readingV3`뿐 아니라 `structured/fallback` 상세 섹션도 동일 스토리텔러 렌더 경로로 통합
+  - 카드 연동형 설명(해당 섹션 문장 + 카드 맥락)을 일관되게 적용
+
+### 25.4 중간 절단(...) 문제 수정 + 정보량 확대
+- 변경 파일:
+  - `apps/web/src/pages/ChatSpreadPage.tsx`
+  - `apps/web/test/tarot-language-readability.test.mjs`
+  - `apps/web/src/pages/spreads-presenters.tsx`
+- 핵심:
+  - 문장 중간 절단 로직 제거(하드컷 방지)
+  - 문장 수 상한만 적용하도록 변경
+  - 정보량을 한 단계 확장:
+    - 챗 상세: 최대 4문장
+    - 챗 요약: 최대 3문장
+    - 카드뷰 일반: 최대 4문장 / 컴팩트: 최대 3문장
+
+### 25.5 카드뷰와 챗봇 쉬운말 규칙 공용화
+- 변경 파일:
+  - `apps/web/src/lib/tarot-language.ts` (신규)
+  - `apps/web/src/pages/ChatSpreadPage.tsx`
+  - `apps/web/src/pages/spreads-presenters.tsx`
+  - `apps/web/test/tarot-language-readability.test.mjs`
+  - `apps/api/src/content.js`
+- 핵심:
+  - 공용 유틸 도입:
+    - `normalizeTarotKorean`
+    - `limitTarotSentenceDensity`
+    - `diversifyTarotOpening`
+  - 카드뷰(`NaturalFlowView`)와 챗봇이 같은 쉬운말 법칙을 사용하도록 통합
+  - 조사/문법 보정 추가:
+    - `영향를 -> 영향을`
+    - `진행는 -> 진행은`
+  - 백엔드 원문 일부 어색 표현도 함께 보정:
+    - `현 선택 유지 시 파급효과 -> 지금 선택을 유지하면 이어질 영향`
+    - `지속 가능한 운영 -> 오래 가는 흐름`
+
+### 25.6 품질 검증
+- 검증 명령:
+  - `npm run typecheck:web` 통과
+  - `npm run test:web` 통과
+  - `npm run test:api` 통과
+- 신규/보강 테스트:
+  - `apps/web/test/tarot-language-readability.test.mjs`
+    - 챗/카드뷰 공통 읽기난이도 규칙 검증
+    - 하드컷 방지 검증
+    - 공용 유틸 연동 검증
+
+### 25.7 관련 커밋
+- `1601d0e` feat: strengthen tarot storyteller persona and narrative QA gates
+- `f0a054e` feat: apply storyteller detail rendering to all chat detail sections
+- `35d9b44` feat: humanize tarot leader chat language for daily conversational tone
+- `9c1cfc3` feat: simplify tarot leader wording for middle-high school readability
+- `876812f` fix: prevent mid-sentence truncation in tarot chat readability mode
+- `d66313e` feat: align card view readability law and increase tarot response detail
+- `f1b8d57` feat: unify tarot readability rules across chat and card view

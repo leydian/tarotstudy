@@ -648,3 +648,41 @@
   - `5206cd9` fix: reduce repetitive tarot dialogue and diversify position evidence
   - `45253f1` feat: add txt/pdf export for chat and card views
   - `4df4365` feat: enhance conversational flow and rich export formatting
+
+## 8) 2026-02-23 최신 후속 반영 (타로리더 쉬운말/스토리텔러 + 카드뷰 정합화)
+- 타로리더 스토리텔러 강화
+  - 타로 서사 구조를 `장면-상징-흐름-행동` 축으로 강화
+  - 상징 표현 확장 및 조건형 가드레일 유지
+  - 페르소나 메타 확장(`voiceProfile`, `storyDensity`, `symbolHits`, `arcProgression`)
+- 챗 상세 대화 구조 고도화
+  - `readingV3`뿐 아니라 `structured/fallback` 상세 섹션도 카드 단위 스토리텔러 렌더로 통일
+  - 카드별 `포지션/정역/키워드/핵심/해석/다음흐름` 연결
+- 쉬운말 정책 강화(중학생~고등학생 가독성)
+  - 어려운 단어를 일상어로 치환(`판단→결정`, `해석→뜻풀이`, `리스크→위험` 등)
+  - 딱딱한 종결형 완화(`입니다/습니다` 축소)
+- 문장 절단 버그 수정 + 정보량 확대
+  - 하드컷(`...`) 절단 제거
+  - 문장 수 상한만 적용
+  - 정보량 상향: 챗 상세 4문장/요약 3문장, 카드뷰 일반 4문장/컴팩트 3문장
+- 카드뷰/챗봇 규칙 공용화
+  - 공용 유틸 신설: `apps/web/src/lib/tarot-language.ts`
+    - `normalizeTarotKorean`
+    - `limitTarotSentenceDensity`
+    - `diversifyTarotOpening`
+  - 카드뷰(`NaturalFlowView`)와 챗봇이 동일 읽기난이도 규칙 사용
+  - 조사 보정 추가(`영향를→영향을`, `진행는→진행은`)
+- 백엔드 원문 어색 표현 보정
+  - `현 선택 유지 시 파급효과` → `지금 선택을 유지하면 이어질 영향`
+  - `지속 가능한 운영` → `오래 가는 흐름`
+- 검증
+  - `npm run typecheck:web` 통과
+  - `npm run test:web` 통과
+  - `npm run test:api` 통과
+- 최신 관련 커밋
+  - `1601d0e` feat: strengthen tarot storyteller persona and narrative QA gates
+  - `f0a054e` feat: apply storyteller detail rendering to all chat detail sections
+  - `35d9b44` feat: humanize tarot leader chat language for daily conversational tone
+  - `9c1cfc3` feat: simplify tarot leader wording for middle-high school readability
+  - `876812f` fix: prevent mid-sentence truncation in tarot chat readability mode
+  - `d66313e` feat: align card view readability law and increase tarot response detail
+  - `f1b8d57` feat: unify tarot readability rules across chat and card view

@@ -50,12 +50,23 @@
 - 챗 리딩 `readingV3` 전면 도입(몰입형 구조 + 도메인별 실행/주의/체크인): `SESSION_HANDOFF.md`
 - 챗 리딩 문맥 커버리지 100문항 품질 게이트(`reading-v3-context-coverage`): `SESSION_HANDOFF.md`
 - 스프레드 선택 UI 제거 + 질문 기반 자동 추천 고정: `SESSION_HANDOFF.md`
+- 타로리더 스토리텔러 강화 + 서사 메타/QA 확장: `docs/session-handoff-2026-02-23-details.md`
+- 챗 상세 섹션 카드단위 스토리텔러 통일: `docs/session-handoff-2026-02-23-details.md`
+- 중고등학생 가독성 쉬운말 정책 + 문장절단 버그 수정: `docs/session-handoff-2026-02-23-details.md`
+- 카드뷰/챗봇 읽기난이도 법칙 공용화(`tarot-language.ts`): `docs/session-handoff-2026-02-23-details.md`
 - 질문 뱅크 `100,000/1,000` 확장: `docs/codex-updates-2026-02-22.md`
 - 학습 리더 코치 실전형(입문/중급 차등 강화): `docs/session-handoff-2026-02-23-details.md`
 - QA/회귀/텔레메트리 운영: `docs/handoff/details/quality-gates-telemetry-2026-02-22.md`
 - 문서 분리 기준/운영 규칙: `docs/handoff/details/docs-ops-structure-2026-02-22.md`
 
 ## 5) 최근 핵심 커밋
+- `f1b8d57` Unify tarot readability rules across chat and card view
+- `d66313e` Align card-view readability law and increase tarot response detail
+- `876812f` Prevent mid-sentence truncation in tarot chat readability mode
+- `9c1cfc3` Simplify tarot leader wording for middle-high school readability
+- `35d9b44` Humanize tarot leader chat language for daily conversational tone
+- `f0a054e` Apply storyteller detail rendering to all chat detail sections
+- `1601d0e` Strengthen tarot storyteller persona and narrative QA gates
 - `9c9cd88` Improve reading v3 domain context and add 100-prompt quality gate
 - `f6f60a4` Improve contextual v3 narration and chatbot verdict mapping
 - `e4727b2` Add immersive reading v3 across spreads and chat rendering
