@@ -1039,37 +1039,84 @@ function withRoParticle(word: string) {
 }
 
 type HighlightTone = 'signal' | 'action' | 'caution' | 'evidence';
+type HighlightTier = 'high' | 'mid' | 'low';
 
 type HighlightPattern = {
   regex: RegExp;
   tone: HighlightTone;
+  tier: HighlightTier;
+  priority: number;
 };
 
-function renderHighlightedText(text: string, keywords: string[], keyBase: string): ReactNode[] {
+type HighlightOptions = {
+  maxHighlights?: number;
+  tierLimits?: Partial<Record<HighlightTier, number>>;
+};
+
+function renderHighlightedText(text: string, keywords: string[], keyBase: string, options: HighlightOptions = {}): ReactNode[] {
   const input = normalizeDisplayText(String(text || ''));
   if (!input) return [input];
-  const patterns = buildHighlightPatterns(keywords);
+  const patterns = buildHighlightPatterns(input, keywords);
   if (!patterns.length) return [input];
 
   const nodes: ReactNode[] = [];
   let cursor = 0;
   let tokenIndex = 0;
+  let highlighted = 0;
+  const defaultTierLimits: Record<HighlightTier, number> = input.length > 150
+    ? { high: 1, mid: 2, low: 1 }
+    : { high: 1, mid: 1, low: 1 };
+  const tierLimits: Record<HighlightTier, number> = {
+    ...defaultTierLimits,
+    ...(options.tierLimits || {})
+  };
+  const tierUsage: Record<HighlightTier, number> = { high: 0, mid: 0, low: 0 };
+  const tierTotal = tierLimits.high + tierLimits.mid + tierLimits.low;
+  const maxHighlights = Math.max(1, options.maxHighlights ?? tierTotal);
 
   while (cursor < input.length) {
+    if (highlighted >= maxHighlights) {
+      nodes.push(input.slice(cursor));
+      break;
+    }
+
     let earliestMatch: RegExpExecArray | null = null;
     let earliestTone: HighlightTone | null = null;
+    let earliestTier: HighlightTier | null = null;
+    let earliestPriority = -1;
 
     for (const pattern of patterns) {
+      if (tierUsage[pattern.tier] >= tierLimits[pattern.tier]) continue;
       pattern.regex.lastIndex = cursor;
       const match = pattern.regex.exec(input);
       if (!match || match.index < cursor) continue;
       if (!earliestMatch || match.index < earliestMatch.index) {
         earliestMatch = match;
         earliestTone = pattern.tone;
+        earliestTier = pattern.tier;
+        earliestPriority = pattern.priority;
+        continue;
+      }
+      if (earliestMatch && match.index === earliestMatch.index && pattern.priority > earliestPriority) {
+        earliestMatch = match;
+        earliestTone = pattern.tone;
+        earliestTier = pattern.tier;
+        earliestPriority = pattern.priority;
+        continue;
+      }
+      if (
+        earliestMatch
+        && match.index === earliestMatch.index
+        && pattern.priority === earliestPriority
+        && match[0].length > earliestMatch[0].length
+      ) {
+        earliestMatch = match;
+        earliestTone = pattern.tone;
+        earliestTier = pattern.tier;
       }
     }
 
-    if (!earliestMatch || !earliestTone) {
+    if (!earliestMatch || !earliestTone || !earliestTier) {
       nodes.push(input.slice(cursor));
       break;
     }
@@ -1080,33 +1127,68 @@ function renderHighlightedText(text: string, keywords: string[], keyBase: string
 
     const matchedText = earliestMatch[0];
     nodes.push(
-      <span key={`${keyBase}-${tokenIndex++}`} className={`keyword-mark keyword-${earliestTone}`}>
+      <span key={`${keyBase}-${tokenIndex++}`} className={`keyword-mark keyword-${earliestTone} keyword-tier-${earliestTier}`}>
         {matchedText}
       </span>
     );
+    highlighted += 1;
+    tierUsage[earliestTier] += 1;
     cursor = earliestMatch.index + matchedText.length;
   }
 
   return nodes;
 }
 
-function buildHighlightPatterns(keywords: string[]): HighlightPattern[] {
+function buildHighlightPatterns(input: string, keywords: string[]): HighlightPattern[] {
+  const STOPWORDS = new Set(['흐름', '신호', '키워드', '기준', '실행', '행동', '질문', '근거']);
   const signalKeywords = Array.from(
     new Set(
       (keywords || [])
         .map((word) => String(word || '').trim())
-        .filter((word) => word.length >= 2)
+        .filter((word) => word.length >= 2 && !STOPWORDS.has(word))
     )
   );
 
   const patterns: HighlightPattern[] = signalKeywords.map((word) => ({
-    regex: new RegExp(escapeRegex(word), 'g'),
-    tone: 'signal'
+    regex: new RegExp(`(?:["'])?${escapeRegex(word)}(?:["'])?`, 'g'),
+    tone: 'signal',
+    tier: 'high',
+    priority: 90
   }));
 
-  patterns.push({ regex: /(실행|행동|기록|검증|복기|점검|고정|적어|비교)/g, tone: 'action' });
-  patterns.push({ regex: /(주의|리스크|소모|과속|지연|불안|오차|막히는 지점|과잉)/g, tone: 'caution' });
-  patterns.push({ regex: /(근거|키워드|신호|질문|결론|포지션)/g, tone: 'evidence' });
+  patterns.push({
+    regex: /(총평|주차 흐름|월-주 연결|실행 가이드|한 줄 테마|핵심 진단|관계 리스크|7일 행동 계획|오늘 할 일 1개|바로 적기|복기 메모|다음 리딩 질문)/g,
+    tone: 'evidence',
+    tier: 'mid',
+    priority: 70
+  });
+  patterns.push({
+    regex: /(행동 1개|질문 1개|기록하세요|정리하세요|확인해보세요|속도 조절|우선순위)/g,
+    tone: 'action',
+    tier: 'mid',
+    priority: 60
+  });
+  patterns.push({
+    regex: /(소모|지연|리스크|불안|흔들릴 수 있어|주의)/g,
+    tone: 'caution',
+    tier: 'high',
+    priority: 95
+  });
+  patterns.push({
+    regex: /"[^"]{2,12}"/g,
+    tone: 'signal',
+    tier: 'low',
+    priority: 50
+  });
+
+  if (!/(총평|주차 흐름|월-주 연결|실행 가이드|한 줄 테마|오늘 할 일 1개|복기 메모)/.test(input)) {
+    patterns.push({
+      regex: /(핵심|요약|포인트|기준)/g,
+      tone: 'evidence',
+      tier: 'low',
+      priority: 40
+    });
+  }
   return patterns;
 }
 
