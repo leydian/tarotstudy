@@ -7,17 +7,149 @@ import { inferShortUtterance } from './question-understanding/short-utterance-ru
 
 const TTL_FALLBACK_SOURCE = 'fallback';
 const CARD_NAME_KO_SET = new Set(cards.map((item) => String(item?.nameKo || '').trim()).filter(Boolean));
+const READING_TONE_MODE = String(process.env.READING_TONE_MODE || 'conversational').toLowerCase().trim();
+const USE_CONVERSATIONAL_TONE = READING_TONE_MODE !== 'template';
+const NATURAL_TONE_MIN_SCORE = Number(process.env.NATURAL_TONE_MIN_SCORE || 72);
+
+function applyConversationalToneToLine(line = '') {
+  let text = String(line || '').trim();
+  if (!text) return text;
+  const replacements = [
+    [/리더 해석 기준\(쉽게\):/g, '쉽게 말하면:'],
+    [/리더 읽기 방법:/g, '읽을 때는 이렇게 보세요:'],
+    [/리더 해석 원칙:/g, '읽을 때 핵심은:'],
+    [/리더 실전 팁:/g, '바로 써먹는 팁:'],
+    [/리더 안내 문장:/g, '이렇게 말해보세요:'],
+    [/리더 과제:/g, '이렇게 해보면 좋아요:'],
+    [/실전 과제 1:/g, '해볼 것 1:'],
+    [/실전 과제 2:/g, '해볼 것 2:'],
+    [/복기 기준:/g, '점검 포인트:'],
+    [/복기 방법:/g, '점검 방법:'],
+    [/복기 체크\(쉬운 버전\):/g, '점검 체크(쉬운 버전):'],
+    [/복기 포인트:/g, '점검 포인트:'],
+    [/실전 문장:/g, '바로 쓸 문장:'],
+    [/실전 팁:/g, '바로 해볼 팁:'],
+    [/실전 연결:/g, '지금 상황에 연결하면:'],
+    [/실전 적용/g, '바로 적용'],
+    [/내담자/g, '상담받는 분'],
+    [/리딩/g, '해석'],
+    [/복기/g, '점검'],
+    [/해석 정확도를 높이세요\./g, '해석 정확도를 높여보세요.'],
+    [/설명하세요\./g, '설명해보세요.'],
+    [/제시하세요\./g, '제시해보세요.'],
+    [/분리해/g, '나눠'],
+    [/좋겠습니다\./g, '좋아요.'],
+    [/좋습니다\./g, '좋아요.'],
+    [/필요합니다\./g, '필요해요.'],
+    [/가능합니다\./g, '가능해요.']
+  ];
+  for (const [pattern, replacement] of replacements) {
+    text = text.replace(pattern, replacement);
+  }
+  return text.replace(/\s{2,}/g, ' ').trim();
+}
+
+function applyConversationalTone(text = '') {
+  if (!USE_CONVERSATIONAL_TONE) return String(text || '');
+  return String(text || '')
+    .split('\n')
+    .map((line) => applyConversationalToneToLine(line))
+    .filter(Boolean)
+    .join('\n');
+}
+
+function scoreNaturalTone(text = '') {
+  const raw = String(text || '').trim();
+  if (!raw) return 100;
+  let score = 100;
+  const penaltyPatterns = [
+    /\[학습 리더\]/g,
+    /리더 과제/g,
+    /실전 과제/g,
+    /점검 포인트:/g,
+    /점검 체크/g,
+    /읽을 때 핵심은:/g,
+    /읽을 때는 이렇게 보세요:/g,
+    /바로 써먹는 팁:/g,
+    /이렇게 말해보세요:/g,
+    /이렇게 해보면 좋아요:/g,
+    /가설/g,
+    /반례/g
+  ];
+  for (const pattern of penaltyPatterns) {
+    const count = (raw.match(pattern) || []).length;
+    if (count) score -= Math.min(35, count * 6);
+  }
+  const colonCount = (raw.match(/:/g) || []).length;
+  if (colonCount >= 4) score -= Math.min(20, (colonCount - 3) * 3);
+
+  return Math.max(0, Math.min(100, score));
+}
+
+function softenMechanicalLine(line = '') {
+  return String(line || '')
+    .replace(/^(쉽게 말하면|읽을 때는 이렇게 보세요|읽을 때 핵심은|바로 써먹는 팁|이렇게 말해보세요|이렇게 해보면 좋아요|해볼 것 [12]|점검 포인트|점검 방법|점검 체크\(쉬운 버전\)|바로 쓸 문장|바로 해볼 팁|지금 상황에 연결하면)\s*:\s*/g, '')
+    .replace(/^\s*핵심:\s*/g, '')
+    .replace(/^\s*상징 요약:\s*/g, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
+function enforceNaturalToneQuality(text = '', options = {}) {
+  const minScore = Number(options.minScore ?? NATURAL_TONE_MIN_SCORE);
+  const maxPasses = Number(options.maxPasses ?? 2);
+  let rendered = applyConversationalTone(String(text || ''));
+  let score = scoreNaturalTone(rendered);
+  let pass = 0;
+
+  while (score < minScore && pass < maxPasses) {
+    rendered = rendered
+      .split('\n')
+      .map((line) => softenMechanicalLine(line))
+      .filter(Boolean)
+      .join('\n');
+    rendered = applyConversationalTone(rendered);
+    score = scoreNaturalTone(rendered);
+    pass += 1;
+  }
+
+  return {
+    text: rendered,
+    score
+  };
+}
+
+function renderNaturalTextFromSemantic(text = '', options = {}) {
+  if (!USE_CONVERSATIONAL_TONE) return String(text || '');
+  return enforceNaturalToneQuality(text, options).text;
+}
+
+function applyConversationalToneToSections(sections = {}) {
+  if (!USE_CONVERSATIONAL_TONE || !sections || typeof sections !== 'object') return sections;
+  return Object.fromEntries(
+    Object.entries(sections).map(([key, value]) => [key, renderNaturalTextFromSemantic(String(value || ''))])
+  );
+}
+
+function renderExplanationFromSemantic(explanation) {
+  if (!explanation || typeof explanation !== 'object') return explanation;
+  return {
+    ...explanation,
+    sections: applyConversationalToneToSections(explanation.sections)
+  };
+}
 
 export function buildFallbackExplanation(card, level = 'beginner', context = '') {
   const explanationContext = inferExplanationContext(context);
   const minLinesByLevel = level === 'intermediate' ? 5 : 3;
   const intermediateFiller = '중급 복기: 근거 1개와 반례 1개를 함께 적어 해석 정확도를 높이세요.';
   if (level === 'beginner') {
-    return {
+    const semanticExplanation = {
       cardId: card.id,
       source: TTL_FALLBACK_SOURCE,
       sections: buildBeginnerPracticalSections({ card, context, explanationContext })
     };
+    return renderExplanationFromSemantic(semanticExplanation);
   }
   const contextLine = context?.trim()
     ? `질문 맥락(${context.trim()})에 맞춰 보면,`
@@ -37,7 +169,7 @@ export function buildFallbackExplanation(card, level = 'beginner', context = '')
   const profile = getFallbackCardProfile(card);
   const contextFocus = buildContextFocusLines({ explanationContext, level });
 
-  return {
+  const semanticExplanation = {
     cardId: card.id,
     source: TTL_FALLBACK_SOURCE,
     sections: {
@@ -92,6 +224,7 @@ export function buildFallbackExplanation(card, level = 'beginner', context = '')
       ].join('\n'), minLinesByLevel, intermediateFiller)
     }
   };
+  return renderExplanationFromSemantic(semanticExplanation);
 }
 
 function buildBeginnerPracticalSections({ card, context = '', explanationContext }) {
@@ -1294,11 +1427,12 @@ export function normalizeExternalSections(raw, cardId, level = 'beginner') {
     }
     sections[key] = enforceMinLines(raw[key].trim(), minLines, filler);
   }
-  return {
+  const semanticExplanation = {
     cardId,
     source: 'generated',
     sections
   };
+  return renderExplanationFromSemantic(semanticExplanation);
 }
 
 function enforceMinLines(text, minLines = 3, fillerLine = '실전 적용은 작은 행동 단위로 검증해 보세요.') {
@@ -1501,7 +1635,17 @@ export function buildSpreadReading({
   const coreMessageSafe = sanitizeCardNameConsistency(coreMessage, card?.nameKo || '');
   const interpretationSafe = sanitizeCardNameConsistency(interpretation, card?.nameKo || '');
 
-  return { interpretation: interpretationSafe, coreMessage: coreMessageSafe, learningPoint };
+  const semanticReading = {
+    interpretation: interpretationSafe,
+    coreMessage: coreMessageSafe,
+    learningPoint
+  };
+  return {
+    interpretation: renderNaturalTextFromSemantic(semanticReading.interpretation),
+    coreMessage: renderNaturalTextFromSemantic(semanticReading.coreMessage),
+    // Keep instructional marker for study pipeline compatibility.
+    learningPoint: applyConversationalTone(semanticReading.learningPoint)
+  };
 }
 
 export function buildSpreadInterpretation(args) {
@@ -2526,14 +2670,14 @@ function buildOneCardCoreMessage({ card, orientation, context = '' }) {
 }
 
 function applyOneCardConversationTone(line = '') {
-  return String(line || '')
+  return applyConversationalToneToLine(String(line || '')
     .replace(/좋겠습니다\./g, '좋아요.')
     .replace(/권장됩니다\./g, '권장돼요.')
     .replace(/필요합니다\./g, '필요해요.')
     .replace(/가능합니다\./g, '가능해요.')
     .replace(/좋습니다\./g, '좋아요.')
     .replace(/\s{2,}/g, ' ')
-    .trim();
+    .trim());
 }
 
 function normalizeOneCardConclusionSentence(text = '') {
@@ -3736,7 +3880,7 @@ function polishTarotInterpretation(raw = '') {
   if (sentences.length > 7) sentences.splice(7);
   let out = sentences.join(' ');
   if (out.length > 760) out = `${out.slice(0, 759).trim()}…`;
-  return out;
+  return renderNaturalTextFromSemantic(out);
 }
 
 function buildCoreContextLine({ spreadId, positionName, contextProfile, context = '', seed }) {

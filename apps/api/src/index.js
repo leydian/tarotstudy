@@ -30,6 +30,9 @@ dotenv.config();
 const app = Fastify({ logger: true });
 const port = Number(process.env.PORT || 8787);
 const host = process.env.HOST || '127.0.0.1';
+const readingToneMode = String(process.env.READING_TONE_MODE || 'conversational').toLowerCase().trim();
+const useConversationalTone = readingToneMode !== 'template';
+const summaryNaturalMinScore = Number(process.env.SUMMARY_NATURAL_MIN_SCORE || 74);
 const cache = new TTLCache(Number(process.env.CACHE_TTL_SECONDS || 86400));
 const externalGenerator = makeExternalGenerator(process.env);
 const telemetryStore = createTelemetryStore({
@@ -391,7 +394,7 @@ app.post('/api/v2/spreads/:spreadId/draw', async (request, reply) => {
     return { message: payload.error.message };
   }
 
-  const renderingMode = String(styleMode || process.env.READING_STYLE_MODE || 'immersive_safe').toLowerCase();
+  const renderingMode = String(styleMode || process.env.READING_STYLE_MODE || 'neutral').toLowerCase();
   return {
     ...payload,
     readingV2: buildReadingV2({
@@ -592,12 +595,12 @@ function summarizeSpread({ spreadId = '', spreadName, items, context = '', level
         : '10분만 정리하고 다시 판단해보세요.';
     const theme = analysis.label === '우세' ? '작게 시작하면 흐름이 붙는 날' : analysis.label === '박빙' ? '속도 조절이 성패를 가르는 날' : '멈추고 정비하면 손실을 줄이는 날';
     const cleanConclusion = conclusion.replace(/^결론:\s*/, '');
-    return normalizeEverydaySummaryTone(polishSummaryRhythm([
+    return renderSummaryFromSemantic([
       `${lead?.card?.nameKo || '이번 카드'}가 보여주는 핵심은 "${keyword}" 신호(${direction})입니다. 지금 결정에서 가장 먼저 보실 기준이 바로 이 부분입니다.`,
       `그래서 결론은 ${cleanConclusion}으로 읽힙니다. 성급하게 단정하기보다 지금 상황에 맞게 강도를 조절해 적용하시는 편이 안정적입니다.`,
       `실행은 크게 벌리지 마시고 ${action} 실행해보신 뒤에는 체감 변화를 한 줄만 남겨 주세요. 그 기록이 다음 판단의 정확도를 높여줍니다.`,
       `오늘의 테마는 "${theme}"입니다.`
-    ].join('\n\n')));
+    ].join('\n\n'));
   }
   let rawSummary = '';
   if (spreadId === 'yearly-fortune') {
@@ -692,7 +695,7 @@ function buildReadingV2({
   summary = '',
   context = '',
   level = 'beginner',
-  renderingMode = 'immersive_safe'
+  renderingMode = 'neutral'
 }) {
   const questionAnalysis = analyzeQuestionContextV2Sync(context, { mode: 'hybrid', flag: true });
   const signal = analyzeSpreadSignal(items, questionAnalysis.intent);
@@ -803,7 +806,7 @@ function finalizeSpreadSummary({ spreadId = '', spreadName = '', items = [], con
   const merged = shouldLeadWithNarrative
     ? [rawSummary, decisionBlock].filter(Boolean).join('\n\n')
     : [decisionBlock, rawSummary].filter(Boolean).join('\n\n');
-  const polished = normalizeEverydaySummaryTone(polishSummaryRhythm(merged));
+  const polished = renderSummaryFromSemantic(merged);
   if (spreadId === 'weekly-fortune' || spreadId === 'monthly-fortune' || spreadId === 'yearly-fortune') {
     return applySectionedSummaryTone({ spreadId, summary: polished });
   }
@@ -1198,12 +1201,75 @@ function normalizeEverydaySummaryTone(raw = '') {
     [/신호가 보였고/g, '기운이 보였고'],
     [/로 해석됩니다\./g, '로 봅니다.'],
     [/핵심 변수/g, '핵심 포인트'],
-    [/운영이 맞습니다\./g, '흐름이 맞습니다.']
+    [/운영이 맞습니다\./g, '흐름이 맞습니다.'],
+    [/입니다\./g, '이에요.'],
+    [/보실 기준/g, '보면 좋은 기준'],
+    [/실행해보신 뒤에는/g, '실행해본 뒤에는'],
+    [/남겨 주세요\./g, '남겨 주세요.']
   ];
   for (const [pattern, replacement] of replacements) {
     text = text.replace(pattern, replacement);
   }
-  return text;
+  if (!useConversationalTone) return text;
+  return text
+    .replace(/필요합니다\./g, '필요해요.')
+    .replace(/좋습니다\./g, '좋아요.')
+    .replace(/권장됩니다\./g, '권장돼요.')
+    .replace(/하시기 바랍니다\./g, '해보세요.')
+    .replace(/하시고/g, '해보시고')
+    .replace(/하시는 편이/g, '하는 편이')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
+function scoreSummaryNaturalTone(text = '') {
+  const raw = String(text || '').trim();
+  if (!raw) return 100;
+  let score = 100;
+  const penaltyPatterns = [
+    /결론 기준:/g,
+    /실행 문장:/g,
+    /복기 질문:/g,
+    /요약하면/g,
+    /핵심 포인트/g,
+    /운영 기준/g
+  ];
+  for (const pattern of penaltyPatterns) {
+    const count = (raw.match(pattern) || []).length;
+    if (count) score -= Math.min(30, count * 5);
+  }
+  const colonCount = (raw.match(/:/g) || []).length;
+  if (colonCount >= 3) score -= Math.min(16, (colonCount - 2) * 2);
+  return Math.max(0, Math.min(100, score));
+}
+
+function softenSummaryMechanics(text = '') {
+  return String(text || '')
+    .split('\n')
+    .map((line) => String(line || '').trim())
+    .filter(Boolean)
+    .map((line) => line
+      .replace(/^(결론 기준|실행 문장|복기 질문)\s*:\s*/g, '')
+      .replace(/^요약하면\s*/g, '')
+      .replace(/\s{2,}/g, ' ')
+      .trim())
+    .filter(Boolean)
+    .join('\n');
+}
+
+function renderSummaryFromSemantic(raw = '') {
+  const semantic = String(raw || '');
+  let rendered = normalizeEverydaySummaryTone(polishSummaryRhythm(semantic));
+  if (!useConversationalTone) return rendered;
+
+  let score = scoreSummaryNaturalTone(rendered);
+  let pass = 0;
+  while (score < summaryNaturalMinScore && pass < 2) {
+    rendered = normalizeEverydaySummaryTone(polishSummaryRhythm(softenSummaryMechanics(rendered)));
+    score = scoreSummaryNaturalTone(rendered);
+    pass += 1;
+  }
+  return rendered;
 }
 
 function summarizeThreeCard({ items, context = '', level = 'beginner' }) {

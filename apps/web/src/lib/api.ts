@@ -118,7 +118,7 @@ export const api = {
         variantId: input.variantId ?? '',
         level: input.level,
         context: input.context ?? '',
-        styleMode: input.styleMode ?? 'immersive_safe'
+        styleMode: input.styleMode ?? 'neutral'
       })
     });
   },
