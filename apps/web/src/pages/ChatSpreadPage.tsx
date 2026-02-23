@@ -383,7 +383,7 @@ function ChatBubble({
 function ChatSummaryView({ reading }: { reading: SpreadDrawResult }) {
   if (reading.readingV3) {
     const quickDialog = buildQuickDialogFromReadingV3(reading);
-    const evidenceLines = reading.readingV3.evidence.map((item) => item.narrativeLine);
+    const detailedDialog = buildExpandedCardDialog(reading);
     return (
       <section className="chat-summary-shell">
         <div className="chat-dialog-stream">
@@ -398,7 +398,7 @@ function ChatSummaryView({ reading }: { reading: SpreadDrawResult }) {
           <h6 className="chat-summary-section-title">상세 대화</h6>
           <div className="chat-summary-accordion-body">
             <div className="chat-dialog-stream">
-              {buildDialogFromLines(evidenceLines, '상세 리딩').map((turn, idx) => (
+              {detailedDialog.map((turn, idx) => (
                 <article key={`v3-summary-bubble-${idx}`} className={`chat-dialog-turn chat-dialog-${turn.speaker}`}>
                   <h6 className="chat-dialog-speaker">{turn.speaker === 'tarot' ? '타로리더' : '학습리더'}</h6>
                   <p className="chat-natural-paragraph chat-dialog-bubble">{turn.text}</p>
@@ -436,7 +436,11 @@ function ChatSummaryView({ reading }: { reading: SpreadDrawResult }) {
                         <h6 className="chat-month-title">{item.title}</h6>
                         <div className="chat-month-accordion-body">
                           <div className="chat-dialog-stream">
-                            {buildSectionDialog(item.body, section.title, monthIdx).map((turn, turnIdx) => (
+                            {buildExpandedNarrativeDialogFromLines(
+                              reading,
+                              toParagraphBlocks(item.body),
+                              `${section.title} ${item.title}`
+                            ).map((turn, turnIdx) => (
                               <article key={`${item.title}-${turnIdx}`} className={`chat-dialog-turn chat-dialog-${turn.speaker}`}>
                                 <h6 className="chat-dialog-speaker">{turn.speaker === 'tarot' ? '타로리더' : '학습리더'}</h6>
                                 <p className="chat-natural-paragraph chat-dialog-bubble">{turn.text}</p>
@@ -449,7 +453,7 @@ function ChatSummaryView({ reading }: { reading: SpreadDrawResult }) {
                   </div>
                 ) : (
                   <div className="chat-dialog-stream">
-                    {buildDialogFromLines(section.lines, section.title).map((turn, lineIdx) => (
+                    {buildExpandedNarrativeDialogFromLines(reading, section.lines, section.title).map((turn, lineIdx) => (
                       <article key={`${section.title}-${lineIdx}`} className={`chat-dialog-turn chat-dialog-${turn.speaker}`}>
                         <h6 className="chat-dialog-speaker">{turn.speaker === 'tarot' ? '타로리더' : '학습리더'}</h6>
                         <p className="chat-natural-paragraph chat-dialog-bubble">{turn.text}</p>
@@ -484,7 +488,7 @@ function ChatSummaryView({ reading }: { reading: SpreadDrawResult }) {
         <h6 className="chat-summary-section-title">상세 대화</h6>
         <div className="chat-summary-accordion-body">
           <div className="chat-dialog-stream">
-            {buildDialogFromLines(narrativeBubbles, '상세 리딩').map((turn, idx) => (
+            {buildExpandedNarrativeDialogFromLines(reading, narrativeBubbles, '상세 리딩').map((turn, idx) => (
               <article key={`summary-bubble-${idx}`} className={`chat-dialog-turn chat-dialog-${turn.speaker}`}>
                 <h6 className="chat-dialog-speaker">{turn.speaker === 'tarot' ? '타로리더' : '학습리더'}</h6>
                 <p className="chat-natural-paragraph chat-dialog-bubble">{turn.text}</p>
@@ -495,6 +499,62 @@ function ChatSummaryView({ reading }: { reading: SpreadDrawResult }) {
       </section>
     </section>
   );
+}
+
+function buildExpandedCardDialog(reading: SpreadDrawResult) {
+  const items = reading.items.slice(0, 6);
+  if (!items.length) return [];
+
+  const turns: DialogueTurn[] = [];
+  turns.push(buildTurn('tarot', 'detail', `질문("${reading.context || '현재 질문'}")을 기준으로 카드 장면을 앞에서 뒤로 천천히 연결해보겠습니다`));
+
+  items.forEach((item, idx) => {
+    const orientation = item.orientation === 'reversed' ? '역방향' : '정방향';
+    const keyword = item.card.keywords?.[0] || '핵심 신호';
+    const lead = `${item.position.name}에서는 ${item.card.nameKo} ${orientation} 카드가 나왔고, 상징 키워드는 "${keyword}"입니다`;
+    const core = compactLine(item.coreMessage || '');
+    const interpretation = compactLine(item.interpretation || '');
+    const next = items[idx + 1];
+
+    turns.push(buildTurn('tarot', 'detail', lead));
+    if (core) turns.push(buildTurn('tarot', 'detail', `이 자리의 핵심은 ${core}`));
+    if (interpretation) turns.push(buildTurn('tarot', 'detail', `같은 신호를 더 풀면 ${interpretation}`));
+    if (next) {
+      turns.push(buildTurn('tarot', 'detail', `${item.position.name} 장면 다음에는 ${next.position.name} 장면으로 흐름이 이어지고, 여기서 판단 강도가 결정됩니다`));
+    }
+
+    const learningHint = maybeBuildLearningHint(`${core} ${interpretation}`, item.position.name, idx, 0);
+    if (learningHint) turns.push(learningHint);
+  });
+
+  const closing = reading.readingV3
+    ? `전체 전개를 종합하면 ${reading.readingV3.verdict.sentence} 이번 주는 행동 1개와 관찰 1개만 남기는 운영이 가장 안정적입니다`
+    : '전체 전개를 종합하면 이번 주는 강도를 줄이고 반응을 관찰하는 운영이 가장 안정적입니다';
+  turns.push(buildTurn('tarot', 'detail', closing));
+
+  return rebalanceDialogueMix(dedupeTurns(turns));
+}
+
+function buildExpandedNarrativeDialogFromLines(reading: SpreadDrawResult, lines: string[], sectionTitle = '상세 리딩') {
+  const cards = reading.items.slice(0, 6);
+  if (!cards.length) return buildDialogFromLines(lines, sectionTitle);
+  const turns: DialogueTurn[] = [];
+  const normalizedLines = lines.map((line) => compactLine(line)).filter(Boolean);
+
+  normalizedLines.forEach((line, idx) => {
+    const card = cards[idx % cards.length];
+    const orientation = card.orientation === 'reversed' ? '역방향' : '정방향';
+    const keyword = card.card.keywords?.[0] || '핵심 신호';
+    turns.push(buildTurn('tarot', 'detail', `${sectionTitle} 장면에서 ${card.position.name}의 ${card.card.nameKo} ${orientation} 카드(${keyword})를 기준으로 보면 ${line}`));
+    if (idx < normalizedLines.length - 1) {
+      const nextCard = cards[(idx + 1) % cards.length];
+      turns.push(buildTurn('tarot', 'detail', `이 장면 다음에는 ${nextCard.position.name} 축으로 전개가 이어져 판단의 강도와 속도를 조절하게 됩니다`));
+    }
+    const learning = maybeBuildLearningHint(line, sectionTitle, idx, 0);
+    if (learning) turns.push(learning);
+  });
+
+  return rebalanceDialogueMix(dedupeTurns(turns));
 }
 
 function buildQuickDialogFromReadingV3(reading: SpreadDrawResult) {
