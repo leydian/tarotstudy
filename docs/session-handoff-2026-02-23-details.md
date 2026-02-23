@@ -218,6 +218,92 @@
   - `npm run typecheck:web` 통과
   - `npm run test:web` 통과
   - `npm run test:api` 통과
+
+## 11) 2026-02-23 추가 후속 3 (운세 자연어 고도화 + 리딩 UI 전면 가독성 개선)
+
+### 11.1 월간/전스프레드 문체를 일상 언어로 통일
+- 변경 파일:
+  - `apps/api/src/index.js`
+- 핵심:
+  - 월간 요약의 `실행 탄력`, `~축` 중심 문구를 일상어로 교체
+    - 예: `~축에서 실행 탄력이 확인됨` -> `~쪽으로 움직일 힘이 붙는 흐름`
+  - 전 스프레드 공통 후처리에 일상어 정규화 단계(`normalizeEverydaySummaryTone`)를 추가
+    - `중심축/결과축/장애축` 등 기술어를 자연어로 완화
+  - 공통 판정 블록(`buildSpreadDecisionBlock`)을 전면 개선
+    - 판정 서두를 스프레드/질문 맥락 맞춤으로 생성
+    - 근거 문장을 포지션 맥락형 자연어로 재구성
+  - 양자택일(`choice-a-b`)은 질문 맥락(특히 이직/커리어)을 반영하도록 강화
+    - 단기 반응보다 `3개월 유지 가능성` 기준을 우선 안내
+    - 결과 근거에 `통근/생활비/업무강도` 같은 실전 점검 축 반영
+  - 월간에서 중복되는 1차 판정 문장을 총평에서 제거해 충돌 방지
+
+### 11.2 종합 학습 내역/코치 문장 품질 개선
+- 변경 파일:
+  - `apps/web/src/pages/spreads-helpers.ts`
+  - `apps/web/src/pages/SpreadsPage.tsx`
+- 핵심:
+  - 종합 학습 내역 생성 로직을 카드 기반 실전형으로 재구성
+    - `핵심 카드/실행 카드/주의 카드`를 선택해 실사용 문장 생성
+  - 메타/번역투 표현 제거
+    - `monthly-fortune`, `질문 맥락`, `1차 이유` 등 노출 문구 치환
+  - 학습 코치 요약 문단을 자연스러운 일상어로 재작성
+    - 과도한 지시형/기계형 문장 축소
+
+### 11.3 강조(하이라이트) 로직을 중요도 단계형으로 전환
+- 변경 파일:
+  - `apps/web/src/pages/SpreadsPage.tsx`
+  - `apps/web/src/styles/spreads.css`
+- 핵심:
+  - 단순 키워드 난사형 강조 -> 문맥 우선 강조로 전환
+  - 3단계 강조 도입
+    - `high`: 형광펜 + 강한 굵기
+    - `mid`: 굵기 + 밑줄
+    - `low`: 색상 중심 약강조
+  - 문단별 강조 수를 단계별 제한해 과밀 강조 방지
+  - stopword(흐름/신호/기준 등) 과강조 억제
+
+### 11.4 리딩 결과 UI를 전 스프레드/개별 카드까지 통일
+- 변경 파일:
+  - `apps/web/src/pages/SpreadsPage.tsx`
+  - `apps/web/src/styles/spreads.css`
+  - `apps/web/src/pages/spreads-helpers.ts`
+- 핵심:
+  - 월간에 먼저 도입한 카드형 자연어 레이아웃을 전 스프레드로 확장
+    - `UnifiedSummaryView`, `NaturalFlowView` 공통 렌더링 도입
+  - 개별 카드의 `타로 리더 리딩`/`학습 코치 요약`도 동일한 카드형 흐름으로 통일
+  - 월간 파서(`parseMonthlySummary`) 추가로 주차별 카드 렌더 안정화
+    - 설명 문장이 주차 카드에 섞이는 문제 제거
+  - 인사이트 블록 위치를 상단으로 이동
+    - `핵심 실행/중간 점검/주의점`이 종합 리딩보다 먼저 보이도록 조정
+
+### 11.5 스프레드 보드 가독성 개선(카드 최소크기 + 자동 배치)
+- 변경 파일:
+  - `apps/web/src/pages/SpreadsPage.tsx`
+  - `apps/web/src/styles/spreads.css`
+- 핵심:
+  - 스프레드 밀도에 따라 메타 배치를 자동 전환
+    - 고밀도(열 수 5+)는 상하 배치
+    - 저밀도는 좌우 배치
+  - 카드 최소 크기 보장을 위해 preset 보정 및 가로 스크롤 허용
+  - 텍스트 깨짐(세로 낙하/글자 분절) 완화
+  - 최종 요청 반영: 카드형 문단은 좌우 분할 없이 위아래 단일열 고정
+
+### 11.6 검증 로그 (추가)
+- `node scripts/summary-regression-check.mjs` 통과 (최종 `18/18`)
+- `npm --workspace apps/web run build` 반복 실행 기준 모두 통과
+
+### 11.7 관련 커밋 (추가)
+- `e451037` Refine monthly fortune summary wording and flow
+- `c01ce51` Make learning digest beginner-friendly and easier to scan
+- `a72867d` Unify spread summaries with everyday Korean tone
+- `315acc3` Replace monthly evidence jargon with everyday wording
+- `5fc8345` Naturalize coach summary copy and learning digest phrasing
+- `f4882bc` Add tiered highlight emphasis with context-aware priorities
+- `23504d5` Refine monthly summary layout and clean week card grouping
+- `93eaf78` Unify reading layouts and stack flow cards vertically
+- `c401c4f` Move reading insights above summary panel
+- `8c2e8ca` Improve spread readability with adaptive meta layout
+- `8b8d34f` Enhance spread decision narratives with context-aware detail
   - `npm run qa:learning-leader` 통과
   - `npm run qa:relationship-recovery` 통과
   - `npm run qa:yearly-fortune` 통과
