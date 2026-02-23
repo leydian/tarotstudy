@@ -40,27 +40,24 @@ export function buildLearningDigest(items: SpreadDrawResult['items']) {
     ];
   }
   const positionCount = items.length;
-  const coachLines = items
-    .flatMap((item) => toCoachBlocks(item.learningPoint || ''))
-    .map((line) => cleanCoachPrefix(line))
-    .filter(Boolean);
+  const coreItem = pickCoreItem(items);
+  const actionItem = pickActionItem(items);
+  const cautionItem = pickCautionItem(items);
+  const coreKeyword = actionItem?.card?.keywords?.[0] || coreItem?.card?.keywords?.[0] || '흐름';
+  const coreCardLabel = cardLabel(coreItem);
+  const actionLabel = actionItem ? `${actionItem.position.name}(${cardLabel(actionItem)})` : '핵심 카드';
+  const cautionLabel = cautionItem ? `${cautionItem.position.name}(${cardLabel(cautionItem)})` : '';
+  const cautionKeyword = cautionItem?.card?.keywords?.[0] || '속도';
 
-  const frameLineRaw = coachLines.find((line) => /학습 기준|훈련 프레임|학습 프레임|학습 루틴|복기 기준/.test(line))
-    || '카드와 질문을 먼저 맞춰 보고, 해석 순서를 짧게 정해두세요.';
-  const questionLineRaw = coachLines.find((line) => /복기 질문|체크 질문|점검 질문|검증 질문|질문/.test(line))
-    || '이 카드 해석이 내 상황과 맞았는지 한 줄로 확인해보세요.';
-  const verifyLineRaw = coachLines.find((line) => /리딩 검증|실행 후 검증|검증 단계|검증/.test(line))
-    || '오늘 끝나고 맞았던 점 1개, 달랐던 점 1개만 적어두세요.';
-  const frameLine = toShortEverydayLine(frameLineRaw, '카드와 질문을 먼저 맞춰 보고 해석 순서를 짧게 정해두세요.');
-  const questionLine = toShortEverydayLine(questionLineRaw, frameLine);
-  const verifyLine = toShortEverydayLine(verifyLineRaw, '오늘 끝나고 맞았던 점 1개와 달랐던 점 1개를 남겨보세요.');
-
-  return [
-    `오늘 할 일 1개: ${positionCount}개 자리 중 핵심 카드 1장만 고르세요.`,
-    '바로 적기: 그 카드로 지금 상황 1문장과 오늘 할 행동 1문장만 적으면 충분합니다.',
-    `복기 메모: ${verifyLine}`,
-    `다음 리딩 질문: ${questionLine || frameLine}`
+  const digest = [
+    `이번 리딩 한 줄: ${coreItem?.position?.name || '핵심'} 카드 ${coreCardLabel} 기준으로 보면, 지금은 "${coreKeyword}"을 먼저 챙길 때입니다.`,
+    `오늘 할 일 1개: ${positionCount}개 자리 중 ${actionLabel}를 기준으로, 바로 할 행동 1가지만 정해 실행해보세요.`,
+    cautionItem
+      ? `복기 메모: ${cautionLabel}는 "${cautionKeyword}" 쪽에서 흔들리기 쉬우니, 저녁에 맞았던 점 1개와 아쉬운 점 1개만 짧게 적어보세요.`
+      : '복기 메모: 저녁에 맞았던 점 1개와 아쉬운 점 1개만 짧게 적어보세요.',
+    `다음 리딩 질문: 오늘 정한 행동 1개가 실제로 도움이 됐는지, 내일 한 줄로 다시 확인해보세요.`
   ];
+  return digest.map((line) => toShortEverydayLine(line, line));
 }
 
 export function splitDigestLine(line: string) {
@@ -217,9 +214,34 @@ function toShortEverydayLine(text: string, fallback: string) {
     .replace(/검증/g, '확인')
     .replace(/프레임/g, '기준')
     .replace(/체감/g, '느낌')
-    .replace(/정역방향/g, '정방향/역방향');
+    .replace(/정역방향/g, '정방향/역방향')
+    .replace(/monthly-fortune/gi, '월간 리딩')
+    .replace(/weekly-fortune/gi, '주간 리딩')
+    .replace(/daily/gi, '오늘')
+    .replace(/1차 이유/gi, '첫 번째 이유')
+    .replace(/질문 맥락/gi, '질문 내용');
   if (plain.length <= 92) return plain;
   return `${plain.slice(0, 91).trim()}…`;
+}
+
+function cardLabel(item: SpreadDrawResult['items'][number] | undefined) {
+  if (!item?.card?.nameKo) return '카드';
+  return `${item.card.nameKo} ${item.orientation === 'reversed' ? '역방향' : '정방향'}`;
+}
+
+function pickCoreItem(items: SpreadDrawResult['items']) {
+  return items.find((item) => /월간 테마|주간 테마|현재 상황|현재 관계 상태|현재/.test(item.position?.name || ''))
+    || items[0];
+}
+
+function pickActionItem(items: SpreadDrawResult['items']) {
+  return items.find((item) => item.orientation === 'upright' && scoreItemRisk(item) <= 1)
+    || items.find((item) => item.orientation === 'upright')
+    || items[0];
+}
+
+function pickCautionItem(items: SpreadDrawResult['items']) {
+  return items.find((item) => item.orientation === 'reversed' || scoreItemRisk(item) >= 2) || null;
 }
 
 export function buildChoiceComparison(result: SpreadDrawResult) {

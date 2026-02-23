@@ -849,7 +849,7 @@ function groupCoachSummary(lines: string[], context: CoachSummaryContext): Coach
 
   if (sections.core.length === 0) sections.core.push(buildCoreSignalGuidance(context));
   if (sections.action.length === 0) sections.action.push('핵심 카드 근거 1개와 바로 할 행동 1개를 1문장으로 적어 실행하세요.');
-  if (sections.caution.length === 0) sections.caution.push('과한 해석 확장보다 시간/감정/에너지 조건을 고정해 판단 흔들림을 줄이세요.');
+  if (sections.caution.length === 0) sections.caution.push('해석을 넓히기보다 시간, 감정, 에너지 기준을 먼저 정하고 읽어보세요.');
   if (sections.question.length === 0) sections.question.push('이 포지션 리딩에서 실제 행동으로 바로 옮길 근거 1개는 무엇인가요?');
   sections.core = uniqueCoachLines(sections.core, sections.question);
   sections.action = uniqueCoachLines(sections.action, [...sections.core, ...sections.question]);
@@ -937,7 +937,7 @@ function buildCoachNarrativeParagraphs(sections: CoachSummarySections, context: 
   const caution = selectCoachSentence(
     sections.caution,
     /시간|감정|에너지|소모|리스크|주의|조절|고정/,
-    '과해석보다 시간/감정/에너지 조건을 먼저 고정하세요.'
+    '해석을 넓히기보다 시간, 감정, 에너지 기준을 먼저 정하세요.'
   );
   const review = selectCoachSentence(
     sections.question,
@@ -949,10 +949,10 @@ function buildCoachNarrativeParagraphs(sections: CoachSummarySections, context: 
   const cautionConcrete = buildConditionControlGuidance(context);
 
   return [
-    `이번 리딩의 답안 핵심은 ${toNarrativeSentence(core)} 타로 리더 근거는 "${tarotEvidence}"입니다.`,
-    `"${questionPreview}" 질문에서는 "${keyword}" 신호를 ${axis} 기준으로 좁혀 읽으세요. 실행은 ${toNarrativeSentence(action)} 구체적으로는 ${axisConcrete}`,
-    `해석 범위를 유지하려면 ${toNarrativeSentence(caution)} 이번 카드 기준으로는 ${cautionConcrete}`,
-    `마지막 복기는 ${toNarrativeSentence(review)}`
+    `이번 리딩에서 가장 중요한 포인트는 ${toNarrativeSentence(core)} 카드 근거는 "${tarotEvidence}"입니다.`,
+    `"${questionPreview}" 질문은 "${keyword}"을 ${axis} 기준으로 좁혀 보면 더 쉽게 읽힙니다. 실행은 ${toNarrativeSentence(action)} 구체적으로는 ${axisConcrete}`,
+    `헷갈릴 때는 ${toNarrativeSentence(caution)} 이번 카드로 보면 ${cautionConcrete}`,
+    `마지막으로 복기는 ${toNarrativeSentence(review)}`
   ];
 }
 
