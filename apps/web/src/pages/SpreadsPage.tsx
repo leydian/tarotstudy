@@ -340,29 +340,6 @@ export function SpreadsPage() {
         {detailView === 'reading' && drawMutation.data && (
           <>
             <h4>리딩 메시지</h4>
-            <div className="reading-dual-panel">
-              <article className="result-item reading-summary">
-                <h5 className="reading-block-title">타로 리더 종합 리딩</h5>
-                <UnifiedSummaryView
-                  spreadId={selected.id}
-                  summary={drawMutation.data.summary}
-                  keywords={emphasisKeywords}
-                />
-              </article>
-              <article className="result-item reading-coach">
-                <h5 className="reading-block-title">종합 학습 내역</h5>
-                <NaturalFlowView
-                  blocks={buildLearningDigest(drawMutation.data.items).map((line) => {
-                    const digest = splitDigestLine(line);
-                    return digest.body || line;
-                  })}
-                  keywords={emphasisKeywords}
-                  keyBase="learning-digest"
-                  compact
-                />
-              </article>
-            </div>
-
             {(() => {
               const insights = buildReadingInsights({
                 spreadId: selected.id,
@@ -395,6 +372,28 @@ export function SpreadsPage() {
                 </article>
               );
             })()}
+            <div className="reading-dual-panel">
+              <article className="result-item reading-summary">
+                <h5 className="reading-block-title">타로 리더 종합 리딩</h5>
+                <UnifiedSummaryView
+                  spreadId={selected.id}
+                  summary={drawMutation.data.summary}
+                  keywords={emphasisKeywords}
+                />
+              </article>
+              <article className="result-item reading-coach">
+                <h5 className="reading-block-title">종합 학습 내역</h5>
+                <NaturalFlowView
+                  blocks={buildLearningDigest(drawMutation.data.items).map((line) => {
+                    const digest = splitDigestLine(line);
+                    return digest.body || line;
+                  })}
+                  keywords={emphasisKeywords}
+                  keyBase="learning-digest"
+                  compact
+                />
+              </article>
+            </div>
 
             {selected.id === 'three-card' && drawMutation.data.items.length === 3 && (
               <article className="result-item timeline-wrap">
