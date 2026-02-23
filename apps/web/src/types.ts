@@ -200,6 +200,18 @@ export interface SpreadDrawResult {
     interpretation: string;
     coreMessage: string;
     learningPoint: string;
+    tarotPersonaMeta?: {
+      narrativePreset: 'short' | 'linked' | 'timeline';
+      guardrailApplied: boolean;
+      evidenceCount: number;
+      tarotPurityScore: number;
+      learningNaturalnessScore: number;
+      repetitionRisk: 'low' | 'mid' | 'high';
+    };
+    learningPersonaMeta?: {
+      sentenceCount: number;
+      repetitionRisk: 'low' | 'mid' | 'high';
+    };
   }>;
   summary: string;
   readingV2?: SpreadReadingV2;

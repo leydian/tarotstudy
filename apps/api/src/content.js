@@ -13,6 +13,29 @@ const NATURAL_TONE_MIN_SCORE = Number(process.env.NATURAL_TONE_MIN_SCORE || 72);
 const NATURAL_SPECIFICITY_MIN_SCORE = Number(process.env.NATURAL_SPECIFICITY_MIN_SCORE || 60);
 const NATURAL_REPETITION_MAX_SCORE = Number(process.env.NATURAL_REPETITION_MAX_SCORE || 34);
 const NATURAL_TEMPLATE_MAX_SCORE = Number(process.env.NATURAL_TEMPLATE_MAX_SCORE || 38);
+const TAROT_NARRATIVE_GUARDRAIL_LEVEL = String(process.env.TAROT_NARRATIVE_GUARDRAIL_LEVEL || 'medium').toLowerCase().trim();
+const TAROT_LEARNING_LEAK_PATTERNS = [
+  /\[학습 리더\]/g,
+  /학습 코칭/g,
+  /복기 질문/g,
+  /리딩 검증/g,
+  /가설/g,
+  /반례/g,
+  /지표/g
+];
+const TAROT_ABSOLUTE_PATTERNS = [
+  /반드시/g,
+  /틀림없/g,
+  /100%/g,
+  /절대\s+실패/g,
+  /운명적/g
+];
+const TAROT_FEAR_PATTERNS = [
+  /재앙/g,
+  /파국/g,
+  /끝장/g
+];
+const TAROT_CONDITIONAL_CUES = /(가능성|이 흐름이라면|조건이 맞으면|지금은|우선|가까워 보입니다)/;
 
 function applyConversationalToneToLine(line = '') {
   let text = String(line || '').trim();
@@ -1698,24 +1721,39 @@ export function buildSpreadReading({
         seed
       })}`
     ]);
-  const learningPoint = compactLearningPoint({
+  const learningPointBundle = compactLearningPoint({
     text: learningPointRaw,
-    positionName: position.name
+    positionName: position.name,
+    seed,
+    level
   });
+  const learningPoint = learningPointBundle.text;
 
   const coreMessageSafe = sanitizeCardNameConsistency(coreMessage, card?.nameKo || '');
   const interpretationSafe = sanitizeCardNameConsistency(interpretation, card?.nameKo || '');
+  const tarotPersonaBundle = applyTarotPersonaPipeline({
+    coreMessage: coreMessageSafe,
+    interpretation: interpretationSafe,
+    spreadId,
+    positionName: position.name,
+    context,
+    cardName: card?.nameKo || '',
+    orientation,
+    focus
+  });
 
   const semanticReading = {
-    interpretation: interpretationSafe,
-    coreMessage: coreMessageSafe,
+    interpretation: tarotPersonaBundle.interpretation,
+    coreMessage: tarotPersonaBundle.coreMessage,
     learningPoint
   };
   return {
     interpretation: renderNaturalTextFromSemantic(semanticReading.interpretation),
     coreMessage: renderNaturalTextFromSemantic(semanticReading.coreMessage),
     // Keep instructional marker for study pipeline compatibility.
-    learningPoint: applyConversationalTone(semanticReading.learningPoint)
+    learningPoint: applyConversationalTone(semanticReading.learningPoint),
+    tarotPersonaMeta: tarotPersonaBundle.meta,
+    learningPersonaMeta: learningPointBundle.meta
   };
 }
 
@@ -1738,7 +1776,7 @@ function joinUniqueParts(parts) {
   return out.join(' ');
 }
 
-function compactLearningPoint({ text = '', positionName = '' }) {
+function compactLearningPoint({ text = '', positionName = '', seed = '', level = 'beginner' }) {
   const normalized = String(text || '')
     .replace(/\[학습 리더\]\s*/g, '')
     .replace(/수렴/g, '정리')
@@ -1750,31 +1788,85 @@ function compactLearningPoint({ text = '', positionName = '' }) {
     .replace(/\s+/g, ' ')
     .trim();
 
-  const baseSentences = splitSentences(normalized);
+  const levelNormalized = level === 'intermediate' ? 'intermediate' : 'beginner';
+  const baseSentences = splitSentences(normalized).map((line) => {
+    return String(line || '')
+      .replace(/^관찰 근거:\s*/g, '이번 카드 근거는 ')
+      .replace(/^타로 리더 추론:\s*/g, '그래서 해석은 ')
+      .replace(/^결론 기준:\s*/g, '이번 판단 기준은 ')
+      .replace(/^학습 코칭:\s*/g, '')
+      .replace(/리딩 검증:\s*/g, '검증 기준은 ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }).filter(Boolean);
   const selected = [];
   for (const sentence of baseSentences) {
     if (!sentence) continue;
     const normalizedSentence = sentence.toLowerCase().replace(/[\s"'.,!?()[\]-]/g, '');
     if (selected.some((s) => s.toLowerCase().replace(/[\s"'.,!?()[\]-]/g, '') === normalizedSentence)) continue;
     selected.push(sentence);
-    if (selected.length >= 4) break;
+    if (selected.length >= 3) break;
   }
 
   const hasAction = selected.some((line) => /(하세요|해보세요|기록하세요|정하세요|분리해|줄이세요|수행하세요|실행하세요)/.test(line));
   const hasQuestion = selected.some((line) => /(복기 질문|체크 질문|검증 질문|질문:)/.test(line));
 
+  const actionTemplates = levelNormalized === 'intermediate'
+    ? [
+      `실행 지시: ${positionName} 리딩에서 카드 근거 1개를 선택하고, 오늘 안에 확인 가능한 행동 1개로 줄여 실행하세요.`,
+      `실행 지시: ${positionName} 해석 문장 1개와 실제 행동 1개를 짝으로 기록하고, 저녁에 결과를 한 줄로 점검하세요.`
+    ]
+    : [
+      `실행 지시: ${positionName} 리딩 근거 1개를 정하고 오늘 바로 실행하세요.`,
+      `실행 지시: ${positionName} 카드 신호를 행동 1개로 바꿔 지금 바로 해보세요.`
+    ];
+  const questionTemplates = levelNormalized === 'intermediate'
+    ? [
+      `복기 질문: ${positionName} 리딩에서 가장 잘 맞은 근거 1개와 빗나간 근거 1개는 무엇인가?`,
+      `복기 질문: ${positionName} 해석이 어긋난 지점 1개를 다음 리딩에서 어떻게 바꿀 것인가?`
+    ]
+    : [
+      `복기 질문: ${positionName} 리딩에서 가장 잘 맞은 근거 1개는 무엇인가?`,
+      `복기 질문: ${positionName} 카드 해석과 실제 반응이 맞았던 순간 1개는 무엇인가?`
+    ];
+
   if (!hasAction) {
-    selected.push(`실행 지시: ${positionName} 리딩 근거 1개를 정하고 오늘 바로 실행하세요.`);
+    selected.push(pickVariant(`${seed}:learning-action:${positionName}:${levelNormalized}`, actionTemplates));
   }
   if (!hasQuestion) {
-    selected.push(`복기 질문: ${positionName} 리딩에서 가장 잘 맞은 근거 1개는 무엇인가?`);
+    selected.push(pickVariant(`${seed}:learning-question:${positionName}:${levelNormalized}`, questionTemplates));
   }
 
-  while (selected.length < 2) {
-    selected.push('실행 지시: 카드 근거 1개를 행동 1개와 연결해 기록하세요.');
+  while (selected.length < 3) {
+    selected.push(pickVariant(`${seed}:learning-fallback:${selected.length}:${positionName}`, [
+      '실행 지시: 카드 근거 1개를 행동 1개와 연결해 기록하세요.',
+      '복기 질문: 오늘 해석에서 가장 설득력 있었던 근거 1개는 무엇인가?'
+    ]));
   }
 
-  return `[학습 리더] ${selected.slice(0, 5).join(' ')}`;
+  const compacted = selected.slice(0, 4).join(' ');
+  return {
+    text: `[학습 리더] ${compacted}`,
+    meta: {
+      sentenceCount: splitSentences(compacted).length,
+      repetitionRisk: scoreLearningRepetitionRisk(compacted)
+    }
+  };
+}
+
+function scoreLearningRepetitionRisk(text = '') {
+  const tokens = String(text || '')
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+    .split(/\s+/)
+    .filter((token) => token.length > 1);
+  if (tokens.length < 10) return 'low';
+  const freq = new Map();
+  for (const token of tokens) freq.set(token, (freq.get(token) || 0) + 1);
+  const repeated = [...freq.values()].filter((count) => count >= 3).length;
+  if (repeated >= 4) return 'high';
+  if (repeated >= 2) return 'mid';
+  return 'low';
 }
 
 function escapeRegex(text = '') {
@@ -1795,6 +1887,164 @@ function sanitizeCardNameConsistency(text = '', currentCardName = '') {
     }
   }
   return out;
+}
+
+function applyTarotPersonaPipeline({
+  coreMessage = '',
+  interpretation = '',
+  spreadId = '',
+  positionName = '',
+  context = '',
+  cardName = '',
+  orientation = 'upright',
+  focus = ''
+}) {
+  const preset = getTarotNarrativePreset(spreadId);
+  const skipNarrativeRewrite = spreadId === 'one-card';
+  let nextCore = enforceTarotPersonaText(coreMessage);
+  let nextInterpretation = enforceTarotPersonaText(interpretation);
+  if (!skipNarrativeRewrite) {
+    nextCore = rewriteTarotAsNarrative({
+      text: nextCore,
+      spreadId,
+      positionName,
+      context,
+      cardName,
+      orientation,
+      focus,
+      preset,
+      maxSentences: 4
+    });
+    nextInterpretation = rewriteTarotAsNarrative({
+      text: nextInterpretation,
+      spreadId,
+      positionName,
+      context,
+      cardName,
+      orientation,
+      focus,
+      preset,
+      maxSentences: preset === 'short' ? 5 : 7
+    });
+  }
+
+  const guardrailCore = enforceTarotGuardrails(nextCore);
+  const guardrailInterpretation = enforceTarotGuardrails(nextInterpretation);
+  const coreEvidenceCount = countTarotEvidenceSignals(guardrailCore.text);
+  const interpretationEvidenceCount = countTarotEvidenceSignals(guardrailInterpretation.text);
+  return {
+    coreMessage: guardrailCore.text,
+    interpretation: guardrailInterpretation.text,
+    meta: {
+      narrativePreset: preset,
+      guardrailApplied: guardrailCore.applied || guardrailInterpretation.applied,
+      evidenceCount: coreEvidenceCount + interpretationEvidenceCount,
+      tarotPurityScore: scoreTarotPurity([guardrailCore.text, guardrailInterpretation.text].join(' ')),
+      learningNaturalnessScore: scoreTarotNaturalness(guardrailInterpretation.text),
+      repetitionRisk: scoreLearningRepetitionRisk(guardrailInterpretation.text)
+    }
+  };
+}
+
+function enforceTarotPersonaText(text = '') {
+  let next = String(text || '');
+  for (const pattern of TAROT_LEARNING_LEAK_PATTERNS) {
+    next = next.replace(pattern, '');
+  }
+  return next.replace(/\s{2,}/g, ' ').trim();
+}
+
+function getTarotNarrativePreset(spreadId = '') {
+  if (spreadId === 'one-card' || spreadId === 'daily-fortune') return 'short';
+  if (spreadId === 'weekly-fortune' || spreadId === 'monthly-fortune' || spreadId === 'yearly-fortune') return 'timeline';
+  return 'linked';
+}
+
+function rewriteTarotAsNarrative({
+  text = '',
+  spreadId = '',
+  positionName = '',
+  context = '',
+  cardName = '',
+  orientation = 'upright',
+  focus = '',
+  preset = 'linked',
+  maxSentences = 5
+}) {
+  const baseSentences = splitSentences(text).filter(Boolean);
+  if (!baseSentences.length) return text;
+  const story = [...baseSentences];
+  const sceneLead = preset === 'timeline'
+    ? `지금 질문 흐름은 ${positionName || '현재 구간'}에서 시간축으로 읽어보는 게 가장 선명합니다.`
+    : `지금 질문 장면은 ${positionName || '현재 구간'}에서 핵심 신호를 먼저 잡는 흐름입니다.`;
+  const contextClean = normalizeClientQuestion(context);
+  const contextLine = contextClean
+    ? `질문("${contextClean}")을 기준으로 보면, 지금은 ${focus || '핵심 흐름'}을 정리하는 장면에 가깝습니다.`
+    : sceneLead;
+  if (!story.some((line) => /(장면|흐름|질문\("|국면)/.test(line))) {
+    story.unshift(contextLine);
+  }
+  if (!story.some((line) => TAROT_CONDITIONAL_CUES.test(line))) {
+    story.push(orientation === 'upright'
+      ? `${cardName || '이번 카드'} 신호가 이어진다면, 작은 실행부터 시작할 가능성이 열립니다.`
+      : `${cardName || '이번 카드'} 신호를 보면, 지금은 속도를 낮추면 흔들림을 줄일 가능성이 큽니다.`);
+  }
+  if (!story.some((line) => /(카드|근거|정방향|역방향|키워드|포지션)/.test(line))) {
+    story.push(`${cardName || '이번 카드'} 카드 근거를 포지션 기준으로 다시 확인하면 해석 정확도가 올라갑니다.`);
+  }
+  if (!story.some((line) => /(해보세요|정해보세요|점검해보세요|실행해보세요|줄여보세요)/.test(line))) {
+    story.push(orientation === 'upright'
+      ? '다음 장면으로 넘기기 전에 오늘 실천할 행동 1개만 정해보세요.'
+      : '다음 장면으로 넘기기 전에 오늘 줄일 소모 1개부터 정리해보세요.');
+  }
+  return story.slice(0, maxSentences).join(' ');
+}
+
+function enforceTarotGuardrails(text = '') {
+  let next = String(text || '').trim();
+  let applied = false;
+  for (const pattern of TAROT_ABSOLUTE_PATTERNS) {
+    if (pattern.test(next)) {
+      applied = true;
+      next = next.replace(pattern, '가능성이 큽니다');
+    }
+  }
+  const fearPatterns = TAROT_NARRATIVE_GUARDRAIL_LEVEL === 'low' ? [] : TAROT_FEAR_PATTERNS;
+  for (const pattern of fearPatterns) {
+    if (pattern.test(next)) {
+      applied = true;
+      next = next.replace(pattern, '강한 경고 신호');
+    }
+  }
+  next = next.replace(/!{2,}/g, '.').replace(/\s{2,}/g, ' ').trim();
+  if (!TAROT_CONDITIONAL_CUES.test(next)) {
+    applied = true;
+    next = `${next} 지금은 조건을 하나씩 확인하며 움직이면 판단이 더 안정됩니다.`.trim();
+  }
+  return { text: next, applied };
+}
+
+function countTarotEvidenceSignals(text = '') {
+  return (String(text || '').match(/(정방향|역방향|카드|키워드|포지션|근거|질문)/g) || []).length;
+}
+
+function scoreTarotPurity(text = '') {
+  const raw = String(text || '');
+  let penalty = 0;
+  for (const pattern of TAROT_LEARNING_LEAK_PATTERNS) {
+    penalty += (raw.match(pattern) || []).length * 20;
+  }
+  return Math.max(0, 100 - penalty);
+}
+
+function scoreTarotNaturalness(text = '') {
+  const raw = String(text || '').trim();
+  if (!raw) return 0;
+  let score = 60;
+  const cueHits = (raw.match(/(흐름|장면|신호|전개|실행|점검)/g) || []).length;
+  score += Math.min(30, cueHits * 3);
+  if (TAROT_CONDITIONAL_CUES.test(raw)) score += 10;
+  return Math.max(0, Math.min(100, score));
 }
 
 function inferContextProfile(context = '') {
@@ -4406,8 +4656,8 @@ function buildLearningCoachFrame({
     ];
   const conclusionModes = level === 'intermediate'
     ? [
-      `결론 기준: ${style.learningFrame} 기준으로 ${contextProfile.trackMetric} 일치율을 확인하고 우선순위를 확정하세요.`,
-      `결론 기준: 해석 선명도보다 의사결정 품질을 우선해, 반응 데이터(24~72시간)로 결론을 업데이트하세요.`
+      `결론 기준: ${style.learningFrame}을 따라 카드 근거 1개와 실제 반응 1개를 같은 기준으로 비교하세요.`,
+      '결론 기준: 해석을 길게 늘리지 말고, 24~72시간 안에 확인할 포인트 1개를 정해 업데이트하세요.'
     ]
     : [
       `결론 기준: ${style.learningFrame}에서 카드 근거 1개 + 실행 1개 + 체감 1개를 같은 기준으로 비교하세요.`,
@@ -4424,8 +4674,8 @@ function buildLearningCoachReview({ positionName, cardName, orientation, context
   const direction = orientation === 'upright' ? '정방향' : '역방향';
   const coachModes = level === 'intermediate'
     ? [
-      `학습 코칭: ${positionName} 해석에서 사용한 근거(카드/포지션/맥락)와 결론 문장을 분리 기록하고, 오차 요인 1개를 바로 표기하세요.`,
-      `학습 코칭: ${contextProfile.trackMetric} 기준으로 적중 근거 1개와 빗나간 근거 1개를 나눠 적어 다음 리딩 가중치를 조정하세요.`
+      `학습 코칭: ${positionName} 해석에서 근거 문장 1개와 결론 문장 1개를 나눠 기록하고, 어긋난 이유 1개를 바로 적어보세요.`,
+      `학습 코칭: ${contextProfile.trackMetric} 기준으로 맞은 근거 1개와 빗나간 근거 1개만 짧게 적어 다음 리딩에 반영하세요.`
     ]
     : [
       `학습 코칭: ${positionName} 리딩은 카드 근거 1개와 행동 1개를 한 세트로 남기면 재현성이 올라갑니다.`,
@@ -4512,18 +4762,18 @@ const READING_STYLE_AB = {
   },
   intermediate: {
     A: {
-      uprightTail: '핵심 변수와 보조 변수를 분리해 의사결정 밀도를 높이세요.',
-      reversedTail: '원인-증상 분리 후 병목 변수 하나를 먼저 제거해야 합니다.',
+      uprightTail: '핵심 요인과 보조 요인을 나눠서 판단하면 해석이 훨씬 선명해집니다.',
+      reversedTail: '원인과 증상을 나눠서, 먼저 줄일 요인 1개를 정하는 게 핵심입니다.',
       actionHint: '7일 단기 플랜과 30일 중기 플랜을 분리해 기록하세요.',
-      learningFrame: '중급 실험 프레임: 포지션별 가설·반례·검증 지표를 세우고 우선순위 규칙을 명시하세요.',
-      reviewStep: '주간 단위로 가설 적중률을 측정하고, 오차를 변수 누락/가중치 오류/검증 타이밍 문제로 분류하세요.'
+      learningFrame: '중급 실전 프레임: 포지션별 해석 근거 1개와 확인 포인트 1개를 짝으로 기록하세요.',
+      reviewStep: '주간 단위로 적중/부분/다름을 체크하고, 어긋난 이유 1개를 짧게 남기세요.'
     },
     B: {
       uprightTail: '카드 간 상호작용을 우선순위 테이블로 정리하면 정확도가 올라갑니다.',
-      reversedTail: '역방향 신호는 구조적 리스크로 보고 완충 자원을 먼저 확보하세요.',
+      reversedTail: '역방향 신호는 리스크로 보고 완충 행동 1개를 먼저 정해두세요.',
       actionHint: '가설-검증 루프를 다음 리딩 전까지 최소 1회 수행하세요.',
-      learningFrame: '중급 운영 프레임: 현재/근미래/결과를 시간축으로 분리하고 각 구간의 실패 비용과 완충 자원을 추정하세요.',
-      reviewStep: '복기 시 리딩 오류를 정보 부족/해석 과확장/카드 근거 누락/검증 지연 중 하나로 분류하세요.'
+      learningFrame: '중급 운영 프레임: 현재/근미래/결과를 시간축으로 나눠 확인 포인트를 정리하세요.',
+      reviewStep: '복기에서는 정보 부족/해석 과확장/근거 누락 중 1개만 골라 다음 행동을 조정하세요.'
     }
   }
 };

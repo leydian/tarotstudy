@@ -1,0 +1,20 @@
+[
+  { "spreadId": "one-card", "level": "beginner", "context": "오늘 운세는 전반적으로 어떤 흐름일까" },
+  { "spreadId": "one-card", "level": "beginner", "context": "지금 연락해도 괜찮을까" },
+  { "spreadId": "one-card", "level": "beginner", "context": "이번 주 공부 방향이 맞을까" },
+  { "spreadId": "daily-fortune", "level": "beginner", "context": "오늘 하루 감정 흐름이 궁금해" },
+  { "spreadId": "daily-fortune", "level": "beginner", "context": "오늘 재정 흐름을 어떻게 관리하면 좋을까" },
+  { "spreadId": "weekly-fortune", "level": "beginner", "context": "이번 주 관계 흐름을 알고 싶어" },
+  { "spreadId": "weekly-fortune", "level": "beginner", "context": "이번 주 업무 우선순위 어떻게 잡을까" },
+  { "spreadId": "three-card", "level": "beginner", "context": "지금 관계를 이어가도 될까" },
+  { "spreadId": "three-card", "level": "intermediate", "context": "이직을 지금 준비해도 괜찮을까" },
+  { "spreadId": "three-card", "level": "intermediate", "context": "시험 합격 가능성이 있을까" },
+  { "spreadId": "choice-a-b", "level": "intermediate", "context": "A회사로 갈까 B회사로 갈까" },
+  { "spreadId": "choice-a-b", "level": "intermediate", "context": "아이폰으로 바꿀까 갤럭시를 유지할까" },
+  { "spreadId": "monthly-fortune", "level": "intermediate", "context": "다음 달 커리어 흐름을 알고 싶어" },
+  { "spreadId": "monthly-fortune", "level": "intermediate", "context": "다음 달 재정 흐름이 궁금해" },
+  { "spreadId": "yearly-fortune", "level": "intermediate", "context": "올해 이직 시기를 알고 싶어" },
+  { "spreadId": "yearly-fortune", "level": "intermediate", "context": "올해 관계 회복 흐름이 궁금해" },
+  { "spreadId": "celtic-cross", "level": "intermediate", "context": "지금 관계 갈등을 어떻게 풀어야 할까" },
+  { "spreadId": "celtic-cross", "level": "intermediate", "context": "지금 커리어 결정의 핵심이 뭘까" }
+]

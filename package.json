@@ -17,12 +17,14 @@
     "qa:learning-leader:raw": "node scripts/learning-leader-quality-check.mjs",
     "qa:refresh-cases": "node scripts/refresh-qa-cases.mjs",
     "qa:learning-leader": "node scripts/run-learning-leader-qa.mjs",
+    "qa:tarot-reader:raw": "node scripts/tarot-reader-quality-check.mjs",
+    "qa:tarot-reader": "node scripts/run-tarot-reader-qa.mjs",
     "qa:relationship-recovery": "node scripts/relationship-recovery-variation-check.mjs",
     "qa:spread-telemetry": "node scripts/spread-telemetry-rollup.mjs",
     "qa:yearly-fortune": "node scripts/yearly-fortune-regression-check.mjs",
     "qa:question-understanding": "node scripts/question-understanding-eval.mjs",
     "qa:summary-regression": "node scripts/summary-regression-check.mjs",
     "docs:check-handoff": "node scripts/check-handoff-docs.mjs",
-    "verify:quality": "npm run lint && npm run typecheck:web && npm run test:web && npm run test:api && npm run qa:learning-leader && npm run qa:relationship-recovery && npm run qa:yearly-fortune && npm run qa:question-understanding && npm run qa:summary-regression && npm run docs:check-handoff"
+    "verify:quality": "npm run lint && npm run typecheck:web && npm run test:web && npm run test:api && npm run qa:learning-leader && npm run qa:tarot-reader && npm run qa:relationship-recovery && npm run qa:yearly-fortune && npm run qa:question-understanding && npm run qa:summary-regression && npm run docs:check-handoff"
   }
 }

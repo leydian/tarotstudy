@@ -353,9 +353,38 @@ function performSpreadDraw({ spreadId, variantId = '', level = 'beginner', conte
       },
       interpretation: reading.interpretation,
       coreMessage: reading.coreMessage,
-      learningPoint: reading.learningPoint
+      learningPoint: reading.learningPoint,
+      tarotPersonaMeta: reading.tarotPersonaMeta || undefined,
+      learningPersonaMeta: reading.learningPersonaMeta || undefined
     };
   });
+
+  for (const item of items) {
+    if (item.tarotPersonaMeta?.guardrailApplied) {
+      telemetryStore.recordSpreadEvent({
+        type: 'tarot_guardrail_applied',
+        spreadId: spread.id,
+        level,
+        context
+      });
+    }
+    if (item.tarotPersonaMeta?.tarotPurityScore < 100) {
+      telemetryStore.recordSpreadEvent({
+        type: 'tarot_persona_rewrite_applied',
+        spreadId: spread.id,
+        level,
+        context
+      });
+    }
+    if (item.learningPersonaMeta?.repetitionRisk === 'high') {
+      telemetryStore.recordSpreadEvent({
+        type: 'learning_repetition_high',
+        spreadId: spread.id,
+        level,
+        context
+      });
+    }
+  }
 
   const summary = summarizeSpread({
     spreadId: spread.id,
@@ -3060,6 +3089,7 @@ function buildCelticConclusion({
 
   const relationshipClose = [
     `정리하면, 중심축(${currentLabel})과 장애축(${obstacleLabel})의 긴장을 먼저 풀어야 가까운 미래(${futureLabel})와 결과(${outcomeLabel})가 좋은 쪽으로 이어집니다.`,
+    `판정 근거는 현재 카드의 신호가 장애 카드와 어떻게 충돌하는지, 그리고 결과 카드의 흐름으로 어떻게 이어지는지에 있습니다.`,
     resultIsOpen
       ? '결론은 화해 가능성이 충분히 열려 있습니다. 이번에는 누가 맞았는지보다 관계를 다시 안전하게 만드는 대화 방식이 핵심입니다.'
       : '결론은 아직 망설임이 크지만, 지금 행동을 바꾸면 결과 흐름을 충분히 전환할 수 있습니다. 멈춰 있는 시간보다 작은 접촉이 더 중요합니다.',
@@ -3074,6 +3104,7 @@ function buildCelticConclusion({
 
   const generalClose = [
     `정리하면, 중심축(${currentLabel})과 장애축(${obstacleLabel})을 먼저 해소할 때 가까운 미래(${futureLabel})에서 결과(${outcomeLabel})로 넘어가는 흐름이 안정됩니다.`,
+    `판정 근거는 현재 카드의 신호와 장애 카드의 충돌 지점, 그리고 결과 카드의 전개 흐름을 함께 본 해석입니다.`,
     resultIsOpen
       ? '결론은 실행 가능성이 비교적 열려 있습니다. 우선순위 하나를 정해 작은 실행으로 흐름을 붙여보세요.'
       : '결론은 조정이 필요한 흐름입니다. 무리한 확장보다 핵심 병목 하나를 먼저 줄이는 쪽이 유리합니다.',
@@ -3179,6 +3210,7 @@ function isCareerTimingContext(context = '') {
   const hardCareerSignals = [
     '취업',
     '이직',
+    '전직',
     '면접',
     '지원',
     '지원서',
@@ -3189,7 +3221,12 @@ function isCareerTimingContext(context = '') {
     '직무',
     '입사',
     '퇴사',
-    '채용'
+    '채용',
+    '커리어',
+    '회사에 남',
+    '옮기',
+    '남는 게',
+    '남을까'
   ];
   return hardCareerSignals.some((keyword) => text.includes(keyword));
 }

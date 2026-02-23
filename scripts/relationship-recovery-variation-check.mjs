@@ -88,11 +88,23 @@ function measurePairs(values = [], highSimilarityThreshold = 0.82) {
 }
 
 function splitSummarySections(summary = '') {
-  const parts = String(summary).split('\n\n').map((part) => part.trim()).filter(Boolean);
+  const raw = String(summary || '');
+  const matchSection = (startLabel, nextLabels = []) => {
+    const escapedStart = startLabel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const escapedNext = nextLabels.map((item) => item.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+    const tail = escapedNext.length ? `(?=${escapedNext.join('|')}|$)` : '$';
+    const regex = new RegExp(`(${escapedStart}[\\s\\S]*?)${tail}`, 'm');
+    const found = raw.match(regex);
+    return found?.[1]?.trim() || '';
+  };
+  const parts = raw.split('\n\n').map((part) => part.trim()).filter(Boolean);
   return {
-    diagnosis: parts.find((part) => part.startsWith('핵심 진단:')) || '',
-    risk: parts.find((part) => part.startsWith('관계 리스크:')) || '',
-    plan: parts.find((part) => part.startsWith('7일 행동 계획:')) || ''
+    diagnosis: parts.find((part) => part.startsWith('핵심 진단:'))
+      || matchSection('핵심 진단:', ['관계 리스크:', '7일 행동 계획:', '마무리:']),
+    risk: parts.find((part) => part.startsWith('관계 리스크:'))
+      || matchSection('관계 리스크:', ['7일 행동 계획:', '마무리:']),
+    plan: parts.find((part) => part.startsWith('7일 행동 계획:'))
+      || matchSection('7일 행동 계획:', ['마무리:'])
   };
 }
 

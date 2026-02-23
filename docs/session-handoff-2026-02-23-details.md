@@ -1141,3 +1141,94 @@
 - `5206cd9` fix: reduce repetitive tarot dialogue and diversify position evidence
 - `45253f1` feat: add txt/pdf export for chat and card views
 - `4df4365` feat: enhance conversational flow and rich export formatting
+
+## 24) 2026-02-23 최신 후속 9 (타로 리더/학습 리더 페르소나 강화 + 품질게이트 확장)
+
+### 24.1 타로 리더 페르소나 강화 (스토리형 + 가드레일)
+- 변경 파일:
+  - `apps/api/src/content.js`
+  - `apps/api/src/index.js`
+- 핵심:
+  - 타로 리더 출력 후처리에 페르소나 파이프라인 추가
+    - 학습 리더 용어 누수 제거
+    - 서사형 문장 보강(장면/근거/조건/실행)
+    - 안전 가드레일 적용(단정/공포성 표현 완화, 조건부 표현 보강)
+  - 스프레드별 서사 프리셋 도입
+    - `short`(원카드/데일리)
+    - `linked`(일반 다카드)
+    - `timeline`(주/월/연간)
+  - 출력 메타 추가:
+    - `tarotPersonaMeta.narrativePreset`
+    - `tarotPersonaMeta.guardrailApplied`
+    - `tarotPersonaMeta.evidenceCount`
+    - `tarotPersonaMeta.tarotPurityScore`
+    - `tarotPersonaMeta.learningNaturalnessScore`
+    - `tarotPersonaMeta.repetitionRisk`
+  - draw 시 텔레메트리 기록 확장:
+    - `tarot_guardrail_applied`
+    - `tarot_persona_rewrite_applied`
+
+### 24.2 학습 리더 페르소나 강화 (코치형 자연어 + 반복 억제)
+- 변경 파일:
+  - `apps/api/src/content.js`
+  - `apps/api/src/index.js`
+  - `apps/web/src/types.ts`
+- 핵심:
+  - `compactLearningPoint` 로직 강화
+    - 코치형 자연어로 압축
+    - 실행/복기 질문 자동 보강
+    - 문장 중복 제거 강화
+  - 중급 문구 자연화
+    - `가설/반례/지표` 과밀 표현 완화
+    - 동일 의미를 일상어 중심으로 재작성
+  - 출력 메타 추가:
+    - `learningPersonaMeta.sentenceCount`
+    - `learningPersonaMeta.repetitionRisk`
+  - draw 시 반복 고위험 텔레메트리 기록:
+    - `learning_repetition_high`
+
+### 24.3 QA/게이트 확장
+- 변경 파일:
+  - `scripts/tarot-reader-quality-check.mjs` (신규)
+  - `scripts/run-tarot-reader-qa.mjs` (신규)
+  - `scripts/tarot-reader-eval-set.json` (신규)
+  - `package.json`
+  - `apps/api/test/tarot-reader-style.test.js` (신규)
+- 핵심:
+  - 신규 QA 명령:
+    - `qa:tarot-reader:raw`
+    - `qa:tarot-reader`
+  - `verify:quality` 파이프라인에 `qa:tarot-reader` 연결
+  - 타로 리더 회귀 테스트 추가
+    - 학습 리더 용어 누수 방지
+    - 가드레일/조건부 문장 확인
+    - 메타 필드 생성 확인
+
+### 24.4 기존 QA 보정 (오탐/회귀 대응)
+- 변경 파일:
+  - `scripts/relationship-recovery-variation-check.mjs`
+  - `apps/api/src/index.js`
+- 핵심:
+  - 관계회복 QA 섹션 파서를 빈 줄 의존 방식에서 라벨 기반 추출로 보강
+    - 단일 문단 요약에서도 `핵심 진단/관계 리스크/7일 행동 계획` 인식
+  - 연간운세 회귀 보정
+    - 커리어 타이밍 문맥 키워드(`옮기`, `남는 게`, `커리어` 등) 확장
+  - 켈틱 요약 회귀 보정
+    - 결론부에 `판정 근거` 문장을 명시해 증거 신호 누락 방지
+
+### 24.5 최종 검증 결과
+- 개별 검증:
+  - `npm run test:api` 통과
+  - `npm run typecheck:web` 통과
+  - `npm run qa:learning-leader` 통과
+  - `npm run qa:tarot-reader` 통과
+  - `npm run qa:relationship-recovery` 통과
+  - `npm run qa:yearly-fortune` 통과
+  - `npm run qa:summary-regression` 통과
+- 통합 게이트:
+  - `npm run verify:quality` 최종 통과
+    - `lint`, `typecheck:web`, `test:web`, `test:api`
+    - `qa:learning-leader`, `qa:tarot-reader`
+    - `qa:relationship-recovery`, `qa:yearly-fortune`
+    - `qa:question-understanding`, `qa:summary-regression`
+    - `docs:check-handoff`
