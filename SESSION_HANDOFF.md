@@ -1,7 +1,7 @@
 # 세션 인수인계 문서 (메인)
 
 작성일: 2026-02-22  
-최종 갱신: 2026-02-23 (latest 4)  
+최종 갱신: 2026-02-23 (latest 5)  
 작업 경로: `/home/eunok/studycodex`
 
 ## 1) 문서 구조
@@ -39,6 +39,39 @@
   - 시험/합격 템플릿을 면접/지원/이직/오퍼 질문까지 동일 프레임으로 확장
 
 ## 3) 금일 추가 반영 (최신)
+- 챗 상세 본문 단일화 + 타로 코어 근본 리팩터링(반복/비문/상징오류/고위험 액션) (2026-02-23 latest 5)
+  - 관련 커밋:
+    - `fba6a15` Remove chat summary stream and promote detailed dialogue
+    - `e3e5aca` Refactor tarot core generation for style-based persona and quality gating
+  - 변경 파일(핵심):
+    - `apps/web/src/pages/ChatSpreadPage.tsx`
+    - `apps/api/src/content.js`
+    - `apps/api/src/index.js`
+    - `apps/api/src/reading-model-builder.js`
+    - `apps/web/src/types.ts`
+    - `docs/persona-onepager.md`
+    - `apps/api/test/reading-core-refactor-regression.test.js` (신규)
+    - `apps/api/test/persona-policy-enforcement.test.js`
+    - `apps/api/test/tarot-reader-style.test.js`
+    - `apps/api/test/reading-model-quality-profile.test.js`
+  - 핵심 변경:
+    - 챗봇 대화 렌더를 `상세 대화 본문` 단일 흐름으로 통합(요약 대화 경로 제거)
+    - 타로 생성 코어를 “강제 서사 삽입”에서 “3문장 상한 + 조건부 구성”으로 전환
+    - 페르소나 적용을 문장 덧붙이기 방식에서 스타일 파라미터 방식으로 전환
+    - 카드 상징 매핑을 `cardId/suit/arcana` 우선으로 고정하고 펜타클 기본 fallback 제거
+    - 생성 단계 한국어 품질 게이트 추가(조사/반복/비문 감지 및 재작성)
+    - 관계 고위험 신호에서 즉시 실행 대신 관찰/완충 액션 우선 적용
+    - `readingModel.meta.quality` 확장(`grammarScore`, `redundancyScore`, `personaInjectionMode`)
+  - 효과:
+    - 카드별 의미 충돌(예: 불안 카드인데 즉시 추진) 감소
+    - 문장 반복/보일러플레이트 누수 및 조사 오류 재발 가능성 감소
+    - 구매/지역 선택형 질문에서 비교 축 보존력 강화
+  - 검증:
+    - `npm run -s test:api` 통과 (21/21)
+    - `npm run -s typecheck:web` 통과
+    - `npm run -s test:web` 통과 (3/3)
+    - `npm run -s lint` 통과
+
 - 페르소나 원페이지 정책 강제 + 챗 레거시 경로 축소 + 운영 문서 고도화 (2026-02-23 latest 4)
   - 관련 커밋:
     - `692f98b` Refine readingModel pipeline and reduce chat legacy fallbacks

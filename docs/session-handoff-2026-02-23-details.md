@@ -256,8 +256,53 @@
 - 핵심:
   - 단순 키워드 난사형 강조 -> 문맥 우선 강조로 전환
   - 3단계 강조 도입
-    - `high`: 형광펜 + 강한 굵기
-    - `mid`: 굵기 + 밑줄
+  - `high`: 형광펜 + 강한 굵기
+  - `mid`: 굵기 + 밑줄
+
+## 12) 2026-02-23 추가 후속 4 (챗 상세 본문화 + 타로 코어 근본 리팩터링)
+
+### 12.1 챗봇 대화 렌더 경로 단일화
+- 변경 파일:
+  - `apps/web/src/pages/ChatSpreadPage.tsx`
+- 핵심:
+  - `요약 대화(quick)` 스트림 제거
+  - `상세 대화(detail)`를 챗 본문에 직접 편입
+  - 중복 요약/아코디언 구조 삭제로 챗 응답 스캔 경로 단순화
+
+### 12.2 타로 생성 코어 리팩터링 (반복/비문/상징오류/의미충돌)
+- 변경 파일:
+  - `apps/api/src/content.js`
+  - `apps/api/src/index.js`
+  - `apps/api/src/reading-model-builder.js`
+  - `apps/web/src/types.ts`
+  - `docs/persona-onepager.md`
+- 핵심:
+  - 서사 생성 규칙을 강제 삽입 방식에서 조건부 3문장 상한으로 전환
+  - 페르소나 적용을 문장 append 방식에서 스타일 파라미터 방식으로 전환
+  - 상징 매핑을 카드 데이터(`cardId/suit/arcana`) 우선으로 고정
+  - 생성 단계 한국어 품질 게이트 추가(조사/반복/비문 감지 및 재작성)
+  - 관계 고위험 신호에서 즉시 추진 액션을 완충/관찰형 액션으로 보정
+  - `readingModel.meta.quality` 확장:
+    - `grammarScore`
+    - `redundancyScore`
+    - `personaInjectionMode`
+
+### 12.3 테스트/회귀 보강
+- 신규 테스트:
+  - `apps/api/test/reading-core-refactor-regression.test.js`
+- 갱신 테스트:
+  - `apps/api/test/persona-policy-enforcement.test.js`
+  - `apps/api/test/reading-model-quality-profile.test.js`
+  - `apps/api/test/tarot-reader-style.test.js`
+- 검증:
+  - `npm run -s test:api` 통과 (21/21)
+  - `npm run -s typecheck:web` 통과
+  - `npm run -s test:web` 통과 (3/3)
+  - `npm run -s lint` 통과
+
+### 12.4 관련 커밋
+- `fba6a15` Remove chat summary stream and promote detailed dialogue
+- `e3e5aca` Refactor tarot core generation for style-based persona and quality gating
     - `low`: 색상 중심 약강조
   - 문단별 강조 수를 단계별 제한해 과밀 강조 방지
   - stopword(흐름/신호/기준 등) 과강조 억제
