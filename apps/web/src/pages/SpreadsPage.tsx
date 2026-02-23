@@ -5,6 +5,7 @@ import { api } from '../lib/api';
 import { recommendSpreadForQuestion } from '../lib/spread-recommendation';
 import { buildDisplaySpreads, resolveDisplaySpreadId } from '../lib/spread-display';
 import { loadChatDrawCache, saveChatDrawCache } from '../lib/chat-draw-cache';
+import { exportReadingPdf, exportReadingTxt } from '../lib/reading-export';
 import { TarotImage } from '../components/TarotImage';
 import { getProgressUserId, useProgressStore } from '../state/progress';
 import type { SpreadDrawResult } from '../types';
@@ -362,6 +363,20 @@ export function SpreadsPage() {
               </Link>
             );
           })()}
+          <button
+            className="chip-link"
+            disabled={!activeDraw}
+            onClick={() => activeDraw && exportReadingTxt(activeDraw, '카드뷰 모드')}
+          >
+            TXT 내보내기
+          </button>
+          <button
+            className="chip-link"
+            disabled={!activeDraw}
+            onClick={() => activeDraw && exportReadingPdf(activeDraw, '카드뷰 모드')}
+          >
+            PDF 내보내기
+          </button>
         </div>
 
         {selected.variants && selected.variants.length > 0 && (

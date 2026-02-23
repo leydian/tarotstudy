@@ -8,6 +8,7 @@ import { normalizeDisplayText } from './spreads-presenters';
 import { recommendSpreadForQuestion } from '../lib/spread-recommendation';
 import { buildDisplaySpreads, resolveDisplaySpreadId } from '../lib/spread-display';
 import { loadChatDrawCache, saveChatDrawCache } from '../lib/chat-draw-cache';
+import { exportReadingPdf, exportReadingTxt } from '../lib/reading-export';
 import {
   findDrawnItemForSlot,
   parseMonthlySummary,
@@ -186,6 +187,20 @@ export function ChatSpreadPage() {
             >
               카드뷰로 보기
             </Link>
+            <button
+              className="chip-link"
+              disabled={!latestReading}
+              onClick={() => latestReading && exportReadingTxt(latestReading, '챗봇 모드')}
+            >
+              TXT 내보내기
+            </button>
+            <button
+              className="chip-link"
+              disabled={!latestReading}
+              onClick={() => latestReading && exportReadingPdf(latestReading, '챗봇 모드')}
+            >
+              PDF 내보내기
+            </button>
           </div>
         </div>
 
@@ -539,12 +554,15 @@ function findCautionLine(lines: string[]) {
 }
 
 function buildGenericHighlights(lines: string[]) {
-  const conclusion = lines.find((line) => /결론|총평|핵심|테마/.test(line)) || lines[0] || '';
-  const action = lines.find((line) => /실행|행동|할 일|추천|진행/.test(line)) || lines[1] || conclusion;
-  const caution = findCautionLine(lines);
+  const conclusion = pickDistinctLine(lines, [/결론|총평|핵심|테마/], []);
+  const action = pickDistinctLine(lines, [/실행|행동|할 일|추천|진행/], [conclusion]);
+  const cautionRaw = findCautionLine(lines);
+  const caution = isSameMeaning(cautionRaw, conclusion) || isSameMeaning(cautionRaw, action)
+    ? pickDistinctLine(lines, [/주의|리스크|소모|충돌|지연|과속|불안|피해야|조절/], [conclusion, action])
+    : cautionRaw;
   return [
-    { title: '핵심 결론', body: compactLine(conclusion) },
-    { title: '지금 할 일', body: compactLine(action) },
+    { title: '핵심 결론', body: compactLine(conclusion) || '핵심 흐름을 기준으로 속도부터 조절해보세요.' },
+    { title: '지금 할 일', body: compactLine(action) || '행동 1개만 정해 짧게 실행하고 기록해보세요.' },
     { title: '주의 포인트', body: caution }
   ];
 }
@@ -679,6 +697,26 @@ function normalizeDialogKey(text: string) {
     .replace(/["'`]/g, '')
     .replace(/[.,!?]/g, '')
     .trim();
+}
+
+function pickDistinctLine(lines: string[], patterns: RegExp[], exclude: string[]) {
+  const excluded = exclude.map((item) => normalizeDialogKey(item)).filter(Boolean);
+  for (const line of lines) {
+    if (!patterns.some((pattern) => pattern.test(line))) continue;
+    const key = normalizeDialogKey(line);
+    if (!key || excluded.includes(key)) continue;
+    return line;
+  }
+  for (const line of lines) {
+    const key = normalizeDialogKey(line);
+    if (!key || excluded.includes(key)) continue;
+    return line;
+  }
+  return '';
+}
+
+function isSameMeaning(a: string, b: string) {
+  return normalizeDialogKey(a) !== '' && normalizeDialogKey(a) === normalizeDialogKey(b);
 }
 
 function buildCardEvidenceLead(items: SpreadDrawResult['items']) {
