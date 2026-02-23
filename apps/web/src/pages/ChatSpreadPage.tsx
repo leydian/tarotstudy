@@ -506,21 +506,35 @@ function buildExpandedCardDialog(reading: SpreadDrawResult) {
   if (!items.length) return [];
 
   const turns: DialogueTurn[] = [];
-  turns.push(buildTurn('tarot', 'detail', `질문("${reading.context || '현재 질문'}")을 기준으로 카드 장면을 앞에서 뒤로 천천히 연결해보겠습니다`));
+  turns.push(buildTurn('tarot', 'detail', `질문("${reading.context || '현재 질문'}") 기준으로 카드 흐름을 순서대로 볼게요`));
 
   items.forEach((item, idx) => {
     const orientation = item.orientation === 'reversed' ? '역방향' : '정방향';
     const keyword = item.card.keywords?.[0] || '핵심 신호';
-    const lead = `${item.position.name}에서는 ${item.card.nameKo} ${orientation} 카드가 나왔고, 상징 키워드는 "${keyword}"입니다`;
+    const lead = `${item.position.name}에서는 ${item.card.nameKo} ${orientation} 카드가 나왔고 키워드는 "${keyword}"이에요`;
     const core = compactLine(item.coreMessage || '');
     const interpretation = compactLine(item.interpretation || '');
     const next = items[idx + 1];
 
     turns.push(buildTurn('tarot', 'detail', lead));
-    if (core) turns.push(buildTurn('tarot', 'detail', `여기서 핵심만 짚으면 ${core}`));
-    if (interpretation) turns.push(buildTurn('tarot', 'detail', `쉽게 말하면 ${interpretation}`));
+    if (core) {
+      const coreTemplates = [
+        `핵심만 말하면 ${core}`,
+        `이 카드의 중심 뜻은 ${core}`,
+        `지금 제일 중요한 건 ${core}`
+      ];
+      turns.push(buildTurn('tarot', 'detail', coreTemplates[idx % coreTemplates.length]));
+    }
+    if (interpretation) {
+      const interpretationTemplates = [
+        `쉽게 말하면 ${interpretation}`,
+        `일상말로 풀면 ${interpretation}`,
+        `짧게 정리하면 ${interpretation}`
+      ];
+      turns.push(buildTurn('tarot', 'detail', interpretationTemplates[idx % interpretationTemplates.length]));
+    }
     if (next) {
-      turns.push(buildTurn('tarot', 'detail', `${item.position.name} 장면 다음에는 ${next.position.name} 장면으로 흐름이 이어지고, 여기서 판단 강도가 결정됩니다`));
+      turns.push(buildTurn('tarot', 'detail', `${item.position.name} 다음은 ${next.position.name} 흐름이에요. 여기서 결정 세기가 갈려요`));
     }
 
     const learningHint = maybeBuildLearningHint(`${core} ${interpretation}`, item.position.name, idx, 0);
@@ -528,8 +542,8 @@ function buildExpandedCardDialog(reading: SpreadDrawResult) {
   });
 
   const closing = reading.readingV3
-    ? `전체 전개를 종합하면 ${reading.readingV3.verdict.sentence} 이번 주는 행동 1개와 관찰 1개만 남기는 운영이 가장 안정적입니다`
-    : '전체 전개를 종합하면 이번 주는 강도를 줄이고 반응을 관찰하는 운영이 가장 안정적입니다';
+    ? `한번 모아보면 ${reading.readingV3.verdict.sentence} 이번 주는 행동 1개와 확인 1개만 남기면 돼요`
+    : '한번 모아보면 이번 주는 세기를 낮추고 반응을 확인하는 게 가장 안전해요';
   turns.push(buildTurn('tarot', 'detail', closing));
 
   return rebalanceDialogueMix(dedupeTurns(turns));
@@ -545,10 +559,15 @@ function buildExpandedNarrativeDialogFromLines(reading: SpreadDrawResult, lines:
     const card = cards[idx % cards.length];
     const orientation = card.orientation === 'reversed' ? '역방향' : '정방향';
     const keyword = card.card.keywords?.[0] || '핵심 신호';
-    turns.push(buildTurn('tarot', 'detail', `${sectionTitle} 장면에서 ${card.position.name}의 ${card.card.nameKo} ${orientation} 카드(${keyword})를 기준으로 보면 ${line}`));
+    const sectionTemplates = [
+      `${sectionTitle}에서는 ${card.position.name}의 ${card.card.nameKo} ${orientation} 카드(${keyword})를 기준으로 보면 ${line}`,
+      `${sectionTitle} 흐름을 ${card.position.name} 카드로 풀면 ${line}`,
+      `${sectionTitle} 장면을 ${card.card.nameKo} 중심으로 보면 ${line}`
+    ];
+    turns.push(buildTurn('tarot', 'detail', sectionTemplates[idx % sectionTemplates.length]));
     if (idx < normalizedLines.length - 1) {
       const nextCard = cards[(idx + 1) % cards.length];
-      turns.push(buildTurn('tarot', 'detail', `이 장면 다음에는 ${nextCard.position.name} 축으로 전개가 이어져 판단의 강도와 속도를 조절하게 됩니다`));
+      turns.push(buildTurn('tarot', 'detail', `다음은 ${nextCard.position.name} 흐름으로 넘어가요. 속도와 세기를 같이 맞춰보면 좋아요`));
     }
     const learning = maybeBuildLearningHint(line, sectionTitle, idx, 0);
     if (learning) turns.push(learning);
@@ -793,10 +812,10 @@ function maybeBuildLearningHint(text: string, sectionTitle: string, lineIndex: n
   if (!shouldShow) return null;
   const noun = extractPrimaryNoun(joined);
   if (isRiskBlock) {
-    return buildTurn('learning', 'coach', `${noun}는 오늘 15분 점검 후 '맞음/어긋남'을 1줄로 기록하고 내일 같은 기준으로 다시 비교해요`);
+    return buildTurn('learning', 'coach', `${noun}는 오늘 15분 확인하고, 맞았는지 달랐는지 1줄만 적어봐요`);
   }
   if (isActionBlock) {
-    return buildTurn('learning', 'coach', `${noun}는 25분 실행 + 5분 기록 1세트로 진행하고, 완료율(%) 숫자 1개를 남겨요`);
+    return buildTurn('learning', 'coach', `${noun}는 25분 하고 5분 정리해요. 끝나면 완료율 숫자 1개만 남겨요`);
   }
   return null;
 }
@@ -879,37 +898,38 @@ function sanitizeDialogLine(text: string) {
 function applyTarotStoryVoice(text: string, purpose: DialoguePurpose) {
   const line = humanizeTarotLine(String(text || '').trim());
   if (!line) return line;
+  const compact = compactTarotTurn(line, purpose);
   if (purpose === 'bridge') {
-    return /장면|흐름/.test(line)
-      ? line
-      : `지금 상황부터 가볍게 짚어보면, ${line}`;
+    return /장면|흐름/.test(compact)
+      ? compact
+      : `지금 상황부터 가볍게 보면 ${compact}`;
   }
   if (purpose === 'verdict') {
-    return /흐름|전개/.test(line)
-      ? `지금 흐름만 보면 ${line}`
-      : `지금 흐름만 보면 핵심은 ${line}`;
+    return /흐름|진행/.test(compact)
+      ? `지금 흐름만 보면 ${compact}`
+      : `지금 흐름만 보면 핵심은 ${compact}`;
   }
   if (purpose === 'evidence') {
-    return /상징/.test(line)
-      ? `카드 근거를 모아보면 ${line}`
-      : `카드 근거를 모아보면 ${line}, 이 신호가 지금 판단의 기준점이에요`;
+    return /상징|키워드/.test(compact)
+      ? `카드 근거를 모아보면 ${compact}`
+      : `카드 근거를 모아보면 ${compact}`;
   }
   if (purpose === 'caution') {
-    return /주의 포인트/.test(line)
-      ? `${line} 이 구간은 단정하지 말고 반응을 한 번 더 확인하는 게 안전해요`
-      : `주의 포인트는 ${line}`;
+    return /주의 포인트/.test(compact)
+      ? `${compact} 이 구간은 확정하지 말고 반응을 한 번 더 확인해요`
+      : `주의 포인트는 ${compact}`;
   }
   if (purpose === 'action') {
-    return /실행 기준/.test(line)
-      ? `${line} 오늘은 행동 1개만 하고, 반응 1개만 확인해 다음으로 넘기면 돼요`
-      : `지금 실행 기준은 ${line}`;
+    return /실행 기준/.test(compact)
+      ? `${compact} 오늘은 행동 1개만 하고 반응 1개만 확인해요`
+      : `지금 실행 기준은 ${compact}`;
   }
   if (purpose === 'detail') {
-    return /장면|상징|흐름|실행/.test(line)
-      ? line
-      : `지금 장면에서 보면 ${line}`;
+    return /장면|상징|흐름|실행/.test(compact)
+      ? compact
+      : `지금 장면에서 보면 ${compact}`;
   }
-  return line;
+  return compact;
 }
 
 function humanizeTarotLine(text: string) {
@@ -922,6 +942,12 @@ function humanizeTarotLine(text: string) {
     .replace(/기준이 개선되지 않으면 강도를 더 낮추는 쪽으로 조정하세요/g, '체감이 안 좋아지면 강도를 한 단계 더 낮춰 조정해보세요')
     .replace(/결론을 내리기보다 확인 질문 1개만 먼저 건네보세요/g, '결론부터 내리지 말고 확인 질문 하나만 먼저 보내보세요')
     .replace(/가장 선명해집니다/g, '가장 또렷해져요')
+    .replace(/종합하면/g, '한번 모아보면')
+    .replace(/지속 가능한/g, '오래 갈 수 있는')
+    .replace(/파급효과/g, '이어질 영향')
+    .replace(/재정리/g, '다시 정리')
+    .replace(/기준 문장/g, '기준 한 줄')
+    .replace(/조건부 진행/g, '가능하지만 조심해서 진행')
     .replace(/정리됩니다/g, '정리돼요')
     .replace(/입니다\./g, '이에요.')
     .replace(/습니다\./g, '어요.')
@@ -958,8 +984,27 @@ function simplifyTarotWordsForStudents(text: string) {
     .replace(/정리해보세요/g, '정리해봐요')
     .replace(/해석의 축/g, '뜻풀이의 중심')
     .replace(/가장 또렷해져요/g, '훨씬 잘 보여요')
+    .replace(/뜻풀이의 중심축/g, '뜻풀이 중심')
+    .replace(/결정 세기가 결정됩니다/g, '결정 세기가 갈려요')
+    .replace(/차분히 살펴보겠어요/g, '천천히 볼게요')
+    .replace(/기준으로 읽으실 때/g, '기준으로 볼 때')
+    .replace(/보류하세요/g, '잠깐 멈춰요')
+    .replace(/넘겨짚지 말고/g, '짐작만 하지 말고')
+    .replace(/안정적입니다/g, '안전해요')
+    .replace(/안정됩니다/g, '안정돼요')
+    .replace(/유지 시/g, '유지하면')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+function compactTarotTurn(text: string, purpose: DialoguePurpose) {
+  const normalized = String(text || '').replace(/\s+/g, ' ').trim();
+  const sentences = normalized
+    .split(/(?<=[.!?])\s+/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const maxSentences = purpose === 'detail' ? 3 : 2;
+  return sentences.slice(0, maxSentences).join(' ').trim();
 }
 
 function normalizeDialogKey(text: string) {
