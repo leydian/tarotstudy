@@ -39,6 +39,25 @@
   - 시험/합격 템플릿을 면접/지원/이직/오퍼 질문까지 동일 프레임으로 확장
 
 ## 3) 금일 추가 반영 (최신)
+- 백엔드 모듈화 + 개인화 복기 + 스프레드 라이브러리 (2026-02-23 latest 10)
+  - **백엔드 아키텍처 리팩터링 (index.js 분해)**
+    - 거대 모놀리스 `index.js`를 도메인별 모듈로 분리 (`src/domains/summaries/`, `src/domains/reading/`, `src/domains/common/`).
+    - `aggregator.js`를 통해 요약 엔진을 통합 관리하고, `yearly/monthly/weekly` 등 복잡한 로직을 개별 파일로 격리.
+    - 공통 유틸리티(`utils.js`)와 신호 분석기(`signal-analyzer.js`)를 분리해 재사용성 확보.
+  - **개인화 복기 루프 (Personalized Feedback)**
+    - 드로우 시 `userId`를 기반으로 사용자의 과거 복기(`userHistory`)를 조회.
+    - 과거에 특정 카드를 뽑고 리뷰를 남긴 경우, 리딩 서두(`leadLine`)에 "지난번에는 ... 라고 기록하셨네요" 멘트를 자동 주입.
+  - **스프레드 라이브러리 & 모바일 최적화 (Frontend)**
+    - `SpreadLibrary` 컴포넌트 신설: 100종 스프레드를 도메인별 필터/검색으로 탐색 가능한 '도서관 모드' 추가.
+    - `SpreadsPage`에 '자동 추천' vs '도서관' 뷰 토글 도입.
+    - 모바일 화면에서 라이브러리 그리드가 깨지지 않도록 반응형 스타일(`spread-grid-list`) 적용.
+  - **데이터 동기화 상태 가시화**
+    - `progress-store`에 `syncStatus`(`idle/syncing/synced/error`) 상태 추가.
+    - 데이터 저장 시 동기화 진행 상태를 추적할 수 있는 기반 마련.
+  - **검증:**
+    - `npm run test:api` (64/64 통과 - 리팩터링 회귀 없음)
+    - `npm run typecheck:web`, `npm run test:web` (13/13 통과)
+
 - 연간 운세 취업 시기 품질 고도화 및 도메인 언어 강화 (2026-02-23 latest 9)
   - 관련 파일:
     - `apps/api/src/index.js`

@@ -8,6 +8,7 @@ import { buildDisplaySpreads, resolveDisplaySpreadId } from '../../lib/spread-di
 import { loadChatDrawCache, saveChatDrawCache } from '../../lib/chat-draw-cache';
 import { exportReadingPdf, exportReadingTxt } from '../../lib/reading-export';
 import { toCanonicalReadingLines } from '../../lib/tone-render';
+import { SpreadLibrary } from './components/SpreadLibrary';
 import { TarotImage } from '../../components/TarotImage';
 import { PageHero } from '../../components/PageHero';
 import { getProgressUserId, useProgressStore } from '../../state/progress';
@@ -74,6 +75,7 @@ const SPREAD_VISUAL_PRESETS: Record<string, SpreadVisualPreset> = {
 
 export function SpreadsPageContainer() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const [viewMode, setViewMode] = useState<'recommendation' | 'library'>('recommendation');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [variantId, setVariantId] = useState<string | null>(null);
   const [context, setContext] = useState('');
@@ -338,7 +340,33 @@ export function SpreadsPageContainer() {
         description="질문 맥락을 기준으로 스프레드를 자동 추천해 리딩합니다. 스프레드는 직접 고르지 않아도 됩니다."
       />
 
-      <article className="panel">
+      <div className="chip-wrap view-mode-tabs" style={{ marginBottom: '1.5rem' }}>
+        <button
+          className={`chip-link ${viewMode === 'recommendation' ? 'chip-on' : ''}`}
+          onClick={() => setViewMode('recommendation')}
+        >
+          자동 추천 드로우
+        </button>
+        <button
+          className={`chip-link ${viewMode === 'library' ? 'chip-on' : ''}`}
+          onClick={() => setViewMode('library')}
+        >
+          전체 스프레드 도서관 ({spreads.length})
+        </button>
+      </div>
+
+      {viewMode === 'library' ? (
+        <article className="panel">
+          <SpreadLibrary
+            spreads={spreads}
+            onSelect={(id) => {
+              setSelectedId(id);
+              setViewMode('recommendation');
+            }}
+          />
+        </article>
+      ) : (
+        <article className="panel">
         <div className="spread-page-header">
           {recommendedHint && <p className="sub spread-recommended-hint">자동 추천: {recommendedHint}</p>}
           <div className="spread-header-actions">
@@ -894,9 +922,9 @@ export function SpreadsPageContainer() {
             </div>
           </>
         )}
-      </article>
-    </section>
-  );
+              </article>
+            )}
+          </section>  );
 }
 
 function CoachSummaryView({

@@ -6,6 +6,7 @@ interface ProgressState {
   weakCardIds: string[];
   quizHistory: Array<{ lessonId: string; percent: number; date: string }>;
   spreadHistory: SpreadReviewRecord[];
+  syncStatus: 'idle' | 'syncing' | 'error' | 'synced';
   markLessonCompleted: (lessonId: string) => void;
   addQuizResult: (lessonId: string, percent: number, weakCardIds: string[]) => void;
   addSpreadReading: (record: SpreadReviewRecord) => void;
@@ -23,6 +24,7 @@ let pendingSyncSnapshot: PersistSnapshot | null = null;
 let syncTimer: number | null = null;
 let syncInFlight = false;
 let lifecycleBound = false;
+let storeSet: ((partial: Partial<ProgressState> | ((state: ProgressState) => Partial<ProgressState>)) => void) | null = null;
 
 function getLocalUserId() {
   const saved = localStorage.getItem(USER_ID_KEY);
@@ -80,14 +82,19 @@ async function sendSync(state: PersistSnapshot, keepalive = false) {
 
 async function flushSync({ keepalive = false }: { keepalive?: boolean } = {}) {
   if (syncInFlight || !pendingSyncSnapshot) return;
+  
+  if (storeSet) storeSet({ syncStatus: 'syncing' });
+
   const snapshot = pendingSyncSnapshot;
   pendingSyncSnapshot = null;
   syncInFlight = true;
 
   try {
     await sendSync(snapshot, keepalive);
+    if (storeSet) storeSet({ syncStatus: 'synced' });
   } catch {
     pendingSyncSnapshot = snapshot;
+    if (storeSet) storeSet({ syncStatus: 'error' });
   } finally {
     syncInFlight = false;
     if (pendingSyncSnapshot && syncTimer == null) {
@@ -137,84 +144,88 @@ function persist(state: PersistSnapshot) {
   queueSync(state);
 }
 
-export const useProgressStore = create<ProgressState>((set, get) => ({
-  ...loadInitial(),
-  markLessonCompleted: (lessonId) => {
-    const next = Array.from(new Set([...get().completedLessons, lessonId]));
-    const prev = get();
-    const snapshot = {
-      completedLessons: next,
-      weakCardIds: prev.weakCardIds,
-      quizHistory: prev.quizHistory,
-      spreadHistory: prev.spreadHistory
-    };
-    persist(snapshot);
-    set({ completedLessons: next });
-  },
-  addQuizResult: (lessonId, percent, weakCardIds) => {
-    const prev = get();
-    const mergedWeak = Array.from(new Set([...prev.weakCardIds, ...weakCardIds])).slice(-30);
-    const nextHistory = [{ lessonId, percent, date: new Date().toISOString() }, ...prev.quizHistory].slice(0, 50);
-    const snapshot = {
-      completedLessons: prev.completedLessons,
-      weakCardIds: mergedWeak,
-      quizHistory: nextHistory,
-      spreadHistory: prev.spreadHistory
-    };
-    persist(snapshot);
-    set({ weakCardIds: mergedWeak, quizHistory: nextHistory });
-  },
-  addSpreadReading: (record) => {
-    const prev = get();
-    const spreadHistory = [record, ...prev.spreadHistory].slice(0, 60);
-    persist({
-      completedLessons: prev.completedLessons,
-      weakCardIds: prev.weakCardIds,
-      quizHistory: prev.quizHistory,
-      spreadHistory
-    });
-    set({ spreadHistory });
-  },
-  reviewSpreadReading: (id, outcome, reviewNote = '') => {
-    const prev = get();
-    const spreadHistory = prev.spreadHistory.map((item) =>
-      item.id === id
-        ? { ...item, outcome, reviewNote, reviewedAt: new Date().toISOString() }
-        : item
-    );
-    persist({
-      completedLessons: prev.completedLessons,
-      weakCardIds: prev.weakCardIds,
-      quizHistory: prev.quizHistory,
-      spreadHistory
-    });
-    set({ spreadHistory });
-  },
-  removeSpreadReading: (id) => {
-    const prev = get();
-    const spreadHistory = prev.spreadHistory.filter((item) => item.id !== id);
-    persist({
-      completedLessons: prev.completedLessons,
-      weakCardIds: prev.weakCardIds,
-      quizHistory: prev.quizHistory,
-      spreadHistory
-    });
-    set({ spreadHistory });
-  },
-  removeSpreadReadingsBySpreadId: (spreadId) => {
-    const prev = get();
-    const spreadHistory = prev.spreadHistory.filter((item) => item.spreadId !== spreadId);
-    persist({
-      completedLessons: prev.completedLessons,
-      weakCardIds: prev.weakCardIds,
-      quizHistory: prev.quizHistory,
-      spreadHistory
-    });
-    set({ spreadHistory });
-  },
-  reset: () => {
-    const snapshot = { completedLessons: [], weakCardIds: [], quizHistory: [], spreadHistory: [] };
-    persist(snapshot);
-    set(snapshot);
-  }
-}));
+export const useProgressStore = create<ProgressState>((set, get) => {
+  storeSet = set;
+  return {
+    syncStatus: 'idle',
+    ...loadInitial(),
+    markLessonCompleted: (lessonId) => {
+      const next = Array.from(new Set([...get().completedLessons, lessonId]));
+      const prev = get();
+      const snapshot = {
+        completedLessons: next,
+        weakCardIds: prev.weakCardIds,
+        quizHistory: prev.quizHistory,
+        spreadHistory: prev.spreadHistory
+      };
+      persist(snapshot);
+      set({ completedLessons: next });
+    },
+    addQuizResult: (lessonId, percent, weakCardIds) => {
+      const prev = get();
+      const mergedWeak = Array.from(new Set([...prev.weakCardIds, ...weakCardIds])).slice(-30);
+      const nextHistory = [{ lessonId, percent, date: new Date().toISOString() }, ...prev.quizHistory].slice(0, 50);
+      const snapshot = {
+        completedLessons: prev.completedLessons,
+        weakCardIds: mergedWeak,
+        quizHistory: nextHistory,
+        spreadHistory: prev.spreadHistory
+      };
+      persist(snapshot);
+      set({ weakCardIds: mergedWeak, quizHistory: nextHistory });
+    },
+    addSpreadReading: (record) => {
+      const prev = get();
+      const spreadHistory = [record, ...prev.spreadHistory].slice(0, 60);
+      persist({
+        completedLessons: prev.completedLessons,
+        weakCardIds: prev.weakCardIds,
+        quizHistory: prev.quizHistory,
+        spreadHistory
+      });
+      set({ spreadHistory });
+    },
+    reviewSpreadReading: (id, outcome, reviewNote = '') => {
+      const prev = get();
+      const spreadHistory = prev.spreadHistory.map((item) =>
+        item.id === id
+          ? { ...item, outcome, reviewNote, reviewedAt: new Date().toISOString() }
+          : item
+      );
+      persist({
+        completedLessons: prev.completedLessons,
+        weakCardIds: prev.weakCardIds,
+        quizHistory: prev.quizHistory,
+        spreadHistory
+      });
+      set({ spreadHistory });
+    },
+    removeSpreadReading: (id) => {
+      const prev = get();
+      const spreadHistory = prev.spreadHistory.filter((item) => item.id !== id);
+      persist({
+        completedLessons: prev.completedLessons,
+        weakCardIds: prev.weakCardIds,
+        quizHistory: prev.quizHistory,
+        spreadHistory
+      });
+      set({ spreadHistory });
+    },
+    removeSpreadReadingsBySpreadId: (spreadId) => {
+      const prev = get();
+      const spreadHistory = prev.spreadHistory.filter((item) => item.spreadId !== spreadId);
+      persist({
+        completedLessons: prev.completedLessons,
+        weakCardIds: prev.weakCardIds,
+        quizHistory: prev.quizHistory,
+        spreadHistory
+      });
+      set({ spreadHistory });
+    },
+    reset: () => {
+      const snapshot = { completedLessons: [], weakCardIds: [], quizHistory: [], spreadHistory: [] };
+      persist(snapshot);
+      set(snapshot);
+    }
+  };
+});
