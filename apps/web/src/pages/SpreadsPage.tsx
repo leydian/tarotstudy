@@ -507,11 +507,26 @@ export function SpreadsPage() {
             <div className="reading-dual-panel">
               <article className="result-item reading-summary">
                 <h5 className="reading-block-title">타로 리더 종합 리딩</h5>
-                <UnifiedSummaryView
-                  spreadId={selected.id}
-                  summary={activeDraw.summary}
-                  keywords={emphasisKeywords}
-                />
+                {activeDraw.readingV3 ? (
+                  <NaturalFlowView
+                    blocks={[
+                      activeDraw.readingV3.bridge,
+                      activeDraw.readingV3.verdict.sentence,
+                      ...(activeDraw.readingV3.evidence.slice(0, 3).map((item) => item.narrativeLine)),
+                      activeDraw.readingV3.caution,
+                      activeDraw.readingV3.action.now,
+                      activeDraw.readingV3.closing
+                    ]}
+                    keywords={emphasisKeywords}
+                    keyBase="reading-v3"
+                  />
+                ) : (
+                  <UnifiedSummaryView
+                    spreadId={selected.id}
+                    summary={activeDraw.summary}
+                    keywords={emphasisKeywords}
+                  />
+                )}
               </article>
               <article className="result-item reading-coach">
                 <h5 className="reading-block-title">종합 학습 내역</h5>

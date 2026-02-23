@@ -202,6 +202,8 @@ export interface SpreadDrawResult {
     learningPoint: string;
   }>;
   summary: string;
+  readingV2?: SpreadReadingV2;
+  readingV3?: SpreadReadingV3;
 }
 
 export interface QuestionUnderstandingV2 {
@@ -284,6 +286,32 @@ export interface SpreadReadingV2 {
 
 export interface SpreadDrawResultV2 extends SpreadDrawResult {
   readingV2: SpreadReadingV2;
+}
+
+export interface SpreadReadingV3 {
+  style: 'immersive';
+  bridge: string;
+  verdict: {
+    label: 'yes' | 'conditional' | 'hold';
+    sentence: string;
+  };
+  evidence: Array<{
+    position: string;
+    cardName: string;
+    orientation: 'upright' | 'reversed';
+    keyword: string;
+    narrativeLine: string;
+  }>;
+  caution: string;
+  action: {
+    now: string;
+    checkin: string;
+  };
+  closing: string;
+  guardrails: {
+    bannedAbsolute: true;
+    duplicateRateMax: number;
+  };
 }
 
 export interface SpreadReviewRecord {

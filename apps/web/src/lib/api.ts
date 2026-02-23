@@ -110,7 +110,7 @@ export const api = {
     variantId?: string | null;
     level: 'beginner' | 'intermediate';
     context?: string;
-    styleMode?: 'neutral' | 'immersive_safe';
+    styleMode?: 'neutral' | 'immersive_safe' | 'immersive_v3';
   }) {
     return request<SpreadDrawResultV2>(`/api/v2/spreads/${input.spreadId}/draw`, {
       method: 'POST',

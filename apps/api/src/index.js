@@ -364,6 +364,13 @@ function performSpreadDraw({ spreadId, variantId = '', level = 'beginner', conte
     context,
     level
   });
+  const readingV3 = buildReadingV3({
+    spreadId: spread.id,
+    spreadName: spread.name,
+    items,
+    context,
+    level
+  });
 
   return {
     spreadId: spread.id,
@@ -375,7 +382,8 @@ function performSpreadDraw({ spreadId, variantId = '', level = 'beginner', conte
     readingExperiment,
     drawnAt: new Date().toISOString(),
     items,
-    summary
+    summary,
+    readingV3
   };
 }
 
@@ -542,6 +550,13 @@ app.post('/api/v2/spreads/:spreadId/draw', async (request, reply) => {
       context: payload.context,
       level: payload.level,
       renderingMode
+    }),
+    readingV3: payload.readingV3 || buildReadingV3({
+      spreadId: payload.spreadId,
+      spreadName: payload.spreadName,
+      items: payload.items,
+      context: payload.context,
+      level: payload.level
     })
   };
 });
@@ -825,6 +840,10 @@ export function summarizeSpreadForQa(payload = {}) {
   return summarizeSpread(payload);
 }
 
+export function buildReadingV3ForQa(payload = {}) {
+  return buildReadingV3(payload);
+}
+
 function buildReadingV2({
   spreadId = '',
   spreadName = '',
@@ -892,6 +911,145 @@ function buildReadingV2({
   };
 }
 
+function buildReadingV3({
+  spreadId = '',
+  spreadName = '',
+  items = [],
+  context = '',
+  level = 'beginner'
+}) {
+  const analysis = analyzeQuestionContextV2Sync(context, { mode: 'hybrid', flag: true });
+  const signal = analyzeSpreadSignal(items, analysis.intent);
+  const primary = items[0];
+  const primaryKeyword = primary?.card?.keywords?.[0] || '핵심 흐름';
+  const normalizedContext = String(context || '').trim();
+  const bridge = normalizedContext
+    ? `"${normalizedContext}"가 가장 크게 걸려 있네요. 마음이 무거울 수 있어요. 카드 흐름을 차분히 따라가보겠습니다.`
+    : '지금 마음에 걸린 지점을 먼저 안정시키면서 카드 흐름을 차분히 따라가보겠습니다.';
+
+  const verdict = buildImmersiveVerdict({
+    label: signal.label,
+    questionType: analysis.questionType,
+    context,
+    level
+  });
+  const evidence = signal.topEvidence.slice(0, 3).map((entry, idx) => {
+    const line = buildImmersiveEvidenceLine({
+      position: entry.position,
+      card: entry.card,
+      orientation: entry.orientation,
+      keyword: entry.keyword || primaryKeyword,
+      index: idx
+    });
+    return {
+      position: entry.position,
+      cardName: entry.card,
+      orientation: /역방향/.test(entry.orientation) ? 'reversed' : 'upright',
+      keyword: entry.keyword || primaryKeyword,
+      narrativeLine: line
+    };
+  });
+
+  const caution = softenAbsolutes(
+    signal.label === '우세'
+      ? '흐름이 좋아도 과신하면 리듬이 깨질 수 있으니 속도를 일정하게 유지하세요.'
+      : signal.label === '박빙'
+        ? '작은 과속이 결과를 크게 흔들 수 있어, 강도를 낮춰 반응을 확인하는 운영이 안전합니다.'
+        : '지금은 결론을 밀어붙이기보다 소모를 줄이고 안정부터 확보하는 편이 맞습니다.'
+  );
+
+  const action = {
+    now: softenAbsolutes(buildImmediateAction({ spreadId, context, verdict: signal.label })),
+    checkin: softenAbsolutes(
+      buildReviewMetric({ spreadId, questionType: analysis.questionType }) === '실행 여부 + 결과 체감(좋아짐/유지/악화)'
+        ? '실행 후 체감을 좋아짐/유지/악화로 1줄만 기록하세요.'
+        : `${buildReviewMetric({ spreadId, questionType: analysis.questionType })} 기준으로 오늘 1회만 점검하세요.`
+    )
+  };
+
+  const closing = softenAbsolutes(
+    signal.label === '우세'
+      ? '지금의 힘을 무리 없이 이어가면, 다음 장면은 더 선명해질 가능성이 큽니다.'
+      : signal.label === '박빙'
+        ? '오늘은 작은 조정만으로도 흐름이 달라질 수 있어요. 너무 몰아붙이지 마세요.'
+        : '지금 결과가 전부를 결정하진 않아요. 리듬을 회복하면 다음 기회를 더 안정적으로 만들 수 있습니다.'
+  );
+
+  return {
+    style: 'immersive',
+    bridge: softenAbsolutes(bridge),
+    verdict,
+    evidence,
+    caution,
+    action,
+    closing,
+    guardrails: {
+      bannedAbsolute: true,
+      duplicateRateMax: 0.34
+    }
+  };
+}
+
+function buildImmersiveVerdict({ label = '조건부', questionType = 'open', context = '', level = 'beginner' }) {
+  const yesNo = questionType === 'yes_no';
+  if (label === '우세') {
+    return {
+      label: 'yes',
+      sentence: softenAbsolutes(
+        yesNo
+          ? '결론은 가능 쪽입니다. 다만 안정된 리듬을 유지하는 조건에서 더 정확합니다.'
+          : '결론은 진행 가능한 흐름입니다. 핵심 기준을 지키면 결과 안정성이 높아집니다.'
+      )
+    };
+  }
+  if (label === '박빙') {
+    return {
+      label: 'conditional',
+      sentence: softenAbsolutes(
+        yesNo
+          ? '결론은 조건부 가능입니다. 속도와 강도를 조절해야 결과가 살아납니다.'
+          : '결론은 조건부 진행입니다. 작은 운영 차이가 체감 결과를 가릅니다.'
+      )
+    };
+  }
+  const studyHint = /(시험|합격|공부|학습|모의고사|기출)/.test(String(context || ''));
+  return {
+    label: 'hold',
+    sentence: softenAbsolutes(
+      studyHint
+        ? '결론은 보류 후 정비가 맞습니다. 지금은 범위를 줄여 정확도를 먼저 회복하세요.'
+        : level === 'intermediate'
+          ? '결론은 보류 후 정비입니다. 근거와 실행 순서를 다시 맞춘 뒤 재판단하세요.'
+          : '결론은 잠시 보류입니다. 무리한 확장보다 안정부터 확보하는 편이 맞습니다.'
+    )
+  };
+}
+
+function buildImmersiveEvidenceLine({ position = '', card = '', orientation = '정방향', keyword = '핵심', index = 0 }) {
+  const orientationKo = /역방향/.test(orientation) ? '역방향' : '정방향';
+  if (/현재|상황|문제/.test(position)) {
+    return `${position}의 ${card} ${orientationKo} 카드는 "${keyword}" 축이 지금 판단의 중심에 있다는 신호입니다.`;
+  }
+  if (/미래|결과/.test(position)) {
+    return `${position}의 ${card} ${orientationKo} 카드는 지금 선택을 이어갈 때 나타날 가능성이 큰 전개를 보여줍니다.`;
+  }
+  if (/조언|행동|해결/.test(position)) {
+    return `${position}의 ${card} ${orientationKo} 카드는 부담을 줄이고 실행 강도를 조절하라는 힌트를 줍니다.`;
+  }
+  return index % 2 === 0
+    ? `${position}의 ${card} ${orientationKo} 카드는 "${keyword}" 키워드가 이번 질문의 줄기를 잡는다는 뜻입니다.`
+    : `${position}의 ${card} ${orientationKo} 카드는 결과보다 리듬을 먼저 다듬으라는 신호로 읽힙니다.`;
+}
+
+function softenAbsolutes(text = '') {
+  return String(text || '')
+    .replace(/불가능(에 가깝습니다|합니다|하다)/g, '어려움이 큰 편입니다')
+    .replace(/반드시/g, '가능하면')
+    .replace(/틀림없(습니다|다)/g, '가능성이 큽니다')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
 function buildNarrativeBlock({ spreadName = '', context = '', items = [], verdict = '조건부', renderingMode = 'immersive_safe' }) {
   const primary = items[0];
   const cardName = primary?.card?.nameKo || '첫 카드';
@@ -940,9 +1098,13 @@ function finalizeSpreadSummary({ spreadId = '', spreadName = '', items = [], con
   const decisionBlock = buildSpreadDecisionBlock({ spreadName, items, context });
   const intent = inferYearlyIntent(context);
   const shouldLeadWithNarrative = intent === 'relationship' || intent === 'relationship-repair';
-  const merged = shouldLeadWithNarrative
-    ? [rawSummary, decisionBlock].filter(Boolean).join('\n\n')
-    : [decisionBlock, rawSummary].filter(Boolean).join('\n\n');
+  const normalizedRaw = String(rawSummary || '').trim();
+  const alreadyHasVerdictBlock = /(1차 판정|판정 근거|결론:|조건부 예|아니오|결론은)/.test(normalizedRaw);
+  const merged = alreadyHasVerdictBlock
+    ? normalizedRaw
+    : (shouldLeadWithNarrative
+      ? [normalizedRaw, decisionBlock].filter(Boolean).join('\n\n')
+      : [decisionBlock, normalizedRaw].filter(Boolean).join('\n\n'));
   const polished = renderSummaryFromSemantic(merged);
   if (spreadId === 'weekly-fortune' || spreadId === 'monthly-fortune' || spreadId === 'yearly-fortune') {
     return applySectionedSummaryTone({ spreadId, summary: polished });

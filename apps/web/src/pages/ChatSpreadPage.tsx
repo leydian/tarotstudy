@@ -315,7 +315,7 @@ function ChatBubble({
   const effectiveSpreadMeta = spreadMeta
     || spreads.find((item) => (item.variants || []).some((variant) => variant.sourceSpreadId === reading.spreadId))
     || null;
-  const verdict = inferVerdict(reading.summary);
+  const verdict = inferVerdict(reading);
   const keyQuestion = reading.context?.trim() || '질문';
 
   return (
@@ -381,6 +381,36 @@ function ChatBubble({
 }
 
 function ChatSummaryView({ reading }: { reading: SpreadDrawResult }) {
+  if (reading.readingV3) {
+    const quickDialog = buildQuickDialogFromReadingV3(reading);
+    const evidenceLines = reading.readingV3.evidence.map((item) => item.narrativeLine);
+    return (
+      <section className="chat-summary-shell">
+        <div className="chat-dialog-stream">
+          {quickDialog.map((turn, idx) => (
+            <article key={`v3-quick-${idx}`} className={`chat-dialog-turn chat-dialog-${turn.speaker}`}>
+              <h6 className="chat-dialog-speaker">{turn.speaker === 'tarot' ? '타로리더' : '학습리더'}</h6>
+              <p className="chat-natural-paragraph chat-dialog-bubble">{turn.text}</p>
+            </article>
+          ))}
+        </div>
+        <section className="chat-summary-accordion chat-summary-section">
+          <h6 className="chat-summary-section-title">상세 대화</h6>
+          <div className="chat-summary-accordion-body">
+            <div className="chat-dialog-stream">
+              {buildDialogFromLines(evidenceLines, '상세 리딩').map((turn, idx) => (
+                <article key={`v3-summary-bubble-${idx}`} className={`chat-dialog-turn chat-dialog-${turn.speaker}`}>
+                  <h6 className="chat-dialog-speaker">{turn.speaker === 'tarot' ? '타로리더' : '학습리더'}</h6>
+                  <p className="chat-natural-paragraph chat-dialog-bubble">{turn.text}</p>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+      </section>
+    );
+  }
+
   const structured = buildStructuredSummary(reading);
   if (structured) {
     const quickDialog = buildQuickDialog(structured.highlights, structured.actionPlan, reading);
@@ -465,6 +495,20 @@ function ChatSummaryView({ reading }: { reading: SpreadDrawResult }) {
       </section>
     </section>
   );
+}
+
+function buildQuickDialogFromReadingV3(reading: SpreadDrawResult) {
+  const v3 = reading.readingV3;
+  if (!v3) return [];
+  const turns: DialogueTurn[] = [
+    buildTurn('tarot', 'bridge', v3.bridge),
+    buildTurn('tarot', 'verdict', `핵심 흐름은 ${v3.verdict.sentence}`),
+    ...(v3.evidence[0] ? [buildTurn('tarot', 'evidence', `근거 카드는 ${v3.evidence[0].cardName} ${v3.evidence[0].orientation === 'reversed' ? '역방향' : '정방향'} (${v3.evidence[0].position})입니다`)] : []),
+    buildTurn('tarot', 'caution', `주의 포인트는 ${v3.caution}`),
+    buildTurn('tarot', 'action', `지금 실행 기준은 ${v3.action.now}`),
+    buildTurn('learning', 'coach', `학습리더 팁: ${v3.action.checkin}`)
+  ];
+  return dedupeTurns(turns);
 }
 
 function buildStructuredSummary(reading: SpreadDrawResult) {
@@ -792,7 +836,12 @@ function buildLearningGuide(reading: SpreadDrawResult) {
   );
 }
 
-function inferVerdict(summary: string): { kind: 'yes' | 'no' | 'maybe'; label: string } {
+function inferVerdict(reading: SpreadDrawResult): { kind: 'yes' | 'no' | 'maybe'; label: string } {
+  const v3Label = reading.readingV3?.verdict?.label;
+  if (v3Label === 'yes') return { kind: 'yes', label: 'YES' };
+  if (v3Label === 'hold') return { kind: 'no', label: 'HOLD' };
+  if (v3Label === 'conditional') return { kind: 'maybe', label: 'CONDITIONAL YES' };
+  const summary = reading.summary;
   const raw = String(summary || '').replace(/\s+/g, ' ').trim();
   if (!raw) return { kind: 'maybe', label: 'MAYBE' };
 
