@@ -6,6 +6,7 @@
   border: 1px dashed var(--line);
   border-radius: 16px;
   background: color-mix(in srgb, var(--reading-bg) 76%, var(--accent-soft));
+  overflow-x: auto;
 }
 
 .spread-card {
@@ -100,6 +101,54 @@
   background: color-mix(in srgb, var(--accent-soft) 66%, var(--reading-bg));
   font-size: 0.88rem;
   padding: 3px 11px;
+}
+
+.spread-layout-side .spread-slot-link-drawn {
+  flex-direction: row;
+  align-items: center;
+  text-align: left;
+}
+
+.spread-layout-side .spread-slot-meta {
+  align-items: flex-start;
+  max-width: calc(100% - 124px);
+}
+
+.spread-layout-side .spread-slot-position,
+.spread-layout-side .spread-slot-name {
+  width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.spread-layout-stacked .spread-slot-link-drawn {
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  text-align: center;
+  gap: 10px;
+}
+
+.spread-layout-stacked .spread-slot-meta {
+  align-items: center;
+  text-align: center;
+  gap: 6px;
+  max-width: 100%;
+}
+
+.spread-layout-stacked .spread-slot-position {
+  font-size: 1.02rem;
+  line-height: 1.25;
+}
+
+.spread-layout-stacked .spread-slot-name {
+  font-size: 1.05rem;
+  line-height: 1.25;
+}
+
+.spread-layout-stacked .spread-slot-orientation {
+  font-size: 0.82rem;
 }
 
 .spread-layout-md .spread-slot-thumb {
@@ -218,6 +267,16 @@
   .spread-slot-orientation {
     font-size: 0.76rem;
     padding: 2px 8px;
+  }
+
+  .spread-layout-side .spread-slot-meta {
+    max-width: 100%;
+  }
+
+  .spread-layout-side .spread-slot-position,
+  .spread-layout-side .spread-slot-name {
+    white-space: normal;
+    text-overflow: initial;
   }
 
   .spread-slot-index {

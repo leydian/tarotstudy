@@ -149,6 +149,12 @@ export function SpreadsPage() {
       : (selected?.cardCount ?? 1) <= 8
         ? { scale: 'lg', rowHeight: 194, minColWidth: 140 }
         : { scale: 'md', rowHeight: 180, minColWidth: 126 });
+  const useStackedSpreadMeta = (selected?.layout?.cols || 0) >= 5;
+  const effectiveSpreadPreset = useMemo(() => ({
+    ...spreadVisualPreset,
+    rowHeight: useStackedSpreadMeta ? Math.max(spreadVisualPreset.rowHeight, 256) : spreadVisualPreset.rowHeight,
+    minColWidth: useStackedSpreadMeta ? Math.max(spreadVisualPreset.minColWidth, 146) : spreadVisualPreset.minColWidth
+  }), [spreadVisualPreset, useStackedSpreadMeta]);
   const choiceComparison = useMemo(() => {
     if (!drawMutation.data || selected?.id !== 'choice-a-b') return null;
     return buildChoiceComparison(drawMutation.data);
@@ -266,10 +272,10 @@ export function SpreadsPage() {
 
         <h4>스프레드 모양</h4>
         <div
-          className={`spread-layout spread-layout-${spreadVisualPreset.scale}`}
+          className={`spread-layout spread-layout-${effectiveSpreadPreset.scale} ${useStackedSpreadMeta ? 'spread-layout-stacked' : 'spread-layout-side'}`}
           style={{
-            gridTemplateColumns: `repeat(${selected.layout.cols}, minmax(${spreadVisualPreset.minColWidth}px, 1fr))`,
-            gridTemplateRows: `repeat(${selected.layout.rows}, ${spreadVisualPreset.rowHeight}px)`
+            gridTemplateColumns: `repeat(${selected.layout.cols}, minmax(${effectiveSpreadPreset.minColWidth}px, 1fr))`,
+            gridTemplateRows: `repeat(${selected.layout.rows}, ${effectiveSpreadPreset.rowHeight}px)`
           }}
         >
           {selected.layout.slots.map((slot, idx) => (
