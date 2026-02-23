@@ -25,6 +25,9 @@
 - `docs/handoff/details/docs-ops-structure-2026-02-22.md`
 
 ## 4) 주제별 빠른 이동
+- UI 최종 정규화 및 모바일 최적화(480px 대응/인라인 스타일 제거): `docs/handoff/details/frontend-layout-theme-2026-02-22.md`
+- 네트워크 전송 최적화(API 응답 압축 도입): `docs/handoff/details/backend-reading-quality-2026-02-22.md`
+- 리딩 생성 속도 최적화(드로우 병렬화/질문 분석 캐시): `docs/handoff/details/backend-reading-quality-2026-02-22.md`
 - 실생활 밀착형 스프레드 개편 및 기하학적 레이아웃 도입: `docs/handoff/details/backend-reading-quality-2026-02-22.md`
 - 백엔드 아키텍처 모듈화(5,000행 `index.js` 분해/도메인화): `docs/handoff/details/backend-reading-quality-2026-02-22.md`
 - 개인화 복기 피드백 루프(과거 리뷰 연동 리딩): `docs/handoff/details/backend-reading-quality-2026-02-22.md`

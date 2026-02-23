@@ -1,6 +1,7 @@
 import dotenv from 'dotenv';
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
+import compress from '@fastify/compress';
 import { cards, getCardById, buildCardDescriptions } from './data/cards.js';
 import { courses, lessonsByCourse, getCourseById, getLessonById } from './data/courses.js';
 import { spreads } from './data/spreads.js';
@@ -87,6 +88,8 @@ await app.register(cors, {
     cb(new Error('Not allowed by CORS'), false);
   }
 });
+
+await app.register(compress, { global: true });
 
 app.get('/api/health', async () => ({ ok: true }));
 app.get('/api/spreads', async () => spreadCatalog);

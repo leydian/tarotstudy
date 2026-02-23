@@ -237,7 +237,7 @@ export function ChatReadingPageContainer() {
 
       <article className="panel chat-shell chat-shell-dark">
         <div className="chat-workbench">
-          <section className="chat-column chat-column-dialog">
+          <section className="chat-column chat-column-dialog" aria-live="polite">
             <div className="chat-log" ref={logRef}>
               {messages.length === 0 && (
                 <div className="chat-empty">
@@ -265,6 +265,7 @@ export function ChatReadingPageContainer() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="무엇이든 물어보세요"
+                disabled={drawMutation.isPending}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
@@ -272,6 +273,7 @@ export function ChatReadingPageContainer() {
                     drawMutation.mutate(input.trim());
                   }
                 }}
+                aria-label="질문 입력창"
               />
               <button
                 className="btn primary"
@@ -283,7 +285,7 @@ export function ChatReadingPageContainer() {
               </button>
             </div>
 
-            {drawMutation.isError && <p className="sub chat-error">리딩 생성에 실패했습니다. 잠시 후 다시 시도해주세요.</p>}
+            {drawMutation.isError && <p className="sub chat-error" role="alert">리딩 생성에 실패했습니다. 잠시 후 다시 시도해주세요.</p>}
           </section>
 
           <aside className="chat-column chat-column-sidebar">
@@ -361,9 +363,6 @@ function ChatBubble({
 
   const reading = message.payload;
   const spreadMeta = spreads.find((item) => item.id === reading.spreadId) || null;
-  const effectiveSpreadMeta = spreadMeta
-    || spreads.find((item) => (item.variants || []).some((variant) => variant.sourceSpreadId === reading.spreadId))
-    || null;
   const verdict = inferVerdict(reading);
   const keyQuestion = reading.context?.trim() || '질문';
   const mainItem = reading.items[0];
@@ -371,7 +370,6 @@ function ChatBubble({
   return (
     <div className="chat-row chat-row-assistant">
       <div className="chat-reading-flow">
-        {/* 1. Card Spotlight (Smaller & Framed) */}
         {mainItem && (
           <div className="chat-spotlight-card">
             <TarotImage
@@ -387,17 +385,14 @@ function ChatBubble({
           </div>
         )}
 
-        {/* 2. Verdict Badge */}
         <div className="verdict-banner">
           <span className={`verdict-pill verdict-${verdict.kind}`}>
             {verdict.label}
           </span>
         </div>
 
-        {/* 3. Reading Dialog Bubbles */}
         <ChatSummaryView reading={reading} />
 
-        {/* 4. Actions */}
         <div className="chat-reading-actions">
           <button
             className="btn redraw-btn"
@@ -443,294 +438,49 @@ function buildDetailDialogFromReadingModel(reading: SpreadDrawResult) {
   const turns = Array.isArray(reading.readingModel?.channel?.chatDetail?.turns)
     ? reading.readingModel.channel.chatDetail.turns
     : [];
-  return rebalanceDialogueMix(
-    dedupeTurns(
-      turns
-        .map((turn) => buildTurn(turn.speaker, turn.purpose, turn.text))
-        .filter((turn) => Boolean(turn.text))
-    )
-  );
+  return turns.filter((t) => Boolean(t.text));
 }
 
 function buildExpandedCardDialog(reading: SpreadDrawResult) {
   const items = reading.items.slice(0, 6);
   if (!items.length) return [];
-
   const turns: DialogueTurn[] = [];
-  turns.push(buildTurn('tarot', 'detail', `질문("${reading.context || '현재 질문'}") 기준으로 카드 흐름을 순서대로 볼게요`));
-
-  items.forEach((item, idx) => {
+  items.forEach((item) => {
     const orientation = item.orientation === 'reversed' ? '역방향' : '정방향';
-    const keyword = item.card.keywords?.[0] || '핵심 신호';
-    const lead = `${item.position.name}에서는 ${item.card.nameKo} ${orientation} 카드가 나왔고 키워드는 "${keyword}"이에요`;
-    const core = compactLine(item.coreMessage || '');
-    const interpretation = compactLine(item.interpretation || '');
-    const next = items[idx + 1];
-
-    turns.push(buildTurn('tarot', 'detail', lead));
-    if (core) {
-      const coreTemplates = [
-        `핵심만 말하면 ${core}`,
-        `이 카드의 중심 뜻은 ${core}`,
-        `지금 제일 중요한 건 ${core}`
-      ];
-      turns.push(buildTurn('tarot', 'detail', coreTemplates[idx % coreTemplates.length]));
-    }
-    if (interpretation) {
-      const interpretationTemplates = [
-        `쉽게 말하면 ${interpretation}`,
-        `일상말로 풀면 ${interpretation}`,
-        `짧게 정리하면 ${interpretation}`
-      ];
-      turns.push(buildTurn('tarot', 'detail', interpretationTemplates[idx % interpretationTemplates.length]));
-    }
-    if (next) {
-      turns.push(buildTurn('tarot', 'detail', `${item.position.name} 다음은 ${next.position.name} 흐름이에요. 여기서 결정 세기가 갈려요`));
-    }
-
-    const learningHint = maybeBuildLearningHint(`${core} ${interpretation}`, item.position.name, idx, 0);
-    if (learningHint) turns.push(learningHint);
-  });
-
-  const closing = reading.readingV3
-    ? reading.readingV3.closing
-    : '한번 모아보면 이번 주는 세기를 낮추고 반응을 확인하는 게 가장 안전해요';
-  turns.push(buildTurn('tarot', 'detail', closing));
-
-  return rebalanceDialogueMix(dedupeTurns(turns));
-}
-
-function buildExpandedNarrativeDialogFromLines(reading: SpreadDrawResult, lines: string[], sectionTitle = '상세 리딩') {
-  const cards = reading.items.slice(0, 6);
-  if (!cards.length) return buildDialogFromLines(lines, sectionTitle);
-  const turns: DialogueTurn[] = [];
-  const normalizedLines = lines.map((line) => compactLine(line)).filter(Boolean);
-
-  normalizedLines.forEach((line, idx) => {
-    const card = cards[idx % cards.length];
-    const orientation = card.orientation === 'reversed' ? '역방향' : '정방향';
-    const keyword = card.card.keywords?.[0] || '핵심 신호';
-    const sectionTemplates = [
-      `${sectionTitle}에서는 ${card.position.name}의 ${card.card.nameKo} ${orientation} 카드(${keyword})를 기준으로 보면 ${line}`,
-      `${sectionTitle} 흐름을 ${card.position.name} 카드로 풀면 ${line}`,
-      `${sectionTitle} 장면을 ${card.card.nameKo} 중심으로 보면 ${line}`
-    ];
-    turns.push(buildTurn('tarot', 'detail', sectionTemplates[idx % sectionTemplates.length]));
-    if (idx < normalizedLines.length - 1) {
-      const nextCard = cards[(idx + 1) % cards.length];
-      turns.push(buildTurn('tarot', 'detail', `다음은 ${nextCard.position.name} 흐름으로 넘어가요. 속도와 세기를 같이 맞춰보면 좋아요`));
-    }
-    const learning = maybeBuildLearningHint(line, sectionTitle, idx, 0);
-    if (learning) turns.push(learning);
-  });
-
-  return rebalanceDialogueMix(dedupeTurns(turns));
-}
-
-function compactLine(text: string) {
-  const blocks = toParagraphBlocks(text);
-  return blocks.join(' ');
-}
-
-function buildSectionDialog(line: string, sectionTitle: string, index = 0) {
-  const chunks = toParagraphBlocks(line);
-  if (!chunks.length) return [buildTurn('tarot', 'detail', line)];
-
-  return chunks.flatMap((chunk, chunkIdx) => {
-    const tarotTurn = buildTurn('tarot', 'detail', chunk);
-    const learningHint = maybeBuildLearningHint(chunk, sectionTitle, index, chunkIdx);
-    return learningHint ? [tarotTurn, learningHint] : [tarotTurn];
-  });
-}
-
-function buildDialogFromLines(lines: string[], sectionTitle: string) {
-  const turns: DialogueTurn[] = [];
-  let learningCount = 0;
-  let tarotCount = 0;
-  lines.forEach((line, lineIdx) => {
-    buildSectionDialog(line, sectionTitle, lineIdx).forEach((turn) => {
-      if (!turn.dedupeKey) return;
-      if (turn.speaker === 'learning' && learningCount >= 2) return;
-      if (turn.speaker === 'learning' && tarotCount < 4) return;
-      turns.push(turn);
-      if (turn.speaker === 'learning') learningCount += 1;
-      if (turn.speaker === 'tarot') tarotCount += 1;
+    turns.push({
+      speaker: 'tarot',
+      purpose: 'detail',
+      text: `${item.position.name} 자리에서 ${item.card.nameKo} ${orientation} 카드가 나왔어요.`,
+      dedupeKey: `card-${item.position.name}`
     });
+    if (item.coreMessage) {
+      turns.push({ speaker: 'tarot', purpose: 'detail', text: item.coreMessage, dedupeKey: `msg-${item.position.name}` });
+    }
   });
-  return rebalanceDialogueMix(dedupeTurns(turns));
+  return turns;
 }
 
-function maybeBuildLearningHint(text: string, sectionTitle: string, lineIndex: number, chunkIndex: number) {
-  const joined = `${sectionTitle} ${text}`;
-  const isActionBlock = /실행|행동|루틴|체크|점검|복기|우선순위|가이드|정리/.test(joined);
-  const isRiskBlock = /주의|리스크|소모|충돌|지연|불안|조절|과열|경계/.test(joined);
-  const shouldShow = isActionBlock ? lineIndex % 2 === 0 && chunkIndex === 0 : lineIndex % 4 === 0 && chunkIndex === 0;
-  if (!shouldShow) return null;
-  const noun = extractPrimaryNoun(joined);
-  if (isRiskBlock) {
-    return buildTurn('learning', 'coach', `${noun}는 오늘 15분 확인하고, 맞았는지 달랐는지 1줄만 적어봐요`);
-  }
-  if (isActionBlock) {
-    return buildTurn('learning', 'coach', `${noun}는 25분 하고 5분 정리해요. 끝나면 완료율 숫자 1개만 남겨요`);
-  }
-  return null;
-}
-
-function buildTurn(speaker: DialogueSpeaker, purpose: DialoguePurpose, text: string): DialogueTurn {
-  const voiceApplied = speaker === 'tarot'
-    ? applyTarotStoryVoice(compactLine(text), purpose)
-    : compactLine(text);
-  const normalized = softenLine(voiceApplied);
-  return {
-    speaker,
-    purpose,
-    text: normalized,
-    dedupeKey: `${speaker}:${purpose}:${normalizeDialogKey(normalized)}`
-  };
-}
-
-function dedupeTurns(turns: DialogueTurn[]) {
-  const seen = new Set<string>();
-  return turns.filter((turn) => {
-    if (!turn.dedupeKey) return false;
-    if (seen.has(turn.dedupeKey)) return false;
-    seen.add(turn.dedupeKey);
-    return true;
-  });
-}
-
-function rebalanceDialogueMix(turns: DialogueTurn[]) {
-  const tarotCount = turns.filter((turn) => turn.speaker === 'tarot').length;
-  const learningCap = Math.min(2, Math.max(1, Math.floor(tarotCount / 4)));
-  let learningCount = 0;
-  return turns.filter((turn) => {
-    if (turn.speaker !== 'learning') return true;
-    if (learningCount >= learningCap) return false;
-    learningCount += 1;
-    return true;
-  });
-}
-
-function softenLine(text: string) {
-  const line = sanitizeDialogLine(compactLine(text));
-  if (!line) return '지금 흐름에서 핵심 포인트를 같이 정리해볼게요.';
-  const trimmed = line.replace(/\s+/g, ' ').trim();
-  if (/[.!?]$/.test(trimmed)) return trimmed;
-  return `${trimmed}.`;
-}
-
-function extractPrimaryNoun(text: string) {
-  const token = String(text || '')
-    .split(/\s+/)
-    .find((word) => /[가-힣A-Za-z]/.test(word) && word.length >= 2);
-  return token || '핵심 포인트';
-}
-
-function sanitizeDialogLine(text: string) {
-  return String(text || '')
-    .replace(/^\s*정리하면\s*/g, '')
-    .replace(/^\s*결론은\s*/g, '')
-    .replace(/^\s*실행 가이드:\s*/g, '')
-    .replace(/^\s*한 줄 테마:\s*/g, '')
-    .replace(/핵심부터 말씀드리면[, ]*/g, '')
-    .replace(/이번 주\s*이번 주에는/g, '이번 주에는')
-    .replace(/근거 카드는 핵심 메시지의\s*/g, '근거 카드는 ')
-    .replace(/핵심 메시지의\s*/g, '')
-    .replace(/\.?\s*으로 읽힙니다\.?/g, '으로 읽힙니다.')
-    .replace(/지금은 흐름을 살려 실행해보실 수 있는 구간입니다\.?/g, '지금은 실행 여지가 열려 있는 구간입니다')
-    .replace(/지금은 속도를 낮추고 정비를 먼저 두시는 편이 안정적입니다\.?/g, '지금은 속도를 낮추고 정비를 먼저 두는 편이 안정적입니다')
-    .replace(/이 장면에서 보면\s*이 장면에서 보면/g, '이 장면에서 보면')
-    .replace(/차분히 보면\s*차분히 보면/g, '차분히 보면')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-function applyTarotStoryVoice(text: string, purpose: DialoguePurpose) {
-  const line = String(text || '').trim();
-  if (!line) return line;
-  return compactTarotTurn(line, purpose);
-}
-
-function compactTarotTurn(text: string, purpose: DialoguePurpose) {
-  return toDisplayLine(String(text || ''), purpose === 'detail' ? 'detail' : 'quick');
-}
-
-function normalizeDialogKey(text: string) {
-  return sanitizeDialogLine(text)
-    .toLowerCase()
-    .replace(/["'`]/g, '')
-    .replace(/[.,!?]/g, '')
-    .trim();
+function buildExpandedNarrativeDialogFromLines(reading: SpreadDrawResult, lines: string[], title: string) {
+  return lines.map((line, idx) => ({
+    speaker: 'tarot' as DialogueSpeaker,
+    purpose: 'detail' as DialoguePurpose,
+    text: line,
+    dedupeKey: `fallback-${idx}`
+  }));
 }
 
 function inferVerdict(reading: SpreadDrawResult): { kind: 'yes' | 'no' | 'maybe'; label: string } {
-  const modelLabel = reading.readingModel?.verdict?.label;
-  if (modelLabel === 'yes') return { kind: 'yes', label: 'YES' };
-  if (modelLabel === 'hold') return { kind: 'maybe', label: 'HOLD' };
-  if (modelLabel === 'conditional') return { kind: 'maybe', label: 'CONDITIONAL YES' };
-  const v3Label = reading.readingV3?.verdict?.label;
-  if (v3Label === 'yes') return { kind: 'yes', label: 'YES' };
-  if (v3Label === 'hold') return { kind: 'maybe', label: 'HOLD' };
-  if (v3Label === 'conditional') return { kind: 'maybe', label: 'CONDITIONAL YES' };
-  const summary = reading.summary;
-  const raw = String(summary || '').replace(/\s+/g, ' ').trim();
-  if (!raw) return { kind: 'maybe', label: 'MAYBE' };
-
-  const lower = raw.toLowerCase();
-  const conclusionWindow = (raw.match(/결론[^.!\n]{0,48}/g) || []).join(' ');
-  const conclusionLower = conclusionWindow.toLowerCase();
-
-  if (/조건부\s*예/.test(conclusionWindow) || /조건부\s*예/.test(lower)) {
-    return { kind: 'maybe', label: 'CONDITIONAL YES' };
-  }
-  if (/결론[^.!\n]{0,24}(아니오|보류)/.test(conclusionWindow) || /결론[^.!\n]{0,24}(아니오|보류)/.test(lower)) {
-    return { kind: 'no', label: 'NO' };
-  }
-  if (/결론[^.!\n]{0,24}예/.test(conclusionWindow) || /결론[^.!\n]{0,24}예/.test(lower)) {
-    return { kind: 'yes', label: 'YES' };
-  }
-
-  if (/1차 판정은 우세|판정은 우세|우세/.test(raw)) return { kind: 'yes', label: 'YES' };
-  if (/1차 판정은 조건부|판정은 조건부|박빙/.test(raw)) return { kind: 'maybe', label: 'MAYBE' };
-
-  if (/\byes\b/.test(conclusionLower)) return { kind: 'yes', label: 'YES' };
-  if (/\bno\b/.test(conclusionLower)) return { kind: 'no', label: 'NO' };
-  return { kind: 'maybe', label: 'MAYBE' };
+  const label = reading.readingModel?.verdict?.label || reading.readingV3?.verdict?.label || 'maybe';
+  if (label === 'yes') return { kind: 'yes', label: 'YES' };
+  if (label === 'hold') return { kind: 'maybe', label: 'HOLD' };
+  return { kind: 'maybe', label: 'CONDITIONAL YES' };
 }
 
-function buildFollowupQuestions({
-  reading,
-  spread
-}: {
-  reading: SpreadDrawResult | null;
-  spread: Spread | null;
-}) {
-  if (!reading || !spread) {
-    return recommendRandomQuestions({
-      count: 3,
-      poolSize: 3000,
-      spreadName: spread?.name || '',
-      context: reading?.context || '',
-      seedKey: 'chat-followup-empty'
-    });
-  }
-
-  const keyword = reading.items.flatMap((item) => item.card.keywords || []).find(Boolean) || '흐름';
-  const orientationBias = reading.items.filter((item) => item.orientation === 'upright').length >= Math.ceil(reading.items.length / 2)
-    ? '정방향 우세'
-    : '역방향 주의';
-
-  const contextual = [
-    `${keyword} 기준으로 오늘 행동 1개만 더 구체화해줘`,
-    `${orientationBias}일 때 피해야 할 실수 2가지만 알려줘`,
-    `${spread.name} 결과를 내 일정표에 넣는 방법을 말해줘`
+function buildFollowupQuestions({ reading, spread }: { reading: SpreadDrawResult | null; spread: Spread | null; }) {
+  if (!reading || !spread) return [];
+  return [
+    `이 카드가 암시하는 주의사항은?`,
+    `합격 확률을 높이는 구체적 팁은?`,
+    `이 결과를 어떻게 실천할까?`
   ];
-  const randoms = recommendRandomQuestions({
-    count: 4,
-    poolSize: 3000,
-    spreadName: spread.name,
-    context: reading.context,
-    seedKey: `${spread.id}:${reading.drawnAt}`
-  });
-  return [...contextual, ...randoms].slice(0, 6);
 }
