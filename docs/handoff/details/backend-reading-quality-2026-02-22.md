@@ -1,7 +1,7 @@
 # 세부내역: 백엔드 리딩/요약 품질
 
-작성일: 2026-02-22  
-최종 갱신: 2026-02-23 (late)
+작성일: 2026-02-22
+최종 갱신: 2026-02-23 (reading output quality fix)
 
 ## 범위
 - 파일:
@@ -91,6 +91,56 @@
   - 입문 사용자의 이해 난이도 하향
   - 카드별 해설 형식 편차 축소
   - 실전 적용 문장 비율 증가로 “읽고 바로 실행” 가능한 구조 확보
+
+10. 리딩 출력 품질 3종 수정 (2026-02-23)
+
+### 증상
+"일정 과부하를 줄이기 위해 무엇부터 덜어낼까?" 질문에서 3가지 문제 확인:
+- **반복**: "오늘 할 행동 1개를 먼저 고정해보세요"가 bridge·verdict·caution 3곳에 중복 출력
+- **템플릿 노출**: "시간축/문제축 뜻풀이의 핵심 신호를 먼저 확인해보겠어요" 내부 가이드 문구 노출
+- **행동 부정확**: 일정 관련 질문인데도 "지금 10분 안에 끝낼 수 있는 행동 1개만…" 출력
+
+### 원인
+| 증상 | 원인 함수 | 원인 |
+|------|-----------|------|
+| 반복 | `rewriteModelLines()` | hintAppended 가드 없음 + 키워드 정규식 협소 → 3회 append |
+| 템플릿 노출 | `buildCoreContextLine()`, `buildSpreadCoreLead()` | three-card 변형에 가이드 문구 잔존 |
+| 행동 부정확 | `resolveReadingDomain()` | `'schedule'` 도메인 없어 "무엇" → `'action'` 처리 |
+
+### 변경 내역
+
+#### `apps/api/src/content.js`
+- `buildCoreContextLine()` three-card 변형:
+  - `"이 포지션이 시간축/문제축에서 어떤 역할인지"` → `"이 카드가 세 장 흐름에서 원인인지 결과인지 먼저 구분"`
+- `buildSpreadCoreLead()` three-card 변형:
+  - `"시간축/문제축 해석의 핵심 신호를 먼저 확인해보겠습니다"` → `"이 카드가 전체 흐름 중 어느 단계를 담당하는지 먼저 살펴보겠습니다"`
+
+#### `apps/api/src/index.js`
+- `resolveReadingDomain()`: `'action'` 앞에 `'schedule'` 도메인 추가
+  - 패턴: `/(일정|과부하|스케줄|할 일|태스크|우선순위|업무량|병목)/`
+- `buildImmediateActionV3()`: `schedule` 도메인 전용 분기 추가
+  - 우세: "오늘 일정 중 삭제하거나 위임할 수 있는 항목 1개를 먼저 찾아 지우세요."
+  - 박빙: "오늘 할 일 목록에서 마감이 없는 항목 1개를 내일 이후로 미루세요."
+  - 조건부: "가장 부담이 큰 일정 1개를 골라 취소하거나 축소하는 것부터 결정하세요."
+- `buildCautionV3()`: `schedule` 풀 추가 (우세/박빙/조건부 각 2개 문장)
+- `buildCheckinV3()`: `schedule` 분기 추가
+  - "오늘 삭제하거나 위임한 일정 수와 실제 완료 수를 숫자로 기록하세요."
+
+#### `apps/api/src/reading-model-builder.js`
+- `inferDomainHintFromContext()`: schedule 패턴 추가
+  - `/(일정|과부하|스케줄|우선순위|병목|태스크)/` → `"오늘 일정 중 삭제 또는 위임 가능한 항목 1개를 먼저 찾으세요."`
+- `rewriteModelLines()`: 반복 방지 개선
+  - `hintAppended` 카운터 도입 → domainHint append 최대 1회로 제한
+  - 키워드 정규식 확장: 10개 → 20개 이상 (줄이/덜어/삭제/위임/보류/고정/확인/기록/점검/실행/완료/기준/정리/우선 등 추가)
+
+### 결과
+- `"시간축/문제축"` 문자열 출력 0건
+- domainHint 중복 append 0회 (최대 1회 제한)
+- `action.now`에 "삭제" 또는 "위임" 포함
+- 전체 테스트 64/64 통과
+
+### 관련 커밋
+- `4c7c9b1` Fix reading output quality: schedule domain, template exposure, and hint repeat
 
 ## 관련 테스트
 - `apps/api/test/content-fallback.test.js`
