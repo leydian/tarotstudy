@@ -102,7 +102,7 @@ test('summary quality gate reduces generic templates across key spreads', () => 
 
     const templateHits = (summary.match(/(두 갈래|운영이 좋습니다|좋은 구간입니다)/g) || []).length;
     const concreteHits = (summary.match(/(오늘|이번 주|이번 달|연말|1개|카드|정방향|역방향|고정비|변동비|현금흐름)/g) || []).length;
-    assert.ok(templateHits <= 1, `${scenario.spreadId} has too many template phrases`);
+    assert.ok(templateHits <= 0, `${scenario.spreadId} has too many template phrases`);
     assert.ok(concreteHits >= 2, `${scenario.spreadId} must include concrete cues`);
   }
 });

@@ -12,7 +12,11 @@ import { createTelemetryStore } from './telemetry.js';
 import { createProgressStore } from './progress-store.js';
 import { buildLearningKpi } from './learning-kpi.js';
 import { buildLearningFunnel, buildNextActions, buildReviewInbox } from './learning-read-models.js';
-import { buildReadingModel, splitSummaryLines } from './reading-model-builder.js';
+import {
+  buildReadingModel,
+  deriveReadingV3FromModel,
+  deriveTonePayloadFromModel
+} from './reading-model-builder.js';
 import { loadPersonaPolicy } from './persona-policy-loader.js';
 import {
   getTarotPredictedQuestions,
@@ -429,21 +433,22 @@ function performSpreadDraw({
     context,
     level
   });
-  const readingV3 = buildReadingV3({
+  const rawReadingV3 = buildReadingV3({
     spreadId: spread.id,
     spreadName: spread.name,
     items,
     context,
     level
   });
-  const tonePayload = buildTonePayload({ readingV3, summary });
   const readingModel = buildReadingModel({
     spreadId: spread.id,
     items,
     context,
     summary,
-    readingV3
+    readingV3: rawReadingV3
   });
+  const readingV3 = deriveReadingV3FromModel(readingModel) || rawReadingV3;
+  const tonePayload = deriveTonePayloadFromModel(readingModel, summary);
 
   return {
     spreadId: spread.id,
@@ -926,7 +931,15 @@ export function summarizeSpreadForQa(payload = {}) {
 }
 
 export function buildReadingV3ForQa(payload = {}) {
-  return buildReadingV3(payload);
+  const rawReadingV3 = buildReadingV3(payload);
+  const readingModel = buildReadingModel({
+    spreadId: payload.spreadId || '',
+    items: Array.isArray(payload.items) ? payload.items : [],
+    context: String(payload.context || ''),
+    summary: String(payload.summary || ''),
+    readingV3: rawReadingV3
+  });
+  return deriveReadingV3FromModel(readingModel) || rawReadingV3;
 }
 
 function buildReadingV2({
@@ -1117,30 +1130,6 @@ function buildReadingV3({
     guardrails: {
       bannedAbsolute: true,
       duplicateRateMax: 0.34
-    }
-  };
-}
-
-function buildTonePayload({ readingV3 = null, summary = '' }) {
-  const v3 = readingV3 && typeof readingV3 === 'object'
-    ? {
-      bridge: String(readingV3.bridge || '').trim(),
-      verdict: String(readingV3.verdict?.sentence || '').trim(),
-      evidence: Array.isArray(readingV3.evidence)
-        ? readingV3.evidence.map((item) => String(item?.narrativeLine || '').trim()).filter(Boolean).slice(0, 3)
-        : [],
-      caution: String(readingV3.caution || '').trim(),
-      actionNow: String(readingV3.action?.now || '').trim(),
-      checkin: String(readingV3.action?.checkin || '').trim(),
-      closing: String(readingV3.closing || '').trim()
-    }
-    : null;
-  return {
-    v3Lines: v3,
-    summaryLines: splitSummaryLines(summary),
-    meta: {
-      source: v3 ? 'readingV3' : 'summary',
-      version: 'tone-v1'
     }
   };
 }

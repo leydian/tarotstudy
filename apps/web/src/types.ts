@@ -354,7 +354,7 @@ export interface SpreadTonePayload {
   } | null;
   summaryLines: string[];
   meta: {
-    source: 'readingV3' | 'summary';
+    source: 'readingV3' | 'summary' | 'readingModel-derived';
     version: string;
   };
 }
@@ -399,11 +399,18 @@ export interface ReadingModel {
     };
   };
   meta: {
-    source: 'readingV3' | 'summary';
+    source: 'readingV3' | 'summary' | 'model-native';
     version: 'reading-model-v1';
     timeHorizon: string;
     guardrailApplied: boolean;
     personaApplied: boolean;
+    quality?: {
+      naturalnessScore: number;
+      specificityScore: number;
+      repetitionScore: number;
+      templateScore: number;
+      rewriteApplied: boolean;
+    };
   };
 }
 

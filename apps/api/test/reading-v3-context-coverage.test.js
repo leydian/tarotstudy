@@ -146,9 +146,8 @@ test('reading v3 context coverage meets quality thresholds on 100 prompts', () =
     if (item.category === 'timing' && !hasTimeCue(merged)) timingMismatch += 1;
   }
 
-  assert.ok(genericActionUsed <= 25, `genericActionUsed must be <=25, got ${genericActionUsed}`);
-  assert.ok(genericCautionUsed <= 30, `genericCautionUsed must be <=30, got ${genericCautionUsed}`);
-  assert.ok(domainActionMiss <= 10, `domainActionMiss must be <=10, got ${domainActionMiss}`);
+  assert.ok(genericActionUsed <= 15, `genericActionUsed must be <=15, got ${genericActionUsed}`);
+  assert.ok(genericCautionUsed <= 15, `genericCautionUsed must be <=15, got ${genericCautionUsed}`);
+  assert.ok(domainActionMiss <= 5, `domainActionMiss must be <=5, got ${domainActionMiss}`);
   assert.equal(timingMismatch, 0, `timingMismatch must be 0, got ${timingMismatch}`);
 });
-
