@@ -81,3 +81,22 @@ test('learning persona metadata is attached and keeps compact sentence count', (
   assert.ok(reading.learningPersonaMeta.sentenceCount <= 5);
   assert.ok(['low', 'mid', 'high'].includes(reading.learningPersonaMeta.repetitionRisk));
 });
+
+test('quality metadata is attached for core and interpretation natural tone checks', () => {
+  const reading = buildSpreadReading({
+    card: cloneCard(cards[42]),
+    spreadId: 'three-card',
+    position: getPosition('three-card', 0),
+    orientation: 'upright',
+    level: 'beginner',
+    context: '이번 주 관계 흐름을 보고 싶어',
+    experimentVariant: 'A'
+  });
+
+  assert.ok(reading.qualityMeta);
+  assert.ok(reading.qualityMeta.coreMessage);
+  assert.ok(reading.qualityMeta.interpretation);
+  assert.equal(typeof reading.qualityMeta.rewriteApplied, 'boolean');
+  assert.equal(typeof reading.qualityMeta.passCount, 'number');
+  assert.equal(typeof reading.qualityMeta.passes, 'boolean');
+});

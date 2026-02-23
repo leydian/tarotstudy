@@ -365,7 +365,8 @@ function performSpreadDraw({
       coreMessage: reading.coreMessage,
       learningPoint: reading.learningPoint,
       tarotPersonaMeta: reading.tarotPersonaMeta || undefined,
-      learningPersonaMeta: reading.learningPersonaMeta || undefined
+      learningPersonaMeta: reading.learningPersonaMeta || undefined,
+      qualityMeta: reading.qualityMeta || undefined
     };
   });
 
@@ -389,6 +390,22 @@ function performSpreadDraw({
     if (item.learningPersonaMeta?.repetitionRisk === 'high') {
       telemetryStore.recordSpreadEvent({
         type: 'learning_repetition_high',
+        spreadId: spread.id,
+        level,
+        context
+      });
+    }
+    if (item.qualityMeta?.rewriteApplied) {
+      telemetryStore.recordSpreadEvent({
+        type: 'natural_gate_rewrite_applied',
+        spreadId: spread.id,
+        level,
+        context
+      });
+    }
+    if (item.qualityMeta?.passes === false) {
+      telemetryStore.recordSpreadEvent({
+        type: 'natural_gate_under_threshold',
         spreadId: spread.id,
         level,
         context

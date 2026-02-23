@@ -9,10 +9,10 @@ const TTL_FALLBACK_SOURCE = 'fallback';
 const CARD_NAME_KO_SET = new Set(cards.map((item) => String(item?.nameKo || '').trim()).filter(Boolean));
 const READING_TONE_MODE = String(process.env.READING_TONE_MODE || 'conversational').toLowerCase().trim();
 const USE_CONVERSATIONAL_TONE = READING_TONE_MODE !== 'template';
-const NATURAL_TONE_MIN_SCORE = Number(process.env.NATURAL_TONE_MIN_SCORE || 72);
-const NATURAL_SPECIFICITY_MIN_SCORE = Number(process.env.NATURAL_SPECIFICITY_MIN_SCORE || 60);
-const NATURAL_REPETITION_MAX_SCORE = Number(process.env.NATURAL_REPETITION_MAX_SCORE || 34);
-const NATURAL_TEMPLATE_MAX_SCORE = Number(process.env.NATURAL_TEMPLATE_MAX_SCORE || 38);
+const NATURAL_TONE_MIN_SCORE = Number(process.env.NATURAL_TONE_MIN_SCORE || 76);
+const NATURAL_SPECIFICITY_MIN_SCORE = Number(process.env.NATURAL_SPECIFICITY_MIN_SCORE || 66);
+const NATURAL_REPETITION_MAX_SCORE = Number(process.env.NATURAL_REPETITION_MAX_SCORE || 30);
+const NATURAL_TEMPLATE_MAX_SCORE = Number(process.env.NATURAL_TEMPLATE_MAX_SCORE || 34);
 const TAROT_NARRATIVE_GUARDRAIL_LEVEL = String(process.env.TAROT_NARRATIVE_GUARDRAIL_LEVEL || 'medium').toLowerCase().trim();
 const TAROT_LEARNING_LEAK_PATTERNS = [
   /\[학습 리더\]/g,
@@ -214,7 +214,7 @@ function softenMechanicalLine(line = '') {
 
 function enforceNaturalToneQuality(text = '', options = {}) {
   const minScore = Number(options.minScore ?? NATURAL_TONE_MIN_SCORE);
-  const maxPasses = Number(options.maxPasses ?? 2);
+  const maxPasses = Number(options.maxPasses ?? 3);
   let rendered = applyConversationalTone(String(text || ''));
   let score = scoreNaturalTone(rendered);
   let specificity = scoreSpecificityTone(rendered);
@@ -237,15 +237,54 @@ function enforceNaturalToneQuality(text = '', options = {}) {
     pass += 1;
   }
 
+  const passes = score >= minScore
+    && specificity >= NATURAL_SPECIFICITY_MIN_SCORE
+    && repetition <= NATURAL_REPETITION_MAX_SCORE
+    && templateDensity <= NATURAL_TEMPLATE_MAX_SCORE;
   return {
     text: rendered,
-    score
+    score,
+    specificity,
+    repetition,
+    templateDensity,
+    passCount: pass,
+    rewriteApplied: pass > 0,
+    passes
   };
 }
 
 function renderNaturalTextFromSemantic(text = '', options = {}) {
-  if (!USE_CONVERSATIONAL_TONE) return String(text || '');
-  return enforceNaturalToneQuality(text, options).text;
+  return renderNaturalTextWithMeta(text, options).text;
+}
+
+function renderNaturalTextWithMeta(text = '', options = {}) {
+  if (!USE_CONVERSATIONAL_TONE) {
+    return {
+      text: String(text || ''),
+      meta: {
+        score: 100,
+        specificity: 100,
+        repetition: 0,
+        templateDensity: 0,
+        passCount: 0,
+        rewriteApplied: false,
+        passes: true
+      }
+    };
+  }
+  const quality = enforceNaturalToneQuality(text, options);
+  return {
+    text: quality.text,
+    meta: {
+      score: quality.score,
+      specificity: quality.specificity,
+      repetition: quality.repetition,
+      templateDensity: quality.templateDensity,
+      passCount: quality.passCount,
+      rewriteApplied: quality.rewriteApplied,
+      passes: quality.passes
+    }
+  };
 }
 
 function applyConversationalToneToSections(sections = {}) {
@@ -261,6 +300,29 @@ function renderExplanationFromSemantic(explanation) {
     ...explanation,
     sections: applyConversationalToneToSections(explanation.sections)
   };
+}
+
+function scoreExplanationQuality(sections = {}) {
+  const merged = Object.values(sections || {})
+    .map((value) => String(value || '').trim())
+    .filter(Boolean)
+    .join('\n');
+  return {
+    natural: scoreNaturalTone(merged),
+    specificity: scoreSpecificityTone(merged),
+    repetition: scoreRepetitionTone(merged),
+    templateDensity: scoreTemplateDensityTone(merged)
+  };
+}
+
+function isLowQualityExplanation(explanation) {
+  const sections = explanation?.sections;
+  if (!sections || typeof sections !== 'object') return true;
+  const quality = scoreExplanationQuality(sections);
+  return quality.natural < NATURAL_TONE_MIN_SCORE
+    || quality.specificity < NATURAL_SPECIFICITY_MIN_SCORE
+    || quality.repetition > NATURAL_REPETITION_MAX_SCORE
+    || quality.templateDensity > NATURAL_TEMPLATE_MAX_SCORE;
 }
 
 export function buildFallbackExplanation(card, level = 'beginner', context = '') {
@@ -1604,12 +1666,27 @@ export async function buildCardExplanation({ cardId, level, context, cache, exte
     card,
     level,
     context,
-    timeoutMs: 350
+    timeoutMs: 800
   });
   const normalizedFast = normalizeExternalSections(generatedFast, cardId, level);
   if (normalizedFast) {
     cache.set(cacheKey, normalizedFast);
     return normalizedFast;
+  }
+
+  if (isLowQualityExplanation(fallback)) {
+    const generatedRetry = await tryGenerateWithTimeout({
+      externalGenerator,
+      card,
+      level,
+      context,
+      timeoutMs: 1800
+    });
+    const normalizedRetry = normalizeExternalSections(generatedRetry, cardId, level);
+    if (normalizedRetry) {
+      cache.set(cacheKey, normalizedRetry);
+      return normalizedRetry;
+    }
   }
 
   cache.set(cacheKey, fallback);
@@ -1781,13 +1858,23 @@ export function buildSpreadReading({
     coreMessage: tarotPersonaBundle.coreMessage,
     learningPoint
   };
+  const interpretationRendered = renderNaturalTextWithMeta(semanticReading.interpretation);
+  const coreRendered = renderNaturalTextWithMeta(semanticReading.coreMessage);
+  const qualityMeta = {
+    interpretation: interpretationRendered.meta,
+    coreMessage: coreRendered.meta,
+    rewriteApplied: interpretationRendered.meta.rewriteApplied || coreRendered.meta.rewriteApplied,
+    passCount: Math.max(interpretationRendered.meta.passCount, coreRendered.meta.passCount),
+    passes: interpretationRendered.meta.passes && coreRendered.meta.passes
+  };
   return {
-    interpretation: renderNaturalTextFromSemantic(semanticReading.interpretation),
-    coreMessage: renderNaturalTextFromSemantic(semanticReading.coreMessage),
+    interpretation: interpretationRendered.text,
+    coreMessage: coreRendered.text,
     // Keep instructional marker for study pipeline compatibility.
     learningPoint: applyConversationalTone(semanticReading.learningPoint),
     tarotPersonaMeta: tarotPersonaBundle.meta,
-    learningPersonaMeta: learningPointBundle.meta
+    learningPersonaMeta: learningPointBundle.meta,
+    qualityMeta
   };
 }
 
@@ -2385,7 +2472,8 @@ function buildNaturalCoreMessage({
   const adviceLine = spreadId === 'celtic-cross'
     ? buildCelticCoreAdviceLine({ positionName: position.name, orientation, contextProfile, seed })
     : buildTarotAdviceLine({ spreadId, positionName: position.name, contextProfile, tone, orientation, context, seed });
-  const raw = joinUniqueParts([contextLead, cardLine, meaningLine, adviceLine]);
+  const evidenceAnchor = `${position.name} 포지션의 ${card.nameKo} ${cardDirection} 카드는 "${mainKeyword}" 키워드를 ${focus}의 근거 신호로 보여줍니다.`;
+  const raw = joinUniqueParts([contextLead, cardLine, meaningLine, evidenceAnchor, adviceLine]);
   return polishCoreMessage(raw);
 }
 
