@@ -508,7 +508,7 @@ export function SpreadsPage() {
             <div className="reading-dual-panel">
               <article className="result-item reading-summary">
                 <h5 className="reading-block-title">타로 리더 종합 리딩</h5>
-                {activeDraw.readingV3 ? (
+                {toCanonicalReadingLines(activeDraw).length > 0 ? (
                   <NaturalFlowView
                     blocks={toCanonicalReadingLines(activeDraw)}
                     keywords={emphasisKeywords}

@@ -382,6 +382,38 @@ function ChatBubble({
 }
 
 function ChatSummaryView({ reading }: { reading: SpreadDrawResult }) {
+  const modelQuick = buildQuickDialogFromReadingModel(reading);
+  const modelDetail = buildDetailDialogFromReadingModel(reading);
+  if (modelQuick.length > 0) {
+    return (
+      <section className="chat-summary-shell">
+        <div className="chat-dialog-stream">
+          {modelQuick.map((turn, idx) => (
+            <article key={`model-quick-${idx}`} className={`chat-dialog-turn chat-dialog-${turn.speaker}`}>
+              <h6 className="chat-dialog-speaker">{turn.speaker === 'tarot' ? '타로리더' : '학습리더'}</h6>
+              <p className="chat-natural-paragraph chat-dialog-bubble">{turn.text}</p>
+            </article>
+          ))}
+        </div>
+        {modelDetail.length > 0 && (
+          <section className="chat-summary-accordion chat-summary-section">
+            <h6 className="chat-summary-section-title">상세 대화</h6>
+            <div className="chat-summary-accordion-body">
+              <div className="chat-dialog-stream">
+                {modelDetail.map((turn, idx) => (
+                  <article key={`model-detail-${idx}`} className={`chat-dialog-turn chat-dialog-${turn.speaker}`}>
+                    <h6 className="chat-dialog-speaker">{turn.speaker === 'tarot' ? '타로리더' : '학습리더'}</h6>
+                    <p className="chat-natural-paragraph chat-dialog-bubble">{turn.text}</p>
+                  </article>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+      </section>
+    );
+  }
+
   if (reading.readingV3) {
     const quickDialog = buildQuickDialogFromReadingV3(reading);
     const detailedDialog = buildExpandedCardDialog(reading);
@@ -499,6 +531,28 @@ function ChatSummaryView({ reading }: { reading: SpreadDrawResult }) {
         </div>
       </section>
     </section>
+  );
+}
+
+function buildQuickDialogFromReadingModel(reading: SpreadDrawResult) {
+  const turns = Array.isArray(reading.readingModel?.channel?.chatQuick?.turns)
+    ? reading.readingModel.channel.chatQuick.turns
+    : [];
+  return turns
+    .map((turn) => buildTurn(turn.speaker, turn.purpose, turn.text))
+    .filter((turn) => Boolean(turn.text));
+}
+
+function buildDetailDialogFromReadingModel(reading: SpreadDrawResult) {
+  const turns = Array.isArray(reading.readingModel?.channel?.chatDetail?.turns)
+    ? reading.readingModel.channel.chatDetail.turns
+    : [];
+  return rebalanceDialogueMix(
+    dedupeTurns(
+      turns
+        .map((turn) => buildTurn(turn.speaker, turn.purpose, turn.text))
+        .filter((turn) => Boolean(turn.text))
+    )
   );
 }
 
@@ -950,6 +1004,10 @@ function buildLearningGuide(reading: SpreadDrawResult) {
 }
 
 function inferVerdict(reading: SpreadDrawResult): { kind: 'yes' | 'no' | 'maybe'; label: string } {
+  const modelLabel = reading.readingModel?.verdict?.label;
+  if (modelLabel === 'yes') return { kind: 'yes', label: 'YES' };
+  if (modelLabel === 'hold') return { kind: 'maybe', label: 'HOLD' };
+  if (modelLabel === 'conditional') return { kind: 'maybe', label: 'CONDITIONAL YES' };
   const v3Label = reading.readingV3?.verdict?.label;
   if (v3Label === 'yes') return { kind: 'yes', label: 'YES' };
   if (v3Label === 'hold') return { kind: 'maybe', label: 'HOLD' };

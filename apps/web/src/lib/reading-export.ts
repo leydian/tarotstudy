@@ -1,5 +1,5 @@
 import type { SpreadDrawResult } from '../types';
-import { toCanonicalChecklist, toCanonicalReadingLines, toDisplayLine } from './tone-render';
+import { toCanonicalChecklist, toCanonicalExportSummaryLines, toDisplayLine } from './tone-render';
 
 function sanitizeFilename(text: string) {
   return String(text || 'reading')
@@ -26,7 +26,7 @@ function buildActionChecklist(draw: SpreadDrawResult) {
 }
 
 function toPlainText(draw: SpreadDrawResult, modeLabel: string) {
-  const summaryLines = toCanonicalReadingLines(draw).map((line) => toDisplayLine(line, 'detail'));
+  const summaryLines = toCanonicalExportSummaryLines(draw).map((line) => toDisplayLine(line, 'detail'));
   const lines: string[] = [];
   lines.push(`[${modeLabel}] ${draw.spreadName}`);
   lines.push(`질문: ${draw.context || '-'}`);
@@ -66,7 +66,7 @@ export function exportReadingTxt(draw: SpreadDrawResult, modeLabel: string) {
 
 export function exportReadingPdf(draw: SpreadDrawResult, modeLabel: string) {
   if (typeof window === 'undefined') return;
-  const summaryLines = toCanonicalReadingLines(draw).map((line) => toDisplayLine(line, 'detail'));
+  const summaryLines = toCanonicalExportSummaryLines(draw).map((line) => toDisplayLine(line, 'detail'));
   const checklist = buildActionChecklist(draw);
   const cardsHtml = draw.items.map((item, idx) => `
       <section class="card-item">

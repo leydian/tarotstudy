@@ -14,6 +14,14 @@ export function toDisplayLine(text: string, mode: DisplayToneMode = 'cardNormal'
 
 export function toCanonicalReadingLines(draw: SpreadDrawResult, options: { includeCheckin?: boolean } = {}) {
   const includeCheckin = Boolean(options.includeCheckin);
+  const modelCard = draw.readingModel?.channel?.card?.blocks;
+  if (Array.isArray(modelCard) && modelCard.length) {
+    const lines = modelCard.map(compact).filter(Boolean);
+    if (includeCheckin && draw.readingModel?.actions?.checkin) {
+      lines.push(compact(draw.readingModel.actions.checkin));
+    }
+    return lines;
+  }
   const v3 = draw.tonePayload?.v3Lines;
   if (v3) {
     return [
@@ -46,6 +54,10 @@ export function toCanonicalReadingLines(draw: SpreadDrawResult, options: { inclu
 }
 
 export function toCanonicalChecklist(draw: SpreadDrawResult) {
+  const modelChecklist = draw.readingModel?.channel?.export?.checklist;
+  if (Array.isArray(modelChecklist) && modelChecklist.length) {
+    return modelChecklist.map(compact).filter(Boolean).slice(0, 3);
+  }
   const v3 = draw.tonePayload?.v3Lines;
   if (v3) {
     return [compact(v3.actionNow), compact(v3.caution), compact(v3.checkin)];
@@ -60,3 +72,10 @@ export function toCanonicalChecklist(draw: SpreadDrawResult) {
   return [];
 }
 
+export function toCanonicalExportSummaryLines(draw: SpreadDrawResult) {
+  const exportLines = draw.readingModel?.channel?.export?.summaryLines;
+  if (Array.isArray(exportLines) && exportLines.length) {
+    return exportLines.map(compact).filter(Boolean);
+  }
+  return toCanonicalReadingLines(draw);
+}

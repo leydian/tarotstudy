@@ -229,6 +229,7 @@ export interface SpreadDrawResult {
   readingV2?: SpreadReadingV2;
   readingV3?: SpreadReadingV3;
   tonePayload?: SpreadTonePayload;
+  readingModel?: ReadingModel;
 }
 
 export interface QuestionUnderstandingV2 {
@@ -353,6 +354,54 @@ export interface SpreadTonePayload {
   meta: {
     source: 'readingV3' | 'summary';
     version: string;
+  };
+}
+
+export interface ReadingModelTurn {
+  speaker: 'tarot' | 'learning';
+  purpose: 'bridge' | 'verdict' | 'evidence' | 'caution' | 'action' | 'coach' | 'detail';
+  text: string;
+}
+
+export interface ReadingModel {
+  version: 'reading-model-v1';
+  verdict: {
+    label: 'yes' | 'conditional' | 'hold';
+    sentence: string;
+  };
+  actions: {
+    now: string;
+    checkin: string;
+    caution: string;
+  };
+  evidence: Array<{
+    position: string;
+    cardName: string;
+    orientation: 'upright' | 'reversed';
+    keyword: string;
+    line: string;
+  }>;
+  channel: {
+    card: {
+      blocks: string[];
+    };
+    chatQuick: {
+      turns: ReadingModelTurn[];
+    };
+    chatDetail: {
+      turns: ReadingModelTurn[];
+    };
+    export: {
+      summaryLines: string[];
+      checklist: string[];
+    };
+  };
+  meta: {
+    source: 'readingV3' | 'summary';
+    version: 'reading-model-v1';
+    timeHorizon: string;
+    guardrailApplied: boolean;
+    personaApplied: boolean;
   };
 }
 
