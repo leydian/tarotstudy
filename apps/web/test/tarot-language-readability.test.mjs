@@ -15,24 +15,26 @@ function read(relPath) {
 test('tarot leader readability rules stay enforced in chat renderer', () => {
   const source = read('apps/web/src/pages/ChatSpreadPage.tsx');
   assert.equal(source.includes('function compactTarotTurn'), true);
-  assert.equal(source.includes("const maxSentences = purpose === 'detail' ? 4 : 3"), true);
-  assert.equal(source.includes('raw.slice(0, maxChars)'), false, 'must not hard-cut sentence mid-way');
+  assert.equal(source.includes("limitTarotSentenceDensity(String(text || ''), purpose === 'detail' ? 'detail' : 'quick')"), true);
+  assert.equal(source.includes('normalizeTarotKorean'), true);
+  assert.equal(source.includes('diversifyTarotOpening'), true);
 });
 
 test('tarot leader avoids difficult stock terms and formal endings', () => {
-  const source = read('apps/web/src/pages/ChatSpreadPage.tsx');
+  const source = read('apps/web/src/lib/tarot-language.ts');
   const blocked = ['파급효과', '지속 가능한', '종합하면', '핵심 변수와 즉시 대응'];
   blocked.forEach((token) => {
     assert.equal(source.includes(token), true, `expected simplification mapping for ${token}`);
   });
   assert.equal(source.includes(".replace(/입니다\\./g, '이에요.')"), true);
   assert.equal(source.includes(".replace(/습니다\\./g, '어요.')"), true);
+  assert.equal(source.includes('/영향를/g'), true);
+  assert.equal(source.includes('/진행는/g'), true);
 });
 
 test('card view presenter applies same readability law', () => {
   const source = read('apps/web/src/pages/spreads-presenters.tsx');
   assert.equal(source.includes('function toReadableTarotDisplay'), true);
-  assert.equal(source.includes("const maxSentences = mode === 'compact' ? 3 : 4"), true);
-  assert.equal(source.includes(".replace(/판단/g, '결정')"), true);
-  assert.equal(source.includes(".replace(/해석/g, '뜻풀이')"), true);
+  assert.equal(source.includes("limitTarotSentenceDensity(normalized, mode === 'compact' ? 'cardCompact' : 'cardNormal')"), true);
+  assert.equal(source.includes('normalizeTarotKorean'), true);
 });

@@ -43,7 +43,7 @@ const TAROT_SYMBOLIC_BY_SUIT = {
   Cups: { noun: '물결', scene: '감정의 수면', hint: '정서의 경계' },
   Wands: { noun: '불꽃', scene: '추진의 화로', hint: '속도 조절' },
   Swords: { noun: '칼날', scene: '판단의 교차로', hint: '해석의 정확도' },
-  Pentacles: { noun: '토대', scene: '현실의 바닥', hint: '지속 가능한 운영' }
+  Pentacles: { noun: '토대', scene: '현실의 바닥', hint: '오래 가는 흐름' }
 };
 const TAROT_SYMBOLIC_BY_MAJOR = {
   마법사: { noun: '문', scene: '시작의 문턱', hint: '의도와 실행 연결' },
@@ -2360,7 +2360,7 @@ function buildUnifiedInterpretationNarrative({
   const answerLine = isYesNo
     ? `답부터 말씀드리면, ${normalizedConclusion || (orientation === 'upright' ? '예, 진행하셔도 괜찮습니다.' : '아니오, 지금은 정비를 먼저 하시는 편이 좋습니다.')}`
     : (orientation === 'upright'
-      ? '핵심부터 말씀드리면, 지금은 흐름을 살려 실행해보실 수 있는 구간입니다.'
+      ? '핵심부터 말하면, 지금은 흐름을 살려 바로 움직여볼 타이밍입니다.'
       : '핵심부터 말씀드리면, 지금은 속도를 낮추고 정비를 먼저 두시는 편이 안정적입니다.');
 
   const focusObject = withKoreanParticle(focus || '핵심 흐름', '을', '를');
@@ -4917,7 +4917,7 @@ const SPREAD_READING_TEMPLATES = {
     positionFocus: {
       과거: '반복 패턴과 잔존 영향',
       현재: '핵심 변수와 즉시 대응',
-      미래: '현 선택 유지 시 파급효과',
+      미래: '지금 선택을 유지하면 이어질 영향',
       문제: '원인 분해와 병목 확인',
       해결방법: '실행 단위와 시작 조건',
       조언: '우선순위 규칙'

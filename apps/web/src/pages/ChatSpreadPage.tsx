@@ -10,6 +10,11 @@ import { buildDisplaySpreads, resolveDisplaySpreadId } from '../lib/spread-displ
 import { loadChatDrawCache, saveChatDrawCache } from '../lib/chat-draw-cache';
 import { exportReadingPdf, exportReadingTxt } from '../lib/reading-export';
 import {
+  diversifyTarotOpening,
+  limitTarotSentenceDensity,
+  normalizeTarotKorean
+} from '../lib/tarot-language';
+import {
   findDrawnItemForSlot,
   parseMonthlySummary,
   parseWeeklySummary,
@@ -896,7 +901,7 @@ function sanitizeDialogLine(text: string) {
 }
 
 function applyTarotStoryVoice(text: string, purpose: DialoguePurpose) {
-  const line = humanizeTarotLine(String(text || '').trim());
+  const line = diversifyTarotOpening(normalizeTarotKorean(String(text || '').trim()));
   if (!line) return line;
   const compact = compactTarotTurn(line, purpose);
   if (purpose === 'bridge') {
@@ -932,79 +937,8 @@ function applyTarotStoryVoice(text: string, purpose: DialoguePurpose) {
   return compact;
 }
 
-function humanizeTarotLine(text: string) {
-  const plain = String(text || '')
-    .replace(/실행 여지가 열려 있는 구간입니다/g, '지금은 해볼 만한 타이밍이에요')
-    .replace(/오늘의 테마는\s*"?([^"]+)"?\s*신호를 무리 없이 이어가는 운영입니다/g, '오늘 포인트는 $1 흐름을 무리 없이 이어가는 거예요')
-    .replace(/핵심 변수와 즉시 대응을 기준으로 읽으실 때 판단이 가장 선명해집니다/g, '지금은 중요한 포인트 하나만 잡고 바로 반응을 보는 게 제일 정확해요')
-    .replace(/감정 반응보다 기준 문장을 먼저 고정하는 편이 정확합니다/g, '감정이 먼저 튀기 전에 기준 문장 하나를 먼저 잡는 편이 더 정확해요')
-    .replace(/재점검 기준은 실행 후 체감 변화 1개입니다/g, '확인할 건 실행 후 체감 변화 한 가지면 충분해요')
-    .replace(/기준이 개선되지 않으면 강도를 더 낮추는 쪽으로 조정하세요/g, '체감이 안 좋아지면 강도를 한 단계 더 낮춰 조정해보세요')
-    .replace(/결론을 내리기보다 확인 질문 1개만 먼저 건네보세요/g, '결론부터 내리지 말고 확인 질문 하나만 먼저 보내보세요')
-    .replace(/가장 선명해집니다/g, '가장 또렷해져요')
-    .replace(/종합하면/g, '한번 모아보면')
-    .replace(/지속 가능한/g, '오래 갈 수 있는')
-    .replace(/파급효과/g, '이어질 영향')
-    .replace(/재정리/g, '다시 정리')
-    .replace(/기준 문장/g, '기준 한 줄')
-    .replace(/조건부 진행/g, '가능하지만 조심해서 진행')
-    .replace(/정리됩니다/g, '정리돼요')
-    .replace(/입니다\./g, '이에요.')
-    .replace(/습니다\./g, '어요.')
-    .replace(/\s+/g, ' ')
-    .trim();
-  return simplifyTarotWordsForStudents(plain);
-}
-
-function simplifyTarotWordsForStudents(text: string) {
-  return String(text || '')
-    .replace(/핵심 변수/g, '중요한 포인트')
-    .replace(/변수/g, '포인트')
-    .replace(/즉시 대응/g, '바로 대응')
-    .replace(/판단/g, '결정')
-    .replace(/해석/g, '뜻풀이')
-    .replace(/국면/g, '상황')
-    .replace(/전개/g, '흐름')
-    .replace(/기준점/g, '기준')
-    .replace(/정렬/g, '정리')
-    .replace(/운영/g, '진행')
-    .replace(/강도/g, '세기')
-    .replace(/단정/g, '확정')
-    .replace(/관찰/g, '확인')
-    .replace(/체감/g, '느낌')
-    .replace(/완충 행동/g, '실수 줄이는 행동')
-    .replace(/리스크/g, '위험')
-    .replace(/소모/g, '에너지 빠짐')
-    .replace(/이번 주에는 상대 마음 추측 대신/g, '이번 주에는 상대 마음을 넘겨짚지 말고')
-    .replace(/흐름이 이어지고/g, '흐름이 계속되고')
-    .replace(/짚어보겠습니다/g, '같이 볼게요')
-    .replace(/확인해보세요/g, '확인해봐요')
-    .replace(/기록해보세요/g, '적어봐요')
-    .replace(/정해보세요/g, '정해봐요')
-    .replace(/정리해보세요/g, '정리해봐요')
-    .replace(/해석의 축/g, '뜻풀이의 중심')
-    .replace(/가장 또렷해져요/g, '훨씬 잘 보여요')
-    .replace(/뜻풀이의 중심축/g, '뜻풀이 중심')
-    .replace(/결정 세기가 결정됩니다/g, '결정 세기가 갈려요')
-    .replace(/차분히 살펴보겠어요/g, '천천히 볼게요')
-    .replace(/기준으로 읽으실 때/g, '기준으로 볼 때')
-    .replace(/보류하세요/g, '잠깐 멈춰요')
-    .replace(/넘겨짚지 말고/g, '짐작만 하지 말고')
-    .replace(/안정적입니다/g, '안전해요')
-    .replace(/안정됩니다/g, '안정돼요')
-    .replace(/유지 시/g, '유지하면')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
 function compactTarotTurn(text: string, purpose: DialoguePurpose) {
-  const normalized = String(text || '').replace(/\s+/g, ' ').trim();
-  const sentences = normalized
-    .split(/(?<=[.!?])\s+/)
-    .map((line) => line.trim())
-    .filter(Boolean);
-  const maxSentences = purpose === 'detail' ? 4 : 3;
-  return sentences.slice(0, maxSentences).join(' ').trim();
+  return limitTarotSentenceDensity(String(text || ''), purpose === 'detail' ? 'detail' : 'quick');
 }
 
 function normalizeDialogKey(text: string) {
