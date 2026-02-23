@@ -33,6 +33,9 @@ const host = process.env.HOST || '127.0.0.1';
 const readingToneMode = String(process.env.READING_TONE_MODE || 'conversational').toLowerCase().trim();
 const useConversationalTone = readingToneMode !== 'template';
 const summaryNaturalMinScore = Number(process.env.SUMMARY_NATURAL_MIN_SCORE || 74);
+const summarySpecificityMinScore = Number(process.env.SUMMARY_SPECIFICITY_MIN_SCORE || 66);
+const summaryRepetitionMaxScore = Number(process.env.SUMMARY_REPETITION_MAX_SCORE || 34);
+const summaryTemplateMaxScore = Number(process.env.SUMMARY_TEMPLATE_MAX_SCORE || 36);
 const cache = new TTLCache(Number(process.env.CACHE_TTL_SECONDS || 86400));
 const externalGenerator = makeExternalGenerator(process.env);
 const telemetryStore = createTelemetryStore({
@@ -1243,6 +1246,69 @@ function scoreSummaryNaturalTone(text = '') {
   return Math.max(0, Math.min(100, score));
 }
 
+function scoreSummarySpecificity(text = '') {
+  const raw = String(text || '').trim();
+  if (!raw) return 100;
+  let score = 28;
+  const evidenceHits = (raw.match(/(정방향|역방향|카드|키워드|근거|분기|월|리스크|지출|고정비|변동비|현금흐름|대화|실행)/g) || []).length;
+  score += Math.min(42, evidenceHits * 3);
+  const concreteHits = (raw.match(/(1개|2개|3개월|주 1회|오늘|이번 주|이번 달|연말|상반기|하반기|10분|20분)/g) || []).length;
+  score += Math.min(26, concreteHits * 4);
+  const genericPenalty = (raw.match(/(비교적 안정적|두 갈래로|운영이 좋습니다|좋은 구간입니다|정비가 우선|기준을 세우면)/g) || []).length;
+  score -= Math.min(30, genericPenalty * 6);
+  return Math.max(0, Math.min(100, score));
+}
+
+function scoreSummaryRepetition(text = '') {
+  const raw = String(text || '').trim();
+  if (!raw) return 0;
+  const lines = raw
+    .split(/\n+/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const normalized = lines.map((line) => line.replace(/[^0-9a-zA-Z가-힣]+/g, '').toLowerCase());
+  const duplicateLineCount = normalized.length - new Set(normalized).size;
+
+  const windows = [];
+  for (const line of normalized) {
+    for (let i = 0; i < line.length - 11; i += 1) {
+      windows.push(line.slice(i, i + 12));
+    }
+  }
+  const repeatedWindows = windows.length - new Set(windows).size;
+  const linePenalty = duplicateLineCount * 18;
+  const windowPenalty = Math.min(32, Math.floor(repeatedWindows / 40));
+  const phrasePenalty = (raw.match(/(재정 흐름이 비교적 안정적이라 계획 실행이 수월한 구간입니다|두 갈래로 보시면 됩니다|두 갈래로 정리됩니다)/g) || []).length * 18;
+  return Math.max(0, Math.min(100, linePenalty + windowPenalty + phrasePenalty));
+}
+
+function scoreSummaryTemplateDensity(text = '') {
+  const raw = String(text || '').trim();
+  if (!raw) return 0;
+  const templateHits = (raw.match(/(두 갈래|비교적 안정적이라 계획 실행이 수월|운영이 좋습니다|좋은 구간입니다|정비가 우선|확장보다|한 줄 테마:)/g) || []).length;
+  const guidelineHits = (raw.match(/(1개|2개|3개월|오늘|이번 주|이번 달|고정비|변동비|현금흐름|리스크|정방향|역방향|카드)/g) || []).length;
+  const density = templateHits * 10 - Math.min(36, guidelineHits * 3);
+  return Math.max(0, Math.min(100, density));
+}
+
+function evaluateNarrativeQuality(text = '') {
+  const naturalScore = scoreSummaryNaturalTone(text);
+  const specificityScore = scoreSummarySpecificity(text);
+  const repetitionScore = scoreSummaryRepetition(text);
+  const templateScore = scoreSummaryTemplateDensity(text);
+  const passes = naturalScore >= summaryNaturalMinScore
+    && specificityScore >= summarySpecificityMinScore
+    && repetitionScore <= summaryRepetitionMaxScore
+    && templateScore <= summaryTemplateMaxScore;
+  return {
+    naturalScore,
+    specificityScore,
+    repetitionScore,
+    templateScore,
+    passes
+  };
+}
+
 function softenSummaryMechanics(text = '') {
   return String(text || '')
     .split('\n')
@@ -1257,16 +1323,43 @@ function softenSummaryMechanics(text = '') {
     .join('\n');
 }
 
+function rewriteNarrativeWithConstraints(text = '') {
+  const lines = String(text || '')
+    .split('\n')
+    .map((line) => String(line || '').trim())
+    .filter(Boolean);
+  const seen = new Set();
+  const rewritten = [];
+  for (const line of lines) {
+    let next = line
+      .replace(/두 갈래로 보시면 됩니다/g, '실행 방향은 이렇게 나누면 됩니다')
+      .replace(/두 갈래로 정리됩니다/g, '실행 기준은 이렇게 정리됩니다')
+      .replace(/두 갈래입니다/g, '실행 기준은 이렇게 나눠보면 됩니다')
+      .replace(/비교적 안정적이라 계획 실행이 수월한 구간입니다/g, '카드 신호가 받쳐주는 구간이라 지출 통제 기준을 지키면 실행 정확도가 올라갑니다')
+      .replace(/좋은 구간입니다/g, '실행 우선순위를 선명히 두기 좋은 구간입니다')
+      .replace(/운영이 좋습니다/g, '운영이 잘 맞습니다');
+
+    if (!/(오늘|이번 주|이번 달|연말|1개|3개월|주 1회|고정비|변동비|현금흐름|대화|리스크|키워드|카드)/.test(next)) {
+      next = `${next} 오늘 바로 확인할 항목 1개를 붙여 실행하면 정확도가 올라갑니다.`;
+    }
+    const key = next.replace(/[^0-9a-zA-Z가-힣]+/g, '').toLowerCase();
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    rewritten.push(next);
+  }
+  return rewritten.join('\n');
+}
+
 function renderSummaryFromSemantic(raw = '') {
   const semantic = String(raw || '');
   let rendered = normalizeEverydaySummaryTone(polishSummaryRhythm(semantic));
   if (!useConversationalTone) return rendered;
 
-  let score = scoreSummaryNaturalTone(rendered);
+  let quality = evaluateNarrativeQuality(rendered);
   let pass = 0;
-  while (score < summaryNaturalMinScore && pass < 2) {
-    rendered = normalizeEverydaySummaryTone(polishSummaryRhythm(softenSummaryMechanics(rendered)));
-    score = scoreSummaryNaturalTone(rendered);
+  while (!quality.passes && pass < 2) {
+    rendered = normalizeEverydaySummaryTone(polishSummaryRhythm(rewriteNarrativeWithConstraints(softenSummaryMechanics(rendered))));
+    quality = evaluateNarrativeQuality(rendered);
     pass += 1;
   }
   return rendered;
@@ -2523,8 +2616,8 @@ function summarizeYearlyFortune({ items, context = '', level = 'beginner' }) {
   const timingClose = isJobTimingQuestion
     ? `취직 시기 관점으로 정리하면, 언제 무엇을 할지 기준은 분명합니다. ${strongest.label}에는 지원서 제출과 면접 일정을 본격적으로 열고, ${weakest.label}에는 이력서·포트폴리오 보완과 직무 정합성 점검에 집중해 주세요. ${levelHint}`
     : yearlyIntent === 'finance'
-      ? `재물운 관점에서는 두 갈래로 운영하시면 됩니다. 확장 구간인 ${strongest.label}에는 계획형 집행 1~2개만 기준 안에서 실행하고, 조정 구간인 ${weakest.label}에는 신규 지출을 줄이며 누수 점검과 현금 보존을 우선해 주세요. ${levelHint}`
-    : `마지막으로 ${strongest.label}은 확장 구간, ${weakest.label}은 정비 구간으로 나눠 운영하시면 올해 리딩을 실제 행동으로 옮기기가 훨씬 수월해집니다. ${levelHint}`;
+      ? `재물운 관점에서는 분기별 역할을 나눠 운영하시면 정확도가 올라갑니다. 탄력이 붙는 ${strongest.label}에는 계획형 집행 1~2개만 기준 안에서 실행하고, 조정이 필요한 ${weakest.label}에는 신규 지출을 줄이며 누수 점검과 현금 보존을 우선해 주세요. ${levelHint}`
+      : `마지막으로 ${strongest.label}은 확장 구간, ${weakest.label}은 정비 구간으로 나눠 운영하시면 올해 리딩을 실제 행동으로 옮기기가 훨씬 수월해집니다. ${levelHint}`;
   const yearlyThemeKeyword = monthly.map((m) => m.keywords?.[0]).find(Boolean) || '연간 리듬';
   const yearlyThemeLine = `한 줄 테마: 올해는 '${yearlyThemeKeyword}'을 기준으로 분기마다 속도를 나누면 흔들림을 줄이기 좋습니다.`;
 
@@ -2610,8 +2703,23 @@ function buildQuarterNarratives({ quarterScores, intent, isJobTimingQuestion }) 
   }));
   return quartersWithRole.map((q, idx) => {
     const mode = q.score >= 1 ? 'open' : q.score <= -1 ? 'adjust' : 'balanced';
-    const focus = buildQuarterFocus({ index: idx, role: q.role, intent, mode, isJobTimingQuestion });
-    const action = buildQuarterAction({ index: idx, role: q.role, intent, mode, isJobTimingQuestion });
+    const evidence = buildQuarterEvidence(q.months);
+    const focus = buildQuarterFocus({
+      index: idx,
+      role: q.role,
+      intent,
+      mode,
+      isJobTimingQuestion,
+      evidence
+    });
+    const action = buildQuarterAction({
+      index: idx,
+      role: q.role,
+      intent,
+      mode,
+      isJobTimingQuestion,
+      evidence
+    });
     return `${q.label}은 ${focus} ${action}`;
   });
 }
@@ -2619,6 +2727,22 @@ function buildQuarterNarratives({ quarterScores, intent, isJobTimingQuestion }) 
 function quarterRoleByIndex(index) {
   const roles = ['기반 다지기', '실행 점검', '확장 조율', '연말 정리'];
   return roles[index] ?? '운영';
+}
+
+function buildQuarterEvidence(months = []) {
+  const list = Array.isArray(months) ? months : [];
+  const uprightCount = list.filter((m) => m.orientation === 'upright').length;
+  const reversedCount = list.length - uprightCount;
+  const keywords = list.flatMap((m) => Array.isArray(m.keywords) ? m.keywords : []).filter(Boolean);
+  const topKeyword = keywords[0] || '리듬';
+  const cards = list.map((m) => m.cardName).filter(Boolean);
+  const cardEvidence = cards.slice(0, 2).join(', ');
+  return {
+    uprightCount,
+    reversedCount,
+    topKeyword,
+    cardEvidence
+  };
 }
 
 const MONTH_ROLE_GUIDE = {
@@ -2636,70 +2760,73 @@ const MONTH_ROLE_GUIDE = {
   '12월': '연말 정리와 다음 해 전환을 준비하는 자리'
 };
 
-function buildQuarterFocus({ index, role, intent, mode, isJobTimingQuestion }) {
+function buildQuarterFocus({ index, role, intent, mode, isJobTimingQuestion, evidence }) {
+  const evidenceLine = evidence?.cardEvidence
+    ? `(${evidence.cardEvidence} 기준)`
+    : '';
   const roleObject = withKoreanParticle(role, '을', '를');
   if (role === '연말 정리') {
     if (intent === 'career' || isJobTimingQuestion) {
-      return '연말 분기인 만큼 새로 넓히는 움직임보다 올해 진행한 결과를 정리하고 최종 방향을 확정하는 데 무게를 두는 편이 좋습니다.';
+      return `연말 분기인 만큼 ${evidenceLine} 새로 넓히기보다 올해 지원/면접 결과를 정리하고 최종 방향을 확정하는 데 무게를 두는 편이 좋습니다.`;
     }
     if (intent === 'relationship') {
-      return '연말 분기에서는 관계의 속도를 올리기보다 올해의 대화 패턴을 정리하고 다음 해 기준을 세우는 편이 좋겠습니다.';
+      return `연말 분기에서는 ${evidenceLine} 관계의 속도를 올리기보다 올해 대화 패턴을 정리하고 다음 해 기준을 세우는 편이 좋겠습니다.`;
     }
     if (intent === 'finance') {
-      return '연말 분기에서는 확장보다 결산과 위험 점검을 우선해 재정 리듬을 정리하는 편이 좋겠습니다.';
+      return `연말 분기에서는 ${evidenceLine} 확장보다 결산과 위험 점검을 우선해 재정 리듬을 정리하는 편이 좋겠습니다.`;
     }
     if (intent === 'social') {
-      return '연말 분기에서는 관계를 무리하게 넓히기보다, 한 해 동안 쌓인 인상과 대화 패턴을 정리해 다음 해 기준을 세우는 편이 좋겠습니다.';
+      return `연말 분기에서는 ${evidenceLine} 관계를 무리하게 넓히기보다 한 해 동안 쌓인 인상과 대화 패턴을 정리해 다음 해 기준을 세우는 편이 좋겠습니다.`;
     }
-    return '연말 분기에서는 새로운 확장보다 올해 흐름을 정리하고 다음 해 운영 기준을 세우는 쪽이 맞겠습니다.';
+    return `연말 분기에서는 ${evidenceLine} 새로운 확장보다 올해 흐름을 정리하고 다음 해 운영 기준을 세우는 쪽이 맞겠습니다.`;
   }
 
   if (intent === 'career' || isJobTimingQuestion) {
     if (mode === 'open') {
       return pickByNumber([
-        `카드 흐름이 비교적 열려 있어 ${roleObject} 진행하기에 부담이 크지 않은 구간입니다.`,
-        `리딩 결이 부드럽게 열려 있어 ${role} 단계의 실행을 이어가기 수월한 구간으로 보입니다.`,
-        `흐름이 받쳐주는 편이라 ${role} 과정에서 시도한 움직임이 반응으로 이어질 가능성이 있는 구간입니다.`
+        `정방향 ${evidence.uprightCount}장 신호가 살아 있어 ${roleObject} 진행하기에 부담이 크지 않은 구간입니다.`,
+        `${evidenceLine} 흐름이 부드럽게 열려 있어 ${role} 단계 실행을 이어가기 수월해 보입니다.`,
+        `카드 키워드 '${evidence.topKeyword}'이 받쳐줘 ${role} 과정의 시도가 반응으로 이어질 가능성이 있습니다.`
       ], index);
     }
     if (mode === 'adjust') {
       return pickByNumber([
-        `카드 흐름이 조정 구간이라 ${role}에서 속도보다 정비에 무게를 두는 편이 좋습니다.`,
-        `리딩이 과속을 경계하고 있어 ${role} 과정에서는 보완과 점검을 먼저 두는 편이 안정적입니다.`,
-        `흐름이 다소 거칠 수 있어 ${role} 단계에서는 실행 폭을 줄이고 준비 밀도를 높이는 편이 맞습니다.`
+        `역방향 ${evidence.reversedCount}장 신호가 걸려 ${role}에서는 속도보다 정비에 무게를 두는 편이 좋습니다.`,
+        `${evidenceLine} 과속을 경계하는 결이라 ${role} 과정에서는 보완과 점검을 먼저 두는 편이 안정적입니다.`,
+        `카드 키워드 '${evidence.topKeyword}'이 경고로 들어와 ${role} 단계에서는 실행 폭을 줄이는 편이 맞습니다.`
       ], index);
     }
     return pickByNumber([
-      `흐름이 중간값에 가까워 ${role} 단계에서 확장과 정비를 균형 있게 가져가는 편이 좋습니다.`,
-      `리딩상 강약이 크지 않아 ${role} 과정에서 준비와 실행의 비중을 반반으로 두는 방식이 맞겠습니다.`,
+      `정방향/역방향이 비슷해 ${role} 단계에서 확장과 정비를 균형 있게 가져가는 편이 좋습니다.`,
+      `${evidenceLine} 강약이 크지 않아 ${role} 과정에서는 준비와 실행 비중을 반반으로 두는 방식이 맞겠습니다.`,
       `한쪽으로 치우치기보다 ${role} 단계에서는 작은 실행과 보완을 함께 가져가기 좋은 구간입니다.`
     ], index);
   }
 
   if (intent === 'relationship') {
-    if (mode === 'open') return '관계 흐름이 열려 있어 대화 접점을 늘리기 좋은 구간입니다.';
-    if (mode === 'adjust') return '감정 해석이 엇갈릴 수 있어 속도를 늦추는 편이 좋은 구간입니다.';
-    return '대화와 거리 조절을 균형 있게 가져가기 좋은 구간입니다.';
+    if (mode === 'open') return `${evidenceLine} 관계 흐름이 열려 있어 대화 접점을 늘리기 좋은 구간입니다.`;
+    if (mode === 'adjust') return `${evidenceLine} 감정 해석이 엇갈릴 수 있어 속도를 늦추는 편이 좋은 구간입니다.`;
+    return `${evidenceLine} 대화와 거리 조절을 균형 있게 가져가기 좋은 구간입니다.`;
   }
 
   if (intent === 'finance') {
-    if (mode === 'open') return '재정 흐름이 비교적 안정적이라 계획 실행이 수월한 구간입니다.';
-    if (mode === 'adjust') return '지출 변동성이 올라갈 수 있어 점검 중심으로 운영해야 하는 구간입니다.';
-    return '공격적 확장보다 계획 유지에 초점을 두기 좋은 구간입니다.';
+    if (mode === 'open') return `${evidenceLine} 재정 카드가 정방향 ${evidence.uprightCount}장으로 우세해 계획 집행을 늘리기 좋은 구간입니다.`;
+    if (mode === 'adjust') return `${evidenceLine} 역방향 ${evidence.reversedCount}장 신호가 보여 지출 변동성 점검을 먼저 둬야 하는 구간입니다.`;
+    return `${evidenceLine} 확장보다 계획 유지와 현금흐름 확인에 초점을 두기 좋은 구간입니다.`;
   }
 
   if (intent === 'social') {
-    if (mode === 'open') return '주변 인식 흐름이 열려 있어 협업 접점을 넓히기 좋은 구간입니다.';
-    if (mode === 'adjust') return '피로감이 인상에 반영될 수 있어 말투와 반응 속도를 정리하는 편이 좋은 구간입니다.';
-    return '신뢰 확장과 거리 조절을 균형 있게 가져가기 좋은 구간입니다.';
+    if (mode === 'open') return `${evidenceLine} 주변 인식 흐름이 열려 있어 협업 접점을 넓히기 좋은 구간입니다.`;
+    if (mode === 'adjust') return `${evidenceLine} 피로감이 인상에 반영될 수 있어 말투와 반응 속도를 정리하는 편이 좋은 구간입니다.`;
+    return `${evidenceLine} 신뢰 확장과 거리 조절을 균형 있게 가져가기 좋은 구간입니다.`;
   }
 
-  if (mode === 'open') return '흐름이 열려 있어 계획한 일을 무리 없이 이어가기 좋은 구간입니다.';
-  if (mode === 'adjust') return '흐름 조정이 필요한 구간이라 정비를 먼저 두는 편이 좋겠습니다.';
-  return '강약이 크지 않아 균형 운영이 잘 맞는 구간입니다.';
+  if (mode === 'open') return `${evidenceLine} 흐름이 열려 있어 계획한 일을 무리 없이 이어가기 좋은 구간입니다.`;
+  if (mode === 'adjust') return `${evidenceLine} 흐름 조정이 필요한 구간이라 정비를 먼저 두는 편이 좋겠습니다.`;
+  return `${evidenceLine} 강약이 크지 않아 균형 운영이 잘 맞는 구간입니다.`;
 }
 
-function buildQuarterAction({ index, role, intent, mode, isJobTimingQuestion }) {
+function buildQuarterAction({ index, role, intent, mode, isJobTimingQuestion, evidence }) {
   if (role === '연말 정리') {
     if (intent === 'career' || isJobTimingQuestion) {
       return pickByNumber([
@@ -2712,7 +2839,7 @@ function buildQuarterAction({ index, role, intent, mode, isJobTimingQuestion }) 
       return '올해 관계에서 효과가 있었던 대화 방식과 부담이 컸던 방식을 구분해 다음 해 기준으로 정리해보세요.';
     }
     if (intent === 'finance') {
-      return '연간 지출·저축 흐름을 결산하고 내년 고정비/변동비 기준을 다시 세워두시면 안정적입니다.';
+      return '연간 지출·저축 흐름을 결산하고, 내년 고정비/변동비 기준을 숫자로 다시 세워두시면 안정적입니다.';
     }
     if (intent === 'social') {
       return '올해 관계에서 반응이 좋았던 말투와 부담이 컸던 반응을 나눠 정리해 다음 해 대화 기준으로 고정해보세요.';
@@ -2749,9 +2876,16 @@ function buildQuarterAction({ index, role, intent, mode, isJobTimingQuestion }) 
   }
 
   if (intent === 'finance') {
-    if (mode === 'open') return '예산 틀을 유지한 채 필요한 실행을 차분히 늘려보시면 좋겠습니다.';
-    if (mode === 'adjust') return '고정비 점검과 소비 우선순위 재배치를 먼저 진행해보세요.';
-    return '현금흐름 점검을 유지하면서 보수적으로 운영하시는 편이 좋겠습니다.';
+    const quarterChecklist = [
+      '예산 상한과 자동결제 목록을 1회 정리해 기준선을 먼저 고정해보세요.',
+      '변동비 상한을 주 단위로 재설정하고, 비필수 지출 1개를 고정 감축해보세요.',
+      '현금흐름표를 기준으로 투자/소비 비중을 다시 나눠 리스크를 줄여보세요.',
+      '결산표에서 누수 항목 1개를 정리하고 내년 기준표로 이관해보세요.'
+    ];
+    const checklist = quarterChecklist[index] || quarterChecklist[0];
+    if (mode === 'open') return `${checklist} 카드 키워드 '${evidence.topKeyword}' 신호가 살아 있을 때 실행 정확도가 올라갑니다.`;
+    if (mode === 'adjust') return `${checklist} 역방향 신호가 있는 분기라 신규 집행은 보수적으로 두세요.`;
+    return `${checklist} 과속보다 유지 중심으로 운영하면 분기 흔들림을 줄일 수 있습니다.`;
   }
 
   if (intent === 'social') {

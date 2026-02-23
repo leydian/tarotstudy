@@ -10,6 +10,9 @@ const CARD_NAME_KO_SET = new Set(cards.map((item) => String(item?.nameKo || '').
 const READING_TONE_MODE = String(process.env.READING_TONE_MODE || 'conversational').toLowerCase().trim();
 const USE_CONVERSATIONAL_TONE = READING_TONE_MODE !== 'template';
 const NATURAL_TONE_MIN_SCORE = Number(process.env.NATURAL_TONE_MIN_SCORE || 72);
+const NATURAL_SPECIFICITY_MIN_SCORE = Number(process.env.NATURAL_SPECIFICITY_MIN_SCORE || 60);
+const NATURAL_REPETITION_MAX_SCORE = Number(process.env.NATURAL_REPETITION_MAX_SCORE || 34);
+const NATURAL_TEMPLATE_MAX_SCORE = Number(process.env.NATURAL_TEMPLATE_MAX_SCORE || 38);
 
 function applyConversationalToneToLine(line = '') {
   let text = String(line || '').trim();
@@ -86,6 +89,67 @@ function scoreNaturalTone(text = '') {
   return Math.max(0, Math.min(100, score));
 }
 
+function scoreSpecificityTone(text = '') {
+  const raw = String(text || '').trim();
+  if (!raw) return 100;
+  let score = 22;
+  const evidenceHits = (raw.match(/(정방향|역방향|카드|키워드|근거|포지션|질문|실행|복기|점검)/g) || []).length;
+  score += Math.min(42, evidenceHits * 3);
+  const concreteHits = (raw.match(/(오늘|이번 주|이번 달|1개|2개|3개월|10분|한 문장|숫자)/g) || []).length;
+  score += Math.min(34, concreteHits * 4);
+  const genericPenalty = (raw.match(/(두 갈래|좋은 구간|정비를 먼저|운영이 좋습니다|흐름이 좋습니다)/g) || []).length;
+  score -= Math.min(30, genericPenalty * 6);
+  return Math.max(0, Math.min(100, score));
+}
+
+function scoreRepetitionTone(text = '') {
+  const raw = String(text || '').trim();
+  if (!raw) return 0;
+  const sentences = splitSentences(raw).map((line) => line.trim()).filter(Boolean);
+  const normalized = sentences.map((line) => line.toLowerCase().replace(/[^0-9a-zA-Z가-힣]/g, ''));
+  const duplicateSentenceCount = normalized.length - new Set(normalized).size;
+  const windows = [];
+  for (const sentence of normalized) {
+    for (let i = 0; i < sentence.length - 9; i += 1) {
+      windows.push(sentence.slice(i, i + 10));
+    }
+  }
+  const repeatedWindows = windows.length - new Set(windows).size;
+  return Math.max(0, Math.min(100, duplicateSentenceCount * 20 + Math.floor(repeatedWindows / 30)));
+}
+
+function scoreTemplateDensityTone(text = '') {
+  const raw = String(text || '').trim();
+  if (!raw) return 0;
+  const templateHits = (raw.match(/(두 갈래|좋은 구간|정비를 먼저|운영이 좋습니다|흐름이 좋습니다|실행 방향은)/g) || []).length;
+  const concreteHits = (raw.match(/(오늘|이번 주|이번 달|1개|카드|정방향|역방향|복기|점검|숫자)/g) || []).length;
+  return Math.max(0, Math.min(100, templateHits * 11 - Math.min(40, concreteHits * 3)));
+}
+
+function rewriteWithNaturalConstraints(text = '') {
+  const lines = String(text || '')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const unique = [];
+  const seen = new Set();
+  for (const line of lines) {
+    let next = line
+      .replace(/두 갈래(로 보시면 됩니다|로 정리됩니다|입니다)?/g, '실행 기준은 이렇게 나누면 됩니다')
+      .replace(/좋은 구간입니다/g, '우선순위를 선명히 두기 좋은 흐름입니다')
+      .replace(/운영이 좋습니다/g, '운영이 안정됩니다')
+      .replace(/흐름이 좋습니다/g, '흐름이 안정적입니다');
+    if (!/(오늘|이번 주|이번 달|1개|카드|정방향|역방향|복기|점검|질문)/.test(next)) {
+      next = `${next} 오늘 실행 항목 1개를 고정해두면 해석 정확도가 올라갑니다.`;
+    }
+    const key = next.toLowerCase().replace(/[^0-9a-zA-Z가-힣]/g, '');
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    unique.push(next);
+  }
+  return unique.join('\n');
+}
+
 function softenMechanicalLine(line = '') {
   return String(line || '')
     .replace(/^(쉽게 말하면|읽을 때는 이렇게 보세요|읽을 때 핵심은|바로 써먹는 팁|이렇게 말해보세요|이렇게 해보면 좋아요|해볼 것 [12]|점검 포인트|점검 방법|점검 체크\(쉬운 버전\)|바로 쓸 문장|바로 해볼 팁|지금 상황에 연결하면)\s*:\s*/g, '')
@@ -100,16 +164,23 @@ function enforceNaturalToneQuality(text = '', options = {}) {
   const maxPasses = Number(options.maxPasses ?? 2);
   let rendered = applyConversationalTone(String(text || ''));
   let score = scoreNaturalTone(rendered);
+  let specificity = scoreSpecificityTone(rendered);
+  let repetition = scoreRepetitionTone(rendered);
+  let templateDensity = scoreTemplateDensityTone(rendered);
   let pass = 0;
 
-  while (score < minScore && pass < maxPasses) {
+  while ((score < minScore || specificity < NATURAL_SPECIFICITY_MIN_SCORE || repetition > NATURAL_REPETITION_MAX_SCORE || templateDensity > NATURAL_TEMPLATE_MAX_SCORE) && pass < maxPasses) {
     rendered = rendered
       .split('\n')
       .map((line) => softenMechanicalLine(line))
       .filter(Boolean)
       .join('\n');
+    rendered = rewriteWithNaturalConstraints(rendered);
     rendered = applyConversationalTone(rendered);
     score = scoreNaturalTone(rendered);
+    specificity = scoreSpecificityTone(rendered);
+    repetition = scoreRepetitionTone(rendered);
+    templateDensity = scoreTemplateDensityTone(rendered);
     pass += 1;
   }
 
