@@ -1,7 +1,7 @@
 # 세션 인수인계 문서 (메인)
 
 작성일: 2026-02-22  
-최종 갱신: 2026-02-23 (latest 6)  
+최종 갱신: 2026-02-23 (latest 7)  
 작업 경로: `/home/eunok/studycodex`
 
 ## 1) 문서 구조
@@ -39,6 +39,37 @@
   - 시험/합격 템플릿을 면접/지원/이직/오퍼 질문까지 동일 프레임으로 확장
 
 ## 3) 금일 추가 반영 (최신)
+- 추천 질문 풀 실전형 확장 + CSS 가독성 전역 정규화 + 자동추천 화면 수동 흔적 최소화 (2026-02-23 latest 7)
+  - 관련 커밋:
+    - `aee3d3d` Expand chatbot starter question pool with real client utterances
+    - `7d40230` Improve CSS readability and minimize legacy manual spread controls
+  - 변경 파일(핵심):
+    - `apps/web/src/lib/question-recommendations.ts`
+    - `apps/web/src/styles/theme.css`
+    - `apps/web/src/styles/layout.css`
+    - `apps/web/src/styles/spreads.css`
+    - `apps/web/src/styles/magazine.css`
+  - 핵심 변경:
+    - 챗 추천 질문을 템플릿 조합형에서 실제 내담자 발화형 질문 풀 기반으로 전환
+      - 도메인 버킷(`general/daily/relationship/career/finance/study/choice/project/wellbeing`)별 질문 대폭 확장
+      - 추천 생성 시 중복 제거(`uniqueQuestions`) 적용으로 체감 다양성 개선
+      - 기존 성능 가드(`poolSize 1000~10000 clamp`, 경량 샘플링)는 유지
+    - 전역 CSS 가독성 정규화
+      - 타이포/행간 토큰(`--fs-*`, `--lh-*`)을 `theme.css`에 추가
+      - `layout.css`에서 칩/보조문구/배지/리딩 라인 폰트 하한 상향
+      - 긴 텍스트 UI(칩/라벨)에 2줄 클램프 + `keep-all` 줄바꿈 적용
+    - 리딩/챗 본문 가독성 개선
+      - `spreads.css`에서 본문/대화/복기 라인행간 통일
+      - 과도한 대화 버블 배경 그라디언트를 완화해 텍스트 대비 안정화
+    - 자동추천 화면 정합성 보정(CSS-only)
+      - 자동추천 플로우와 충돌하는 수동 선택 잔존 UI(핵심 변형/스프레드 모양)를 기본 화면에서 비노출
+      - 질문 입력 → 자동추천/리딩 생성 → 결과 확인 흐름이 우선 보이도록 정리
+  - 참고:
+    - 중간 UI 실험 변경은 사용자 피드백으로 원복 후, 최종 반영은 가독성/정합성 중심 CSS 리팩터링만 유지
+  - 검증:
+    - `npm run -s typecheck:web` 통과
+    - `npm run -s test:web` 통과
+
 - Chat UI 안정화 + 라이트 테마 보정 + 추천질문 대량 랜덤화 + API 경로/타임아웃 보강 (2026-02-23 latest 6)
   - 관련 커밋:
     - `7d97491` Stabilize QA runtime fallback and apply magazine UI overhaul
