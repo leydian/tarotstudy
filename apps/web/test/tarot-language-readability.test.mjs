@@ -15,9 +15,8 @@ function read(relPath) {
 test('tarot leader readability rules stay enforced in chat renderer', () => {
   const source = read('apps/web/src/pages/ChatSpreadPage.tsx');
   assert.equal(source.includes('function compactTarotTurn'), true);
-  assert.equal(source.includes("limitTarotSentenceDensity(String(text || ''), purpose === 'detail' ? 'detail' : 'quick')"), true);
-  assert.equal(source.includes('normalizeTarotKorean'), true);
-  assert.equal(source.includes('diversifyTarotOpening'), true);
+  assert.equal(source.includes("toDisplayLine(String(text || ''), purpose === 'detail' ? 'detail' : 'quick')"), true);
+  assert.equal(source.includes('toCanonicalReadingLines'), true);
 });
 
 test('tarot leader avoids difficult stock terms and formal endings', () => {
@@ -35,6 +34,5 @@ test('tarot leader avoids difficult stock terms and formal endings', () => {
 test('card view presenter applies same readability law', () => {
   const source = read('apps/web/src/pages/spreads-presenters.tsx');
   assert.equal(source.includes('function toReadableTarotDisplay'), true);
-  assert.equal(source.includes("limitTarotSentenceDensity(normalized, mode === 'compact' ? 'cardCompact' : 'cardNormal')"), true);
-  assert.equal(source.includes('normalizeTarotKorean'), true);
+  assert.equal(source.includes("toDisplayLine(String(text || ''), mode === 'compact' ? 'cardCompact' : 'cardNormal')"), true);
 });

@@ -5,7 +5,7 @@ import {
   parseYearlySummary,
   toParagraphBlocks
 } from './spreads-helpers';
-import { limitTarotSentenceDensity, normalizeTarotKorean } from '../lib/tarot-language';
+import { toDisplayLine } from '../lib/tone-render';
 
 type HighlightTone = 'signal' | 'action' | 'caution' | 'evidence';
 type HighlightTier = 'high' | 'mid' | 'low';
@@ -481,8 +481,7 @@ export function NaturalFlowView({
 }
 
 function toReadableTarotDisplay(text: string, mode: 'compact' | 'normal') {
-  const normalized = normalizeTarotKorean(String(text || ''));
-  return limitTarotSentenceDensity(normalized, mode === 'compact' ? 'cardCompact' : 'cardNormal');
+  return toDisplayLine(String(text || ''), mode === 'compact' ? 'cardCompact' : 'cardNormal');
 }
 
 export function summarizeText(text: string, max: number) {

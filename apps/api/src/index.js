@@ -427,6 +427,7 @@ function performSpreadDraw({
     context,
     level
   });
+  const tonePayload = buildTonePayload({ readingV3, summary });
 
   return {
     spreadId: spread.id,
@@ -439,7 +440,8 @@ function performSpreadDraw({
     drawnAt: new Date().toISOString(),
     items,
     summary,
-    readingV3
+    readingV3,
+    tonePayload
   };
 }
 
@@ -1098,6 +1100,37 @@ function buildReadingV3({
       duplicateRateMax: 0.34
     }
   };
+}
+
+function buildTonePayload({ readingV3 = null, summary = '' }) {
+  const v3 = readingV3 && typeof readingV3 === 'object'
+    ? {
+      bridge: String(readingV3.bridge || '').trim(),
+      verdict: String(readingV3.verdict?.sentence || '').trim(),
+      evidence: Array.isArray(readingV3.evidence)
+        ? readingV3.evidence.map((item) => String(item?.narrativeLine || '').trim()).filter(Boolean).slice(0, 3)
+        : [],
+      caution: String(readingV3.caution || '').trim(),
+      actionNow: String(readingV3.action?.now || '').trim(),
+      checkin: String(readingV3.action?.checkin || '').trim(),
+      closing: String(readingV3.closing || '').trim()
+    }
+    : null;
+  return {
+    v3Lines: v3,
+    summaryLines: splitSummaryLines(summary),
+    meta: {
+      source: v3 ? 'readingV3' : 'summary',
+      version: 'tone-v1'
+    }
+  };
+}
+
+function splitSummaryLines(summary = '') {
+  return String(summary || '')
+    .split(/\n{2,}/)
+    .map((line) => line.replace(/\s+/g, ' ').trim())
+    .filter(Boolean);
 }
 
 function calibrateVerdictLabelForRelationshipWeekly({

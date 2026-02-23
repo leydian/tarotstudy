@@ -228,6 +228,7 @@ export interface SpreadDrawResult {
   summary: string;
   readingV2?: SpreadReadingV2;
   readingV3?: SpreadReadingV3;
+  tonePayload?: SpreadTonePayload;
 }
 
 export interface QuestionUnderstandingV2 {
@@ -335,6 +336,23 @@ export interface SpreadReadingV3 {
   guardrails: {
     bannedAbsolute: true;
     duplicateRateMax: number;
+  };
+}
+
+export interface SpreadTonePayload {
+  v3Lines: {
+    bridge: string;
+    verdict: string;
+    evidence: string[];
+    caution: string;
+    actionNow: string;
+    checkin: string;
+    closing: string;
+  } | null;
+  summaryLines: string[];
+  meta: {
+    source: 'readingV3' | 'summary';
+    version: string;
   };
 }
 

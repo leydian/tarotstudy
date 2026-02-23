@@ -9,11 +9,7 @@ import { recommendSpreadForQuestion } from '../lib/spread-recommendation';
 import { buildDisplaySpreads, resolveDisplaySpreadId } from '../lib/spread-display';
 import { loadChatDrawCache, saveChatDrawCache } from '../lib/chat-draw-cache';
 import { exportReadingPdf, exportReadingTxt } from '../lib/reading-export';
-import {
-  diversifyTarotOpening,
-  limitTarotSentenceDensity,
-  normalizeTarotKorean
-} from '../lib/tarot-language';
+import { toCanonicalReadingLines, toDisplayLine } from '../lib/tone-render';
 import {
   findDrawnItemForSlot,
   parseMonthlySummary,
@@ -547,7 +543,7 @@ function buildExpandedCardDialog(reading: SpreadDrawResult) {
   });
 
   const closing = reading.readingV3
-    ? `한번 모아보면 ${reading.readingV3.verdict.sentence} 이번 주는 행동 1개와 확인 1개만 남기면 돼요`
+    ? reading.readingV3.closing
     : '한번 모아보면 이번 주는 세기를 낮추고 반응을 확인하는 게 가장 안전해요';
   turns.push(buildTurn('tarot', 'detail', closing));
 
@@ -584,16 +580,15 @@ function buildExpandedNarrativeDialogFromLines(reading: SpreadDrawResult, lines:
 function buildQuickDialogFromReadingV3(reading: SpreadDrawResult) {
   const v3 = reading.readingV3;
   if (!v3) return [];
-  const evidenceLine = v3.evidence[0]
-    ? `근거 카드는 ${v3.evidence[0].cardName} ${v3.evidence[0].orientation === 'reversed' ? '역방향' : '정방향'} (${v3.evidence[0].position})이고, 상징 키워드는 ${v3.evidence[0].keyword}입니다`
-    : '';
+  const canonical = toCanonicalReadingLines(reading, { includeCheckin: true });
+  const [bridge = '', verdict = '', evidence = '', caution = '', action = '', checkin = ''] = canonical;
   const turns: DialogueTurn[] = [
-    buildTurn('tarot', 'bridge', v3.bridge),
-    buildTurn('tarot', 'verdict', `핵심 흐름은 ${v3.verdict.sentence}`),
-    ...(evidenceLine ? [buildTurn('tarot', 'evidence', evidenceLine)] : []),
-    buildTurn('tarot', 'caution', `주의 포인트는 ${v3.caution}`),
-    buildTurn('tarot', 'action', `지금 실행 기준은 ${v3.action.now}`),
-    buildTurn('learning', 'coach', `학습리더 팁: ${v3.action.checkin}`)
+    ...(bridge ? [buildTurn('tarot', 'bridge', bridge)] : []),
+    ...(verdict ? [buildTurn('tarot', 'verdict', verdict)] : []),
+    ...(evidence ? [buildTurn('tarot', 'evidence', evidence)] : []),
+    ...(caution ? [buildTurn('tarot', 'caution', caution)] : []),
+    ...(action ? [buildTurn('tarot', 'action', action)] : []),
+    ...(checkin ? [buildTurn('learning', 'coach', checkin)] : [])
   ];
   return dedupeTurns(turns);
 }
@@ -901,44 +896,13 @@ function sanitizeDialogLine(text: string) {
 }
 
 function applyTarotStoryVoice(text: string, purpose: DialoguePurpose) {
-  const line = diversifyTarotOpening(normalizeTarotKorean(String(text || '').trim()));
+  const line = String(text || '').trim();
   if (!line) return line;
-  const compact = compactTarotTurn(line, purpose);
-  if (purpose === 'bridge') {
-    return /장면|흐름/.test(compact)
-      ? compact
-      : `지금 상황부터 가볍게 보면 ${compact}`;
-  }
-  if (purpose === 'verdict') {
-    return /흐름|진행/.test(compact)
-      ? `지금 흐름만 보면 ${compact}`
-      : `지금 흐름만 보면 핵심은 ${compact}`;
-  }
-  if (purpose === 'evidence') {
-    return /상징|키워드/.test(compact)
-      ? `카드 근거를 모아보면 ${compact}`
-      : `카드 근거를 모아보면 ${compact}`;
-  }
-  if (purpose === 'caution') {
-    return /주의 포인트/.test(compact)
-      ? `${compact} 이 구간은 확정하지 말고 반응을 한 번 더 확인해요`
-      : `주의 포인트는 ${compact}`;
-  }
-  if (purpose === 'action') {
-    return /실행 기준/.test(compact)
-      ? `${compact} 오늘은 행동 1개만 하고 반응 1개만 확인해요`
-      : `지금 실행 기준은 ${compact}`;
-  }
-  if (purpose === 'detail') {
-    return /장면|상징|흐름|실행/.test(compact)
-      ? compact
-      : `지금 장면에서 보면 ${compact}`;
-  }
-  return compact;
+  return compactTarotTurn(line, purpose);
 }
 
 function compactTarotTurn(text: string, purpose: DialoguePurpose) {
-  return limitTarotSentenceDensity(String(text || ''), purpose === 'detail' ? 'detail' : 'quick');
+  return toDisplayLine(String(text || ''), purpose === 'detail' ? 'detail' : 'quick');
 }
 
 function normalizeDialogKey(text: string) {

@@ -6,6 +6,7 @@ import { recommendSpreadForQuestion } from '../lib/spread-recommendation';
 import { buildDisplaySpreads, resolveDisplaySpreadId } from '../lib/spread-display';
 import { loadChatDrawCache, saveChatDrawCache } from '../lib/chat-draw-cache';
 import { exportReadingPdf, exportReadingTxt } from '../lib/reading-export';
+import { toCanonicalReadingLines } from '../lib/tone-render';
 import { TarotImage } from '../components/TarotImage';
 import { getProgressUserId, useProgressStore } from '../state/progress';
 import type { SpreadDrawResult } from '../types';
@@ -509,14 +510,7 @@ export function SpreadsPage() {
                 <h5 className="reading-block-title">타로 리더 종합 리딩</h5>
                 {activeDraw.readingV3 ? (
                   <NaturalFlowView
-                    blocks={[
-                      activeDraw.readingV3.bridge,
-                      activeDraw.readingV3.verdict.sentence,
-                      ...(activeDraw.readingV3.evidence.slice(0, 3).map((item) => item.narrativeLine)),
-                      activeDraw.readingV3.caution,
-                      activeDraw.readingV3.action.now,
-                      activeDraw.readingV3.closing
-                    ]}
+                    blocks={toCanonicalReadingLines(activeDraw)}
                     keywords={emphasisKeywords}
                     keyBase="reading-v3"
                   />
