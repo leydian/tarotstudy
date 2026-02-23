@@ -79,3 +79,101 @@
   - `tarotPersonaMeta.personaFitScore`
   - `tarotPersonaMeta.evidenceStructureScore`
   - `tarotPersonaMeta.actionClarityScore`
+
+## 7) 2026-02-23 구현 상세(코드 반영)
+
+### 7.1 백엔드 생성 파이프라인
+- `buildSpreadReading()` 입력 확장
+  - 파일: `apps/api/src/content.js`
+  - 추가 인자: `personaGroup`, `personaId` (optional)
+- 타로 페르소나 파이프라인 확장
+  - 파일: `apps/api/src/content.js`
+  - `applyTarotPersonaPipeline()`에서 페르소나 explicit/inferred 적용
+  - `resolveReaderPersonaProfile()`로 문맥 기반 fallback 추론
+  - `applyPersonaAdaptation()`로 페르소나별 문장 보강
+- 메타 확장
+  - `personaApplied { group, id, source }`
+  - `personaFitScore`, `evidenceStructureScore`, `actionClarityScore`
+
+### 7.2 API/타입 연동
+- draw API body 확장
+  - 파일: `apps/api/src/index.js`
+  - `/api/spreads/:spreadId/draw`, `/api/v2/spreads/:spreadId/draw`에서 `personaGroup/personaId` 전달
+- 웹 타입 반영
+  - 파일: `apps/web/src/types.ts`
+  - `tarotPersonaMeta`에 신규 메타 필드 반영
+
+### 7.3 QA/테스트 확장
+- 평가셋 확대
+  - 파일: `scripts/tarot-reader-eval-set.json`
+  - 총 39 케이스(13 페르소나 x 3 케이스)
+- 평가기 확대
+  - 파일: `scripts/tarot-reader-quality-check.mjs`
+  - 그룹/개별 페르소나 집계 추가
+  - A-게이트 판정(`aGradePersonaFailures`) 추가
+  - 질문 원문 인용(`질문("...")`) 내 키워드 오탐 제거
+- API 테스트 추가
+  - 파일: `apps/api/test/persona-a-grade.test.js`
+  - explicit/inferred persona 적용 경로 검증
+
+## 8) 검증 로그 요약
+
+### 8.1 회귀 테스트
+- `npm run test:api` 통과
+- `npm run test:web` 통과
+- `npm run typecheck:web` 통과
+
+### 8.2 페르소나 QA 최신 결과
+- 실행: `npm run qa:tarot-reader`
+- 결과:
+  - `datasetCases`: 39
+  - `evaluatedItems`: 414
+  - `average.avg`: 4.87
+  - `aGradePersonaFailures`: 1
+  - `failures`: 4
+- A-게이트 미스:
+  - `planner:service_planner`
+  - 원인: 일부 포지션에서 클로징 문구 반복으로 `failRate` 0.083(기준 0.08 초과)
+
+## 9) 13개 페르소나 체감형 경험 평가(웹 앱 관점)
+
+### 9.1 그룹 평균 체감
+- 사용자군: 4.86
+- 기획자군: 4.85
+- 개발자군: 4.82
+- 도메인 전문가군: 4.93
+
+### 9.2 페르소나별 체감 결론
+- 사용자(6)
+  - `beginner`: A
+  - `anxious`: A
+  - `decisive`: A
+  - `relationship`: A-
+  - `career_shift`: A
+  - `study_opt`: A
+- 기획자(2)
+  - `pm`: A
+  - `service_planner`: A- (클로징 반복 개선 필요)
+- 개발자(2)
+  - `backend`: A-
+  - `frontend`: A-
+- 도메인 전문가(3)
+  - `counselor`: A+
+  - `learning_coach`: A
+  - `data_analyst`: A+
+
+### 9.3 UI 체감 근거(코드 경로)
+- 챗 리딩: 근거-주의-실행 구조 고정
+  - `apps/web/src/pages/ChatSpreadPage.tsx`
+- 스프레드 카드: 타로 리더/학습 코치 분리 및 근거칩 제공
+  - `apps/web/src/pages/SpreadsPage.tsx`
+- 문장 난이도 보정: 어휘 단순화 + 문장 밀도 제한
+  - `apps/web/src/lib/tarot-language.ts`
+
+## 10) 잔여 리스크 및 후속 권고
+- 잔여 리스크:
+  - `service_planner` 문맥에서 클로징 템플릿 반복으로 failRate 경계값 초과 가능
+- 후속 우선순위:
+  1. `celtic-cross` 문맥의 클로징 다양화(정책/UX/예외 처리 문구 세트 추가)
+  2. `closingRepetition` 하위 점수 페르소나만 타겟한 미세 튜닝
+  3. A-게이트 기준(0.08) 경계값 통과를 위한 회귀 리런
