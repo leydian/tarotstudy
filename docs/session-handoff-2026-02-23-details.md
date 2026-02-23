@@ -1321,3 +1321,74 @@
 - `876812f` fix: prevent mid-sentence truncation in tarot chat readability mode
 - `d66313e` feat: align card view readability law and increase tarot response detail
 - `f1b8d57` feat: unify tarot readability rules across chat and card view
+
+## 26) 2026-02-23 최신 후속 11 (관계 주간 판정 안정화 + 타로 코어 품질 상향)
+
+### 26.1 문제 배경
+- 실제 사용자 문맥(`이번 주 관계 흐름`)에서 `readingV3` 판정이 `hold`로 과도하게 기울며, 문구가 `결론은 잠시 보류`로 반복 노출되는 체감 이슈가 확인되었습니다.
+- 구조적으로는 다음 두 층에서 보수성이 겹쳤습니다.
+  - 백엔드 `readingV3` 판정 라벨(`우세/박빙/조건부`)이 관계 주간 문맥에 도메인 보정 없이 그대로 적용
+  - 프론트 `buildReadingInsights` 배지도 별도 기준으로 계산되어 백엔드 결과와 체감 톤이 어긋날 여지 존재
+
+### 26.2 관계 주간 판정 안정화 (백엔드 + 프론트)
+- 변경 파일:
+  - `apps/api/src/index.js`
+  - `apps/web/src/pages/spreads-helpers.ts`
+  - `apps/api/test/reading-v3-style.test.js`
+- 핵심:
+  - 백엔드:
+    - `calibrateVerdictLabelForRelationshipWeekly()` 도입
+    - 조건:
+      - `intent in (relationship, relationship-repair)`
+      - `spreadId === weekly-fortune` 또는 `timeHorizon === week`
+    - 동작:
+      - 기존 `조건부` 판정을 즉시 `hold` 톤으로 내리지 않고, 중간 리스크에서는 `박빙(conditional)`으로 완화
+      - 중증 리스크(역방향/고위험 누적)는 기존 `hold` 유지
+  - 프론트:
+    - `calibrateInsightVerdictForRelationshipWeekly()` 도입
+    - `buildReadingInsights`의 `rawVerdict` 후처리로 UI 배지/사유 문구를 백엔드 정책과 정합화
+  - 테스트:
+    - 중간 리스크 케이스는 `conditional`
+    - 중증 리스크 케이스는 `hold`
+
+### 26.3 타로 코어 품질 게이트 상향 (Max Quality + Hybrid)
+- 변경 파일:
+  - `apps/api/src/content.js`
+  - `apps/api/src/index.js`
+  - `apps/api/test/tarot-reader-style.test.js`
+- 핵심:
+  - 자연어 품질 임계치 상향:
+    - `NATURAL_TONE_MIN_SCORE: 72 -> 76`
+    - `NATURAL_SPECIFICITY_MIN_SCORE: 60 -> 66`
+    - `NATURAL_REPETITION_MAX_SCORE: 34 -> 30`
+    - `NATURAL_TEMPLATE_MAX_SCORE: 38 -> 34`
+  - 자연어 리라이트 패스 확대:
+    - `maxPasses: 2 -> 3`
+  - 코어/해석 품질 메타 신설(`qualityMeta`):
+    - `score/specificity/repetition/templateDensity/passCount/rewriteApplied/passes`
+  - 코어 문장 근거 앵커 강화:
+    - 포지션/카드/정역/키워드/focus를 한 줄 증거 문장으로 명시
+  - 카드 설명 외부 생성(Hybrid) 강화:
+    - fast timeout `350ms -> 800ms`
+    - fallback 품질 저하 감지 시 1회 추가 재시도(`1800ms`)
+  - draw 텔레메트리 확장:
+    - `natural_gate_rewrite_applied`
+    - `natural_gate_under_threshold`
+
+### 26.4 운영/품질 효과
+- 관계 주간 문맥에서 과잉 `hold` 노출을 줄이고 `조건부 운영` 안내로 완충
+- 외부 생성 실패 시에도 fallback 품질 하한을 높여 문장 체감 품질 안정화
+- 품질 저하 원인을 텔레메트리 이벤트로 추적 가능(리라이트/미달 분리)
+
+### 26.5 검증 로그
+- 문법/정합:
+  - `node --check apps/api/src/index.js` 통과
+  - `node --check apps/api/src/content.js` 통과
+- 테스트:
+  - `npm run -s test:api -- apps/api/test/reading-v3-style.test.js` 통과
+  - `npm run -s test:api -- apps/api/test/tarot-reader-style.test.js apps/api/test/reading-v3-style.test.js` 통과
+  - 전체 API 테스트 스위트(17/17) 통과
+
+### 26.6 관련 커밋
+- `3dc8c68` Calibrate weekly relationship verdicts to reduce over-conservative holds
+- `6a47686` Improve tarot core quality gates and hybrid explanation generation

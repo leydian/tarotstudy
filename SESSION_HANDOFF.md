@@ -39,6 +39,12 @@
   - 시험/합격 템플릿을 면접/지원/이직/오퍼 질문까지 동일 프레임으로 확장
 
 ## 3) 금일 추가 반영 (최신)
+- 관계 주간 판정 안정화 + 타로 코어 품질 게이트 상향 (2026-02-23 latest 2)
+  - 관련 커밋:
+    - `3dc8c68` Calibrate weekly relationship verdicts to reduce over-conservative holds
+    - `6a47686` Improve tarot core quality gates and hybrid explanation generation
+  - 상세 문서:
+    - `docs/session-handoff-2026-02-23-details.md`의 `## 26) 2026-02-23 최신 후속 11`
 - 스프레드 선택 제거 + 챗 리딩 V3 도입/보강 + 100문항 품질 게이트 구축 (2026-02-23 latest)
   - 관련 커밋:
     - `82036af` feat: remove spread picker and refine chat reading narrative
