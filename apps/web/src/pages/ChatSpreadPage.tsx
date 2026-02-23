@@ -4,7 +4,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { api } from '../lib/api';
 import type { Spread, SpreadDrawResult } from '../types';
 import { TarotImage } from '../components/TarotImage';
-import { UnifiedSummaryView, normalizeDisplayText, renderHighlightedText } from './spreads-presenters';
+import { normalizeDisplayText } from './spreads-presenters';
 
 type ChatMessage =
   | {
@@ -40,7 +40,6 @@ export function ChatSpreadPage() {
   const [variantId, setVariantId] = useState<string>(selectedVariantFromQuery);
   const [readingLevel, setReadingLevel] = useState<'beginner' | 'intermediate'>(levelFromQuery);
   const [input, setInput] = useState<string>(contextFromQuery);
-  const [showEvidence, setShowEvidence] = useState<boolean>(true);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const logRef = useRef<HTMLDivElement | null>(null);
 
@@ -169,9 +168,6 @@ export function ChatSpreadPage() {
             <option value="beginner">입문 리딩</option>
             <option value="intermediate">중급 리딩</option>
           </select>
-          <button className="btn" onClick={() => setShowEvidence((prev) => !prev)}>
-            {showEvidence ? '근거 접기' : '근거 펼치기'}
-          </button>
         </div>
       </article>
 
@@ -192,7 +188,6 @@ export function ChatSpreadPage() {
             <ChatBubble
               key={message.id}
               message={message}
-              showEvidence={showEvidence}
               isPending={drawMutation.isPending}
               onRedraw={(question) => {
                 if (!question.trim() || drawMutation.isPending) return;
@@ -244,12 +239,10 @@ export function ChatSpreadPage() {
 
 function ChatBubble({
   message,
-  showEvidence,
   onRedraw,
   isPending
 }: {
   message: ChatMessage;
-  showEvidence: boolean;
   onRedraw: (question: string) => void;
   isPending: boolean;
 }) {
@@ -264,8 +257,7 @@ function ChatBubble({
   }
 
   const reading = message.payload;
-  const sanitizedSummary = sanitizeSummaryForChat(reading.summary);
-  const keywords = Array.from(new Set(reading.items.flatMap((item) => item.card.keywords || []))).filter(Boolean);
+  const narrativeParagraph = buildNaturalNarrativeParagraph(reading);
   const spotlight = reading.items[0] || null;
   const verdict = inferVerdict(reading.summary);
   const keyQuestion = reading.context?.trim() || '질문';
@@ -292,32 +284,8 @@ function ChatBubble({
         </div>
 
         <section className="chat-summary-card chat-summary-card-deep">
-          <UnifiedSummaryView spreadId={reading.spreadId} summary={sanitizedSummary} keywords={keywords} />
+          <p className="chat-natural-paragraph">{narrativeParagraph}</p>
         </section>
-
-        {showEvidence && (
-          <section className="chat-evidence-block chat-evidence-inline">
-            <h5>카드 근거</h5>
-            <div className="chat-card-strip">
-              {reading.items.map((item, idx) => (
-                <article key={`${item.position.name}-${item.card.id}-${idx}`} className="chat-card-strip-item">
-                  <TarotImage
-                    src={item.card.imageUrl}
-                    sources={item.card.imageSources}
-                    cardId={item.card.id}
-                    alt={item.card.nameKo}
-                    className={`chat-strip-thumb ${item.orientation === 'reversed' ? 'card-reversed' : ''}`}
-                    loading="lazy"
-                  />
-                  <p className="sub"><strong>{item.position.name}</strong> · {item.orientation === 'reversed' ? '역방향' : '정방향'}</p>
-                  <p className="chat-evidence-text">
-                    {renderHighlightedText(normalizeDisplayText(item.interpretation), item.card.keywords || [], `chat-evidence-${item.card.id}-${idx}`)}
-                  </p>
-                </article>
-              ))}
-            </div>
-          </section>
-        )}
 
         <div className="chat-reading-actions">
           <button
@@ -372,6 +340,37 @@ function sanitizeSummaryForChat(summary = '') {
     .replace(/(^|\s)오늘의 테마는\s*/g, '$1')
     .replace(/(^|\n)오늘의 테마:\s*/g, '$1')
     .trim();
+}
+
+function buildNaturalNarrativeParagraph(reading: SpreadDrawResult) {
+  const summary = sanitizeSummaryForChat(reading.summary)
+    .replace(/\n+/g, ' ')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+
+  const evidence = reading.items
+    .slice(0, 5)
+    .map((item) => {
+      const orientation = item.orientation === 'reversed' ? '역방향' : '정방향';
+      const keyword = item.card.keywords?.[0] || '흐름';
+      const interpretationSnippet = firstSentence(item.interpretation);
+      const detail = interpretationSnippet ? ` ${interpretationSnippet}` : '';
+      return `${item.position.name}에서 ${item.card.nameKo} ${orientation} 카드(${keyword})가 나와${detail}`;
+    })
+    .join(' ');
+
+  return [summary, evidence]
+    .filter(Boolean)
+    .join(' ')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
+function firstSentence(text = '') {
+  const cleaned = normalizeDisplayText(String(text || '').replace(/\n+/g, ' ').trim());
+  if (!cleaned) return '';
+  const sentence = cleaned.split(/(?<=[.!?])\s+/)[0] || cleaned;
+  return sentence.replace(/\s{2,}/g, ' ').trim();
 }
 
 function buildFollowupQuestions({

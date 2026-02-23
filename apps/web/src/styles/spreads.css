@@ -1029,6 +1029,12 @@
   color: #e8eaf8;
 }
 
+.chat-natural-paragraph {
+  color: #e8eaf8;
+  line-height: 1.72;
+  margin: 0;
+}
+
 .chat-evidence-block {
   margin-top: 12px;
 }
@@ -1156,6 +1162,10 @@
 }
 
 :root[data-theme='light'] .chat-summary-card-deep .reading-prose {
+  color: var(--ink-0);
+}
+
+:root[data-theme='light'] .chat-natural-paragraph {
   color: var(--ink-0);
 }
 
