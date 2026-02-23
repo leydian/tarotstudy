@@ -26,21 +26,25 @@ const STARTER_PROMPTS = [
   '올해 커리어 타이밍을 분기별로 알려줘'
 ];
 
+type SpreadRecommendation = {
+  spreadId: string;
+  reason: string;
+};
+
 export function ChatSpreadPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const spreadsQuery = useQuery({ queryKey: ['spreads'], queryFn: api.getSpreads });
   const spreads = spreadsQuery.data ?? [];
 
   const selectedSpreadIdFromQuery = searchParams.get('spreadId') || '';
-  const selectedVariantFromQuery = searchParams.get('variantId') || '';
   const levelFromQuery = searchParams.get('level') === 'intermediate' ? 'intermediate' : 'beginner';
   const contextFromQuery = searchParams.get('context') || '';
 
   const [selectedSpreadId, setSelectedSpreadId] = useState<string>(selectedSpreadIdFromQuery);
-  const [variantId, setVariantId] = useState<string>(selectedVariantFromQuery);
   const [readingLevel, setReadingLevel] = useState<'beginner' | 'intermediate'>(levelFromQuery);
   const [input, setInput] = useState<string>(contextFromQuery);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [recommendedHint, setRecommendedHint] = useState<string>('');
   const logRef = useRef<HTMLDivElement | null>(null);
 
   const selectedSpread = useMemo(() => {
@@ -48,15 +52,9 @@ export function ChatSpreadPage() {
     return spreads.find((item) => item.id === selectedSpreadId) ?? spreads[0] ?? null;
   }, [spreads, selectedSpreadId]);
 
-  const activeVariant = useMemo(() => {
-    if (!selectedSpread?.variants?.length) return null;
-    return selectedSpread.variants.find((item) => item.id === variantId) ?? selectedSpread.variants[0] ?? null;
-  }, [selectedSpread, variantId]);
-
   useEffect(() => {
     if (!selectedSpreadId && spreads.length > 0) {
       setSelectedSpreadId(spreads[0].id);
-      setVariantId(spreads[0].variants?.[0]?.id ?? '');
     }
   }, [spreads, selectedSpreadId]);
 
@@ -65,14 +63,12 @@ export function ChatSpreadPage() {
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
       next.set('spreadId', selectedSpread.id);
-      if (activeVariant?.id) next.set('variantId', activeVariant.id);
-      else next.delete('variantId');
       next.set('level', readingLevel);
       if (input.trim()) next.set('context', input.trim());
       else next.delete('context');
       return next;
     });
-  }, [activeVariant?.id, input, readingLevel, selectedSpread, setSearchParams]);
+  }, [input, readingLevel, selectedSpread, setSearchParams]);
 
   useEffect(() => {
     if (!logRef.current) return;
@@ -81,15 +77,18 @@ export function ChatSpreadPage() {
 
   const drawMutation = useMutation({
     mutationFn: async (question: string) => {
-      if (!selectedSpread) throw new Error('No spread selected');
+      if (!spreads.length) throw new Error('No spread available');
+      const recommendation = await recommendSpreadForQuestion(question, spreads);
+      setRecommendedHint(recommendation.reason);
       return api.drawSpread({
-        spreadId: selectedSpread.id,
-        variantId: activeVariant?.id ?? null,
+        spreadId: recommendation.spreadId,
+        variantId: null,
         level: readingLevel,
         context: question
       });
     },
     onSuccess: (payload, question) => {
+      setSelectedSpreadId(payload.spreadId);
       setMessages((prev) => [
         ...prev,
         { id: `u-${Date.now()}-${prev.length}`, role: 'user', type: 'text', text: question },
@@ -126,12 +125,13 @@ export function ChatSpreadPage() {
           <div>
             <p className="badge">대화형 스프레드</p>
             <h2>타로 챗 리딩</h2>
-            <p>원카드/스프레드 결과를 챗봇 톤으로 재구성해 보여줍니다.</p>
+            <p>질문을 분석해 스프레드를 자동 추천하고 바로 리딩합니다.</p>
+            {recommendedHint && <p className="sub">최근 추천: {recommendedHint}</p>}
           </div>
           <div className="chip-wrap">
             <Link
               className="chip-link"
-              to={`/spreads?spreadId=${encodeURIComponent(selectedSpread.id)}&variantId=${encodeURIComponent(activeVariant?.id || '')}&level=${readingLevel}&context=${encodeURIComponent(input)}`}
+              to={`/spreads?spreadId=${encodeURIComponent(selectedSpread.id)}&level=${readingLevel}&context=${encodeURIComponent(input)}`}
             >
               카드뷰로 보기
             </Link>
@@ -139,35 +139,11 @@ export function ChatSpreadPage() {
         </div>
 
         <div className="filters spread-draw-controls">
-          <select
-            value={selectedSpread.id}
-            onChange={(e) => {
-              const next = spreads.find((item) => item.id === e.target.value);
-              if (!next) return;
-              setSelectedSpreadId(next.id);
-              setVariantId(next.variants?.[0]?.id ?? '');
-            }}
-          >
-            {spreads.map((spread) => (
-              <option key={spread.id} value={spread.id}>{spread.name}</option>
-            ))}
-          </select>
-
-          {selectedSpread.variants && selectedSpread.variants.length > 0 && (
-            <select
-              value={activeVariant?.id ?? ''}
-              onChange={(e) => setVariantId(e.target.value)}
-            >
-              {selectedSpread.variants.map((variant) => (
-                <option key={variant.id} value={variant.id}>{variant.name}</option>
-              ))}
-            </select>
-          )}
-
           <select value={readingLevel} onChange={(e) => setReadingLevel(e.target.value as 'beginner' | 'intermediate')}>
             <option value="beginner">입문 리딩</option>
             <option value="intermediate">중급 리딩</option>
           </select>
+          <span className="badge">자동 추천 스프레드: {selectedSpread.name}</span>
         </div>
       </article>
 
@@ -398,4 +374,121 @@ function buildFollowupQuestions({
     `${orientationBias}일 때 피해야 할 실수 2가지만 알려줘`,
     `${spread.name} 결과를 내 일정표에 넣는 방법을 말해줘`
   ];
+}
+
+async function recommendSpreadForQuestion(question: string, spreads: Spread[]): Promise<SpreadRecommendation> {
+  const text = String(question || '').trim();
+  const fallback = spreads.find((item) => item.id === 'one-card') ?? spreads[0];
+
+  type AnalysisLite = { intent: string; questionType: string; timeHorizon: string } | null;
+  let analysis: AnalysisLite = null;
+  try {
+    const result = await api.analyzeQuestionV2({ text, mode: 'hybrid' });
+    analysis = {
+      intent: result.analysis.intent,
+      questionType: result.analysis.questionType,
+      timeHorizon: result.analysis.timeHorizon
+    };
+  } catch {
+    analysis = null;
+  }
+
+  const ranked = rankSpreadsForQuestion({ question: text, spreads, analysis });
+  const best = ranked[0] ?? { spread: fallback, score: 0, reasons: ['기본 스프레드'] };
+  return {
+    spreadId: best.spread.id,
+    reason: `${best.spread.name} · ${best.reasons.slice(0, 3).join(', ')}`
+  };
+}
+
+type RankingInput = {
+  question: string;
+  spreads: Spread[];
+  analysis: { intent: string; questionType: string; timeHorizon: string } | null;
+};
+
+const SPREAD_RULES: Record<string, {
+  intents?: string[];
+  questionTypes?: string[];
+  horizons?: string[];
+  keywords?: string[];
+}> = {
+  'one-card': { questionTypes: ['yes_no'], horizons: ['immediate'], keywords: ['될까', '가능', '맞을까', 'yes', 'no'] },
+  'three-card': { intents: ['relationship', 'general'], keywords: ['흐름', '어떻게', '관계', '연애'] },
+  'choice-a-b': { questionTypes: ['choice_ab'], keywords: ['둘 중', 'vs', '선택', 'a/b', '비교'] },
+  'daily-fortune': { horizons: ['immediate'], keywords: ['오늘', '당장', '지금'] },
+  'weekly-fortune': { horizons: ['week'], keywords: ['이번 주', '다음 주', '주간'] },
+  'monthly-fortune': { horizons: ['month'], keywords: ['이번 달', '다음 달', '월간'] },
+  'yearly-fortune': { horizons: ['year'], keywords: ['올해', '연간', '1년', '분기'] },
+  'relationship-recovery': { intents: ['relationship-repair'], keywords: ['재회', '화해', '갈등', '관계 회복'] },
+  'celtic-cross': { intents: ['general'], keywords: ['복합', '전체', '종합', '깊게'] },
+  'exam-success-5': { keywords: ['시험', '합격', '점수', '공부', '모의고사'] },
+  'interview-4': { intents: ['career'], keywords: ['면접', '자소서', '지원동기', '꼬리질문'] },
+  'career-transition-6': { intents: ['career'], keywords: ['이직', '전환', '직무', '커리어'] },
+  'project-planning-5': { keywords: ['프로젝트', '기획', '일정', '마감'] },
+  'burnout-recovery-5': { intents: ['health'], keywords: ['번아웃', '소진', '회복', '피로'] },
+  'finance-checkup-5': { intents: ['finance'], keywords: ['지출', '수입', '예산', '저축', '누수'] },
+  'investment-balance-7': { intents: ['finance'], keywords: ['투자', '포트폴리오', '현금', '매수', '변동성'] },
+  'home-move-5': { keywords: ['이사', '거주', '전세', '월세', '집'] },
+  'communication-reset-4': { intents: ['relationship'], keywords: ['대화', '말투', '오해', '소통'] },
+  'shadow-work-5': { keywords: ['내면', '감정', '패턴', '자기이해', '통합'] }
+};
+
+function rankSpreadsForQuestion({ question, spreads, analysis }: RankingInput) {
+  const loweredQuestion = question.toLowerCase();
+  const questionTokens = tokenizeKorean(loweredQuestion);
+
+  return spreads
+    .map((spread) => {
+      const rule = SPREAD_RULES[spread.id] || {};
+      let score = 0;
+      const reasons: string[] = [];
+
+      const lexicalPool = [
+        spread.name,
+        spread.purpose,
+        ...(spread.whenToUse || []),
+        ...(rule.keywords || [])
+      ].join(' ').toLowerCase();
+      const lexicalTokens = tokenizeKorean(lexicalPool);
+      const overlap = questionTokens.filter((token) => lexicalTokens.includes(token)).length;
+      score += Math.min(40, overlap * 4);
+      if (overlap > 0) reasons.push(`키워드 ${overlap}개 일치`);
+
+      for (const keyword of rule.keywords || []) {
+        if (loweredQuestion.includes(keyword.toLowerCase())) {
+          score += 9;
+          reasons.push(`'${keyword}' 매칭`);
+        }
+      }
+
+      if (analysis) {
+        if (rule.intents?.includes(analysis.intent)) {
+          score += 18;
+          reasons.push(`intent=${analysis.intent}`);
+        }
+        if (rule.questionTypes?.includes(analysis.questionType)) {
+          score += 20;
+          reasons.push(`type=${analysis.questionType}`);
+        }
+        if (rule.horizons?.includes(analysis.timeHorizon)) {
+          score += 16;
+          reasons.push(`horizon=${analysis.timeHorizon}`);
+        }
+      }
+
+      if (spread.id === 'one-card' && /\?$|될까|가능할까|맞을까|yes|no/.test(loweredQuestion)) score += 10;
+      if (spread.id === 'celtic-cross' && /(종합|전체|복합|깊게|총체)/.test(loweredQuestion)) score += 12;
+
+      return { spread, score, reasons: reasons.length ? reasons : ['기본 적합도'] };
+    })
+    .sort((a, b) => b.score - a.score);
+}
+
+function tokenizeKorean(text = '') {
+  return String(text || '')
+    .toLowerCase()
+    .split(/[^0-9a-zA-Z가-힣]+/)
+    .map((token) => token.trim())
+    .filter((token) => token.length >= 2);
 }

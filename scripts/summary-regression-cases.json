@@ -183,6 +183,206 @@
         "requiredAny": ["현재", "교차/장애", "결과", "한 줄 테마:"],
         "forbidden": ["소모을", "  ?"]
       }
+    },
+    {
+      "id": "exam-success-5-1",
+      "spreadId": "exam-success-5",
+      "level": "beginner",
+      "context": "이번 시험 합격 가능성과 전략이 궁금해",
+      "expect": {
+        "requiredAny": ["합격", "실행", "흐름", "한 줄 테마:"],
+        "forbidden": ["소모을", "  ?"]
+      }
+    },
+    {
+      "id": "exam-success-5-2",
+      "spreadId": "exam-success-5",
+      "level": "beginner",
+      "context": "모의고사 점수가 불안정한데 뭘 먼저 고치면 좋을까?",
+      "expect": {
+        "requiredAny": ["취약", "강점", "실행", "한 줄 테마:"],
+        "forbidden": ["소모을", "  ?"]
+      }
+    },
+    {
+      "id": "interview-4-1",
+      "spreadId": "interview-4",
+      "level": "beginner",
+      "context": "내일 면접에서 어떤 답변 톤이 좋을까?",
+      "expect": {
+        "requiredAny": ["면접", "강점", "질문", "한 줄 테마:"],
+        "forbidden": ["소모을", "  ?"]
+      }
+    },
+    {
+      "id": "interview-4-2",
+      "spreadId": "interview-4",
+      "level": "beginner",
+      "context": "면접 꼬리질문 대응을 어떻게 준비하면 좋을까?",
+      "expect": {
+        "requiredAny": ["보완", "인상", "실행", "한 줄 테마:"],
+        "forbidden": ["소모을", "  ?"]
+      }
+    },
+    {
+      "id": "career-transition-6-1",
+      "spreadId": "career-transition-6",
+      "level": "intermediate",
+      "context": "지금 이직 전환을 시작해도 될까?",
+      "expect": {
+        "requiredAny": ["전환", "리스크", "실행", "한 줄 테마:"],
+        "forbidden": ["소모을", "  ?"]
+      }
+    },
+    {
+      "id": "career-transition-6-2",
+      "spreadId": "career-transition-6",
+      "level": "intermediate",
+      "context": "직무 변경 전에 어떤 준비 과제가 우선일까?",
+      "expect": {
+        "requiredAny": ["준비", "타이밍", "결론", "한 줄 테마:"],
+        "forbidden": ["소모을", "  ?"]
+      }
+    },
+    {
+      "id": "project-planning-5-1",
+      "spreadId": "project-planning-5",
+      "level": "beginner",
+      "context": "이번 프로젝트 일정이 계속 밀리는데 원인이 뭘까?",
+      "expect": {
+        "requiredAny": ["병목", "마감", "실행", "한 줄 테마:"],
+        "forbidden": ["소모을", "  ?"]
+      }
+    },
+    {
+      "id": "project-planning-5-2",
+      "spreadId": "project-planning-5",
+      "level": "beginner",
+      "context": "신규 프로젝트 킥오프 전에 뭘 정리해야 할까?",
+      "expect": {
+        "requiredAny": ["목표", "자원", "전략", "한 줄 테마:"],
+        "forbidden": ["소모을", "  ?"]
+      }
+    },
+    {
+      "id": "burnout-recovery-5-1",
+      "spreadId": "burnout-recovery-5",
+      "level": "beginner",
+      "context": "요즘 번아웃이 심한데 회복 흐름이 궁금해",
+      "expect": {
+        "requiredAny": ["소진", "회복", "즉시", "한 줄 테마:"],
+        "forbidden": ["소모을", "  ?"]
+      }
+    },
+    {
+      "id": "burnout-recovery-5-2",
+      "spreadId": "burnout-recovery-5",
+      "level": "beginner",
+      "context": "피로가 누적될 때 일주일 회복 계획을 어떻게 잡을까?",
+      "expect": {
+        "requiredAny": ["7일", "원인", "회복", "한 줄 테마:"],
+        "forbidden": ["소모을", "  ?"]
+      }
+    },
+    {
+      "id": "finance-checkup-5-1",
+      "spreadId": "finance-checkup-5",
+      "level": "beginner",
+      "context": "이번 달 지출 누수를 점검하고 싶어",
+      "expect": {
+        "requiredAny": ["수입", "지출", "누수", "한 줄 테마:"],
+        "forbidden": ["소모을", "  ?"]
+      }
+    },
+    {
+      "id": "finance-checkup-5-2",
+      "spreadId": "finance-checkup-5",
+      "level": "beginner",
+      "context": "다음 30일 예산 운영 전략을 알고 싶어",
+      "expect": {
+        "requiredAny": ["30일", "균형", "전략", "한 줄 테마:"],
+        "forbidden": ["소모을", "  ?"]
+      }
+    },
+    {
+      "id": "investment-balance-7-1",
+      "spreadId": "investment-balance-7",
+      "level": "intermediate",
+      "context": "현재 투자 포트폴리오를 조정해야 할까?",
+      "expect": {
+        "requiredAny": ["시장", "리스크", "운영", "한 줄 테마:"],
+        "forbidden": ["소모을", "  ?"]
+      }
+    },
+    {
+      "id": "investment-balance-7-2",
+      "spreadId": "investment-balance-7",
+      "level": "intermediate",
+      "context": "추가 매수와 현금 비중 중 어떤 쪽이 우선일까?",
+      "expect": {
+        "requiredAny": ["현금", "매수", "결론", "한 줄 테마:"],
+        "forbidden": ["소모을", "  ?"]
+      }
+    },
+    {
+      "id": "home-move-5-1",
+      "spreadId": "home-move-5",
+      "level": "beginner",
+      "context": "지금 이사하는 게 맞을까?",
+      "expect": {
+        "requiredAny": ["거주", "이동", "리스크", "한 줄 테마:"],
+        "forbidden": ["소모을", "  ?"]
+      }
+    },
+    {
+      "id": "home-move-5-2",
+      "spreadId": "home-move-5",
+      "level": "beginner",
+      "context": "주거 선택에서 비용과 생활 리듬 중 뭐가 더 중요할까?",
+      "expect": {
+        "requiredAny": ["비용", "생활", "선택", "한 줄 테마:"],
+        "forbidden": ["소모을", "  ?"]
+      }
+    },
+    {
+      "id": "communication-reset-4-1",
+      "spreadId": "communication-reset-4",
+      "level": "beginner",
+      "context": "대화가 계속 꼬이는데 어떻게 리셋할까?",
+      "expect": {
+        "requiredAny": ["대화", "오해", "방식", "한 줄 테마:"],
+        "forbidden": ["소모을", "  ?"]
+      }
+    },
+    {
+      "id": "communication-reset-4-2",
+      "spreadId": "communication-reset-4",
+      "level": "beginner",
+      "context": "말투를 어떻게 바꾸면 갈등이 줄어들까?",
+      "expect": {
+        "requiredAny": ["전달", "결과", "리셋", "한 줄 테마:"],
+        "forbidden": ["소모을", "  ?"]
+      }
+    },
+    {
+      "id": "shadow-work-5-1",
+      "spreadId": "shadow-work-5",
+      "level": "intermediate",
+      "context": "같은 감정 패턴이 반복되는 이유를 알고 싶어",
+      "expect": {
+        "requiredAny": ["감정", "패턴", "통합", "한 줄 테마:"],
+        "forbidden": ["소모을", "  ?"]
+      }
+    },
+    {
+      "id": "shadow-work-5-2",
+      "spreadId": "shadow-work-5",
+      "level": "intermediate",
+      "context": "내면 작업을 현실 행동으로 연결하는 방법이 궁금해",
+      "expect": {
+        "requiredAny": ["욕구", "회복", "행동", "한 줄 테마:"],
+        "forbidden": ["소모을", "  ?"]
+      }
     }
   ]
 }
