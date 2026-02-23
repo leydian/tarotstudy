@@ -610,12 +610,15 @@ function buildSectionDialog(line: string, sectionTitle: string, index = 0) {
 function buildDialogFromLines(lines: string[], sectionTitle: string) {
   const seen = new Set<string>();
   const turns: Array<{ speaker: 'tarot' | 'learning'; text: string }> = [];
+  let learningCount = 0;
   lines.forEach((line, lineIdx) => {
     buildSectionDialog(line, sectionTitle, lineIdx).forEach((turn) => {
       const key = normalizeDialogKey(turn.text);
       if (!key || seen.has(`${turn.speaker}:${key}`)) return;
+      if (turn.speaker === 'learning' && learningCount >= 2) return;
       seen.add(`${turn.speaker}:${key}`);
       turns.push(turn);
+      if (turn.speaker === 'learning') learningCount += 1;
     });
   });
   return turns;
@@ -663,6 +666,9 @@ function sanitizeDialogLine(text: string) {
     .replace(/^\s*결론은\s*/g, '')
     .replace(/^\s*실행 가이드:\s*/g, '')
     .replace(/^\s*한 줄 테마:\s*/g, '')
+    .replace(/핵심부터 말씀드리면[, ]*/g, '')
+    .replace(/지금은 흐름을 살려 실행해보실 수 있는 구간입니다\.?/g, '지금은 실행 여지가 열려 있는 구간입니다')
+    .replace(/지금은 속도를 낮추고 정비를 먼저 두시는 편이 안정적입니다\.?/g, '지금은 속도를 낮추고 정비를 먼저 두는 편이 안정적입니다')
     .replace(/\s+/g, ' ')
     .trim();
 }
@@ -731,20 +737,14 @@ function sanitizeSummaryForChat(summary = '') {
 }
 
 function buildNaturalNarrativeParagraph(reading: SpreadDrawResult) {
-  const summary = sanitizeSummaryForChat(reading.summary)
+  const summary = sanitizeDialogLine(sanitizeSummaryForChat(reading.summary))
     .replace(/\n+/g, ' ')
     .replace(/\s{2,}/g, ' ')
     .trim();
 
   const evidence = reading.items
-    .slice(0, 5)
-    .map((item) => {
-      const orientation = item.orientation === 'reversed' ? '역방향' : '정방향';
-      const keyword = item.card.keywords?.[0] || '흐름';
-      const interpretationSnippet = firstSentence(item.interpretation);
-      const detail = interpretationSnippet ? ` ${interpretationSnippet}` : '';
-      return `${item.position.name}에서 ${item.card.nameKo} ${orientation} 카드(${keyword})가 나와${detail}`;
-    })
+    .slice(0, 6)
+    .map((item, idx) => buildPositionEvidenceLine(item, idx))
     .join(' ');
 
   return [summary, evidence]
@@ -752,6 +752,25 @@ function buildNaturalNarrativeParagraph(reading: SpreadDrawResult) {
     .join(' ')
     .replace(/\s{2,}/g, ' ')
     .trim();
+}
+
+function buildPositionEvidenceLine(item: SpreadDrawResult['items'][number], idx = 0) {
+  const orientation = item.orientation === 'reversed' ? '역방향' : '정방향';
+  const keyword = item.card.keywords?.[0] || '흐름';
+  const position = item.position.name;
+  const lead = `${position}의 ${item.card.nameKo} ${orientation} 카드(${keyword})`;
+  if (/과거|가까운 과거/.test(position)) {
+    return `${lead}는 지금 판단에 남아 있는 배경 패턴을 보여줍니다.`;
+  }
+  if (/현재|문제|상황/.test(position)) {
+    return `${lead}는 지금 당장 조절해야 할 핵심 변수로 읽힙니다.`;
+  }
+  if (/미래|결과|가까운 미래/.test(position)) {
+    return `${lead}는 현재 선택을 유지했을 때 이어질 가능성이 큰 전개를 보여줍니다.`;
+  }
+  return idx % 2 === 0
+    ? `${lead}는 이번 질문의 핵심 축을 잡아주는 카드입니다.`
+    : `${lead}는 실행 타이밍과 강도를 조절하라는 신호로 읽힙니다.`;
 }
 
 function buildNarrativeBubbles(text: string) {
