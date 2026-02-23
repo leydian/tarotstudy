@@ -359,7 +359,7 @@ function ChatBubble({
 function ChatSummaryView({ reading }: { reading: SpreadDrawResult }) {
   const structured = buildStructuredSummary(reading);
   if (structured) {
-    const quickDialog = buildQuickDialog(structured.highlights, structured.actionPlan, reading.context);
+    const quickDialog = buildQuickDialog(structured.highlights, structured.actionPlan, reading);
     return (
       <section className="chat-summary-shell">
         <div className="chat-dialog-stream">
@@ -395,7 +395,7 @@ function ChatSummaryView({ reading }: { reading: SpreadDrawResult }) {
                   </div>
                 ) : (
                   <div className="chat-dialog-stream">
-                    {section.lines.flatMap((line, lineIdx) => buildSectionDialog(line, section.title, lineIdx)).map((turn, lineIdx) => (
+                    {buildDialogFromLines(section.lines, section.title).map((turn, lineIdx) => (
                       <article key={`${section.title}-${lineIdx}`} className={`chat-dialog-turn chat-dialog-${turn.speaker}`}>
                         <h6 className="chat-dialog-speaker">{turn.speaker === 'tarot' ? '타로리더' : '학습리더'}</h6>
                         <p className="chat-natural-paragraph chat-dialog-bubble">{turn.text}</p>
@@ -415,7 +415,7 @@ function ChatSummaryView({ reading }: { reading: SpreadDrawResult }) {
   const narrativeBubbles = buildNarrativeBubbles(narrativeParagraph);
   const highlights = buildGenericHighlights(narrativeBubbles);
   const actionPlan = buildActionPlan(narrativeBubbles.join(' '));
-  const quickDialog = buildQuickDialog(highlights, actionPlan, reading.context);
+  const quickDialog = buildQuickDialog(highlights, actionPlan, reading);
   return (
     <section className="chat-summary-shell">
       <div className="chat-dialog-stream">
@@ -430,7 +430,7 @@ function ChatSummaryView({ reading }: { reading: SpreadDrawResult }) {
         <h6 className="chat-summary-section-title">상세 대화</h6>
         <div className="chat-summary-accordion-body">
           <div className="chat-dialog-stream">
-            {narrativeBubbles.flatMap((line, idx) => buildSectionDialog(line, '상세 리딩', idx)).map((turn, idx) => (
+            {buildDialogFromLines(narrativeBubbles, '상세 리딩').map((turn, idx) => (
               <article key={`summary-bubble-${idx}`} className={`chat-dialog-turn chat-dialog-${turn.speaker}`}>
                 <h6 className="chat-dialog-speaker">{turn.speaker === 'tarot' ? '타로리더' : '학습리더'}</h6>
                 <p className="chat-natural-paragraph chat-dialog-bubble">{turn.text}</p>
@@ -569,28 +569,30 @@ function selectActionLine(lines: string[], hints: string[]) {
 
 function fallbackAction(joined: string, scope: 'today' | 'week' | 'month') {
   const base = compactLine(joined || '핵심 흐름을 기준으로 작은 실행부터 시작하세요.');
-  if (scope === 'today') return base || '오늘은 기준 1개를 정하고 행동 1개만 실행하세요.';
-  if (scope === 'week') return base || '이번 주는 실행 기록을 남기며 속도를 조절하세요.';
-  return base || '이번 달은 무리한 확장보다 루틴 고정을 우선하세요.';
+  if (scope === 'today') return base ? `오늘은 ${base}` : '오늘은 기준 1개를 정하고 행동 1개만 실행하세요.';
+  if (scope === 'week') return base ? `이번 주에는 ${base}` : '이번 주는 실행 기록을 남기며 속도를 조절하세요.';
+  return base ? `이번 달은 ${base}` : '이번 달은 무리한 확장보다 루틴 고정을 우선하세요.';
 }
 
 function buildQuickDialog(
   highlights: Array<{ title: string; body: string }>,
   actionPlan: { today: string; thisWeek: string; thisMonth: string },
-  context = ''
+  reading: SpreadDrawResult
 ) {
   const core = highlights.find((item) => item.title.includes('결론'))?.body || highlights[0]?.body || '';
   const action = highlights.find((item) => item.title.includes('할 일') || item.title.includes('실행'))?.body || actionPlan.today;
   const caution = highlights.find((item) => item.title.includes('주의'))?.body || '속도를 줄이고 핵심 기준부터 고정해볼게요.';
-  const bridge = buildTarotBridge(context);
+  const bridge = buildTarotBridge(reading.context);
+  const evidence = buildCardEvidenceLead(reading.items);
+  const learningGuide = buildLearningGuide(reading);
   return [
     { speaker: 'tarot' as const, text: bridge },
-    { speaker: 'tarot' as const, text: softenLine(`핵심 흐름부터 보면 ${core}`) },
-    { speaker: 'tarot' as const, text: softenLine(`주의할 부분은 ${caution}`) },
-    { speaker: 'tarot' as const, text: softenLine(`실행 기준은 ${action}`) },
-    { speaker: 'tarot' as const, text: softenLine(`흐름을 유지하려면 오늘-이번 주-이번 달 순서로 무리 없이 이어가는 게 좋아요`) },
-    { speaker: 'learning' as const, text: softenLine(`학습 팁으로는 오늘 ${actionPlan.today}`) },
-    { speaker: 'learning' as const, text: softenLine(`보완 팁만 짧게 덧붙이면 이번 주엔 ${actionPlan.thisWeek}`) }
+    { speaker: 'tarot' as const, text: softenLine(`핵심 흐름은 ${core}`) },
+    { speaker: 'tarot' as const, text: softenLine(`근거 카드는 ${evidence}`) },
+    { speaker: 'tarot' as const, text: softenLine(`주의 포인트는 ${caution}`) },
+    { speaker: 'tarot' as const, text: softenLine(`지금 실행 기준은 ${action}`) },
+    { speaker: 'learning' as const, text: learningGuide },
+    { speaker: 'learning' as const, text: softenLine(`실행 확인은 이번 주 ${actionPlan.thisWeek}`) }
   ];
 }
 
@@ -605,6 +607,20 @@ function buildSectionDialog(line: string, sectionTitle: string, index = 0) {
   });
 }
 
+function buildDialogFromLines(lines: string[], sectionTitle: string) {
+  const seen = new Set<string>();
+  const turns: Array<{ speaker: 'tarot' | 'learning'; text: string }> = [];
+  lines.forEach((line, lineIdx) => {
+    buildSectionDialog(line, sectionTitle, lineIdx).forEach((turn) => {
+      const key = normalizeDialogKey(turn.text);
+      if (!key || seen.has(`${turn.speaker}:${key}`)) return;
+      seen.add(`${turn.speaker}:${key}`);
+      turns.push(turn);
+    });
+  });
+  return turns;
+}
+
 function maybeBuildLearningHint(text: string, sectionTitle: string, lineIndex: number, chunkIndex: number) {
   const joined = `${sectionTitle} ${text}`;
   const isActionBlock = /실행|행동|루틴|체크|점검|복기|우선순위|가이드|정리/.test(joined);
@@ -612,16 +628,16 @@ function maybeBuildLearningHint(text: string, sectionTitle: string, lineIndex: n
   if (!shouldShow) return '';
   const noun = extractPrimaryNoun(joined);
   if (/주의|리스크|소모|충돌|지연|불안|조절/.test(joined)) {
-    return softenLine(`학습리더 팁: ${noun}는 오늘 15분 점검 타임을 잡고, '맞음/어긋남' 체크 1개만 기록해요`);
+    return softenLine(`학습리더 팁: ${noun}는 오늘 15분 점검 후 '맞음/어긋남'을 1줄로 기록하고 내일 같은 기준으로 다시 비교해요`);
   }
   if (isActionBlock) {
-    return softenLine(`학습리더 팁: ${noun}는 25분 실행 + 5분 기록으로 1세트만 끝내고, 결과를 숫자 1개로 남겨요`);
+    return softenLine(`학습리더 팁: ${noun}는 25분 실행 + 5분 기록 1세트로 진행하고, 완료율(%) 숫자 1개를 남겨요`);
   }
-  return softenLine(`학습리더 팁: 핵심 문장을 메모 1줄로 적고, 내일 같은 시간에 같은 기준으로 다시 확인해요`);
+  return softenLine('학습리더 팁: 핵심 문장 1줄, 근거 카드 1장, 다음 행동 1개를 함께 적어두면 복기 정확도가 올라가요');
 }
 
 function softenLine(text: string) {
-  const line = compactLine(text);
+  const line = sanitizeDialogLine(compactLine(text));
   if (!line) return '지금 흐름에서 핵심 포인트를 같이 정리해볼게요.';
   const trimmed = line.replace(/\s+/g, ' ').trim();
   if (/[.!?]$/.test(trimmed)) return trimmed;
@@ -639,6 +655,38 @@ function buildTarotBridge(context: string) {
   const q = String(context || '').trim();
   if (!q) return '지금 마음이 어디에 머무는지부터 같이 확인해볼게요.';
   return `질문 맥락을 보면 "${q}"가 가장 크게 걸려 있네요. 그 고민 충분히 공감돼요, 흐름을 차분히 같이 볼게요.`;
+}
+
+function sanitizeDialogLine(text: string) {
+  return String(text || '')
+    .replace(/^\s*정리하면\s*/g, '')
+    .replace(/^\s*결론은\s*/g, '')
+    .replace(/^\s*실행 가이드:\s*/g, '')
+    .replace(/^\s*한 줄 테마:\s*/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function normalizeDialogKey(text: string) {
+  return sanitizeDialogLine(text)
+    .toLowerCase()
+    .replace(/["'`]/g, '')
+    .replace(/[.,!?]/g, '')
+    .trim();
+}
+
+function buildCardEvidenceLead(items: SpreadDrawResult['items']) {
+  const top = items.slice(0, 3).map((item) => `${item.position.name}의 ${item.card.nameKo} ${item.orientation === 'reversed' ? '역방향' : '정방향'}`);
+  return top.join(', ');
+}
+
+function buildLearningGuide(reading: SpreadDrawResult) {
+  const primary = reading.items[0];
+  if (!primary) return '학습리더 팁: 오늘 25분 실행 + 5분 기록으로 1세트만 진행하고 결과 숫자 1개를 남겨요.';
+  const focus = primary.card.keywords?.[0] || '핵심';
+  return softenLine(
+    `학습리더 팁: 오늘은 ${primary.position.name} 기준으로 25분 실행 + 5분 기록 1세트만 진행하고, ${focus} 관련 체감 점수를 10점 척도로 남겨요`
+  );
 }
 
 function inferVerdict(summary: string): { kind: 'yes' | 'no' | 'maybe'; label: string } {
