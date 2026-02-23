@@ -2375,7 +2375,9 @@ function detectTarotArcProgression(text = '') {
 function resolveTarotSymbolicCue({ cardId = '', cardName = '', suit = '', arcana = '', focus = '' }) {
   const cardById = cardId ? getCardById(cardId) : null;
   const cardArcana = String(cardById?.arcana || arcana || '').trim().toLowerCase();
-  const cardSuit = String(cardById?.suit || suit || '').trim();
+  const rawSuit = String(cardById?.suit || suit || '').trim();
+  const KOREAN_TO_ENGLISH_SUIT = { '컵': 'Cups', '완드': 'Wands', '소드': 'Swords', '펜타클': 'Pentacles' };
+  const cardSuit = KOREAN_TO_ENGLISH_SUIT[rawSuit] || rawSuit;
   const name = String(cardName || '').trim();
   const matchMajor = TAROT_SYMBOLIC_BY_MAJOR[name];
   if (cardArcana === 'major' && matchMajor) return `${matchMajor.noun}(${matchMajor.scene})을 통해 ${matchMajor.hint}`;
@@ -2383,12 +2385,23 @@ function resolveTarotSymbolicCue({ cardId = '', cardName = '', suit = '', arcana
     const suitMeta = TAROT_SYMBOLIC_BY_SUIT[cardSuit];
     return `${suitMeta.noun}(${suitMeta.scene})을 따라 ${suitMeta.hint}`;
   }
+  // 카드 이름으로 수트를 추론해 정확한 상징 반환 (수트 미전달 방어)
+  if (/컵/.test(name)) return '물결(감정의 수면)을 따라 정서의 경계를 점검해보세요';
+  if (/완드/.test(name)) return '불꽃(추진의 화로)을 따라 속도와 방향을 함께 보세요';
+  if (/소드/.test(name)) return '칼날(판단의 교차로)을 따라 사실과 해석을 분리해보세요';
+  if (/펜타클/.test(name)) return '토대(현실의 바닥)를 따라 지속 가능성을 먼저 점검하세요';
   const normalized = String(focus || '').toLowerCase();
   if (/(컵|감정|연결|공감)/.test(normalized)) return '물결(감정의 수면)을 따라 정서의 경계를 점검해보세요';
   if (/(완드|열정|추진|행동)/.test(normalized)) return '불꽃(추진의 화로)을 따라 속도와 방향을 함께 보세요';
   if (/(소드|판단|결정|갈등)/.test(normalized)) return '칼날(판단의 교차로)을 따라 사실과 해석을 분리해보세요';
   if (/(펜타클|현실|재정|안정)/.test(normalized)) return '토대(현실의 바닥)를 따라 지속 가능성을 먼저 점검하세요';
   return '핵심 신호를 기준으로 근거와 실행 순서를 먼저 정리해보세요';
+}
+
+function inferKeywordValence(keyword = '') {
+  const k = String(keyword || '').trim();
+  if (/(불안|갈등|두려|모호|혼란|집착|권태|소모|피로|지연|상실|분리|단절|망설|흔들|걱정|긴장|충돌|압박|위기|혼돈)/.test(k)) return 'negative';
+  return 'positive';
 }
 
 function inferTarotRiskBand({ cardName = '', focus = '', orientation = 'upright', context = '' }) {
@@ -2721,9 +2734,10 @@ function buildUnifiedInterpretationNarrative({
   const empathyLine = isYesNo
     ? buildEmpathyLeadLine({ conclusionTone, group, context })
     : '';
+  const keywordValence = inferKeywordValence(keyword);
   const answerLine = isYesNo
     ? `답부터 말씀드리면, ${normalizedConclusion || (orientation === 'upright' ? '예, 진행하셔도 괜찮습니다.' : '아니오, 지금은 정비를 먼저 하시는 편이 좋습니다.')}`
-    : (riskBand === 'high'
+    : (riskBand === 'high' || keywordValence === 'negative'
       ? '핵심부터 말하면, 지금은 결론을 서두르지 말고 확인 단서를 먼저 모으는 편이 안전합니다.'
       : orientation === 'upright'
         ? '핵심부터 말하면, 지금은 흐름을 살려 바로 움직여볼 타이밍입니다.'
@@ -2748,9 +2762,11 @@ function buildUnifiedInterpretationNarrative({
   const reviewLine = sleepQuestion
     ? `${recheckLine} 실행 후 20분 또는 내일 아침에 잠든 속도와 컨디션 변화를 한 줄로만 남겨 보세요.`
     : `${recheckLine} 실행해보신 뒤 체감 변화를 한 줄만 기록해 두시면 다음 판단이 훨씬 정확해집니다.`;
-  const themeLine = orientation === 'upright'
-    ? `오늘의 테마는 "${keyword}" 신호를 무리 없이 이어가는 운영입니다.`
-    : `오늘의 테마는 "${keyword}" 신호에서 과속을 줄이고 정비를 앞에 두는 운영입니다.`;
+  const themeLine = orientation === 'reversed' || keywordValence === 'negative'
+    ? (keywordValence === 'negative' && orientation === 'upright'
+      ? `오늘의 테마는 "${keyword}" 신호를 먼저 확인하고 속도를 조절하는 운영입니다.`
+      : `오늘의 테마는 "${keyword}" 신호에서 과속을 줄이고 정비를 앞에 두는 운영입니다.`)
+    : `오늘의 테마는 "${keyword}" 신호를 무리 없이 이어가는 운영입니다.`;
 
   return polishTarotInterpretation([empathyLine, answerLine, themeLine, actionLine, evidenceLine, reviewLine].filter(Boolean).join(' '));
 }
@@ -2801,19 +2817,28 @@ function buildRelationshipBenchmarkCoreMessage({ card, position, orientation, sp
   const cardDirection = orientation === 'upright' ? '정방향' : '역방향';
   const keyword = card.keywords?.[0] ?? '감정';
   const positionTopic = withKoreanParticle(position.name, '은', '는');
+  const threeCardTimeRef = { 과거: '과거 관계 흐름에서', 현재: '지금 이 시점에서', 미래: '앞으로 이어질 흐름에서' }[position.name] || '이 시점에서';
   const spreadOpeners = {
     'daily-fortune': `${position.name} 카드로 오늘 연애 흐름을 조심스럽게 살펴보겠습니다.`,
     'weekly-fortune': `${position.name} 카드로 이번 주 연애 흐름의 결을 차분히 살펴보겠습니다.`,
     'monthly-fortune': `${position.name} 카드로 이번 달 연애 리듬을 점검해보겠습니다.`,
     'yearly-fortune': `${position.name} 카드로 올해 연애 흐름의 방향을 살펴보겠습니다.`,
+    'three-card': `${threeCardTimeRef} 뽑힌 ${position.name} 카드를 차분히 살펴보겠습니다.`,
     'choice-a-b': `${position.name} 카드로 관계 선택의 결을 비교해보겠습니다.`,
     'celtic-cross': `${position.name} 카드가 관계 서사에서 어떤 역할을 하는지 먼저 보겠습니다.`,
     'relationship-recovery': `${position.name} 카드로 관계 회복의 현재 신호를 먼저 확인해보겠습니다.`,
     default: `${position.name} 카드로 현재 연애 흐름을 차분히 살펴보겠습니다.`
   };
-  const signalLine = orientation === 'upright'
-    ? `${card.nameKo}의 "${keyword}" 신호가 열려 있어 오늘 관계 흐름을 부드럽게 풀어가기 좋은 타이밍입니다.`
-    : `${card.nameKo}의 "${keyword}" 신호가 예민해 보여, 오늘은 결론보다 감정 온도를 먼저 맞추는 편이 좋겠습니다.`;
+  const signalValence = inferKeywordValence(keyword);
+  const signalLine = (() => {
+    if (orientation === 'upright' && signalValence === 'negative') {
+      return `${card.nameKo}의 "${keyword}" 신호가 민감하게 작동하고 있어, 오늘은 감정 온도를 먼저 확인하는 편이 좋겠습니다.`;
+    }
+    if (orientation === 'upright') {
+      return `${card.nameKo}의 "${keyword}" 신호가 열려 있어 오늘 관계 흐름을 부드럽게 풀어가기 좋은 타이밍입니다.`;
+    }
+    return `${card.nameKo}의 "${keyword}" 신호가 예민해 보여, 오늘은 결론보다 감정 온도를 먼저 맞추는 편이 좋겠습니다.`;
+  })();
   const closeLine = position.name === '행동 조언'
     ? '오늘 바로 실천할 짧은 대화 문장 1개만 정해도 체감이 달라질 수 있습니다.'
     : `${positionTopic} 과하게 해석하기보다 오늘 실제 반응을 차분히 확인해보는 것이 중요합니다.`;
@@ -2925,9 +2950,29 @@ function buildRelationshipBenchmarkInterpretation({ card, position, orientation,
   const realityLine = (positionLabel === '행동 조언' || /(조언|결과)/.test(positionLabel))
     ? '상대 반응을 미리 결론 내리기보다, 오늘 주고받는 실제 반응 한 가지를 기준으로 다음 대화를 정해보세요.'
     : '관계 해석은 추측보다 오늘 오간 말과 반응 같은 관찰 가능한 단서를 기준으로 잡는 편이 정확합니다.';
-  const actionLine = (positionLabel === '행동 조언' || /(조언|결과)/.test(positionLabel))
-    ? '실행 문장: "내 마음은 이렇고, 나는 이렇게 맞춰가고 싶어"처럼 짧고 분명하게 전달해보세요.'
-    : '실행 문장: 오늘 대화에서는 결론을 내리기보다 확인 질문 1개만 먼저 건네보세요.';
+  const actionLine = (() => {
+    if (positionLabel === '행동 조언' || /(조언|결과)/.test(positionLabel)) {
+      return '실행 문장: "내 마음은 이렇고, 나는 이렇게 맞춰가고 싶어"처럼 짧고 분명하게 전달해보세요.';
+    }
+    if (/(과거|배경)/.test(positionLabel)) {
+      return open
+        ? '실행 문장: 오늘은 과거 패턴에서 반복되는 반응 1개를 알아채고, 다르게 대응할 방식을 1줄로 적어보세요.'
+        : '실행 문장: 오늘은 과거 패턴에서 비롯된 과잉 반응을 1개 발견하고, 속도를 낮추는 신호로 삼아보세요.';
+    }
+    if (/(현재|지금|상황)/.test(positionLabel)) {
+      return open
+        ? '실행 문장: 오늘 대화에서 감정 1개와 요청 1개를 분리해 짧게 전달해보세요.'
+        : '실행 문장: 오늘은 결론을 내리기보다 상대의 말을 확인 질문 1개로만 받아보세요.';
+    }
+    if (/(미래|방향)/.test(positionLabel)) {
+      return open
+        ? '실행 문장: 앞으로 관계에서 지키고 싶은 기준 1개를 오늘 명확하게 정해보세요.'
+        : '실행 문장: 오늘은 관계 방향을 결정하기보다 지금 가장 불편한 신호 1개만 먼저 확인해보세요.';
+    }
+    return open
+      ? '실행 문장: 오늘 대화에서 감정 1개와 요청 1개를 분리해 짧게 전달해보세요.'
+      : '실행 문장: 오늘 대화에서는 결론을 내리기보다 확인 질문 1개만 먼저 건네보세요.';
+  })();
   return polishTarotInterpretation([relationshipLine, realityLine, actionLine].join(' '));
 }
 

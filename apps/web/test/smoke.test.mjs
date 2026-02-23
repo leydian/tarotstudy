@@ -45,4 +45,6 @@ test('Chat and card views expose export controls', () => {
   assert.equal(spreadsSource.includes('PDF 내보내기'), true);
   assert.equal(exportSource.includes('실행 체크리스트'), true);
   assert.equal(exportSource.includes('카드 근거'), true);
+  assert.equal(chatSource.includes('chat-workbench'), true);
+  assert.equal(chatSource.includes('chat-column-sidebar'), true);
 });

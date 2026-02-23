@@ -60,7 +60,7 @@ export function buildReadingModel({
     detailTurns.push({
       speaker: 'tarot',
       purpose: 'detail',
-      text: `${position}에서는 ${cardName} ${orientation} 카드(${keyword})가 기준으로 작동합니다.`
+      text: `${position} 자리에서 ${cardName} ${orientation} 카드가 나왔습니다.`
     });
     if (item?.coreMessage) {
       detailTurns.push({

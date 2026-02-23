@@ -193,6 +193,10 @@ npm run verify:quality
 - 기본값(`QA_API_MODE=auto`): API가 살아 있지 않으면 QA 스크립트가 API를 자동 기동합니다.
 - 외부 API 강제(`QA_API_MODE=external`): `API_BASE_URL`의 API가 반드시 떠 있어야 합니다.
 - 자동 기동 비활성(`QA_API_MODE=off`): API 자동 기동 없이 즉시 실패합니다.
+- 샌드박스/권한 제한 환경(`listen EPERM`)에서는 외부 모드 사용:
+```bash
+QA_API_MODE=external API_BASE_URL=http://127.0.0.1:8787 npm run qa:learning-leader
+```
 
 ## 주요 기능
 - 카드 이미지 다중 소스 fallback (`imageSources`) + 기본 SVG fallback
@@ -243,6 +247,10 @@ curl -sS -X POST http://127.0.0.1:8787/api/spreads/choice-a-b/draw -H 'content-t
 ```bash
 pkill -f "node --watch src/index.js"
 npm run dev:api
+```
+- 로컬 bind가 막힌 실행 환경이면 QA는 외부 모드로 실행
+```bash
+QA_API_MODE=external API_BASE_URL=http://127.0.0.1:8787 npm run verify:quality
 ```
 
 ### 3) 웹 서버가 안 뜨거나 404만 나올 때

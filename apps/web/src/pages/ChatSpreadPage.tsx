@@ -5,10 +5,11 @@ import { api } from '../lib/api';
 import type { Spread, SpreadDrawResult } from '../types';
 import { TarotImage } from '../components/TarotImage';
 import { recommendSpreadForQuestion } from '../lib/spread-recommendation';
+import { recommendRandomQuestions } from '../lib/question-recommendations';
 import { buildDisplaySpreads, resolveDisplaySpreadId } from '../lib/spread-display';
 import { loadChatDrawCache, saveChatDrawCache } from '../lib/chat-draw-cache';
 import { exportReadingPdf, exportReadingTxt } from '../lib/reading-export';
-import { toCanonicalReadingLines, toDisplayLine } from '../lib/tone-render';
+import { toCanonicalChecklist, toCanonicalReadingLines, toDisplayLine } from '../lib/tone-render';
 import {
   findDrawnItemForSlot,
   toParagraphBlocks
@@ -36,12 +37,6 @@ type DialogueTurn = {
   text: string;
   dedupeKey: string;
 };
-
-const STARTER_PROMPTS = [
-  '시험 합격할 수 있을까?',
-  '이번 주 관계 흐름을 보고 싶어',
-  '올해 커리어 타이밍을 분기별로 알려줘'
-];
 
 export function ChatSpreadPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -160,6 +155,16 @@ export function ChatSpreadPage() {
     () => buildFollowupQuestions({ reading: latestReading, spread: selectedSpread }),
     [latestReading, selectedSpread]
   );
+  const starterPrompts = useMemo(
+    () => recommendRandomQuestions({
+      count: 6,
+      poolSize: 3000,
+      spreadName: selectedSpread?.name || '',
+      context: latestReading?.context || input,
+      seedKey: selectedSpread?.id || 'chat-starter'
+    }),
+    [input, latestReading?.context, selectedSpread?.id, selectedSpread?.name]
+  );
   const cardViewHref = useMemo(() => {
     const fallbackSpreadId = selectedSpread?.id || '';
     const displaySpreadId = latestReading
@@ -220,68 +225,107 @@ export function ChatSpreadPage() {
       </article>
 
       <article className="panel chat-shell chat-shell-dark">
-        <div className="chat-log" ref={logRef}>
-          {messages.length === 0 && (
-            <div className="chat-empty">
-              <p>아직 대화가 없습니다. 아래 추천 질문으로 시작해보세요.</p>
+        <div className="chat-workbench">
+          <section className="chat-column chat-column-dialog">
+            <div className="chat-log" ref={logRef}>
+              {messages.length === 0 && (
+                <div className="chat-empty">
+                  <p>아직 대화가 없습니다. 아래 추천 질문으로 시작해보세요.</p>
+                  <div className="chip-wrap">
+                    {starterPrompts.map((prompt) => (
+                      <button key={prompt} className="chip-link" onClick={() => setInput(prompt)}>{prompt}</button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {messages.map((message) => (
+                <ChatBubble
+                  key={message.id}
+                  message={message}
+                  spreads={spreads}
+                  isPending={drawMutation.isPending}
+                  onRedraw={(question) => {
+                    if (!question.trim() || drawMutation.isPending) return;
+                    setInput(question);
+                    drawMutation.mutate(question);
+                  }}
+                />
+              ))}
+            </div>
+
+            <div className="chat-composer">
+              <input
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="무엇이든 물어보세요"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    if (!input.trim() || drawMutation.isPending) return;
+                    drawMutation.mutate(input.trim());
+                  }
+                }}
+              />
+              <button
+                className="btn primary"
+                disabled={!input.trim() || drawMutation.isPending}
+                onClick={() => drawMutation.mutate(input.trim())}
+              >
+                {drawMutation.isPending ? '리딩 생성 중...' : '보내기'}
+              </button>
+            </div>
+
+            {drawMutation.isError && <p className="sub chat-error">리딩 생성에 실패했습니다. 잠시 후 다시 시도해주세요.</p>}
+          </section>
+
+          <aside className="chat-column chat-column-sidebar">
+            <article className="chat-side-card">
+              <p className="eyebrow">Current Focus</p>
+              <h4>현재 컨텍스트</h4>
+              <p className="chat-side-main">
+                {latestReading?.context?.trim() || input.trim() || '질문을 입력하면 분석 컨텍스트가 여기에 표시됩니다.'}
+              </p>
+              <p className="sub">자동 추천 스프레드: {selectedSpread.name}</p>
+              {recommendedHint && <p className="sub">추천 근거: {recommendedHint}</p>}
+            </article>
+
+            {latestReading && (
+              <article className="chat-side-card">
+                <p className="eyebrow">Action Checklist</p>
+                <h4>실행 체크리스트</h4>
+                <ul className="clean-list">
+                  {toCanonicalChecklist(latestReading).filter(Boolean).slice(0, 3).map((line, idx) => (
+                    <li key={`side-check-${idx}`}>{line}</li>
+                  ))}
+                </ul>
+              </article>
+            )}
+
+            <article className="chat-side-card">
+              <p className="eyebrow">Prompt Bank</p>
+              <h4>바로 시작 질문</h4>
               <div className="chip-wrap">
-                {STARTER_PROMPTS.map((prompt) => (
-                  <button key={prompt} className="chip-link" onClick={() => setInput(prompt)}>{prompt}</button>
+                {starterPrompts.map((prompt) => (
+                  <button key={`side-${prompt}`} className="chip-link" onClick={() => setInput(prompt)}>{prompt}</button>
                 ))}
               </div>
-            </div>
-          )}
+            </article>
 
-          {messages.map((message) => (
-            <ChatBubble
-              key={message.id}
-              message={message}
-              spreads={spreads}
-              isPending={drawMutation.isPending}
-              onRedraw={(question) => {
-                if (!question.trim() || drawMutation.isPending) return;
-                setInput(question);
-                drawMutation.mutate(question);
-              }}
-            />
-          ))}
+            {latestReading && (
+              <article className="chat-side-card">
+                <p className="eyebrow">Follow-up</p>
+                <h4>다음 질문 추천</h4>
+                <div className="chip-wrap">
+                  {suggestionQuestions.map((question) => (
+                    <button key={`follow-${question}`} className="chip-link" onClick={() => setInput(question)}>{question}</button>
+                  ))}
+                </div>
+              </article>
+            )}
+          </aside>
         </div>
-
-        <div className="chat-composer">
-          <input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="무엇이든 물어보세요"
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                if (!input.trim() || drawMutation.isPending) return;
-                drawMutation.mutate(input.trim());
-              }
-            }}
-          />
-          <button
-            className="btn primary"
-            disabled={!input.trim() || drawMutation.isPending}
-            onClick={() => drawMutation.mutate(input.trim())}
-          >
-            {drawMutation.isPending ? '리딩 생성 중...' : '보내기'}
-          </button>
-        </div>
-
-        {drawMutation.isError && <p className="sub">리딩 생성에 실패했습니다. 잠시 후 다시 시도해주세요.</p>}
       </article>
-
-      {latestReading && (
-        <article className="panel">
-          <h4>다음 질문 추천</h4>
-          <div className="chip-wrap">
-            {suggestionQuestions.map((question) => (
-              <button key={question} className="chip-link" onClick={() => setInput(question)}>{question}</button>
-            ))}
-          </div>
-        </article>
-      )}
     </section>
   );
 }
@@ -693,11 +737,13 @@ function buildFollowupQuestions({
   spread: Spread | null;
 }) {
   if (!reading || !spread) {
-    return [
-      '오늘 내 질문에서 가장 중요한 기준은 뭐야?',
-      '지금 바로 실행할 한 가지를 정해줘',
-      '이번 주 체크포인트 2개만 뽑아줘'
-    ];
+    return recommendRandomQuestions({
+      count: 3,
+      poolSize: 3000,
+      spreadName: spread?.name || '',
+      context: reading?.context || '',
+      seedKey: 'chat-followup-empty'
+    });
   }
 
   const keyword = reading.items.flatMap((item) => item.card.keywords || []).find(Boolean) || '흐름';
@@ -705,9 +751,17 @@ function buildFollowupQuestions({
     ? '정방향 우세'
     : '역방향 주의';
 
-  return [
+  const contextual = [
     `${keyword} 기준으로 오늘 행동 1개만 더 구체화해줘`,
     `${orientationBias}일 때 피해야 할 실수 2가지만 알려줘`,
     `${spread.name} 결과를 내 일정표에 넣는 방법을 말해줘`
   ];
+  const randoms = recommendRandomQuestions({
+    count: 4,
+    poolSize: 3000,
+    spreadName: spread.name,
+    context: reading.context,
+    seedKey: `${spread.id}:${reading.drawnAt}`
+  });
+  return [...contextual, ...randoms].slice(0, 6);
 }
