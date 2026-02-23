@@ -55,7 +55,14 @@ test('tarot narrative metadata is attached and guardrails stay conditional', () 
   assert.ok(['short', 'linked', 'timeline'].includes(reading.tarotPersonaMeta.narrativePreset));
   assert.ok(typeof reading.tarotPersonaMeta.evidenceCount === 'number');
   assert.ok(reading.tarotPersonaMeta.tarotPurityScore >= 90);
+  assert.equal(reading.tarotPersonaMeta.voiceProfile, 'calm-oracle');
+  assert.ok(['high', 'mid', 'low'].includes(reading.tarotPersonaMeta.storyDensity));
+  assert.ok(typeof reading.tarotPersonaMeta.symbolHits === 'number');
+  assert.ok(['scene-symbol-flow-action', 'partial'].includes(reading.tarotPersonaMeta.arcProgression));
+  assert.ok(reading.tarotPersonaMeta.symbolHits >= 1);
+  assert.equal(reading.tarotPersonaMeta.arcProgression, 'scene-symbol-flow-action');
   assert.match(reading.interpretation, /(가능성|이 흐름이라면|조건이 맞으면|지금은|우선)/);
+  assert.match(reading.interpretation, /(상징|문|빛|그림자|경계|전환|불꽃|물결|칼날|토대|왕관|등불|거울)/);
 });
 
 test('learning persona metadata is attached and keeps compact sentence count', () => {

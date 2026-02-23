@@ -35,7 +35,40 @@ const TAROT_FEAR_PATTERNS = [
   /파국/g,
   /끝장/g
 ];
-const TAROT_CONDITIONAL_CUES = /(가능성|이 흐름이라면|조건이 맞으면|지금은|우선|가까워 보입니다)/;
+const TAROT_CONDITIONAL_CUES = /(가능성|이 흐름이라면|조건이 맞으면|지금은|우선|가까워 보입니다|가까워 보임|유력|현실적인 전개)/;
+const TAROT_SCENE_CUES = /(장면|흐름|국면|막|전개|질문\(")/;
+const TAROT_SYMBOL_CUES = /(상징|문|빛|그림자|경계|전환|불꽃|물결|칼날|토대|왕관|등불|거울)/;
+const TAROT_ACTION_CUES = /(해보세요|정해보세요|점검해보세요|실행해보세요|줄여보세요|기록해보세요|관찰하세요|확인하세요|실행|행동|기준|관찰)/;
+const TAROT_SYMBOLIC_BY_SUIT = {
+  Cups: { noun: '물결', scene: '감정의 수면', hint: '정서의 경계' },
+  Wands: { noun: '불꽃', scene: '추진의 화로', hint: '속도 조절' },
+  Swords: { noun: '칼날', scene: '판단의 교차로', hint: '해석의 정확도' },
+  Pentacles: { noun: '토대', scene: '현실의 바닥', hint: '지속 가능한 운영' }
+};
+const TAROT_SYMBOLIC_BY_MAJOR = {
+  마법사: { noun: '문', scene: '시작의 문턱', hint: '의도와 실행 연결' },
+  여사제: { noun: '등불', scene: '침묵의 복도', hint: '내면 신호 확인' },
+  여황제: { noun: '토양', scene: '성장의 정원', hint: '돌봄과 확장 균형' },
+  황제: { noun: '기둥', scene: '구조의 홀', hint: '원칙과 경계 설정' },
+  교황: { noun: '경전', scene: '의미의 서가', hint: '해석 기준 정렬' },
+  연인: { noun: '교차로', scene: '선택의 정원', hint: '가치 우선순위 점검' },
+  전차: { noun: '마차', scene: '추진의 도로', hint: '속도와 방향 합치' },
+  힘: { noun: '손길', scene: '내면 제어의 마당', hint: '강도 조절' },
+  은둔자: { noun: '등불', scene: '탐색의 언덕', hint: '핵심 질문 수렴' },
+  '운명의 수레바퀴': { noun: '바퀴', scene: '전환의 광장', hint: '타이밍 판단' },
+  정의: { noun: '저울', scene: '균형의 법정', hint: '사실과 해석 분리' },
+  '매달린 사람': { noun: '경계', scene: '정지의 다리', hint: '관점 전환' },
+  죽음: { noun: '문', scene: '전환의 관문', hint: '종료와 시작 분리' },
+  절제: { noun: '물병', scene: '조율의 샘', hint: '리듬 안정화' },
+  악마: { noun: '사슬', scene: '집착의 방', hint: '반복 패턴 해체' },
+  탑: { noun: '벼락', scene: '붕괴의 성벽', hint: '완충 행동 확보' },
+  별: { noun: '빛', scene: '회복의 밤하늘', hint: '희망 근거 고정' },
+  달: { noun: '안개', scene: '불확실성의 해안', hint: '추측 절제' },
+  태양: { noun: '햇살', scene: '가시성의 들판', hint: '명확한 실행' },
+  심판: { noun: '나팔', scene: '재정렬의 광장', hint: '재평가 기준 확정' },
+  세계: { noun: '원환', scene: '완성의 원', hint: '마무리와 다음 단계 연결' },
+  바보: { noun: '발걸음', scene: '출발의 절벽', hint: '작은 시작 고정' }
+};
 
 function applyConversationalToneToLine(line = '') {
   let text = String(line || '').trim();
@@ -1901,6 +1934,7 @@ function applyTarotPersonaPipeline({
 }) {
   const preset = getTarotNarrativePreset(spreadId);
   const skipNarrativeRewrite = spreadId === 'one-card';
+  const symbolicCue = resolveTarotSymbolicCue({ cardName, focus });
   let nextCore = enforceTarotPersonaText(coreMessage);
   let nextInterpretation = enforceTarotPersonaText(interpretation);
   if (!skipNarrativeRewrite) {
@@ -1912,6 +1946,7 @@ function applyTarotPersonaPipeline({
       cardName,
       orientation,
       focus,
+      symbolicCue,
       preset,
       maxSentences: 4
     });
@@ -1923,6 +1958,7 @@ function applyTarotPersonaPipeline({
       cardName,
       orientation,
       focus,
+      symbolicCue,
       preset,
       maxSentences: preset === 'short' ? 5 : 7
     });
@@ -1941,7 +1977,11 @@ function applyTarotPersonaPipeline({
       evidenceCount: coreEvidenceCount + interpretationEvidenceCount,
       tarotPurityScore: scoreTarotPurity([guardrailCore.text, guardrailInterpretation.text].join(' ')),
       learningNaturalnessScore: scoreTarotNaturalness(guardrailInterpretation.text),
-      repetitionRisk: scoreLearningRepetitionRisk(guardrailInterpretation.text)
+      repetitionRisk: scoreLearningRepetitionRisk(guardrailInterpretation.text),
+      voiceProfile: 'calm-oracle',
+      storyDensity: preset === 'short' ? 'mid' : 'high',
+      symbolHits: countTarotSymbolSignals([guardrailCore.text, guardrailInterpretation.text].join(' ')),
+      arcProgression: detectTarotArcProgression([guardrailCore.text, guardrailInterpretation.text].join(' '))
     }
   };
 }
@@ -1968,34 +2008,39 @@ function rewriteTarotAsNarrative({
   cardName = '',
   orientation = 'upright',
   focus = '',
+  symbolicCue = '',
   preset = 'linked',
   maxSentences = 5
 }) {
   const baseSentences = splitSentences(text).filter(Boolean);
   if (!baseSentences.length) return text;
   const story = [...baseSentences];
+  const cue = symbolicCue || resolveTarotSymbolicCue({ cardName, focus });
   const sceneLead = preset === 'timeline'
-    ? `지금 질문 흐름은 ${positionName || '현재 구간'}에서 시간축으로 읽어보는 게 가장 선명합니다.`
-    : `지금 질문 장면은 ${positionName || '현재 구간'}에서 핵심 신호를 먼저 잡는 흐름입니다.`;
+    ? `지금 질문 흐름은 ${positionName || '현재 구간'}의 장면을 시간축으로 읽을 때 가장 또렷해집니다.`
+    : `지금 질문 장면은 ${positionName || '현재 구간'}에서 핵심 신호를 먼저 붙잡는 국면입니다.`;
   const contextClean = normalizeClientQuestion(context);
   const contextLine = contextClean
-    ? `질문("${contextClean}")을 기준으로 보면, 지금은 ${focus || '핵심 흐름'}을 정리하는 장면에 가깝습니다.`
+    ? `질문("${contextClean}")을 놓고 보면, 지금은 ${focus || '핵심 흐름'}을 차분히 정렬해야 하는 첫 장면입니다.`
     : sceneLead;
-  if (!story.some((line) => /(장면|흐름|질문\("|국면)/.test(line))) {
+  if (!story.some((line) => TAROT_SCENE_CUES.test(line))) {
     story.unshift(contextLine);
+  }
+  if (!story.some((line) => TAROT_SYMBOL_CUES.test(line))) {
+    story.splice(Math.min(1, story.length), 0, `${cardName || '이번 카드'}의 상징 ${cue}는 지금 해석의 중심축을 잡아줍니다.`);
   }
   if (!story.some((line) => TAROT_CONDITIONAL_CUES.test(line))) {
     story.push(orientation === 'upright'
-      ? `${cardName || '이번 카드'} 신호가 이어진다면, 작은 실행부터 시작할 가능성이 열립니다.`
-      : `${cardName || '이번 카드'} 신호를 보면, 지금은 속도를 낮추면 흔들림을 줄일 가능성이 큽니다.`);
+      ? `${cardName || '이번 카드'} 신호가 이어진다면, 근미래 전개는 유력하고 작은 실행부터 시작할 가능성이 큽니다.`
+      : `${cardName || '이번 카드'} 신호를 보면, 지금은 속도를 낮출 때 더 현실적인 전개로 정리될 가능성이 큽니다.`);
   }
   if (!story.some((line) => /(카드|근거|정방향|역방향|키워드|포지션)/.test(line))) {
     story.push(`${cardName || '이번 카드'} 카드 근거를 포지션 기준으로 다시 확인하면 해석 정확도가 올라갑니다.`);
   }
-  if (!story.some((line) => /(해보세요|정해보세요|점검해보세요|실행해보세요|줄여보세요)/.test(line))) {
+  if (!story.some((line) => TAROT_ACTION_CUES.test(line))) {
     story.push(orientation === 'upright'
-      ? '다음 장면으로 넘기기 전에 오늘 실천할 행동 1개만 정해보세요.'
-      : '다음 장면으로 넘기기 전에 오늘 줄일 소모 1개부터 정리해보세요.');
+      ? '다음 막으로 넘어가기 전에 오늘 실행 1개와 관찰 지표 1개를 나란히 기록해보세요.'
+      : '다음 막으로 넘어가기 전에 오늘 줄일 소모 1개와 완충 행동 1개를 먼저 정해보세요.');
   }
   return story.slice(0, maxSentences).join(' ');
 }
@@ -2019,13 +2064,54 @@ function enforceTarotGuardrails(text = '') {
   next = next.replace(/!{2,}/g, '.').replace(/\s{2,}/g, ' ').trim();
   if (!TAROT_CONDITIONAL_CUES.test(next)) {
     applied = true;
-    next = `${next} 지금은 조건을 하나씩 확인하며 움직이면 판단이 더 안정됩니다.`.trim();
+    next = `${next} 지금은 조건을 하나씩 확인하면서 움직이면 판단이 더 안정됩니다.`.trim();
+  }
+  const fallbackTail = '지금은 조건을 하나씩 확인하면서 움직이면 판단이 더 안정됩니다.';
+  const fallbackCount = (next.match(new RegExp(escapeRegex(fallbackTail), 'g')) || []).length;
+  if (fallbackCount > 1) {
+    applied = true;
+    next = next.replace(new RegExp(`${escapeRegex(fallbackTail)}\\s*`, 'g'), '').trim();
+    next = `${next} ${fallbackTail}`.trim();
   }
   return { text: next, applied };
 }
 
 function countTarotEvidenceSignals(text = '') {
   return (String(text || '').match(/(정방향|역방향|카드|키워드|포지션|근거|질문)/g) || []).length;
+}
+
+function countTarotSymbolSignals(text = '') {
+  return (String(text || '').match(/(상징|문|빛|그림자|경계|전환|불꽃|물결|칼날|토대|왕관|등불|거울|사슬|안개)/g) || []).length;
+}
+
+function detectTarotArcProgression(text = '') {
+  const raw = String(text || '');
+  const hasScene = TAROT_SCENE_CUES.test(raw);
+  const hasSymbol = TAROT_SYMBOL_CUES.test(raw);
+  const hasFlow = TAROT_CONDITIONAL_CUES.test(raw);
+  const hasAction = TAROT_ACTION_CUES.test(raw);
+  return hasScene && hasSymbol && hasFlow && hasAction ? 'scene-symbol-flow-action' : 'partial';
+}
+
+function resolveTarotSymbolicCue({ cardName = '', focus = '' }) {
+  const name = String(cardName || '').trim();
+  const matchMajor = TAROT_SYMBOLIC_BY_MAJOR[name];
+  if (matchMajor) return `${matchMajor.noun}(${matchMajor.scene})을 통해 ${matchMajor.hint}`;
+  const normalized = String(focus || '').toLowerCase();
+  if (/(컵|감정|연결|공감)/.test(normalized)) {
+    const cup = TAROT_SYMBOLIC_BY_SUIT.Cups;
+    return `${cup.noun}(${cup.scene})을 따라 ${cup.hint}`;
+  }
+  if (/(완드|열정|추진|행동)/.test(normalized)) {
+    const wand = TAROT_SYMBOLIC_BY_SUIT.Wands;
+    return `${wand.noun}(${wand.scene})을 따라 ${wand.hint}`;
+  }
+  if (/(소드|판단|결정|갈등)/.test(normalized)) {
+    const sword = TAROT_SYMBOLIC_BY_SUIT.Swords;
+    return `${sword.noun}(${sword.scene})을 따라 ${sword.hint}`;
+  }
+  const pentacle = TAROT_SYMBOLIC_BY_SUIT.Pentacles;
+  return `${pentacle.noun}(${pentacle.scene})을 따라 ${pentacle.hint}`;
 }
 
 function scoreTarotPurity(text = '') {

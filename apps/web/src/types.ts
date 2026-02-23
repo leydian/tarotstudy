@@ -207,6 +207,10 @@ export interface SpreadDrawResult {
       tarotPurityScore: number;
       learningNaturalnessScore: number;
       repetitionRisk: 'low' | 'mid' | 'high';
+      voiceProfile?: 'calm-oracle';
+      storyDensity?: 'high' | 'mid' | 'low';
+      symbolHits?: number;
+      arcProgression?: 'scene-symbol-flow-action' | 'partial';
     };
     learningPersonaMeta?: {
       sentenceCount: number;

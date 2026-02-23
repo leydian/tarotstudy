@@ -10,6 +10,8 @@ const variants = ['A', 'B'];
 const learningLeakPatterns = [/\[학습 리더\]/g, /학습 코칭/g, /복기 질문/g, /리딩 검증/g, /가설/g, /반례/g, /지표/g];
 const absolutePatterns = [/반드시/g, /틀림없/g, /100%/g, /운명적/g];
 const fearPatterns = [/재앙/g, /파국/g, /끝장/g];
+const symbolPatterns = /(상징|문|빛|그림자|경계|전환|불꽃|물결|칼날|토대|왕관|등불|거울|사슬|안개)/g;
+const fallbackClosing = '지금은 조건을 하나씩 확인하면서 움직이면 판단이 더 안정됩니다.';
 
 function tokenize(text = '') {
   return String(text)
@@ -41,6 +43,9 @@ function scoreTarotMessage({ coreMessage = '', interpretation = '', tarotPersona
   let evidencePresence = 1;
   let guardrailSafety = 5;
   let narrativeCoherence = 1;
+  let symbolDepth = 1;
+  let storyArc = 1;
+  let closingRepetition = 5;
   const repetition = tarotPersonaMeta?.repetitionRisk === 'low'
     ? 5
     : tarotPersonaMeta?.repetitionRisk === 'mid'
@@ -77,14 +82,37 @@ function scoreTarotMessage({ coreMessage = '', interpretation = '', tarotPersona
   const hasScene = /(장면|흐름|지금은|서사|국면)/.test(text);
   const hasConditional = /(가능성|이 흐름이라면|조건이 맞으면|우선)/.test(text);
   const hasAction = /(해보세요|정해보세요|점검해보세요|실행해보세요|줄여보세요|시작해보세요|해보시는 편이|정리해보세요)/.test(text);
+  const symbolHits = (text.match(symbolPatterns) || []).length;
+  const hasSymbol = symbolHits >= 1 || (tarotPersonaMeta?.symbolHits || 0) >= 1;
+  const fallbackHits = (text.match(new RegExp(fallbackClosing, 'g')) || []).length;
   if (tarotPersonaMeta?.narrativePreset && hasConditional) narrativeCoherence = 5;
   else if (hasScene && hasConditional && hasAction) narrativeCoherence = 5;
   else if ((hasScene && hasConditional) || (hasConditional && hasAction) || tarotPersonaMeta?.narrativePreset) narrativeCoherence = 4;
   else if (hasScene || hasConditional || hasAction) narrativeCoherence = 3;
   else issues.push('서사 구조 부족');
 
-  const avg = Number(((personaPurity + evidencePresence + guardrailSafety + narrativeCoherence + repetition) / 5).toFixed(2));
-  return { personaPurity, evidencePresence, guardrailSafety, narrativeCoherence, repetition, avg, issues };
+  if (symbolHits >= 3) symbolDepth = 5;
+  else if (symbolHits >= 2) symbolDepth = 4;
+  else if (symbolHits >= 1) symbolDepth = 3;
+  else issues.push('상징 표현 부족');
+
+  const arcMeta = tarotPersonaMeta?.arcProgression === 'scene-symbol-flow-action';
+  if (arcMeta || (hasScene && hasSymbol && hasConditional && hasAction)) storyArc = 5;
+  else if ((hasScene && hasSymbol && hasConditional) || (hasSymbol && hasConditional && hasAction)) storyArc = 4;
+  else if (hasScene && hasConditional && hasAction) storyArc = 3;
+  else issues.push('4단 서사 아크 부족');
+
+  if (fallbackHits >= 2) {
+    closingRepetition = 2;
+    issues.push('클로징 문구 반복');
+  } else if (fallbackHits === 1) {
+    closingRepetition = 5;
+  } else {
+    closingRepetition = 4;
+  }
+
+  const avg = Number(((personaPurity + evidencePresence + guardrailSafety + narrativeCoherence + repetition + symbolDepth + storyArc + closingRepetition) / 8).toFixed(2));
+  return { personaPurity, evidencePresence, guardrailSafety, narrativeCoherence, repetition, symbolDepth, storyArc, closingRepetition, avg, issues };
 }
 
 async function draw(spreadId, level, context, variant) {
@@ -107,7 +135,7 @@ async function run() {
       for (const drawItem of data.items) {
         const score = scoreTarotMessage(drawItem);
         rows.push({ spreadId: item.spreadId, level: item.level, variant, position: drawItem.position.name, score });
-        if (score.avg < 4.2 || score.personaPurity < 5 || score.guardrailSafety < 4) {
+        if (score.avg < 4.2 || score.personaPurity < 5 || score.guardrailSafety < 4 || score.storyArc < 4 || score.symbolDepth < 3 || score.closingRepetition < 3) {
           failures.push({
             spreadId: item.spreadId,
             level: item.level,
@@ -128,9 +156,12 @@ async function run() {
     acc.guardrailSafety += row.score.guardrailSafety;
     acc.narrativeCoherence += row.score.narrativeCoherence;
     acc.repetition += row.score.repetition;
+    acc.symbolDepth += row.score.symbolDepth;
+    acc.storyArc += row.score.storyArc;
+    acc.closingRepetition += row.score.closingRepetition;
     acc.avg += row.score.avg;
     return acc;
-  }, { personaPurity: 0, evidencePresence: 0, guardrailSafety: 0, narrativeCoherence: 0, repetition: 0, avg: 0 });
+  }, { personaPurity: 0, evidencePresence: 0, guardrailSafety: 0, narrativeCoherence: 0, repetition: 0, symbolDepth: 0, storyArc: 0, closingRepetition: 0, avg: 0 });
 
   const total = rows.length || 1;
   const report = {
@@ -143,6 +174,9 @@ async function run() {
       guardrailSafety: Number((summary.guardrailSafety / total).toFixed(2)),
       narrativeCoherence: Number((summary.narrativeCoherence / total).toFixed(2)),
       repetition: Number((summary.repetition / total).toFixed(2)),
+      symbolDepth: Number((summary.symbolDepth / total).toFixed(2)),
+      storyArc: Number((summary.storyArc / total).toFixed(2)),
+      closingRepetition: Number((summary.closingRepetition / total).toFixed(2)),
       avg: Number((summary.avg / total).toFixed(2))
     },
     failures: failures.length

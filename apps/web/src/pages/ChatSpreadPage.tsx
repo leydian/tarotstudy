@@ -500,10 +500,13 @@ function ChatSummaryView({ reading }: { reading: SpreadDrawResult }) {
 function buildQuickDialogFromReadingV3(reading: SpreadDrawResult) {
   const v3 = reading.readingV3;
   if (!v3) return [];
+  const evidenceLine = v3.evidence[0]
+    ? `근거 카드는 ${v3.evidence[0].cardName} ${v3.evidence[0].orientation === 'reversed' ? '역방향' : '정방향'} (${v3.evidence[0].position})이고, 상징 키워드는 ${v3.evidence[0].keyword}입니다`
+    : '';
   const turns: DialogueTurn[] = [
     buildTurn('tarot', 'bridge', v3.bridge),
     buildTurn('tarot', 'verdict', `핵심 흐름은 ${v3.verdict.sentence}`),
-    ...(v3.evidence[0] ? [buildTurn('tarot', 'evidence', `근거 카드는 ${v3.evidence[0].cardName} ${v3.evidence[0].orientation === 'reversed' ? '역방향' : '정방향'} (${v3.evidence[0].position})입니다`)] : []),
+    ...(evidenceLine ? [buildTurn('tarot', 'evidence', evidenceLine)] : []),
     buildTurn('tarot', 'caution', `주의 포인트는 ${v3.caution}`),
     buildTurn('tarot', 'action', `지금 실행 기준은 ${v3.action.now}`),
     buildTurn('learning', 'coach', `학습리더 팁: ${v3.action.checkin}`)
@@ -686,7 +689,7 @@ function buildQuickDialog(
   const turns: DialogueTurn[] = [
     buildTurn('tarot', 'bridge', bridge),
     buildTurn('tarot', 'verdict', `핵심 흐름은 ${core}`),
-    buildTurn('tarot', 'evidence', `근거 카드는 ${evidence}`),
+    buildTurn('tarot', 'evidence', `근거 카드는 ${evidence}이고, 상징 단서는 첫 카드 키워드를 중심으로 읽습니다`),
     buildTurn('tarot', 'caution', `주의 포인트는 ${caution}`),
     buildTurn('tarot', 'action', `지금 실행 기준은 ${action}`),
     buildTurn('learning', 'coach', learningGuide)
@@ -708,34 +711,41 @@ function buildSectionDialog(line: string, sectionTitle: string, index = 0) {
 function buildDialogFromLines(lines: string[], sectionTitle: string) {
   const turns: DialogueTurn[] = [];
   let learningCount = 0;
+  let tarotCount = 0;
   lines.forEach((line, lineIdx) => {
     buildSectionDialog(line, sectionTitle, lineIdx).forEach((turn) => {
       if (!turn.dedupeKey) return;
-      if (turn.speaker === 'learning' && learningCount >= 1) return;
+      if (turn.speaker === 'learning' && learningCount >= 2) return;
+      if (turn.speaker === 'learning' && tarotCount < 4) return;
       turns.push(turn);
       if (turn.speaker === 'learning') learningCount += 1;
+      if (turn.speaker === 'tarot') tarotCount += 1;
     });
   });
-  return dedupeTurns(turns);
+  return rebalanceDialogueMix(dedupeTurns(turns));
 }
 
 function maybeBuildLearningHint(text: string, sectionTitle: string, lineIndex: number, chunkIndex: number) {
   const joined = `${sectionTitle} ${text}`;
   const isActionBlock = /실행|행동|루틴|체크|점검|복기|우선순위|가이드|정리/.test(joined);
+  const isRiskBlock = /주의|리스크|소모|충돌|지연|불안|조절|과열|경계/.test(joined);
   const shouldShow = isActionBlock ? lineIndex % 2 === 0 && chunkIndex === 0 : lineIndex % 4 === 0 && chunkIndex === 0;
   if (!shouldShow) return null;
   const noun = extractPrimaryNoun(joined);
-  if (/주의|리스크|소모|충돌|지연|불안|조절/.test(joined)) {
+  if (isRiskBlock) {
     return buildTurn('learning', 'coach', `${noun}는 오늘 15분 점검 후 '맞음/어긋남'을 1줄로 기록하고 내일 같은 기준으로 다시 비교해요`);
   }
   if (isActionBlock) {
     return buildTurn('learning', 'coach', `${noun}는 25분 실행 + 5분 기록 1세트로 진행하고, 완료율(%) 숫자 1개를 남겨요`);
   }
-  return buildTurn('learning', 'coach', '핵심 문장 1줄, 근거 카드 1장, 다음 행동 1개를 함께 적어두면 복기 정확도가 올라가요');
+  return null;
 }
 
 function buildTurn(speaker: DialogueSpeaker, purpose: DialoguePurpose, text: string): DialogueTurn {
-  const normalized = softenLine(text);
+  const voiceApplied = speaker === 'tarot'
+    ? applyTarotStoryVoice(compactLine(text), purpose)
+    : compactLine(text);
+  const normalized = softenLine(voiceApplied);
   return {
     speaker,
     purpose,
@@ -750,6 +760,18 @@ function dedupeTurns(turns: DialogueTurn[]) {
     if (!turn.dedupeKey) return false;
     if (seen.has(turn.dedupeKey)) return false;
     seen.add(turn.dedupeKey);
+    return true;
+  });
+}
+
+function rebalanceDialogueMix(turns: DialogueTurn[]) {
+  const tarotCount = turns.filter((turn) => turn.speaker === 'tarot').length;
+  const learningCap = Math.min(2, Math.max(1, Math.floor(tarotCount / 4)));
+  let learningCount = 0;
+  return turns.filter((turn) => {
+    if (turn.speaker !== 'learning') return true;
+    if (learningCount >= learningCap) return false;
+    learningCount += 1;
     return true;
   });
 }
@@ -771,8 +793,8 @@ function extractPrimaryNoun(text: string) {
 
 function buildTarotBridge(context: string) {
   const q = String(context || '').trim();
-  if (!q) return '지금 마음이 어디에 머무는지부터 같이 확인해볼게요.';
-  return `질문 맥락을 보면 "${q}"가 가장 크게 걸려 있네요. 그 고민 충분히 공감돼요, 흐름을 차분히 같이 볼게요.`;
+  if (!q) return '지금 마음이 머무는 장면부터 천천히 비춰보겠습니다. 서두르지 않고 흐름의 결을 함께 읽어볼게요.';
+  return `질문("${q}")이 마음 한가운데에 걸려 있는 장면이 보입니다. 감정의 결을 먼저 정리한 뒤, 지금 흐름이 어디로 기우는지 차분히 짚어보겠습니다.`;
 }
 
 function sanitizeDialogLine(text: string) {
@@ -788,8 +810,46 @@ function sanitizeDialogLine(text: string) {
     .replace(/\.?\s*으로 읽힙니다\.?/g, '으로 읽힙니다.')
     .replace(/지금은 흐름을 살려 실행해보실 수 있는 구간입니다\.?/g, '지금은 실행 여지가 열려 있는 구간입니다')
     .replace(/지금은 속도를 낮추고 정비를 먼저 두시는 편이 안정적입니다\.?/g, '지금은 속도를 낮추고 정비를 먼저 두는 편이 안정적입니다')
+    .replace(/이 장면에서 보면\s*이 장면에서 보면/g, '이 장면에서 보면')
+    .replace(/차분히 보면\s*차분히 보면/g, '차분히 보면')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+function applyTarotStoryVoice(text: string, purpose: DialoguePurpose) {
+  const line = String(text || '').trim();
+  if (!line) return line;
+  if (purpose === 'bridge') {
+    return /장면|흐름/.test(line)
+      ? line
+      : `지금 펼쳐진 장면을 먼저 비춰보면, ${line}`;
+  }
+  if (purpose === 'verdict') {
+    return /흐름|전개/.test(line)
+      ? `차분히 보면 ${line}`
+      : `차분히 보면 핵심 흐름은 ${line}`;
+  }
+  if (purpose === 'evidence') {
+    return /상징/.test(line)
+      ? `카드 상징을 기준으로 근거를 묶으면 ${line}`
+      : `카드 상징을 기준으로 근거를 묶으면 ${line}, 이 신호가 해석의 축이 됩니다`;
+  }
+  if (purpose === 'caution') {
+    return /주의 포인트/.test(line)
+      ? `${line} 이 구간에서는 해석 단정을 늦추는 편이 안전합니다`
+      : `주의 포인트는 ${line}`;
+  }
+  if (purpose === 'action') {
+    return /실행 기준/.test(line)
+      ? `${line} 오늘은 행동 1개와 관찰 1개만 남겨 다음 장면으로 넘겨보세요`
+      : `지금 실행 기준은 ${line}`;
+  }
+  if (purpose === 'detail') {
+    return /장면|상징|흐름|실행/.test(line)
+      ? line
+      : `이 장면에서 보면 ${line}`;
+  }
+  return line;
 }
 
 function normalizeDialogKey(text: string) {
