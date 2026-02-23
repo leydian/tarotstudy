@@ -308,7 +308,15 @@ app.get('/api/images/alerts', async (request) => {
   };
 });
 
-function performSpreadDraw({ spreadId, variantId = '', level = 'beginner', context = '', experimentVariant }) {
+function performSpreadDraw({
+  spreadId,
+  variantId = '',
+  level = 'beginner',
+  context = '',
+  experimentVariant,
+  personaGroup = '',
+  personaId = ''
+}) {
   const spread = spreadCatalog.find((item) => item.id === spreadId);
   if (!spread) {
     return { error: { status: 404, message: 'Spread not found' } };
@@ -337,7 +345,9 @@ function performSpreadDraw({ spreadId, variantId = '', level = 'beginner', conte
       orientation,
       level,
       context,
-      experimentVariant: readingExperiment
+      experimentVariant: readingExperiment,
+      personaGroup,
+      personaId
     });
     return {
       position,
@@ -550,8 +560,8 @@ function inferSpreadDomain(spread) {
 
 app.post('/api/spreads/:spreadId/draw', async (request, reply) => {
   const { spreadId } = request.params;
-  const { variantId = '', level = 'beginner', context = '', experimentVariant } = request.body || {};
-  const payload = performSpreadDraw({ spreadId, variantId, level, context, experimentVariant });
+  const { variantId = '', level = 'beginner', context = '', experimentVariant, personaGroup = '', personaId = '' } = request.body || {};
+  const payload = performSpreadDraw({ spreadId, variantId, level, context, experimentVariant, personaGroup, personaId });
   if (payload?.error) {
     reply.code(payload.error.status);
     return { message: payload.error.message };
@@ -561,8 +571,16 @@ app.post('/api/spreads/:spreadId/draw', async (request, reply) => {
 
 app.post('/api/v2/spreads/:spreadId/draw', async (request, reply) => {
   const { spreadId } = request.params;
-  const { variantId = '', level = 'beginner', context = '', experimentVariant, styleMode = '' } = request.body || {};
-  const payload = performSpreadDraw({ spreadId, variantId, level, context, experimentVariant });
+  const {
+    variantId = '',
+    level = 'beginner',
+    context = '',
+    experimentVariant,
+    styleMode = '',
+    personaGroup = '',
+    personaId = ''
+  } = request.body || {};
+  const payload = performSpreadDraw({ spreadId, variantId, level, context, experimentVariant, personaGroup, personaId });
   if (payload?.error) {
     reply.code(payload.error.status);
     return { message: payload.error.message };

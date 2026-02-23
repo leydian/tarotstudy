@@ -211,6 +211,14 @@ export interface SpreadDrawResult {
       storyDensity?: 'high' | 'mid' | 'low';
       symbolHits?: number;
       arcProgression?: 'scene-symbol-flow-action' | 'partial';
+      personaApplied?: {
+        group: 'user' | 'planner' | 'developer' | 'domain-expert';
+        id: string;
+        source: 'explicit' | 'inferred';
+      };
+      personaFitScore?: number;
+      evidenceStructureScore?: number;
+      actionClarityScore?: number;
     };
     learningPersonaMeta?: {
       sentenceCount: number;

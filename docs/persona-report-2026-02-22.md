@@ -63,3 +63,19 @@
 ## 5) 현재 리스크/주의점
 - `inferContextProfile` 내부 텍스트는 일부 도메인별로 다소 구조적 표현이 남아 있어, 추가 자연화 여지가 있습니다.
 - 학습 리더는 의도적으로 규칙적/훈련형 문장을 유지하므로, 타로 리더와 톤 차이가 크게 보이는 것은 현재 설계상 정상입니다.
+
+## 6) 2026-02-23 페르소나 확장 QA
+- 타로 리더 페르소나 검증 대상을 아래 13개로 확장:
+  - 사용자(6): `beginner`, `anxious`, `decisive`, `relationship`, `career_shift`, `study_opt`
+  - 기획자(2): `pm`, `service_planner`
+  - 개발자(2): `backend`, `frontend`
+  - 도메인 전문가(3): `counselor`, `learning_coach`, `data_analyst`
+- 평가셋 확장 파일: `scripts/tarot-reader-eval-set.json` (페르소나당 3케이스)
+- 평가기 확장 파일: `scripts/tarot-reader-quality-check.mjs`
+  - `byPersonaGroup`, `byPersonaId` 집계
+  - A-레벨 게이트(엄격): 페르소나별 평균/핵심 하한/실패율 동시 판정
+- 생성 메타 확장:
+  - `tarotPersonaMeta.personaApplied`
+  - `tarotPersonaMeta.personaFitScore`
+  - `tarotPersonaMeta.evidenceStructureScore`
+  - `tarotPersonaMeta.actionClarityScore`
