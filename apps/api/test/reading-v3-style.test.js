@@ -72,3 +72,26 @@ test('reading v3 avoids absolute expressions in core lines', () => {
   assert.equal(/(불가능|반드시|틀림없)/.test(merged), false);
 });
 
+test('reading v3 uses study-specific action for exam context', () => {
+  const result = buildReadingV3ForQa({
+    spreadId: 'one-card',
+    spreadName: '원카드',
+    items: buildItems('one-card', 4),
+    context: '시험 합격할 수 있을까?',
+    level: 'beginner'
+  });
+
+  assert.match(result.action.now, /(기출|오답|취약유형|문항|복기)/);
+});
+
+test('reading v3 bridge tone is not always heavy', () => {
+  const neutral = buildReadingV3ForQa({
+    spreadId: 'three-card',
+    spreadName: '과거-현재-미래',
+    items: buildItems('three-card', 12),
+    context: '이번 주 일정 우선순위 어떻게 잡을까?',
+    level: 'beginner'
+  });
+
+  assert.equal(/마음이 무거울 수 있어요/.test(neutral.bridge), false);
+});

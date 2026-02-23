@@ -923,9 +923,7 @@ function buildReadingV3({
   const primary = items[0];
   const primaryKeyword = primary?.card?.keywords?.[0] || '핵심 흐름';
   const normalizedContext = String(context || '').trim();
-  const bridge = normalizedContext
-    ? `"${normalizedContext}"가 가장 크게 걸려 있네요. 마음이 무거울 수 있어요. 카드 흐름을 차분히 따라가보겠습니다.`
-    : '지금 마음에 걸린 지점을 먼저 안정시키면서 카드 흐름을 차분히 따라가보겠습니다.';
+  const bridge = buildImmersiveBridge({ context: normalizedContext, signalLabel: signal.label });
 
   const verdict = buildImmersiveVerdict({
     label: signal.label,
@@ -935,6 +933,7 @@ function buildReadingV3({
   });
   const evidence = signal.topEvidence.slice(0, 3).map((entry, idx) => {
     const line = buildImmersiveEvidenceLine({
+      spreadId,
       position: entry.position,
       card: entry.card,
       orientation: entry.orientation,
@@ -1025,8 +1024,32 @@ function buildImmersiveVerdict({ label = '조건부', questionType = 'open', con
   };
 }
 
-function buildImmersiveEvidenceLine({ position = '', card = '', orientation = '정방향', keyword = '핵심', index = 0 }) {
+function buildImmersiveBridge({ context = '', signalLabel = '조건부' }) {
+  const raw = String(context || '').trim();
+  if (!raw) {
+    return signalLabel === '우세'
+      ? '지금 흐름의 강점을 놓치지 않도록, 카드 신호를 차분히 정리해보겠습니다.'
+      : '지금 걸린 지점을 먼저 정돈하면서 카드 흐름을 차분히 따라가보겠습니다.';
+  }
+  const heavy = /(불안|걱정|무섭|망|실패|떨어|불가능|압박|막막)/.test(raw);
+  if (heavy) return `"${raw}"가 크게 걸려 있네요. 부담이 클 수 있어요. 카드 흐름을 차분히 따라가보겠습니다.`;
+  return `"${raw}"를 기준으로 지금 흐름에서 가장 유효한 판단 포인트를 차분히 짚어보겠습니다.`;
+}
+
+function buildImmersiveEvidenceLine({ spreadId = '', position = '', card = '', orientation = '정방향', keyword = '핵심', index = 0 }) {
   const orientationKo = /역방향/.test(orientation) ? '역방향' : '정방향';
+  if (spreadId === 'one-card') {
+    return `${position}의 ${card} ${orientationKo} 카드는 "${keyword}" 신호가 이번 질문의 핵심 기준이라는 뜻입니다.`;
+  }
+  if (spreadId === 'weekly-fortune' && /(월요일|화요일|수요일|목요일|금요일|토요일|일요일)/.test(position)) {
+    return `${position}의 ${card} ${orientationKo} 카드는 요일별 강도를 조절해야 결과 편차를 줄일 수 있다는 신호입니다.`;
+  }
+  if (spreadId === 'monthly-fortune' && /(1주차|2주차|3주차|4주차|주차)/.test(position)) {
+    return `${position}의 ${card} ${orientationKo} 카드는 주차별 우선순위를 분리해 운영할 때 판단 정확도가 높아진다는 뜻입니다.`;
+  }
+  if (spreadId === 'choice-a-b' && /(A 선택|B 선택|현재 상황)/.test(position)) {
+    return `${position}의 ${card} ${orientationKo} 카드는 선택별 단기 반응과 중기 누적효과를 분리해 보라는 기준을 제시합니다.`;
+  }
   if (/현재|상황|문제/.test(position)) {
     return `${position}의 ${card} ${orientationKo} 카드는 "${keyword}" 축이 지금 판단의 중심에 있다는 신호입니다.`;
   }
@@ -1071,6 +1094,13 @@ function buildNarrativeBlock({ spreadName = '', context = '', items = [], verdic
 function buildImmediateAction({ spreadId = '', context = '', verdict = '조건부' }) {
   if (spreadId === 'choice-a-b') return '각 선택지의 단기 비용 1개와 장기 이득 1개를 2줄로 적어 비교하세요.';
   if (/(잠|수면|sleep)/i.test(context)) return verdict === '우세' ? '지금 바로 휴식 루틴 1개를 실행하고 화면 노출을 줄이세요.' : '지금은 10분 정리 루틴 후 수면 여부를 다시 판단하세요.';
+  if (/(시험|합격|공부|학습|기출|모의고사|오답|회독|자격증)/i.test(context)) {
+    return verdict === '우세'
+      ? '기출 10문항 1세트와 오답 10분 복기를 바로 실행하고, 오늘 종료 시간을 고정하세요.'
+      : verdict === '박빙'
+        ? '취약유형 1개만 골라 기출 10문항을 풀고, 틀린 이유를 1줄씩 적어 강도를 낮춰 점검하세요.'
+        : '오늘은 범위를 줄여 취약유형 1개만 정리하고, 기출 5문항으로 감각만 확인하세요.';
+  }
   return '지금 10분 안에 끝낼 수 있는 행동 1개만 실행하세요.';
 }
 

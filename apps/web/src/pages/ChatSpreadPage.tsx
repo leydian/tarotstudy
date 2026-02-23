@@ -839,7 +839,7 @@ function buildLearningGuide(reading: SpreadDrawResult) {
 function inferVerdict(reading: SpreadDrawResult): { kind: 'yes' | 'no' | 'maybe'; label: string } {
   const v3Label = reading.readingV3?.verdict?.label;
   if (v3Label === 'yes') return { kind: 'yes', label: 'YES' };
-  if (v3Label === 'hold') return { kind: 'no', label: 'HOLD' };
+  if (v3Label === 'hold') return { kind: 'maybe', label: 'HOLD' };
   if (v3Label === 'conditional') return { kind: 'maybe', label: 'CONDITIONAL YES' };
   const summary = reading.summary;
   const raw = String(summary || '').replace(/\s+/g, ' ').trim();
