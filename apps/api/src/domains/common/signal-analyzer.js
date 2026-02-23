@@ -41,10 +41,11 @@ export function analyzeSpreadSignal(items = [], intent = 'general') {
   const topEvidence = picks.slice(0, 3).map((row) => {
     const position = row.item?.position?.name || '포지션';
     const card = row.item?.card?.nameKo || '카드';
+    const cardId = row.item?.card?.id || '';
     const keyword = row.item?.card?.keywords?.[0] || '핵심';
     const orientation = row.item?.orientation === 'upright' ? '정방향' : '역방향';
     const reason = buildSpreadEvidenceReason({ position, keyword, score: row.score, intent });
-    return { position, card, keyword, orientation, reason };
+    return { position, card, cardId, keyword, orientation, reason };
   });
 
   return { label, topEvidence };

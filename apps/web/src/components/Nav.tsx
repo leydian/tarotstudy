@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { useEffect, useState } from 'react';
+import { SyncStatusIndicator } from './SyncStatusIndicator';
 
 const links = [
   { to: '/', label: '홈' },
@@ -43,12 +44,15 @@ export function Nav() {
             </NavLink>
           ))}
         </nav>
-        <button
-          className="theme-toggle"
-          onClick={() => setTheme((prev) => (prev === 'light' ? 'dark' : 'light'))}
-        >
-          {theme === 'light' ? '다크 테마' : '라이트 테마'}
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <SyncStatusIndicator />
+          <button
+            className="theme-toggle"
+            onClick={() => setTheme((prev) => (prev === 'light' ? 'dark' : 'light'))}
+          >
+            {theme === 'light' ? '다크 테마' : '라이트 테마'}
+          </button>
+        </div>
       </div>
     </header>
   );

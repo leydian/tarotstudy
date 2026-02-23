@@ -1655,3 +1655,47 @@
     flex: 1 1 100%;
   }
 }
+
+/* Light Theme Overrides for Interpretation Area */
+:root[data-theme='light'] .reading-summary {
+  background: linear-gradient(140deg, color-mix(in srgb, var(--accent-soft) 40%, #fff), color-mix(in srgb, var(--accent-warm) 20%, #fff));
+  border-color: color-mix(in srgb, var(--brand-1) 15%, var(--line));
+}
+
+:root[data-theme='light'] .reader-block {
+  background: linear-gradient(150deg, color-mix(in srgb, var(--accent-soft) 30%, #fff), #fff);
+  color: var(--ink-0);
+  border-color: color-mix(in srgb, var(--brand-1) 12%, var(--line));
+}
+
+:root[data-theme='light'] .learning-point {
+  background: linear-gradient(145deg, color-mix(in srgb, var(--accent-warm) 20%, #fff), #fff);
+  color: var(--ink-0);
+  border-color: color-mix(in srgb, var(--brand-1) 18%, var(--line));
+}
+
+:root[data-theme='light'] .reading-coach {
+  background: linear-gradient(145deg, color-mix(in srgb, var(--accent-soft) 35%, #fff), #fff);
+  color: var(--ink-0);
+  border-color: color-mix(in srgb, var(--brand-1) 15%, var(--line));
+}
+
+:root[data-theme='light'] .reading-digest-title {
+  color: var(--brand-1);
+}
+
+:root[data-theme='light'] .reading-prose,
+:root[data-theme='light'] .coach-narrative-paragraph {
+  color: var(--ink-0);
+}
+
+:root[data-theme='light'] .coach-narrative-wrap {
+  background: color-mix(in srgb, var(--accent-soft) 15%, #fff);
+  border-color: color-mix(in srgb, var(--brand-1) 10%, var(--line));
+}
+
+:root[data-theme='light'] .natural-flow-lead,
+:root[data-theme='light'] .natural-flow-card {
+  background: #fff;
+  border-color: color-mix(in srgb, var(--brand-1) 15%, var(--line));
+}

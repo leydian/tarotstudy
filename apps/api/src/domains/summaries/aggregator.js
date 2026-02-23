@@ -124,7 +124,7 @@ function finalizeSpreadSummary({ spreadId = '', spreadName = '', items = [], con
   return applyNarrativeSummaryTone({ spreadId, summary: polished });
 }
 
-function buildSpreadDecisionBlock({ spreadName = '', items = [], context = '' }) {
+function buildSpreadDecisionBlock({ spreadName = '', items = [], context = '', userHistory = null }) {
   if (!Array.isArray(items) || !items.length) return '';
   const intent = inferYearlyIntent(context);
   const analysis = analyzeSpreadSignal(items, intent);
@@ -151,7 +151,10 @@ function buildSpreadDecisionBlock({ spreadName = '', items = [], context = '' })
       spreadName,
       context
     });
-    return `${prefix} ${entry.card} ${entry.orientation} 카드가 나왔고, ${reason}`;
+    const reviews = userHistory?.reviews || [];
+    const past = reviews.find(r => r.cardId === entry.cardId);
+    const historySuffix = past ? ` (과거 '${past.sentiment}'로 보셨던 카드입니다.)` : '';
+    return `${prefix} ${entry.card} ${entry.orientation} 카드가 나왔고, ${reason}${historySuffix}`;
   });
   return [
     `이번 리딩의 1차 판정은 ${analysis.label}이며, ${lead} ${contextHint}`.trim(),

@@ -76,6 +76,7 @@ const SPREAD_VISUAL_PRESETS: Record<string, SpreadVisualPreset> = {
 export function SpreadsPageContainer() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [viewMode, setViewMode] = useState<'recommendation' | 'library'>('recommendation');
+  const [mobileViewMode, setMobileViewMode] = useState<'grid' | 'list'>('grid');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [variantId, setVariantId] = useState<string | null>(null);
   const [context, setContext] = useState('');
@@ -434,54 +435,101 @@ export function SpreadsPageContainer() {
           </article>
         )}
 
-        <h4>스프레드 모양</h4>
-        <div
-          className={`spread-layout spread-layout-${effectiveSpreadPreset.scale} ${useStackedSpreadMeta ? 'spread-layout-stacked' : 'spread-layout-side'}`}
-          style={{
-            gridTemplateColumns: `repeat(${selected.layout.cols}, minmax(${effectiveSpreadPreset.minColWidth}px, 1fr))`,
-            gridTemplateRows: `repeat(${selected.layout.rows}, ${effectiveSpreadPreset.rowHeight}px)`
-          }}
-        >
-          {selected.layout.slots.map((slot, idx) => (
-            (() => {
-              const drawn = findDrawnItemForSlot(drawItems, slot);
-
-              return (
-                <div
-                  key={`${slot.position}-${idx}`}
-                  className={`spread-card ${drawn ? 'spread-card-drawn' : ''}`}
-                  style={{
-                    gridColumn: String(slot.col),
-                    gridRow: String(slot.row),
-                    transform: slot.rotate ? `rotate(${slot.rotate}deg)` : 'none'
-                  }}
-                  title={slot.position}
-                >
-                  <span className="spread-slot-index">{idx + 1}</span>
-                  {drawn ? (
-                    <Link to={`/cards/${drawn.card.id}`} className="spread-slot-link spread-slot-link-drawn" title={`${drawn.card.nameKo} 상세 보기`}>
-                      <TarotImage
-                        src={drawn.card.imageUrl}
-                        sources={drawn.card.imageSources}
-                        cardId={drawn.card.id}
-                        alt={drawn.card.nameKo}
-                        className={`spread-slot-thumb ${drawn.orientation === 'reversed' ? 'card-reversed' : ''}`}
-                        loading="lazy"
-                      />
-                      <span className="spread-slot-meta">
-                        <span className="spread-slot-position">{slot.position}</span>
-                        <strong className="spread-slot-name">{drawn.card.nameKo}</strong>
-                        <span className="spread-slot-orientation">{drawn.orientation === 'reversed' ? '역방향' : '정방향'}</span>
-                      </span>
-                    </Link>
-                  ) : (
-                    <span className="spread-slot-position spread-slot-position-empty">{slot.position}</span>
-                  )}
-                </div>
-              );
-            })()
-          ))}
+        <div className="history-header" style={{ alignItems: 'baseline' }}>
+          <h4>스프레드 모양</h4>
+          <div className="chip-wrap mobile-view-toggle">
+            <button
+              className={`chip-link ${mobileViewMode === 'grid' ? 'chip-on' : ''}`}
+              onClick={() => setMobileViewMode('grid')}
+            >
+              모양으로
+            </button>
+            <button
+              className={`chip-link ${mobileViewMode === 'list' ? 'chip-on' : ''}`}
+              onClick={() => setMobileViewMode('list')}
+            >
+              리스트로
+            </button>
+          </div>
         </div>
+
+        {mobileViewMode === 'list' ? (
+          <div className="stack spread-list-view" style={{ margin: '1rem 0' }}>
+            {(activeVariant?.positions ?? selected?.positions ?? []).map((pos, idx) => {
+              const drawn = findDrawnItemForSlot(drawItems, { position: pos.name });
+              return (
+                <article key={`mobile-list-${pos.name}`} className="result-item" style={{ padding: '12px' }}>
+                  <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                    <span className="badge" style={{ minWidth: '24px', textAlign: 'center' }}>{idx + 1}</span>
+                    <div style={{ flex: 1 }}>
+                      <p style={{ margin: 0 }}><strong>{pos.name}</strong></p>
+                      {drawn ? (
+                        <p style={{ margin: '4px 0 0', color: 'var(--brand-1)' }}>
+                          {drawn.card.nameKo} · {drawn.orientation === 'reversed' ? '역방향' : '정방향'}
+                        </p>
+                      ) : (
+                        <p className="sub" style={{ margin: '2px 0 0' }}>{pos.meaning}</p>
+                      )}
+                    </div>
+                    {drawn && (
+                      <Link to={`/cards/${drawn.card.id}`}>
+                        <TarotImage src={drawn.card.imageUrl} sources={drawn.card.imageSources} cardId={drawn.card.id} alt={drawn.card.nameKo} className="spread-slot-thumb" style={{ width: '48px', height: '72px' }} />
+                      </Link>
+                    )}
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        ) : (
+          <div
+            className={`spread-layout spread-layout-${effectiveSpreadPreset.scale} ${useStackedSpreadMeta ? 'spread-layout-stacked' : 'spread-layout-side'}`}
+            style={{
+              gridTemplateColumns: `repeat(${selected.layout.cols}, minmax(${effectiveSpreadPreset.minColWidth}px, 1fr))`,
+              gridTemplateRows: `repeat(${selected.layout.rows}, ${effectiveSpreadPreset.rowHeight}px)`
+            }}
+          >
+            {selected.layout.slots.map((slot, idx) => (
+              (() => {
+                const drawn = findDrawnItemForSlot(drawItems, slot);
+
+                return (
+                  <div
+                    key={`${slot.position}-${idx}`}
+                    className={`spread-card ${drawn ? 'spread-card-drawn' : ''}`}
+                    style={{
+                      gridColumn: String(slot.col),
+                      gridRow: String(slot.row),
+                      transform: slot.rotate ? `rotate(${slot.rotate}deg)` : 'none'
+                    }}
+                    title={slot.position}
+                  >
+                    <span className="spread-slot-index">{idx + 1}</span>
+                    {drawn ? (
+                      <Link to={`/cards/${drawn.card.id}`} className="spread-slot-link spread-slot-link-drawn" title={`${drawn.card.nameKo} 상세 보기`}>
+                        <TarotImage
+                          src={drawn.card.imageUrl}
+                          sources={drawn.card.imageSources}
+                          cardId={drawn.card.id}
+                          alt={drawn.card.nameKo}
+                          className={`spread-slot-thumb ${drawn.orientation === 'reversed' ? 'card-reversed' : ''}`}
+                          loading="lazy"
+                        />
+                        <span className="spread-slot-meta">
+                          <span className="spread-slot-position">{slot.position}</span>
+                          <strong className="spread-slot-name">{drawn.card.nameKo}</strong>
+                          <span className="spread-slot-orientation">{drawn.orientation === 'reversed' ? '역방향' : '정방향'}</span>
+                        </span>
+                      </Link>
+                    ) : (
+                      <span className="spread-slot-position spread-slot-position-empty">{slot.position}</span>
+                    )}
+                  </div>
+                );
+              })()
+            ))}
+          </div>
+        )}
 
         {drawMutation.isError && <p>드로우 생성에 실패했습니다. 잠시 후 다시 시도해주세요.</p>}
 
