@@ -10,6 +10,7 @@ import { buildDisplaySpreads, resolveDisplaySpreadId } from '../lib/spread-displ
 import { loadChatDrawCache, saveChatDrawCache } from '../lib/chat-draw-cache';
 import { exportReadingPdf, exportReadingTxt } from '../lib/reading-export';
 import { toCanonicalChecklist, toCanonicalReadingLines, toDisplayLine } from '../lib/tone-render';
+import { PageHero } from '../components/PageHero';
 import {
   findDrawnItemForSlot,
   toParagraphBlocks
@@ -204,41 +205,26 @@ export function ChatSpreadPage() {
   if (spreadsQuery.isError || !selectedSpread) return <p>챗봇 스프레드 데이터를 불러오지 못했습니다.</p>;
 
   return (
-    <section className="stack">
-      <article className="panel chat-top-panel">
-        <div className="chat-page-header">
-          <div>
-            <p className="badge">대화형 스프레드</p>
-            <h2>타로 챗 리딩</h2>
-            <p>질문을 분석해 스프레드를 자동 추천하고 바로 리딩합니다.</p>
-            {recommendedHint && <p className="sub">최근 추천: {recommendedHint}</p>}
-          </div>
-          <div className="chip-wrap">
-            <Link
-              className="chip-link"
-              to={cardViewHref}
-            >
-              카드뷰로 보기
-            </Link>
+    <section className="page-shell">
+      <PageHero
+        eyebrow="대화형 스프레드"
+        title="타로 챗 리딩"
+        description="질문을 분석해 스프레드를 자동 추천하고 바로 리딩합니다."
+        actions={(
+          <>
+            <Link className="btn" to={cardViewHref}>카드뷰로 보기</Link>
             {latestReading && (
               <>
-                <button
-                  className="chip-link"
-                  onClick={() => exportReadingTxt(latestReading, '챗봇 모드')}
-                >
-                  TXT 내보내기
-                </button>
-                <button
-                  className="chip-link"
-                  onClick={() => exportReadingPdf(latestReading, '챗봇 모드')}
-                >
-                  PDF 내보내기
-                </button>
+                <button className="btn" onClick={() => exportReadingTxt(latestReading, '챗봇 모드')}>TXT 내보내기</button>
+                <button className="btn" onClick={() => exportReadingPdf(latestReading, '챗봇 모드')}>PDF 내보내기</button>
               </>
             )}
-          </div>
-        </div>
+          </>
+        )}
+      />
 
+      <article className="panel chat-top-panel">
+        {recommendedHint && <p className="sub">최근 추천: {recommendedHint}</p>}
         <div className="filters spread-draw-controls">
           <select value={readingLevel} onChange={(e) => setReadingLevel(e.target.value as 'beginner' | 'intermediate')}>
             <option value="beginner">입문 리딩</option>
@@ -321,26 +307,27 @@ export function ChatSpreadPage() {
               </article>
             )}
 
-            <article className="chat-side-card">
-              <p className="eyebrow">Prompt Bank</p>
-                <h4>바로 시작 질문</h4>
-                <div className="chip-wrap">
-                  {sidebarStarterPrompts.map((prompt) => (
-                    <button key={`side-${prompt}`} className="chip-link" onClick={() => setInput(prompt)}>{prompt}</button>
-                  ))}
-                </div>
-              </article>
-
-            {latestReading && (
-              <article className="chat-side-card">
-                <p className="eyebrow">Follow-up</p>
-                <h4>다음 질문 추천</h4>
-                <div className="chip-wrap">
-                  {suggestionQuestions.map((question) => (
-                    <button key={`follow-${question}`} className="chip-link" onClick={() => setInput(question)}>{question}</button>
-                  ))}
-                </div>
-              </article>
+            {!latestReading && (
+              <>
+                <article className="chat-side-card">
+                  <p className="eyebrow">Prompt Bank</p>
+                  <h4>바로 시작 질문</h4>
+                  <div className="chip-wrap">
+                    {sidebarStarterPrompts.map((prompt) => (
+                      <button key={`side-${prompt}`} className="chip-link" onClick={() => setInput(prompt)}>{prompt}</button>
+                    ))}
+                  </div>
+                </article>
+                <article className="chat-side-card">
+                  <p className="eyebrow">Follow-up</p>
+                  <h4>다음 질문 추천</h4>
+                  <div className="chip-wrap">
+                    {suggestionQuestions.map((question) => (
+                      <button key={`follow-${question}`} className="chip-link" onClick={() => setInput(question)}>{question}</button>
+                    ))}
+                  </div>
+                </article>
+              </>
             )}
           </aside>
         </div>

@@ -391,17 +391,19 @@ export function SpreadsPage() {
             {drawMutation.isPending ? '추천 스프레드 계산 중...' : '질문 기반 자동 추천 + 리딩 생성'}
           </button>
         </div>
-        <article className="result-item spread-prompt-card">
-          <p className="eyebrow">Prompt Bank</p>
-          <h4>추천 질문</h4>
-          <div className="chip-wrap spread-prompt-bank">
-            {spreadStarterPrompts.map((prompt) => (
-              <button key={`spread-prompt-${prompt}`} className="chip-link" onClick={() => setContext(prompt)}>
-                {prompt}
-              </button>
-            ))}
-          </div>
-        </article>
+        {!activeDraw && (
+          <article className="result-item spread-prompt-card">
+            <p className="eyebrow">Prompt Bank</p>
+            <h4>추천 질문</h4>
+            <div className="chip-wrap spread-prompt-bank">
+              {spreadStarterPrompts.map((prompt) => (
+                <button key={`spread-prompt-${prompt}`} className="chip-link" onClick={() => setContext(prompt)}>
+                  {prompt}
+                </button>
+              ))}
+            </div>
+          </article>
+        )}
 
         <h4>스프레드 모양</h4>
         <div
