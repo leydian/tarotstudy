@@ -4,6 +4,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { api } from '../lib/api';
 import { recommendSpreadForQuestion } from '../lib/spread-recommendation';
 import { buildDisplaySpreads, resolveDisplaySpreadId } from '../lib/spread-display';
+import { loadChatDrawCache } from '../lib/chat-draw-cache';
 import { TarotImage } from '../components/TarotImage';
 import { getProgressUserId, useProgressStore } from '../state/progress';
 import type { SpreadDrawResult } from '../types';
@@ -80,6 +81,7 @@ export function SpreadsPage() {
   const [historyQuery, setHistoryQuery] = useState('');
   const [expandedHistory, setExpandedHistory] = useState<Record<string, boolean>>({});
   const [recommendedHint, setRecommendedHint] = useState('');
+  const [restoredDraw, setRestoredDraw] = useState<SpreadDrawResult | null>(null);
   const spreadsQuery = useQuery({ queryKey: ['spreads'], queryFn: api.getSpreads });
   const userId = getProgressUserId();
   const spreadHistory = useProgressStore((s) => s.spreadHistory);
@@ -149,6 +151,7 @@ export function SpreadsPage() {
       });
     },
     onSuccess: (data) => {
+      setRestoredDraw(null);
       setSelectedId(resolveDisplaySpreadId(data.spreadId, spreads));
       setVariantId(data.variantId ?? null);
       setDetailView('reading');
@@ -182,7 +185,8 @@ export function SpreadsPage() {
     }
   });
 
-  const drawItems = drawMutation.data?.items ?? [];
+  const activeDraw = drawMutation.data ?? restoredDraw;
+  const drawItems = activeDraw?.items ?? [];
   const emphasisKeywords = useMemo(
     () => Array.from(new Set(drawItems.flatMap((item) => item.card.keywords || []).filter(Boolean))),
     [drawItems]
@@ -201,9 +205,9 @@ export function SpreadsPage() {
     minColWidth: useStackedSpreadMeta ? Math.max(spreadVisualPreset.minColWidth, 146) : spreadVisualPreset.minColWidth
   }), [spreadVisualPreset, useStackedSpreadMeta]);
   const choiceComparison = useMemo(() => {
-    if (!drawMutation.data || selected?.id !== 'choice-a-b') return null;
-    return buildChoiceComparison(drawMutation.data);
-  }, [drawMutation.data, selected?.id]);
+    if (!activeDraw || selected?.id !== 'choice-a-b') return null;
+    return buildChoiceComparison(activeDraw);
+  }, [activeDraw, selected?.id]);
   const recentSpreadHistory = useMemo(
     () => spreadHistory.filter((item) => item.spreadId === selected?.id).slice(0, 8),
     [spreadHistory, selected?.id]
@@ -271,6 +275,29 @@ export function SpreadsPage() {
   }, [spreads]);
 
   useEffect(() => {
+    if (!spreads.length) return;
+    const fromChat = searchParams.get('fromChat') === '1';
+    if (!fromChat) return;
+    const chatDrawAt = searchParams.get('chatDrawAt') || '';
+    const rawSpreadId = searchParams.get('rawSpreadId') || '';
+    const spreadIdParam = searchParams.get('spreadId') || '';
+    const cache = loadChatDrawCache({
+      drawnAt: chatDrawAt || undefined,
+      spreadId: rawSpreadId || undefined
+    });
+    if (!cache) return;
+    const resolvedId = resolveDisplaySpreadId(cache.spreadId, spreads);
+    if (resolvedId !== spreadIdParam) return;
+    setSelectedId(resolvedId);
+    setVariantId(cache.variantId ?? null);
+    setReadingLevel(cache.level);
+    setContext(cache.context || '');
+    setDetailView('reading');
+    setRestoredDraw(cache);
+    drawMutation.reset();
+  }, [drawMutation, searchParams, spreads]);
+
+  useEffect(() => {
     if (!selected) return;
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
@@ -302,6 +329,7 @@ export function SpreadsPage() {
                 setVariantId(null);
                 setDetailView('reading');
                 setReadingLevel(spread.level);
+                setRestoredDraw(null);
                 drawMutation.reset();
               }}
             >
@@ -336,6 +364,7 @@ export function SpreadsPage() {
                   onClick={() => {
                     setVariantId(variant.id);
                     setDetailView('reading');
+                    setRestoredDraw(null);
                     drawMutation.reset();
                   }}
                 >
@@ -428,18 +457,18 @@ export function SpreadsPage() {
           </button>
         </div>
 
-        {detailView === 'reading' && !drawMutation.data && (
+        {detailView === 'reading' && !activeDraw && (
           <p className="sub">카드를 뽑으면 이 영역에 리딩 결과가 표시됩니다.</p>
         )}
 
-        {detailView === 'reading' && drawMutation.data && (
+        {detailView === 'reading' && activeDraw && (
           <>
             <h4>리딩 메시지</h4>
             {(() => {
               const insights = buildReadingInsights({
                 spreadId: selected.id,
-                context: drawMutation.data.context,
-                items: drawMutation.data.items
+                context: activeDraw.context,
+                items: activeDraw.items
               });
               return (
                 <article className="result-item reading-insights">
@@ -472,14 +501,14 @@ export function SpreadsPage() {
                 <h5 className="reading-block-title">타로 리더 종합 리딩</h5>
                 <UnifiedSummaryView
                   spreadId={selected.id}
-                  summary={drawMutation.data.summary}
+                  summary={activeDraw.summary}
                   keywords={emphasisKeywords}
                 />
               </article>
               <article className="result-item reading-coach">
                 <h5 className="reading-block-title">종합 학습 내역</h5>
                 <NaturalFlowView
-                  blocks={buildLearningDigest(drawMutation.data.items).map((line) => {
+                  blocks={buildLearningDigest(activeDraw.items).map((line) => {
                     const digest = splitDigestLine(line);
                     return digest.body || line;
                   })}
@@ -490,11 +519,11 @@ export function SpreadsPage() {
               </article>
             </div>
 
-            {selected.id === 'three-card' && drawMutation.data.items.length === 3 && (
+            {selected.id === 'three-card' && activeDraw.items.length === 3 && (
               <article className="result-item timeline-wrap">
                 <h5>상황-행동-결과 타임라인</h5>
                 <div className="timeline-grid">
-                  {drawMutation.data.items.map((item, idx) => (
+                  {activeDraw.items.map((item, idx) => (
                     <div key={`timeline-${item.position.name}-${idx}`} className="timeline-step">
                       <p className="sub">{item.position.name}</p>
                       <p><strong>{item.card.nameKo}</strong> · {item.orientation === 'reversed' ? '역방향' : '정방향'}</p>
@@ -531,7 +560,7 @@ export function SpreadsPage() {
             )}
 
             <div className="stack">
-              {drawMutation.data.items.map((item) => (
+              {activeDraw.items.map((item) => (
                 <article key={`${item.position.name}-${item.card.id}`} className="result-item spread-reading-item">
                   <div className="tarot-row">
                     <TarotImage
@@ -574,7 +603,7 @@ export function SpreadsPage() {
                           cardName: item.card.nameKo,
                           orientation: item.orientation,
                           keywords: item.card.keywords || [],
-                          questionContext: drawMutation.data.context || '',
+                          questionContext: activeDraw.context || '',
                           tarotNarrative: mergeTarotMessage(item.coreMessage, item.interpretation)
                         }}
                       />

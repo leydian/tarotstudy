@@ -7,6 +7,7 @@ import { TarotImage } from '../components/TarotImage';
 import { normalizeDisplayText } from './spreads-presenters';
 import { recommendSpreadForQuestion } from '../lib/spread-recommendation';
 import { buildDisplaySpreads, resolveDisplaySpreadId } from '../lib/spread-display';
+import { saveChatDrawCache } from '../lib/chat-draw-cache';
 import {
   findDrawnItemForSlot,
   parseMonthlySummary,
@@ -105,6 +106,7 @@ export function ChatSpreadPage() {
     },
     onSuccess: (payload, question) => {
       setSelectedSpreadId(resolveDisplaySpreadId(payload.spreadId, spreads));
+      saveChatDrawCache(payload);
       setMessages((prev) => [
         ...prev,
         { id: `u-${Date.now()}-${prev.length}`, role: 'user', type: 'text', text: question },
@@ -130,6 +132,18 @@ export function ChatSpreadPage() {
     () => buildFollowupQuestions({ reading: latestReading, spread: selectedSpread }),
     [latestReading, selectedSpread]
   );
+  const cardViewHref = useMemo(() => {
+    const fallbackSpreadId = selectedSpread?.id || '';
+    const displaySpreadId = latestReading
+      ? resolveDisplaySpreadId(latestReading.spreadId, spreads)
+      : fallbackSpreadId;
+    const level = latestReading?.level ?? readingLevel;
+    const drawContext = latestReading?.context ?? input;
+    const extra = latestReading
+      ? `&fromChat=1&chatDrawAt=${encodeURIComponent(latestReading.drawnAt)}&rawSpreadId=${encodeURIComponent(latestReading.spreadId)}`
+      : '';
+    return `/spreads?spreadId=${encodeURIComponent(displaySpreadId)}&level=${level}&context=${encodeURIComponent(drawContext)}${extra}`;
+  }, [input, latestReading, readingLevel, selectedSpread?.id, spreads]);
 
   if (spreadsQuery.isLoading) return <p>챗봇 스프레드를 불러오는 중...</p>;
   if (spreadsQuery.isError || !selectedSpread) return <p>챗봇 스프레드 데이터를 불러오지 못했습니다.</p>;
@@ -147,7 +161,7 @@ export function ChatSpreadPage() {
           <div className="chip-wrap">
             <Link
               className="chip-link"
-              to={`/spreads?spreadId=${encodeURIComponent(selectedSpread.id)}&level=${readingLevel}&context=${encodeURIComponent(input)}`}
+              to={cardViewHref}
             >
               카드뷰로 보기
             </Link>
@@ -347,7 +361,7 @@ function ChatSummaryView({ reading }: { reading: SpreadDrawResult }) {
                         <summary>{item.title}</summary>
                         <div className="chat-month-accordion-body">
                           <div className="chat-dialog-stream">
-                            {buildSectionDialog(item.body, section.title).map((turn, turnIdx) => (
+                            {buildSectionDialog(item.body, section.title, monthIdx).map((turn, turnIdx) => (
                               <article key={`${item.title}-${turnIdx}`} className={`chat-dialog-turn chat-dialog-${turn.speaker}`}>
                                 <h6 className="chat-dialog-speaker">{turn.speaker === 'tarot' ? '타로리더' : '학습리더'}</h6>
                                 <p className="chat-natural-paragraph chat-dialog-bubble">{turn.text}</p>
@@ -360,7 +374,7 @@ function ChatSummaryView({ reading }: { reading: SpreadDrawResult }) {
                   </div>
                 ) : (
                   <div className="chat-dialog-stream">
-                    {section.lines.flatMap((line) => buildSectionDialog(line, section.title)).map((turn, lineIdx) => (
+                    {section.lines.flatMap((line, lineIdx) => buildSectionDialog(line, section.title, lineIdx)).map((turn, lineIdx) => (
                       <article key={`${section.title}-${lineIdx}`} className={`chat-dialog-turn chat-dialog-${turn.speaker}`}>
                         <h6 className="chat-dialog-speaker">{turn.speaker === 'tarot' ? '타로리더' : '학습리더'}</h6>
                         <p className="chat-natural-paragraph chat-dialog-bubble">{turn.text}</p>
@@ -395,7 +409,7 @@ function ChatSummaryView({ reading }: { reading: SpreadDrawResult }) {
         <summary>상세 대화</summary>
         <div className="chat-summary-accordion-body">
           <div className="chat-dialog-stream">
-            {narrativeBubbles.flatMap((line) => buildSectionDialog(line, '상세 리딩')).map((turn, idx) => (
+            {narrativeBubbles.flatMap((line, idx) => buildSectionDialog(line, '상세 리딩', idx)).map((turn, idx) => (
               <article key={`summary-bubble-${idx}`} className={`chat-dialog-turn chat-dialog-${turn.speaker}`}>
                 <h6 className="chat-dialog-speaker">{turn.speaker === 'tarot' ? '타로리더' : '학습리더'}</h6>
                 <p className="chat-natural-paragraph chat-dialog-bubble">{turn.text}</p>
@@ -548,30 +562,37 @@ function buildQuickDialog(
   const caution = highlights.find((item) => item.title.includes('주의'))?.body || '속도를 줄이고 핵심 기준부터 고정해볼게요.';
   return [
     { speaker: 'tarot' as const, text: softenLine(`핵심 흐름부터 보면 ${core}`) },
-    { speaker: 'learning' as const, text: softenLine(`좋아요, 바로 행동으로 옮기면 ${action}`) },
     { speaker: 'tarot' as const, text: softenLine(`주의할 부분은 ${caution}`) },
-    { speaker: 'learning' as const, text: softenLine(`오늘은 ${actionPlan.today}`) },
-    { speaker: 'learning' as const, text: softenLine(`이번 주에는 ${actionPlan.thisWeek}`) },
-    { speaker: 'learning' as const, text: softenLine(`이번 달은 ${actionPlan.thisMonth}`) }
+    { speaker: 'tarot' as const, text: softenLine(`실행 기준은 ${action}`) },
+    { speaker: 'tarot' as const, text: softenLine(`흐름을 유지하려면 오늘-이번 주-이번 달 순서로 무리 없이 이어가는 게 좋아요`) },
+    { speaker: 'learning' as const, text: softenLine(`학습 팁으로는 오늘 ${actionPlan.today}`) },
+    { speaker: 'learning' as const, text: softenLine(`보완 팁만 짧게 덧붙이면 이번 주엔 ${actionPlan.thisWeek}`) }
   ];
 }
 
-function buildSectionDialog(line: string, sectionTitle: string) {
+function buildSectionDialog(line: string, sectionTitle: string, index = 0) {
   const chunks = toParagraphBlocks(line);
-  const turns = chunks.map((chunk) => {
-    const speaker = pickSpeaker(chunk, sectionTitle);
-    return {
-      speaker,
-      text: softenLine(chunk)
-    };
+  if (!chunks.length) return [{ speaker: 'tarot' as const, text: softenLine(line) }];
+
+  return chunks.flatMap((chunk, chunkIdx) => {
+    const tarotTurn = { speaker: 'tarot' as const, text: softenLine(chunk) };
+    const learningHint = maybeBuildLearningHint(chunk, sectionTitle, index, chunkIdx);
+    return learningHint ? [tarotTurn, { speaker: 'learning' as const, text: learningHint }] : [tarotTurn];
   });
-  return turns.length ? turns : [{ speaker: 'tarot' as const, text: softenLine(line) }];
 }
 
-function pickSpeaker(text: string, sectionTitle = ''): 'tarot' | 'learning' {
+function maybeBuildLearningHint(text: string, sectionTitle: string, lineIndex: number, chunkIndex: number) {
   const joined = `${sectionTitle} ${text}`;
-  if (/실행|행동|루틴|체크|점검|복기|우선순위|오늘|이번 주|이번 달|가이드/.test(joined)) return 'learning';
-  return 'tarot';
+  const isActionBlock = /실행|행동|루틴|체크|점검|복기|우선순위|가이드|정리/.test(joined);
+  const shouldShow = isActionBlock ? lineIndex % 2 === 0 && chunkIndex === 0 : lineIndex % 4 === 0 && chunkIndex === 0;
+  if (!shouldShow) return '';
+  if (/주의|리스크|소모|충돌|지연|불안|조절/.test(joined)) {
+    return softenLine('학습리더 팁: 지금은 속도보다 기준 고정이 먼저예요. 체크포인트 1개만 두고 확인해요');
+  }
+  if (isActionBlock) {
+    return softenLine('학습리더 팁: 실행은 한 번에 많이보다 작은 단위 1개를 끝내는 방식이 가장 안정적이에요');
+  }
+  return softenLine('학습리더 팁: 핵심 문장을 메모 한 줄로 남기면 다음 리딩에서 비교가 쉬워져요');
 }
 
 function softenLine(text: string) {
