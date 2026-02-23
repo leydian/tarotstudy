@@ -49,6 +49,28 @@ export function HomePage() {
   }, [completedSet, nextTarget]);
   const nextStepLabel = nextTarget ? `${nextTarget.course.stage}: ${nextTarget.lesson.title}` : '스프레드 복기';
 
+  if (coursesQuery.isLoading) {
+    return (
+      <section className="page-shell">
+        <article className="panel">
+          <p className="sub">홈 데이터를 불러오는 중...</p>
+        </article>
+      </section>
+    );
+  }
+
+  if (coursesQuery.isError) {
+    return (
+      <section className="page-shell">
+        <article className="panel">
+          <h3>홈 데이터를 불러오지 못했습니다.</h3>
+          <p className="sub">API 연결 상태를 확인한 뒤 다시 시도해주세요.</p>
+          <button className="btn" onClick={() => coursesQuery.refetch()}>다시 시도</button>
+        </article>
+      </section>
+    );
+  }
+
   return (
     <section className="page-shell">
       <PageHero
@@ -94,6 +116,7 @@ export function HomePage() {
         <article className="panel content-side">
           <h3>다음 액션</h3>
           {nextActionsQuery.isLoading && <p className="sub">추천 액션 계산 중...</p>}
+          {nextActionsQuery.isError && <p className="sub">추천 액션을 불러오지 못했습니다.</p>}
           {!nextActionsQuery.isLoading && (
             <ol className="clean-list">
               {(nextActionsQuery.data?.actions || []).slice(0, 4).map((action) => (

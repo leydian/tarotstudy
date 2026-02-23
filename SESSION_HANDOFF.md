@@ -1,7 +1,7 @@
 # 세션 인수인계 문서 (메인)
 
 작성일: 2026-02-22  
-최종 갱신: 2026-02-23 (latest 5)  
+최종 갱신: 2026-02-23 (latest 6)  
 작업 경로: `/home/eunok/studycodex`
 
 ## 1) 문서 구조
@@ -39,6 +39,32 @@
   - 시험/합격 템플릿을 면접/지원/이직/오퍼 질문까지 동일 프레임으로 확장
 
 ## 3) 금일 추가 반영 (최신)
+- Chat UI 안정화 + 라이트 테마 보정 + 추천질문 대량 랜덤화 + API 경로/타임아웃 보강 (2026-02-23 latest 6)
+  - 관련 커밋:
+    - `7d97491` Stabilize QA runtime fallback and apply magazine UI overhaul
+    - `4462c08` Revamp chat UI, harden spread integrity checks, and add large-scale question recommendations
+  - 변경 파일(핵심):
+    - `apps/web/src/lib/api.ts`
+    - `apps/web/src/lib/question-recommendations.ts`
+    - `apps/web/src/pages/ChatSpreadPage.tsx`
+    - `apps/web/src/pages/HomePage.tsx`
+    - `apps/web/src/styles/magazine.css`
+    - `apps/web/src/styles/theme.css`
+    - `apps/api/test/spreads-catalog-integrity.test.js`
+    - `apps/web/test/question-recommendations.test.mjs`
+    - `apps/web/test/smoke.test.mjs`
+    - `README.md`
+  - 핵심 변경:
+    - 챗 페이지를 `대화영역 + 우측 패널` 워크벤치 구조로 고정하고 라이트 테마에서 신 UI 스타일 누락 구간을 override
+    - 추천 질문 엔진을 대량(1000~10000) 범위형으로 전환하되 렌더 병목 없이 샘플링하도록 경량화
+    - 본문 시작 질문과 우측 시작 질문을 서로 중복되지 않게 분리(차집합 구성)
+    - API 경로 조합기 도입으로 `/api/api` 중복 경로 가능성 제거
+    - API 요청 타임아웃(기본 12초) 추가로 무한 대기 체감 완화
+    - 홈 화면 로딩/에러 상태 명시 + 재시도 버튼 추가로 "먹통" 체감 완화
+    - 스프레드 카탈로그 무결성 테스트(`id/name/완전중복/원카드류 의미중복`) 추가
+  - 상세 문서:
+    - `docs/session-handoff-2026-02-23-ui-stability-hotfix.md`
+
 - 챗 상세 본문 단일화 + 타로 코어 근본 리팩터링(반복/비문/상징오류/고위험 액션) (2026-02-23 latest 5)
   - 관련 커밋:
     - `fba6a15` Remove chat summary stream and promote detailed dialogue

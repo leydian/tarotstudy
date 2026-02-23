@@ -160,11 +160,33 @@ export function ChatSpreadPage() {
       count: 6,
       poolSize: 3000,
       spreadName: selectedSpread?.name || '',
-      context: latestReading?.context || input,
+      context: latestReading?.context || '',
       seedKey: selectedSpread?.id || 'chat-starter'
     }),
-    [input, latestReading?.context, selectedSpread?.id, selectedSpread?.name]
+    [latestReading?.drawnAt, latestReading?.context, selectedSpread?.id, selectedSpread?.name]
   );
+  const sidebarStarterPrompts = useMemo(() => {
+    const picked: string[] = [];
+    const used = new Set(starterPrompts);
+
+    for (let i = 0; i < 5 && picked.length < 6; i += 1) {
+      const batch = recommendRandomQuestions({
+        count: 12,
+        poolSize: 3000,
+        spreadName: selectedSpread?.name || '',
+        context: latestReading?.context || '',
+        seedKey: `${selectedSpread?.id || 'chat-starter'}:side:${i}`
+      });
+      for (const item of batch) {
+        if (used.has(item)) continue;
+        if (picked.includes(item)) continue;
+        picked.push(item);
+        if (picked.length >= 6) break;
+      }
+    }
+
+    return picked;
+  }, [starterPrompts, latestReading?.context, selectedSpread?.id, selectedSpread?.name]);
   const cardViewHref = useMemo(() => {
     const fallbackSpreadId = selectedSpread?.id || '';
     const displaySpreadId = latestReading
@@ -304,13 +326,13 @@ export function ChatSpreadPage() {
 
             <article className="chat-side-card">
               <p className="eyebrow">Prompt Bank</p>
-              <h4>바로 시작 질문</h4>
-              <div className="chip-wrap">
-                {starterPrompts.map((prompt) => (
-                  <button key={`side-${prompt}`} className="chip-link" onClick={() => setInput(prompt)}>{prompt}</button>
-                ))}
-              </div>
-            </article>
+                <h4>바로 시작 질문</h4>
+                <div className="chip-wrap">
+                  {sidebarStarterPrompts.map((prompt) => (
+                    <button key={`side-${prompt}`} className="chip-link" onClick={() => setInput(prompt)}>{prompt}</button>
+                  ))}
+                </div>
+              </article>
 
             {latestReading && (
               <article className="chat-side-card">

@@ -20,6 +20,7 @@ import type {
 } from '../types';
 
 const ENV_API_BASE = String(import.meta.env.VITE_API_BASE_URL || '').trim();
+const REQUEST_TIMEOUT_MS = Number(import.meta.env.VITE_API_TIMEOUT_MS || 12000);
 
 function trimSlash(value: string) {
   return value.replace(/\/+$/, '');
@@ -46,6 +47,25 @@ function buildApiBaseCandidates() {
 
 let resolvedApiBase: string | null = ENV_API_BASE ? trimSlash(ENV_API_BASE) : null;
 
+function buildRequestUrl(base: string, path: string) {
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  if (!base) return normalizedPath;
+  const normalizedBase = trimSlash(base);
+
+  if (normalizedBase.startsWith('http://') || normalizedBase.startsWith('https://')) {
+    return `${normalizedBase}${normalizedPath}`;
+  }
+
+  if (normalizedBase.startsWith('/')) {
+    if (normalizedPath.startsWith(`${normalizedBase}/`) || normalizedPath === normalizedBase) {
+      return normalizedPath;
+    }
+    return `${normalizedBase}${normalizedPath}`;
+  }
+
+  return `${normalizedBase}${normalizedPath}`;
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const hasBody = init?.body != null;
   const headers = {
@@ -56,10 +76,13 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   let lastError: unknown = null;
 
   for (const base of bases) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
     try {
-      const res = await fetch(`${base}${path}`, {
+      const res = await fetch(buildRequestUrl(base, path), {
         ...init,
-        headers
+        headers,
+        signal: controller.signal
       });
 
       if (!res.ok) {
@@ -71,9 +94,18 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
       return res.json() as Promise<T>;
     } catch (error) {
       lastError = error;
-      if (error instanceof Error && error.message.startsWith('Request failed:')) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        lastError = new Error(`Request timeout (${REQUEST_TIMEOUT_MS}ms)`);
+      }
+      if (
+        error instanceof Error &&
+        error.message.startsWith('Request failed:') &&
+        resolvedApiBase === base
+      ) {
         throw error;
       }
+    } finally {
+      clearTimeout(timeout);
     }
   }
 

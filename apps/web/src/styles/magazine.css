@@ -237,6 +237,13 @@ h4 {
     linear-gradient(180deg, color-mix(in srgb, var(--mag-paper) 94%, #121110), color-mix(in srgb, var(--mag-paper-deep) 64%, #121110));
 }
 
+:root[data-theme='light'] .chat-shell-dark {
+  background:
+    radial-gradient(980px 460px at 14% -8%, color-mix(in srgb, var(--mag-accent) 14%, transparent), transparent 68%),
+    linear-gradient(180deg, color-mix(in srgb, var(--mag-paper) 96%, #faf8f4), color-mix(in srgb, var(--mag-paper-deep) 46%, #f3eee5));
+  border-color: color-mix(in srgb, var(--mag-muted) 24%, transparent);
+}
+
 .chat-workbench {
   display: grid;
   grid-template-columns: minmax(0, 1.4fr) minmax(290px, 0.7fr);
@@ -260,6 +267,10 @@ h4 {
   gap: 10px;
   align-content: start;
   overflow: auto;
+}
+
+:root[data-theme='light'] .chat-column-sidebar {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--mag-paper) 95%, #fff), color-mix(in srgb, var(--mag-paper-deep) 36%, #f7f2e8));
 }
 
 .chat-side-card {
@@ -290,6 +301,11 @@ h4 {
   background: linear-gradient(170deg, color-mix(in srgb, var(--mag-paper) 85%, #0f0e0d), color-mix(in srgb, var(--mag-paper-deep) 45%, #121110));
 }
 
+:root[data-theme='light'] .chat-reading-bubble {
+  background: linear-gradient(170deg, color-mix(in srgb, var(--mag-paper) 96%, #fff), color-mix(in srgb, var(--mag-paper-deep) 38%, #fbf8f3));
+  border-color: color-mix(in srgb, var(--mag-accent) 26%, transparent);
+}
+
 .chat-dialog-tarot .chat-dialog-bubble {
   border-color: color-mix(in srgb, var(--mag-accent) 30%, transparent);
   background: color-mix(in srgb, var(--mag-paper) 92%, #1a1714);
@@ -307,6 +323,17 @@ h4 {
 .chat-composer input {
   background: color-mix(in srgb, var(--mag-paper) 90%, #141311);
   border-color: color-mix(in srgb, var(--mag-muted) 36%, transparent);
+  color: var(--mag-ink);
+}
+
+:root[data-theme='light'] .chat-shell-dark .chat-composer {
+  background: color-mix(in srgb, var(--mag-paper) 92%, #fbf8f2);
+  border-top-color: color-mix(in srgb, var(--mag-muted) 22%, transparent);
+}
+
+:root[data-theme='light'] .chat-shell-dark .chat-composer input {
+  background: #fffdfa;
+  border-color: color-mix(in srgb, var(--mag-muted) 30%, transparent);
   color: var(--mag-ink);
 }
 

@@ -47,4 +47,13 @@ test('Chat and card views expose export controls', () => {
   assert.equal(exportSource.includes('카드 근거'), true);
   assert.equal(chatSource.includes('chat-workbench'), true);
   assert.equal(chatSource.includes('chat-column-sidebar'), true);
+  assert.equal(chatSource.includes('sidebarStarterPrompts'), true);
+  assert.equal(chatSource.includes('const used = new Set(starterPrompts);'), true);
+});
+
+test('API client avoids /api/api path duplication and has request timeout', () => {
+  const source = read('apps/web/src/lib/api.ts');
+  assert.equal(source.includes('function buildRequestUrl'), true);
+  assert.equal(source.includes("normalizedPath.startsWith(`${normalizedBase}/`)"), true);
+  assert.equal(source.includes('const REQUEST_TIMEOUT_MS = Number(import.meta.env.VITE_API_TIMEOUT_MS || 12000);'), true);
 });

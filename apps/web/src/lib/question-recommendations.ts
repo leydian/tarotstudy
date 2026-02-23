@@ -151,26 +151,27 @@ function inferBucket(text: string): QuestionBucket {
   return 'general';
 }
 
-function buildPool(size: number, bucket: QuestionBucket, random: () => number) {
-  const templates = [
-    ...TEMPLATES_BY_BUCKET[bucket],
-    ...TEMPLATES_BY_BUCKET.general
-  ];
+function renderQuestion(
+  templates: string[],
+  spaceIndex: number,
+  random: () => number
+) {
+  const tLen = templates.length;
+  const sLen = SUBJECTS.length;
+  const wLen = TIME_WINDOWS.length;
+  const gLen = GOALS.length;
 
-  const pool = new Set<string>();
-  while (pool.size < size) {
-    const template = templates[Math.floor(random() * templates.length)];
-    const subject = SUBJECTS[Math.floor(random() * SUBJECTS.length)];
-    const time = TIME_WINDOWS[Math.floor(random() * TIME_WINDOWS.length)];
-    const goal = GOALS[Math.floor(random() * GOALS.length)];
-    pool.add(
-      template
-        .replace('{subject}', subject)
-        .replace('{time}', time)
-        .replace('{goal}', goal)
-    );
-  }
-  return [...pool];
+  const template = templates[(spaceIndex + Math.floor(random() * 97)) % tLen];
+  const subject = SUBJECTS[(spaceIndex * 7 + Math.floor(random() * 41)) % sLen];
+  const time = TIME_WINDOWS[(spaceIndex * 11 + Math.floor(random() * 29)) % wLen];
+  const goal = GOALS[(spaceIndex * 13 + Math.floor(random() * 31)) % gLen];
+
+  return template
+    .replace('{subject}', subject)
+    .replace('{time}', time)
+    .replace('{goal}', goal)
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 export function recommendRandomQuestions(options: QuestionRecommendationOptions = {}) {
@@ -186,12 +187,21 @@ export function recommendRandomQuestions(options: QuestionRecommendationOptions 
   const bucket = inferBucket(`${spreadName} ${context}`);
   const seed = hashSeed(`${seedKey}|${spreadName}|${context}|${new Date().toISOString().slice(0, 10)}`);
   const rand = mulberry32(seed);
+  const templates = [...TEMPLATES_BY_BUCKET[bucket], ...TEMPLATES_BY_BUCKET.general];
 
-  const pool = buildPool(safePoolSize, bucket, rand);
+  const targetCount = Math.max(1, Math.min(12, Math.floor(count)));
   const picked = new Set<string>();
-  while (picked.size < count && picked.size < pool.length) {
-    const next = pool[Math.floor(rand() * pool.length)];
-    picked.add(next);
+  const maxAttempts = Math.max(targetCount * 18, 72);
+
+  for (let i = 0; i < maxAttempts && picked.size < targetCount; i += 1) {
+    const spaceIndex = Math.floor(rand() * safePoolSize) + i;
+    picked.add(renderQuestion(templates, spaceIndex, rand));
+  }
+
+  if (picked.size < targetCount) {
+    for (let i = 0; i < templates.length && picked.size < targetCount; i += 1) {
+      picked.add(renderQuestion(templates, i, rand));
+    }
   }
   return [...picked];
 }

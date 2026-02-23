@@ -1,7 +1,7 @@
 # 세션 인수인계 인덱스
 
 작성일: 2026-02-22  
-최종 갱신: 2026-02-23 (latest 4)
+최종 갱신: 2026-02-23 (latest 6)
 
 ## 1) 목적
 - 작업 내역을 `메인 -> 인덱스 -> 세부내역` 3계층으로 분리해 탐색성과 유지보수성을 높입니다.
@@ -25,6 +25,7 @@
 - `docs/handoff/details/docs-ops-structure-2026-02-22.md`
 
 ## 4) 주제별 빠른 이동
+- Chat UI 안정화 핫픽스(라이트 테마 보정/추천질문 중복제거/API 대기완화): `docs/session-handoff-2026-02-23-ui-stability-hotfix.md`
 - 말투/출력 파이프라인 정규화(`readingModel v1`, 채널 통합): `docs/session-handoff-2026-02-23-reading-model-v1-details.md`
 - 페르소나 원페이지 정책 강제(문서->런타임 정책/즉시 실패): `SESSION_HANDOFF.md`
 - 페르소나 원페이지 운영가이드(상세): `docs/persona-onepager.md`
