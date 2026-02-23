@@ -367,12 +367,42 @@ function buildSummaryNaturalBlocks({ spreadId, summary }: { spreadId: string; su
       ].filter(Boolean);
     }
   }
+  if (spreadId === 'daily-fortune' || spreadId === 'three-card') {
+    return splitDailySummaryIntoBlocks(summary);
+  }
   const sections = String(summary || '')
     .split(/\n\n+/)
     .map((line) => line.trim())
     .filter(Boolean)
     .map((line) => line.replace(/^[가-힣A-Za-z0-9·\-\s()]{1,18}:\s*/g, ''));
   return sections.length ? sections : toParagraphBlocks(summary);
+}
+
+function splitDailySummaryIntoBlocks(summary: string) {
+  const compact = String(summary || '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!compact) return [];
+
+  const seededByParagraph = compact
+    .split(/\n\n+/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => line.replace(/^[가-힣A-Za-z0-9·\-\s()]{1,18}:\s*/g, ''));
+
+  if (seededByParagraph.length >= 2) return seededByParagraph;
+
+  const sentences = compact
+    .split(/(?<=[.!?])\s+/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  if (sentences.length <= 2) return toParagraphBlocks(summary);
+
+  const grouped: string[] = [];
+  for (let i = 0; i < sentences.length; i += 2) {
+    grouped.push(sentences.slice(i, i + 2).join(' ').trim());
+  }
+  return grouped.filter(Boolean);
 }
 
 export function NaturalFlowView({
