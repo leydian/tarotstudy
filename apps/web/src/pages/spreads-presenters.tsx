@@ -450,27 +450,64 @@ export function NaturalFlowView({
   return (
     <div className={`natural-flow-wrap ${compact ? 'natural-flow-compact' : ''}`}>
       <section className="natural-flow-lead">
-        {toParagraphBlocks(lead).map((line, idx) => (
+        {toParagraphBlocks(lead).map((line, idx) => {
+          const readable = toReadableTarotDisplay(line, compact ? 'compact' : 'normal');
+          return (
           <p key={`${keyBase}-lead-${idx}`} className="reading-prose">
-            {renderHighlightedText(line, keywords, `${keyBase}-lead-${idx}`, { tierLimits: { high: 1, mid: 1, low: 0 } })}
+            {renderHighlightedText(readable, keywords, `${keyBase}-lead-${idx}`, { tierLimits: { high: 1, mid: 1, low: 0 } })}
           </p>
-        ))}
+          );
+        })}
       </section>
       {rest.length > 0 && (
         <div className="natural-flow-grid">
           {rest.map((block, idx) => (
             <article key={`${keyBase}-card-${idx}`} className="natural-flow-card">
-              {toParagraphBlocks(block).map((line, lineIdx) => (
+              {toParagraphBlocks(block).map((line, lineIdx) => {
+                const readable = toReadableTarotDisplay(line, compact ? 'compact' : 'normal');
+                return (
                 <p key={`${keyBase}-line-${idx}-${lineIdx}`} className="reading-prose">
-                  {renderHighlightedText(line, keywords, `${keyBase}-line-${idx}-${lineIdx}`, { tierLimits: { high: 1, mid: 1, low: 0 } })}
+                  {renderHighlightedText(readable, keywords, `${keyBase}-line-${idx}-${lineIdx}`, { tierLimits: { high: 1, mid: 1, low: 0 } })}
                 </p>
-              ))}
+                );
+              })}
             </article>
           ))}
         </div>
       )}
     </div>
   );
+}
+
+function toReadableTarotDisplay(text: string, mode: 'compact' | 'normal') {
+  const plain = String(text || '')
+    .replace(/종합하면/g, '한번 모아보면')
+    .replace(/지속 가능한/g, '오래 갈 수 있는')
+    .replace(/파급효과/g, '이어질 영향')
+    .replace(/재정리/g, '다시 정리')
+    .replace(/기준 문장/g, '기준 한 줄')
+    .replace(/핵심 변수/g, '중요한 포인트')
+    .replace(/즉시 대응/g, '바로 대응')
+    .replace(/판단/g, '결정')
+    .replace(/해석/g, '뜻풀이')
+    .replace(/국면/g, '상황')
+    .replace(/전개/g, '흐름')
+    .replace(/강도/g, '세기')
+    .replace(/관찰/g, '확인')
+    .replace(/체감/g, '느낌')
+    .replace(/리스크/g, '위험')
+    .replace(/소모/g, '에너지 빠짐')
+    .replace(/입니다\./g, '이에요.')
+    .replace(/습니다\./g, '어요.')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  const sentences = plain
+    .split(/(?<=[.!?])\s+/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const maxSentences = mode === 'compact' ? 3 : 4;
+  return sentences.slice(0, maxSentences).join(' ').trim();
 }
 
 export function summarizeText(text: string, max: number) {

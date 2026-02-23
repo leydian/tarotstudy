@@ -1003,7 +1003,7 @@ function compactTarotTurn(text: string, purpose: DialoguePurpose) {
     .split(/(?<=[.!?])\s+/)
     .map((line) => line.trim())
     .filter(Boolean);
-  const maxSentences = purpose === 'detail' ? 3 : 2;
+  const maxSentences = purpose === 'detail' ? 4 : 3;
   return sentences.slice(0, maxSentences).join(' ').trim();
 }
 

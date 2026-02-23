@@ -15,7 +15,7 @@ function read(relPath) {
 test('tarot leader readability rules stay enforced in chat renderer', () => {
   const source = read('apps/web/src/pages/ChatSpreadPage.tsx');
   assert.equal(source.includes('function compactTarotTurn'), true);
-  assert.equal(source.includes("const maxSentences = purpose === 'detail' ? 3 : 2"), true);
+  assert.equal(source.includes("const maxSentences = purpose === 'detail' ? 4 : 3"), true);
   assert.equal(source.includes('raw.slice(0, maxChars)'), false, 'must not hard-cut sentence mid-way');
 });
 
@@ -27,4 +27,12 @@ test('tarot leader avoids difficult stock terms and formal endings', () => {
   });
   assert.equal(source.includes(".replace(/입니다\\./g, '이에요.')"), true);
   assert.equal(source.includes(".replace(/습니다\\./g, '어요.')"), true);
+});
+
+test('card view presenter applies same readability law', () => {
+  const source = read('apps/web/src/pages/spreads-presenters.tsx');
+  assert.equal(source.includes('function toReadableTarotDisplay'), true);
+  assert.equal(source.includes("const maxSentences = mode === 'compact' ? 3 : 4"), true);
+  assert.equal(source.includes(".replace(/판단/g, '결정')"), true);
+  assert.equal(source.includes(".replace(/해석/g, '뜻풀이')"), true);
 });
