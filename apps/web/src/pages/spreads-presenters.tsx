@@ -367,24 +367,16 @@ function buildSummaryNaturalBlocks({ spreadId, summary }: { spreadId: string; su
       ].filter(Boolean);
     }
   }
-  if (spreadId === 'daily-fortune' || spreadId === 'three-card') {
-    return splitDailySummaryIntoBlocks(summary);
-  }
-  const sections = String(summary || '')
-    .split(/\n\n+/)
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .map((line) => line.replace(/^[가-힣A-Za-z0-9·\-\s()]{1,18}:\s*/g, ''));
-  return sections.length ? sections : toParagraphBlocks(summary);
+  return splitNarrativeSummaryIntoBlocks({ spreadId, summary });
 }
 
-function splitDailySummaryIntoBlocks(summary: string) {
+function splitNarrativeSummaryIntoBlocks({ spreadId, summary }: { spreadId: string; summary: string }) {
   const compact = String(summary || '')
     .replace(/\s+/g, ' ')
     .trim();
   if (!compact) return [];
 
-  const seededByParagraph = compact
+  const seededByParagraph = String(summary || '')
     .split(/\n\n+/)
     .map((line) => line.trim())
     .filter(Boolean)
@@ -392,17 +384,52 @@ function splitDailySummaryIntoBlocks(summary: string) {
 
   if (seededByParagraph.length >= 2) return seededByParagraph;
 
+  const seededByHeading = compact
+    .split(/(?=(핵심 진단|관계 리스크|7일 행동 계획|비교 결론|실행 가이드|한 줄 테마|오늘의 테마|마지막으로|전반적으로))/g)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => line.replace(/^[가-힣A-Za-z0-9·\-\s()]{1,18}:\s*/g, ''))
+    .filter(Boolean);
+  if (seededByHeading.length >= 2) return dedupeBlocks(seededByHeading);
+
   const sentences = compact
     .split(/(?<=[.!?])\s+/)
     .map((line) => line.trim())
     .filter(Boolean);
-  if (sentences.length <= 2) return toParagraphBlocks(summary);
+  if (sentences.length <= 2) {
+    const phraseBlocks = compact
+      .split(/,\s+| 그리고 | 하지만 | 다만 | 또한 | 이어서 | 마지막으로 /g)
+      .map((line) => line.trim())
+      .filter((line) => line.length >= 12);
+    if (phraseBlocks.length >= 2) return dedupeBlocks(phraseBlocks).slice(0, 5);
+    return toParagraphBlocks(summary);
+  }
+
+  const chunkSize = spreadId === 'one-card' ? 1 : 2;
+  const maxBlocks = ({
+    'one-card': 4,
+    'daily-fortune': 4,
+    'three-card': 4,
+    'choice-a-b': 5,
+    'relationship-recovery': 5,
+    'celtic-cross': 5
+  } as Record<string, number>)[spreadId] ?? 4;
 
   const grouped: string[] = [];
-  for (let i = 0; i < sentences.length; i += 2) {
-    grouped.push(sentences.slice(i, i + 2).join(' ').trim());
+  for (let i = 0; i < sentences.length; i += chunkSize) {
+    grouped.push(sentences.slice(i, i + chunkSize).join(' ').trim());
   }
-  return grouped.filter(Boolean);
+  return dedupeBlocks(grouped).slice(0, maxBlocks);
+}
+
+function dedupeBlocks(blocks: string[]) {
+  const seen = new Set<string>();
+  return blocks.filter((line) => {
+    const key = String(line || '').replace(/\s+/g, ' ').trim();
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 export function NaturalFlowView({
