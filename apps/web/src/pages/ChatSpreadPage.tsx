@@ -378,105 +378,52 @@ function ChatBubble({
 }
 
 function ChatSummaryView({ reading }: { reading: SpreadDrawResult }) {
-  const modelQuick = buildQuickDialogFromReadingModel(reading);
   const modelDetail = buildDetailDialogFromReadingModel(reading);
-  if (modelQuick.length > 0) {
+  if (modelDetail.length > 0) {
     return (
       <section className="chat-summary-shell">
         <div className="chat-dialog-stream">
-          {modelQuick.map((turn, idx) => (
-            <article key={`model-quick-${idx}`} className={`chat-dialog-turn chat-dialog-${turn.speaker}`}>
+          {modelDetail.map((turn, idx) => (
+            <article key={`model-detail-${idx}`} className={`chat-dialog-turn chat-dialog-${turn.speaker}`}>
               <h6 className="chat-dialog-speaker">{turn.speaker === 'tarot' ? '타로리더' : '학습리더'}</h6>
               <p className="chat-natural-paragraph chat-dialog-bubble">{turn.text}</p>
             </article>
           ))}
         </div>
-        {modelDetail.length > 0 && (
-          <section className="chat-summary-accordion chat-summary-section">
-            <h6 className="chat-summary-section-title">상세 대화</h6>
-            <div className="chat-summary-accordion-body">
-              <div className="chat-dialog-stream">
-                {modelDetail.map((turn, idx) => (
-                  <article key={`model-detail-${idx}`} className={`chat-dialog-turn chat-dialog-${turn.speaker}`}>
-                    <h6 className="chat-dialog-speaker">{turn.speaker === 'tarot' ? '타로리더' : '학습리더'}</h6>
-                    <p className="chat-natural-paragraph chat-dialog-bubble">{turn.text}</p>
-                  </article>
-                ))}
-              </div>
-            </div>
-          </section>
-        )}
       </section>
     );
   }
 
   if (reading.readingV3) {
-    const quickDialog = buildQuickDialogFromReadingV3(reading);
     const detailedDialog = buildExpandedCardDialog(reading);
     return (
       <section className="chat-summary-shell">
         <div className="chat-dialog-stream">
-          {quickDialog.map((turn, idx) => (
-            <article key={`v3-quick-${idx}`} className={`chat-dialog-turn chat-dialog-${turn.speaker}`}>
+          {detailedDialog.map((turn, idx) => (
+            <article key={`v3-detail-${idx}`} className={`chat-dialog-turn chat-dialog-${turn.speaker}`}>
               <h6 className="chat-dialog-speaker">{turn.speaker === 'tarot' ? '타로리더' : '학습리더'}</h6>
               <p className="chat-natural-paragraph chat-dialog-bubble">{turn.text}</p>
             </article>
           ))}
         </div>
-        <section className="chat-summary-accordion chat-summary-section">
-          <h6 className="chat-summary-section-title">상세 대화</h6>
-          <div className="chat-summary-accordion-body">
-            <div className="chat-dialog-stream">
-              {detailedDialog.map((turn, idx) => (
-                <article key={`v3-summary-bubble-${idx}`} className={`chat-dialog-turn chat-dialog-${turn.speaker}`}>
-                  <h6 className="chat-dialog-speaker">{turn.speaker === 'tarot' ? '타로리더' : '학습리더'}</h6>
-                  <p className="chat-natural-paragraph chat-dialog-bubble">{turn.text}</p>
-                </article>
-              ))}
-            </div>
-          </div>
-        </section>
       </section>
     );
   }
 
   const canonicalLines = toCanonicalReadingLines(reading, { includeCheckin: true });
-  const quickDialog = buildQuickDialogFromCanonicalLines(reading, canonicalLines);
   const detailedDialog = buildExpandedNarrativeDialogFromLines(reading, canonicalLines, '상세 대화');
   return (
     <section className="chat-summary-shell">
       <div className="chat-dialog-stream">
-        {quickDialog.map((turn, idx) => (
-          <article key={`fallback-quick-${idx}`} className={`chat-dialog-turn chat-dialog-${turn.speaker}`}>
+        {detailedDialog.map((turn, idx) => (
+          <article key={`fallback-detail-${idx}`} className={`chat-dialog-turn chat-dialog-${turn.speaker}`}>
             <h6 className="chat-dialog-speaker">{turn.speaker === 'tarot' ? '타로리더' : '학습리더'}</h6>
             <p className="chat-natural-paragraph chat-dialog-bubble">{turn.text}</p>
           </article>
         ))}
       </div>
-      <section className="chat-summary-accordion chat-summary-section">
-        <h6 className="chat-summary-section-title">상세 대화</h6>
-        <div className="chat-summary-accordion-body">
-          <div className="chat-dialog-stream">
-            {detailedDialog.map((turn, idx) => (
-              <article key={`summary-bubble-${idx}`} className={`chat-dialog-turn chat-dialog-${turn.speaker}`}>
-                <h6 className="chat-dialog-speaker">{turn.speaker === 'tarot' ? '타로리더' : '학습리더'}</h6>
-                <p className="chat-natural-paragraph chat-dialog-bubble">{turn.text}</p>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
     </section>
   );
-}
-
-function buildQuickDialogFromReadingModel(reading: SpreadDrawResult) {
-  const turns = Array.isArray(reading.readingModel?.channel?.chatQuick?.turns)
-    ? reading.readingModel.channel.chatQuick.turns
-    : [];
-  return turns
-    .map((turn) => buildTurn(turn.speaker, turn.purpose, turn.text))
-    .filter((turn) => Boolean(turn.text));
 }
 
 function buildDetailDialogFromReadingModel(reading: SpreadDrawResult) {
@@ -567,42 +514,9 @@ function buildExpandedNarrativeDialogFromLines(reading: SpreadDrawResult, lines:
   return rebalanceDialogueMix(dedupeTurns(turns));
 }
 
-function buildQuickDialogFromReadingV3(reading: SpreadDrawResult) {
-  const v3 = reading.readingV3;
-  if (!v3) return [];
-  const canonical = toCanonicalReadingLines(reading, { includeCheckin: true });
-  const [bridge = '', verdict = '', evidence = '', caution = '', action = '', checkin = ''] = canonical;
-  const turns: DialogueTurn[] = [
-    ...(bridge ? [buildTurn('tarot', 'bridge', bridge)] : []),
-    ...(verdict ? [buildTurn('tarot', 'verdict', verdict)] : []),
-    ...(evidence ? [buildTurn('tarot', 'evidence', evidence)] : []),
-    ...(caution ? [buildTurn('tarot', 'caution', caution)] : []),
-    ...(action ? [buildTurn('tarot', 'action', action)] : []),
-    ...(checkin ? [buildTurn('learning', 'coach', checkin)] : [])
-  ];
-  return dedupeTurns(turns);
-}
-
 function compactLine(text: string) {
   const blocks = toParagraphBlocks(text);
   return blocks.join(' ');
-}
-
-function buildQuickDialogFromCanonicalLines(reading: SpreadDrawResult, lines: string[]) {
-  const fallbackLines = lines.length
-    ? lines
-    : toParagraphBlocks(reading.summary).map((line) => compactLine(line)).filter(Boolean);
-  const [bridge = '', verdict = '', evidence = '', caution = '', action = '', checkin = ''] = fallbackLines;
-  const turns: DialogueTurn[] = [
-    ...(bridge ? [buildTurn('tarot', 'bridge', bridge)] : []),
-    ...(verdict ? [buildTurn('tarot', 'verdict', verdict)] : []),
-    ...(evidence ? [buildTurn('tarot', 'evidence', evidence)] : []),
-    ...(caution ? [buildTurn('tarot', 'caution', caution)] : []),
-    ...(action ? [buildTurn('tarot', 'action', action)] : []),
-    ...(checkin ? [buildTurn('learning', 'coach', checkin)] : [])
-  ];
-  if (turns.length > 0) return dedupeTurns(turns);
-  return [buildTurn('tarot', 'detail', '리딩 메시지를 준비 중입니다. 질문을 조금 더 구체적으로 적어주시면 더 정확히 안내할게요.')];
 }
 
 function buildSectionDialog(line: string, sectionTitle: string, index = 0) {
