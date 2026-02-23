@@ -341,7 +341,7 @@ export function SpreadsPageContainer() {
         description="질문 맥락을 기준으로 스프레드를 자동 추천해 리딩합니다. 스프레드는 직접 고르지 않아도 됩니다."
       />
 
-      <div className="chip-wrap view-mode-tabs" style={{ marginBottom: '1.5rem' }}>
+      <div className="chip-wrap view-mode-tabs">
         <button
           className={`chip-link ${viewMode === 'recommendation' ? 'chip-on' : ''}`}
           onClick={() => setViewMode('recommendation')}
@@ -435,7 +435,7 @@ export function SpreadsPageContainer() {
           </article>
         )}
 
-        <div className="history-header" style={{ alignItems: 'baseline' }}>
+        <div className="history-header">
           <h4>스프레드 모양</h4>
           <div className="chip-wrap mobile-view-toggle">
             <button
@@ -454,26 +454,32 @@ export function SpreadsPageContainer() {
         </div>
 
         {mobileViewMode === 'list' ? (
-          <div className="stack spread-list-view" style={{ margin: '1rem 0' }}>
+          <div className="stack spread-list-view-container">
             {(activeVariant?.positions ?? selected?.positions ?? []).map((pos, idx) => {
               const drawn = findDrawnItemForSlot(drawItems, { position: pos.name });
               return (
-                <article key={`mobile-list-${pos.name}`} className="result-item" style={{ padding: '12px' }}>
-                  <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                    <span className="badge" style={{ minWidth: '24px', textAlign: 'center' }}>{idx + 1}</span>
-                    <div style={{ flex: 1 }}>
-                      <p style={{ margin: 0 }}><strong>{pos.name}</strong></p>
+                <article key={`mobile-list-${pos.name}`} className="result-item spread-list-item">
+                  <div className="spread-list-item-content">
+                    <span className="badge spread-list-index">{idx + 1}</span>
+                    <div className="spread-list-info">
+                      <p className="no-margin"><strong>{pos.name}</strong></p>
                       {drawn ? (
-                        <p style={{ margin: '4px 0 0', color: 'var(--brand-1)' }}>
+                        <p className="spread-list-drawn-card">
                           {drawn.card.nameKo} · {drawn.orientation === 'reversed' ? '역방향' : '정방향'}
                         </p>
                       ) : (
-                        <p className="sub" style={{ margin: '2px 0 0' }}>{pos.meaning}</p>
+                        <p className="sub no-margin">{pos.meaning}</p>
                       )}
                     </div>
                     {drawn && (
                       <Link to={`/cards/${drawn.card.id}`}>
-                        <TarotImage src={drawn.card.imageUrl} sources={drawn.card.imageSources} cardId={drawn.card.id} alt={drawn.card.nameKo} className="spread-slot-thumb" style={{ width: '48px', height: '72px' }} />
+                        <TarotImage 
+                          src={drawn.card.imageUrl} 
+                          sources={drawn.card.imageSources} 
+                          cardId={drawn.card.id} 
+                          alt={drawn.card.nameKo} 
+                          className="spread-slot-thumb spread-list-thumb-small" 
+                        />
                       </Link>
                     )}
                   </div>

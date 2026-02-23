@@ -277,6 +277,7 @@ export function ChatReadingPageContainer() {
                 className="btn primary"
                 disabled={!input.trim() || drawMutation.isPending}
                 onClick={() => drawMutation.mutate(input.trim())}
+                aria-label="질문 보내기"
               >
                 {drawMutation.isPending ? '리딩 생성 중...' : '보내기'}
               </button>
@@ -365,111 +366,72 @@ function ChatBubble({
     || null;
   const verdict = inferVerdict(reading);
   const keyQuestion = reading.context?.trim() || '질문';
+  const mainItem = reading.items[0];
 
   return (
     <div className="chat-row chat-row-assistant">
-      <article className="chat-bubble chat-bubble-assistant chat-reading-bubble">
-        {effectiveSpreadMeta && (
-          <section className="chat-spread-layout-wrap">
-            <h5 className="chat-layout-title">{effectiveSpreadMeta.name} 배열</h5>
-            <div
-              className="chat-spread-layout"
-              style={{
-                gridTemplateColumns: `repeat(${effectiveSpreadMeta.layout.cols}, minmax(86px, 1fr))`,
-                gridTemplateRows: `repeat(${effectiveSpreadMeta.layout.rows}, auto)`
-              }}
-            >
-              {effectiveSpreadMeta.layout.slots.map((slot, idx) => {
-                const drawn = findDrawnItemForSlot(reading.items, slot);
-                if (!drawn) return null;
-                return (
-                  <div
-                    key={`chat-slot-${idx}-${slot.position}`}
-                    className="chat-spread-slot"
-                    style={{
-                      gridColumn: String(slot.col),
-                      gridRow: String(slot.row),
-                      transform: slot.rotate ? `rotate(${slot.rotate}deg)` : 'none'
-                    }}
-                  >
-                    <TarotImage
-                      src={drawn.card.imageUrl}
-                      sources={drawn.card.imageSources}
-                      cardId={drawn.card.id}
-                      alt={drawn.card.nameKo}
-                      className={`chat-spread-slot-thumb ${drawn.orientation === 'reversed' ? 'card-reversed' : ''}`}
-                      loading="lazy"
-                    />
-                    <p className="chat-spread-slot-label">{drawn.card.nameKo}</p>
-                  </div>
-                );
-              })}
-            </div>
-          </section>
+      <div className="chat-reading-flow">
+        {/* 1. Card Spotlight (Smaller & Framed) */}
+        {mainItem && (
+          <div className="chat-spotlight-card">
+            <TarotImage
+              src={mainItem.card.imageUrl}
+              sources={mainItem.card.imageSources}
+              cardId={mainItem.card.id}
+              alt={mainItem.card.nameKo}
+              className={`chat-spotlight-thumb ${mainItem.orientation === 'reversed' ? 'card-reversed' : ''}`}
+            />
+            <span className="chat-spotlight-name">
+              {mainItem.card.nameKo} ({mainItem.orientation === 'reversed' ? '역방향' : '정방향'})
+            </span>
+          </div>
         )}
 
-        <div className="chat-verdict-wrap">
-          <span className={`chat-verdict-pill chat-verdict-${verdict.kind}`}>{verdict.label}</span>
+        {/* 2. Verdict Badge */}
+        <div className="verdict-banner">
+          <span className={`verdict-pill verdict-${verdict.kind}`}>
+            {verdict.label}
+          </span>
         </div>
 
+        {/* 3. Reading Dialog Bubbles */}
         <ChatSummaryView reading={reading} />
 
+        {/* 4. Actions */}
         <div className="chat-reading-actions">
           <button
-            className="btn primary"
+            className="btn redraw-btn"
             disabled={isPending}
             onClick={() => onRedraw(keyQuestion)}
+            aria-label="이 질문으로 카드 다시 뽑기"
           >
-            다시 뽑기
+            ↺ 이 질문으로 다시 뽑기
           </button>
         </div>
-      </article>
+      </div>
     </div>
   );
 }
 
 function ChatSummaryView({ reading }: { reading: SpreadDrawResult }) {
   const modelDetail = buildDetailDialogFromReadingModel(reading);
-  if (modelDetail.length > 0) {
-    return (
-      <section className="chat-summary-shell">
-        <div className="chat-dialog-stream">
-          {modelDetail.map((turn, idx) => (
-            <article key={`model-detail-${idx}`} className={`chat-dialog-turn chat-dialog-${turn.speaker}`}>
-              <h6 className="chat-dialog-speaker">{turn.speaker === 'tarot' ? '타로리더' : '학습리더'}</h6>
-              <p className="chat-natural-paragraph chat-dialog-bubble">{turn.text}</p>
-            </article>
-          ))}
-        </div>
-      </section>
-    );
-  }
+  const turns = modelDetail.length > 0 
+    ? modelDetail 
+    : reading.readingV3 
+      ? buildExpandedCardDialog(reading) 
+      : buildExpandedNarrativeDialogFromLines(reading, toCanonicalReadingLines(reading, { includeCheckin: true }), '상세 대화');
 
-  if (reading.readingV3) {
-    const detailedDialog = buildExpandedCardDialog(reading);
-    return (
-      <section className="chat-summary-shell">
-        <div className="chat-dialog-stream">
-          {detailedDialog.map((turn, idx) => (
-            <article key={`v3-detail-${idx}`} className={`chat-dialog-turn chat-dialog-${turn.speaker}`}>
-              <h6 className="chat-dialog-speaker">{turn.speaker === 'tarot' ? '타로리더' : '학습리더'}</h6>
-              <p className="chat-natural-paragraph chat-dialog-bubble">{turn.text}</p>
-            </article>
-          ))}
-        </div>
-      </section>
-    );
-  }
-
-  const canonicalLines = toCanonicalReadingLines(reading, { includeCheckin: true });
-  const detailedDialog = buildExpandedNarrativeDialogFromLines(reading, canonicalLines, '상세 대화');
   return (
     <section className="chat-summary-shell">
       <div className="chat-dialog-stream">
-        {detailedDialog.map((turn, idx) => (
-          <article key={`fallback-detail-${idx}`} className={`chat-dialog-turn chat-dialog-${turn.speaker}`}>
-            <h6 className="chat-dialog-speaker">{turn.speaker === 'tarot' ? '타로리더' : '학습리더'}</h6>
-            <p className="chat-natural-paragraph chat-dialog-bubble">{turn.text}</p>
+        {turns.map((turn, idx) => (
+          <article key={`turn-${idx}`} className={`chat-row chat-dialog-${turn.speaker}`}>
+            <p className={`chat-speaker-label ${turn.speaker === 'learning' ? 'chat-speaker-learning' : ''}`}>
+              {turn.speaker === 'tarot' ? '✦ 타로리더' : '🛡️ 학습리더'}
+            </p>
+            <div className="chat-bubble chat-bubble-assistant">
+              <p className="chat-natural-paragraph">{turn.text}</p>
+            </div>
           </article>
         ))}
       </div>

@@ -4,6 +4,26 @@ import { classifyQuestionExternal } from './external-classifier.js';
 import { parseChoiceOptions } from './choice-parser.js';
 import { inferShortUtterance } from './short-utterance-rules.js';
 
+// [Optimization] LRU-style Memory Cache for Question Analysis
+const ANALYSIS_CACHE = new Map();
+const MAX_CACHE_SIZE = 500;
+
+function getCachedResult(key) {
+  if (!ANALYSIS_CACHE.has(key)) return null;
+  const val = ANALYSIS_CACHE.get(key);
+  ANALYSIS_CACHE.delete(key); // Move to end (MRU)
+  ANALYSIS_CACHE.set(key, val);
+  return val;
+}
+
+function setCachedResult(key, val) {
+  if (ANALYSIS_CACHE.size >= MAX_CACHE_SIZE) {
+    const firstKey = ANALYSIS_CACHE.keys().next().value;
+    ANALYSIS_CACHE.delete(firstKey);
+  }
+  ANALYSIS_CACHE.set(key, val);
+}
+
 function normalizeContext(text = '') {
   return String(text || '')
     .trim()
@@ -163,6 +183,10 @@ function toV2Shape(raw = {}, context = '') {
 
 export function analyzeQuestionContextSync(context = '', options = {}) {
   const normalized = normalizeContext(context);
+  const cacheKey = `sync:${normalized}:${options.mode || 'hybrid'}`;
+  const cached = getCachedResult(cacheKey);
+  if (cached) return cached;
+
   const { mode, enabled } = resolveMode(options);
   const fallback = buildFallbackResult(normalized);
   if (!enabled || mode === 'legacy') return fallback;
@@ -171,8 +195,9 @@ export function analyzeQuestionContextSync(context = '', options = {}) {
   // 방안 3: 신뢰도 임계치 0.58 → 0.65 상향으로 외부 AI 보조 판단 활용 빈도 증가
   const confidenceThreshold = Number(options.confidenceThreshold || process.env.QUESTION_UNDERSTANDING_CONFIDENCE_THRESHOLD || 0.65);
 
+  let result;
   if (mode === 'shadow') {
-    return {
+    result = {
       ...fallback,
       shadow: {
         localIntent: local.intent,
@@ -180,13 +205,11 @@ export function analyzeQuestionContextSync(context = '', options = {}) {
         localQuestionType: local.questionType
       }
     };
-  }
-
-  if (mode === 'hybrid' && local.confidence >= confidenceThreshold) {
+  } else if (mode === 'hybrid' && local.confidence >= confidenceThreshold) {
     const entities = buildEntities(normalized);
     const intent = local.intent;
     const questionType = local.questionType;
-    return {
+    result = {
       intent,
       questionType,
       subIntent: inferSubIntent(intent, normalized),
@@ -204,17 +227,24 @@ export function analyzeQuestionContextSync(context = '', options = {}) {
       inferenceSignals: local.inferenceSignals || [],
       hasAnxietySignal: local.hasAnxietySignal || false
     };
+  } else {
+    result = {
+      ...fallback,
+      inferenceSignals: local.inferenceSignals || [],
+      hasAnxietySignal: local.hasAnxietySignal || false
+    };
   }
 
-  return {
-    ...fallback,
-    inferenceSignals: local.inferenceSignals || [],
-    hasAnxietySignal: local.hasAnxietySignal || false
-  };
+  setCachedResult(cacheKey, result);
+  return result;
 }
 
 export async function analyzeQuestionContext(context = '', options = {}) {
   const normalized = normalizeContext(context);
+  const cacheKey = `async:${normalized}:${options.mode || 'hybrid'}`;
+  const cached = getCachedResult(cacheKey);
+  if (cached) return cached;
+
   const syncResult = analyzeQuestionContextSync(normalized, options);
   const { mode, enabled } = resolveMode(options);
   if (!enabled || mode !== 'hybrid') return syncResult;
@@ -231,7 +261,7 @@ export async function analyzeQuestionContext(context = '', options = {}) {
   const questionType = external.questionType;
   const confidence = Number(external.confidence || syncResult.confidence || 0.6);
 
-  return {
+  const result = {
     intent,
     questionType,
     subIntent: external.subIntent || inferSubIntent(intent, normalized),
@@ -247,6 +277,9 @@ export async function analyzeQuestionContext(context = '', options = {}) {
     entities,
     source: external.source
   };
+
+  setCachedResult(cacheKey, result);
+  return result;
 }
 
 export function analyzeQuestionContextV2Sync(context = '', options = {}) {

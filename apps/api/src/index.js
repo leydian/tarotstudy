@@ -56,6 +56,7 @@ if (expectedToneMode && expectedToneMode !== readingToneMode) {
 const cache = new TTLCache(Number(process.env.CACHE_TTL_SECONDS || 86400));
 const externalGenerator = makeExternalGenerator(process.env);
 const spreadReadingEnhancer = makeSpreadReadingEnhancer(process.env);
+const AI_TIMEOUT_MS = Number(process.env.AI_TIMEOUT_MS || 8000); // Optimized timeout
 const telemetryStore = createTelemetryStore({
   filePath: process.env.TELEMETRY_STORE_PATH
 });

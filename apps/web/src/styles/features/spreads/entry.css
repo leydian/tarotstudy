@@ -59,3 +59,72 @@
   padding: 8px 11px;
   text-align: left;
 }
+
+/* Inline replacements */
+.spread-library-search-container {
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  position: relative;
+}
+
+.spread-library-clear-btn {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  opacity: 0.5;
+  padding: 4px;
+  line-height: 1;
+}
+
+.spread-library-header-meta {
+  display: flex;
+  flex-direction: column;
+}
+
+.spread-variant-highlight {
+  font-size: 0.75rem;
+  color: var(--brand-1);
+  font-weight: 600;
+}
+
+.spread-catalog-badge {
+  align-self: flex-start;
+}
+
+.spread-list-view-container {
+  margin: 1rem 0;
+}
+
+.spread-list-item {
+  padding: 12px;
+}
+
+.spread-list-item-content {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.spread-list-index {
+  min-width: 24px;
+  text-align: center;
+}
+
+.spread-list-info {
+  flex: 1;
+}
+
+.spread-list-drawn-card {
+  margin: 4px 0 0;
+  color: var(--brand-1);
+}
+
+.spread-list-thumb-small {
+  width: 48px;
+  height: 72px;
+}

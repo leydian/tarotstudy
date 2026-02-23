@@ -6,6 +6,7 @@ type Spread = {
   cardCount: number;
   purpose: string;
   whenToUse: string[];
+  variants?: any[];
   layout?: { cols: number; rows: number };
 };
 
@@ -15,7 +16,7 @@ interface Props {
 }
 
 export function SpreadLibrary({ spreads, onSelect }: Props) {
-  const [filter, setFilter] = useState<'all' | 'relationship' | 'career' | 'finance' | 'general'>('all');
+  const [filter, setFilter] = useState<'all' | 'daily' | 'strategy' | 'decision' | 'relationship' | 'goal' | 'fortune'>('all');
   const [query, setQuery] = useState('');
 
   const categories = [
@@ -29,9 +30,12 @@ export function SpreadLibrary({ spreads, onSelect }: Props) {
   ];
 
   const groupedSpreads = useMemo(() => {
+    if (!spreads || spreads.length === 0) return {};
+    
     const q = query.trim().toLowerCase();
+    
     const filtered = spreads.filter((s) => {
-      const text = `${s.name} ${s.purpose} ${s.whenToUse.join(' ')}`.toLowerCase();
+      const text = `${s.name} ${s.purpose} ${s.whenToUse?.join(' ') || ''}`.toLowerCase();
       if (q && !text.includes(q)) return false;
       if (filter === 'all') return true;
       return (s as any).category === filter;
@@ -39,82 +43,107 @@ export function SpreadLibrary({ spreads, onSelect }: Props) {
 
     const groups: Record<string, typeof spreads> = {};
     filtered.forEach((s: any) => {
-      const cat = s.category || 'general';
+      const cat = s.category || 'daily';
       if (!groups[cat]) groups[cat] = [];
       groups[cat].push(s);
     });
     
-    // Sort groups based on category list order
+    if (filter !== 'all') {
+      return { [filter]: groups[filter] || [] };
+    }
+
     const sortedGroups: Record<string, typeof spreads> = {};
     categories.forEach(cat => {
-      if (groups[cat.id]) sortedGroups[cat.id] = groups[cat.id];
+      if (cat.id !== 'all' && groups[cat.id] && groups[cat.id].length > 0) {
+        sortedGroups[cat.id] = groups[cat.id];
+      }
     });
+
+    Object.keys(groups).forEach(key => {
+      if (!sortedGroups[key] && groups[key].length > 0) {
+        sortedGroups[key] = groups[key];
+      }
+    });
+
     return sortedGroups;
   }, [spreads, filter, query]);
 
   return (
     <div className="spread-library">
       <div className="filters library-filters">
-        <div className="chip-wrap" style={{ flex: '1 1 100%', marginBottom: '1.5rem', justifyContent: 'center' }}>
+        <div className="chip-wrap view-mode-tabs">
           {categories.map((cat) => (
             <button
               key={cat.id}
               className={`chip-link ${filter === cat.id ? 'chip-on' : ''}`}
               onClick={() => setFilter(cat.id as any)}
-              style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
             >
-              <span style={{ opacity: 0.7 }}>{cat.icon}</span>
+              <span className="cat-icon" aria-hidden="true">{cat.icon}</span>
               {cat.label}
             </button>
           ))}
         </div>
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="고민 내용으로 찾기 (예: 재회, 합격, 퇴사 고민...)"
-          className="search-input"
-          style={{ width: '100%', maxWidth: '600px', margin: '0 auto' }}
-        />
+        <div className="spread-library-search-container">
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="어떤 고민이 있으신가요? (예: 재회, 이직, 합격...)"
+            className="search-input"
+            aria-label="스프레드 검색"
+          />
+          {query && (
+            <button 
+              onClick={() => setQuery('')}
+              className="spread-library-clear-btn"
+              aria-label="검색어 지우기"
+            >
+              ✕
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="spread-library-content">
         {Object.entries(groupedSpreads).map(([catId, list]) => (
-          <div key={catId} className="spread-category-group">
-            <h4 className="category-title">
-              {categories.find(c => c.id === catId)?.icon} {categories.find(c => c.id === catId)?.label}
-            </h4>
-            <div className="spread-grid-list">
-              {list.map((spread) => (
-                <button
-                  key={spread.id}
-                  className="spread-catalog-card"
-                  onClick={() => onSelect(spread.id)}
-                >
-                  <div className="spread-catalog-header">
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                      <strong>{spread.name}</strong>
-                      <span className="sub" style={{ fontSize: '0.75rem', color: 'var(--brand-1)' }}>
-                        {spread.variants?.length ? `⚡︎ ${spread.variants.length + 1}개의 해석 모드 지원` : '기본 모드'}
-                      </span>
+          list.length > 0 && (
+            <div key={catId} className="spread-category-group">
+              <h4 className="category-title">
+                {categories.find(c => c.id === catId)?.icon || '✦'} {categories.find(c => c.id === catId)?.label || catId}
+              </h4>
+              <div className="spread-grid-list">
+                {list.map((spread) => (
+                  <button
+                    key={spread.id}
+                    className="spread-catalog-card"
+                    onClick={() => onSelect(spread.id)}
+                  >
+                    <div className="spread-catalog-header">
+                      <div className="spread-library-header-meta">
+                        <strong>{spread.name}</strong>
+                        <span className="spread-variant-highlight">
+                          {spread.variants?.length ? `⚡︎ ${spread.variants.length + 1}개의 해석 모드` : '기본 모드'}
+                        </span>
+                      </div>
+                      <span className="badge spread-catalog-badge">{spread.cardCount}장</span>
                     </div>
-                    <span className="badge" style={{ alignSelf: 'flex-start' }}>{spread.cardCount}장</span>
-                  </div>
-                  <p className="sub spread-catalog-desc">{spread.purpose}</p>
-                  <div className="spread-tag-wrap">
-                    {spread.whenToUse.map((use, idx) => (
-                      <span key={idx} className="evidence-chip" style={{ fontSize: '0.72rem', padding: '2px 8px' }}>
-                        #{use}
-                      </span>
-                    ))}
-                  </div>
-                </button>
-              ))}
+                    <p className="sub spread-catalog-desc">{spread.purpose}</p>
+                    <div className="spread-tag-wrap">
+                      {spread.whenToUse?.slice(0, 3).map((use, idx) => (
+                        <span key={idx} className="evidence-chip">
+                          #{use}
+                        </span>
+                      ))}
+                    </div>
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )
         ))}
         {Object.keys(groupedSpreads).length === 0 && (
-          <div className="empty-state" style={{ textAlign: 'center', padding: '3rem' }}>
-            <p>검색 결과가 없습니다. 다른 키워드로 검색해 보세요.</p>
+          <div className="empty-state">
+            <p className="empty-title">검색 결과가 없습니다.</p>
+            <p className="sub">다른 키워드로 검색하거나 카테고리를 변경해 보세요.</p>
           </div>
         )}
       </div>
