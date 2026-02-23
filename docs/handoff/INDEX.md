@@ -1,7 +1,7 @@
 # 세션 인수인계 인덱스
 
 작성일: 2026-02-22  
-최종 갱신: 2026-02-23 (latest)
+최종 갱신: 2026-02-23 (latest 4)
 
 ## 1) 목적
 - 작업 내역을 `메인 -> 인덱스 -> 세부내역` 3계층으로 분리해 탐색성과 유지보수성을 높입니다.
@@ -26,6 +26,8 @@
 
 ## 4) 주제별 빠른 이동
 - 말투/출력 파이프라인 정규화(`readingModel v1`, 채널 통합): `docs/session-handoff-2026-02-23-reading-model-v1-details.md`
+- 페르소나 원페이지 정책 강제(문서->런타임 정책/즉시 실패): `SESSION_HANDOFF.md`
+- 페르소나 원페이지 운영가이드(상세): `docs/persona-onepager.md`
 - 페르소나 기반 보완 1차(추천근거/복습우선/진도동기화/KPI API): `SESSION_HANDOFF.md`
 - 코스 목록 10개 개선(정렬/추천/필터/지연로딩/에러처리): `SESSION_HANDOFF.md`
 - 카드 도감 리더 양성 관점(입문/중급) 전환: `docs/session-handoff-2026-02-23-details.md`
@@ -61,6 +63,10 @@
 - 문서 분리 기준/운영 규칙: `docs/handoff/details/docs-ops-structure-2026-02-22.md`
 
 ## 5) 최근 핵심 커밋
+- `cd8beb1` Expand persona onepager into detailed operations policy
+- `c4cefc7` Enforce persona onepager as runtime policy source
+- `48cb012` Add one-page persona operations guide and final persona templates
+- `692f98b` Refine readingModel pipeline and reduce chat legacy fallbacks
 - `f1b8d57` Unify tarot readability rules across chat and card view
 - `d66313e` Align card-view readability law and increase tarot response detail
 - `876812f` Prevent mid-sentence truncation in tarot chat readability mode

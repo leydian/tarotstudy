@@ -1,7 +1,7 @@
 # 세션 인수인계 문서 (메인)
 
 작성일: 2026-02-22  
-최종 갱신: 2026-02-23 (latest)  
+최종 갱신: 2026-02-23 (latest 4)  
 작업 경로: `/home/eunok/studycodex`
 
 ## 1) 문서 구조
@@ -39,6 +39,66 @@
   - 시험/합격 템플릿을 면접/지원/이직/오퍼 질문까지 동일 프레임으로 확장
 
 ## 3) 금일 추가 반영 (최신)
+- 페르소나 원페이지 정책 강제 + 챗 레거시 경로 축소 + 운영 문서 고도화 (2026-02-23 latest 4)
+  - 관련 커밋:
+    - `692f98b` Refine readingModel pipeline and reduce chat legacy fallbacks
+    - `48cb012` Add one-page persona operations guide and final persona templates
+    - `c4cefc7` Enforce persona onepager as runtime policy source
+    - `cd8beb1` Expand persona onepager into detailed operations policy
+  - 변경 파일(핵심):
+    - `apps/api/src/persona-policy-loader.js` (신규)
+    - `apps/api/src/content.js`
+    - `apps/api/src/index.js`
+    - `apps/web/src/lib/tone-render.ts`
+    - `apps/web/src/lib/api.ts`
+    - `apps/web/src/types.ts`
+    - `apps/api/test/persona-policy-loader.test.js` (신규)
+    - `apps/api/test/persona-policy-enforcement.test.js` (신규)
+    - `apps/web/test/persona-policy-render-priority.test.mjs` (신규)
+    - `scripts/check-handoff-docs.mjs`
+    - `docs/persona-onepager.md` (신규 후 상세 보강)
+    - `README.md`
+    - `apps/api/src/reading-model-builder.js` (직전 리팩터링 추가 파일)
+    - `apps/web/src/pages/ChatSpreadPage.tsx` (직전 레거시 축소 반영 파일)
+  - 핵심 변경:
+    - `docs/persona-onepager.md`를 런타임 정책 소스로 승격
+      - 필수 섹션/서브섹션/코드블록 파싱
+      - 정책 버전(`policyVersion`)을 문서 해시 기반으로 생성
+      - 파싱/검증 실패 시 즉시 실패(fail-fast) 적용
+    - 서버 시작 시 정책 강제 검증
+      - `READING_TONE_MODE`와 원페이지 선언값 일치 필수
+      - 불일치 시 부팅 차단
+    - 페르소나 적용 규칙 강제
+      - explicit 페르소나(`personaGroup/personaId`)가 원페이지 지원 목록 밖이면 즉시 예외
+      - 미지정 시 문맥 추론 + 원페이지 기본값(`user:beginner`) 적용
+    - 응답 메타 확장
+      - draw 결과에 `policyVersion`, `policySource` 추가
+    - 프론트 소비 정책 명시화
+      - `PERSONA_POLICY_RENDER_PRIORITY` 상수 도입
+      - `resolveToneSource()`로 `readingModel -> tonePayload -> readingV3 -> summary` 순서 고정
+    - 챗 레거시 요약 재조립 경로 축소
+      - `ChatSpreadPage`에서 summary 파싱 기반 중복 경로 제거
+      - canonical line 중심 fallback으로 단순화
+    - 문서 무결성 게이트 강화
+      - `docs:check-handoff`에 `docs/persona-onepager.md` 존재/필수 섹션 검사 추가
+    - 원페이지 문서 상세 보강
+      - 역할/말투/구조/가드레일/적용규칙/운영체크리스트/예시/변경관리 규칙까지 확장
+  - 효과:
+    - 문서-코드 불일치 상태를 런타임에서 즉시 차단해 정책 드리프트 리스크 감소
+    - 페르소나/가드레일 규칙의 소스오브트루스가 운영 문서로 일원화
+    - 챗 렌더 경로 단순화로 유지보수성과 회귀 추적성 개선
+    - QA가 원페이지 정책 위반을 자동 탐지하는 구조 확보
+  - 검증:
+    - `npm run test:api` 통과 (신규 정책 테스트 포함)
+    - `npm run typecheck:web` 통과
+    - `npm run test:web` 통과
+    - `npm run docs:check-handoff` 통과
+    - `npm run verify:quality`는 현 환경 포트 바인딩 제한(`listen EPERM 127.0.0.1:8787`)으로
+      API 자동기동형 QA 단계에서 실패 가능
+  - 운영 메모:
+    - 정책 문서 핵심 키(`READING_TONE_MODE`, 소비 우선순위, 기본/지원 페르소나)를 변경할 때는
+      정책 로더 및 테스트를 반드시 동시 갱신
+
 - 톤 파이프라인 근본 정규화(`readingModel v1`) + 채널 일원화 (2026-02-23 latest 3)
   - 관련 커밋:
     - `25a0396` Unify persona tone pipeline across UI and export
@@ -703,3 +763,22 @@
   - `876812f` fix: prevent mid-sentence truncation in tarot chat readability mode
   - `d66313e` feat: align card view readability law and increase tarot response detail
   - `f1b8d57` feat: unify tarot readability rules across chat and card view
+
+## 9) 2026-02-23 최신 후속 반영 (페르소나 원페이지 정책 강제 / 운영 문서 확장)
+- 정책 소스 승격
+  - `docs/persona-onepager.md`를 설명 문서에서 런타임 정책 소스로 전환
+  - 파서가 필수 섹션/서브섹션/텍스트 블록을 엄격 검증
+  - 문서 해시 기반 `policyVersion` 생성
+- 백엔드 정책 강제
+  - 서버 시작 시 원페이지 로드 및 `READING_TONE_MODE` 일치 강제
+  - explicit 페르소나 지원목록 위반 시 즉시 에러
+  - draw 응답에 `policyVersion`, `policySource` 추가
+- 프론트/타입 동기화
+  - `tone-render`에 우선순위 상수 및 source resolver 추가
+  - draw API에 `personaGroup/personaId` 파라미터 전달 가능 경로 확장
+  - `SpreadDrawResult` 타입에 정책 메타 필드 추가
+- QA/문서체크 확장
+  - 정책 로더 테스트/정책 강제 테스트/프론트 우선순위 테스트 추가
+  - `docs:check-handoff`에 원페이지 필수 검증 추가
+- 커밋 묶음
+  - `692f98b`, `48cb012`, `c4cefc7`, `cd8beb1`
