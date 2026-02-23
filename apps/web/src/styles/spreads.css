@@ -870,16 +870,24 @@
 
 .spread-page-header {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
+  align-items: center;
+  gap: 10px;
   flex-wrap: wrap;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid color-mix(in srgb, var(--reading-line) 72%, transparent);
+}
+
+.spread-recommended-hint {
+  margin: 0;
+  line-height: 1.45;
 }
 
 .spread-header-actions {
+  margin-left: auto;
   justify-content: flex-end;
   align-items: center;
-  gap: 6px;
+  gap: 7px;
 }
 
 .spread-header-actions .chip-link {
@@ -897,9 +905,9 @@
 }
 
 .spread-prompt-card {
-  margin-top: 12px;
+  margin-top: 6px;
   border-top: 0;
-  padding-top: 8px;
+  padding-top: 6px;
 }
 
 .spread-prompt-card h4 {
@@ -907,14 +915,18 @@
 }
 
 .spread-prompt-bank {
-  gap: 7px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 8px;
 }
 
 .spread-prompt-bank .chip-link {
-  -webkit-line-clamp: 1;
-  white-space: nowrap;
-  max-width: min(100%, 320px);
-  padding: 7px 11px;
+  -webkit-line-clamp: 2;
+  white-space: normal;
+  max-width: 100%;
+  min-height: 40px;
+  padding: 8px 11px;
+  text-align: left;
 }
 
 .chat-top-panel {

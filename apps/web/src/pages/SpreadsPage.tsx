@@ -337,9 +337,7 @@ export function SpreadsPage() {
 
       <article className="panel">
         <div className="spread-page-header">
-          <div>
-            {recommendedHint && <p className="sub">자동 추천: {recommendedHint}</p>}
-          </div>
+          {recommendedHint && <p className="sub spread-recommended-hint">자동 추천: {recommendedHint}</p>}
           <div className="chip-wrap spread-header-actions">
             {(() => {
               const chatSpreadId = activeDraw ? resolveDisplaySpreadId(activeDraw.spreadId, spreads) : selected.id;

@@ -254,7 +254,7 @@ export function ChatSpreadPage() {
             <div className="chat-log" ref={logRef}>
               {messages.length === 0 && (
                 <div className="chat-empty">
-                  <p>아직 대화가 없습니다. 아래 추천 질문으로 시작해보세요.</p>
+                  <p>아직 대화가 없습니다. 질문을 입력해 리딩을 시작해보세요.</p>
                 </div>
               )}
 
