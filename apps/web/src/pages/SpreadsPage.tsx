@@ -13,6 +13,7 @@ import {
   cleanCoachPrefix,
   mergeReviewNoteAndChecklist,
   mergeTarotMessage,
+  parseMonthlySummary,
   parseChecklistFromNote,
   parseWeeklySummary,
   parseYearlySummary,
@@ -346,7 +347,9 @@ export function SpreadsPage() {
                   ? <YearlySummaryView summary={drawMutation.data.summary} />
                   : selected.id === 'weekly-fortune'
                     ? <WeeklySummaryView summary={drawMutation.data.summary} />
-                  : (
+                    : selected.id === 'monthly-fortune'
+                      ? <MonthlySummaryView summary={drawMutation.data.summary} keywords={emphasisKeywords} />
+                    : (
                     <div className="reading-prose-wrap">
                       {toParagraphBlocks(drawMutation.data.summary).map((block, idx) => (
                         <p key={`summary-block-${idx}`} className="reading-prose">
@@ -1280,6 +1283,71 @@ function WeeklySummaryView({ summary }: { summary: string }) {
         <section className="yearly-section">
           <h5>한 줄 테마</h5>
           <p className="reading-prose">{parsed.theme}</p>
+        </section>
+      )}
+    </div>
+  );
+}
+
+function MonthlySummaryView({ summary, keywords }: { summary: string; keywords: string[] }) {
+  const parsed = parseMonthlySummary(summary);
+  if (!parsed) {
+    return (
+      <div className="reading-prose-wrap">
+        {toParagraphBlocks(summary).map((block, idx) => (
+          <p key={`monthly-summary-fallback-${idx}`} className="reading-prose">
+            {renderHighlightedText(block, keywords, `monthly-fallback-${idx}`, { tierLimits: { high: 1, mid: 1, low: 0 } })}
+          </p>
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="monthly-summary">
+      <section className="yearly-section monthly-overview">
+        <p className="reading-prose monthly-intro">이번 달을 한눈에 보면 이런 흐름입니다.</p>
+        {toParagraphBlocks(parsed.overall).map((line, idx) => (
+          <p key={`monthly-overall-${idx}`} className="reading-prose">
+            {renderHighlightedText(line, keywords, `monthly-overall-${idx}`, { tierLimits: { high: 1, mid: 1, low: 0 } })}
+          </p>
+        ))}
+      </section>
+
+      <section className="yearly-section">
+        <p className="reading-prose monthly-intro">주차별 분위기를 나눠 보면 더 또렷하게 보입니다.</p>
+        <div className="monthly-week-grid">
+          {parsed.weekly.map((line, idx) => (
+            <article key={`monthly-week-${idx}`} className="yearly-month-item monthly-week-card">
+              {toParagraphBlocks(line).map((piece, pieceIdx) => (
+                <p key={`monthly-week-${idx}-${pieceIdx}`} className="reading-prose">
+                  {renderHighlightedText(piece, keywords, `monthly-week-${idx}-${pieceIdx}`, { tierLimits: { high: 1, mid: 1, low: 0 } })}
+                </p>
+              ))}
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="yearly-section">
+        <p className="reading-prose monthly-intro">이 흐름을 일상에 옮길 때는 이렇게 가져가면 좋습니다.</p>
+        {toParagraphBlocks(parsed.bridge).map((line, idx) => (
+          <p key={`monthly-bridge-${idx}`} className="reading-prose">
+            {renderHighlightedText(line, keywords, `monthly-bridge-${idx}`, { tierLimits: { high: 1, mid: 1, low: 0 } })}
+          </p>
+        ))}
+        {toParagraphBlocks(parsed.actionGuide).map((line, idx) => (
+          <p key={`monthly-action-${idx}`} className="reading-prose">
+            {renderHighlightedText(line, keywords, `monthly-action-${idx}`, { tierLimits: { high: 1, mid: 1, low: 0 } })}
+          </p>
+        ))}
+      </section>
+
+      {parsed.theme && (
+        <section className="yearly-section monthly-theme">
+          <p className="reading-prose">
+            {renderHighlightedText(parsed.theme, keywords, 'monthly-theme', { tierLimits: { high: 1, mid: 1, low: 0 } })}
+          </p>
         </section>
       )}
     </div>

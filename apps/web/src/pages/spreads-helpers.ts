@@ -149,6 +149,35 @@ export function parseWeeklySummary(text: string) {
   };
 }
 
+export function parseMonthlySummary(text: string) {
+  const raw = String(text || '').trim();
+  if (!raw.includes('총평:') || !raw.includes('주차 흐름:') || !raw.includes('월-주 연결:') || !raw.includes('실행 가이드:')) return null;
+
+  const overall = extractSection(raw, '총평:', '주차 흐름:');
+  const weeklyBlock = extractSection(raw, '주차 흐름:', '월-주 연결:');
+  const bridge = extractSection(raw, '월-주 연결:', '실행 가이드:');
+  const actionAndTheme = extractSection(raw, '실행 가이드:', null);
+  if (!overall || !weeklyBlock || !bridge || !actionAndTheme) return null;
+
+  const weeklyAll = weeklyBlock
+    .split(/(?=(?:1주차|2주차|3주차|4주차·정리)\([^)]*\)는)/g)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const weekly = weeklyAll.filter((line) => /^(?:1주차|2주차|3주차|4주차·정리)\([^)]*\)는/.test(line));
+
+  const themeIndex = actionAndTheme.indexOf('한 줄 테마:');
+  const actionGuide = (themeIndex >= 0 ? actionAndTheme.slice(0, themeIndex) : actionAndTheme).trim();
+  const theme = (themeIndex >= 0 ? actionAndTheme.slice(themeIndex + '한 줄 테마:'.length) : '').trim();
+
+  return {
+    overall,
+    weekly: weekly.length > 0 ? weekly : [weeklyBlock],
+    bridge,
+    actionGuide,
+    theme
+  };
+}
+
 function extractSection(text: string, startLabel: string, endLabel: string | null) {
   const start = text.indexOf(startLabel);
   if (start < 0) return '';

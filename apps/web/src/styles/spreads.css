@@ -307,6 +307,36 @@
   margin-top: 8px;
 }
 
+.monthly-summary {
+  display: grid;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.monthly-overview {
+  background: color-mix(in srgb, var(--reading-bg) 86%, var(--accent-soft));
+}
+
+.monthly-intro {
+  margin: 0 0 6px;
+  font-size: 0.95rem;
+  color: color-mix(in srgb, #fff 84%, var(--ink-1));
+}
+
+.monthly-week-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.monthly-week-card {
+  padding: 10px;
+}
+
+.monthly-theme .reading-prose {
+  font-size: 1.02rem;
+}
+
 .yearly-section {
   border: 1px solid var(--reading-line);
   border-radius: 10px;
@@ -740,6 +770,10 @@
   .reading-prose {
     font-size: 1rem;
     line-height: 1.72;
+  }
+
+  .monthly-week-grid {
+    grid-template-columns: 1fr;
   }
 
   .reading-block-title {
