@@ -9,6 +9,7 @@ import { loadChatDrawCache, saveChatDrawCache } from '../lib/chat-draw-cache';
 import { exportReadingPdf, exportReadingTxt } from '../lib/reading-export';
 import { toCanonicalReadingLines } from '../lib/tone-render';
 import { TarotImage } from '../components/TarotImage';
+import { PageHero } from '../components/PageHero';
 import { getProgressUserId, useProgressStore } from '../state/progress';
 import type { SpreadDrawResult } from '../types';
 import {
@@ -329,11 +330,12 @@ export function SpreadsPage() {
   if (spreadsQuery.isError || !selected) return <p>스프레드 데이터를 불러오지 못했습니다.</p>;
 
   return (
-    <section className="stack">
-      <article className="panel">
-        <h2>대표 스프레드 학습</h2>
-        <p>질문 맥락을 기준으로 스프레드를 자동 추천해 리딩합니다. 스프레드는 직접 고르지 않아도 됩니다.</p>
-      </article>
+    <section className="page-shell">
+      <PageHero
+        eyebrow="실전 리딩"
+        title="대표 스프레드 학습"
+        description="질문 맥락을 기준으로 스프레드를 자동 추천해 리딩합니다. 스프레드는 직접 고르지 않아도 됩니다."
+      />
 
       <article className="panel">
         <div className="spread-page-header">
