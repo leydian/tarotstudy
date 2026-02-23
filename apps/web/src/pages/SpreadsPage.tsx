@@ -313,32 +313,14 @@ export function SpreadsPage() {
     });
   }, [activeVariant?.id, context, readingLevel, selected, setSearchParams]);
 
-  if (spreadsQuery.isLoading) return <p>대표 스프레드를 불러오는 중...</p>;
+  if (spreadsQuery.isLoading) return <p>스프레드 학습 데이터를 불러오는 중...</p>;
   if (spreadsQuery.isError || !selected) return <p>스프레드 데이터를 불러오지 못했습니다.</p>;
 
   return (
     <section className="stack">
       <article className="panel">
         <h2>대표 스프레드 학습</h2>
-        <p>양자택일, 관계 회복, 일/주/월/년 운세, 켈틱 크로스까지 목적별로 선택해 학습하세요.</p>
-        <div className="chip-wrap">
-          {spreads.map((spread) => (
-            <button
-              key={spread.id}
-              className={`chip-link ${selected.id === spread.id ? 'chip-on' : ''}`}
-              onClick={() => {
-                setSelectedId(spread.id);
-                setVariantId(null);
-                setDetailView('reading');
-                setReadingLevel(spread.level);
-                setRestoredDraw(null);
-                drawMutation.reset();
-              }}
-            >
-              {spread.name}
-            </button>
-          ))}
-        </div>
+        <p>질문 맥락을 기준으로 스프레드를 자동 추천해 리딩합니다. 스프레드는 직접 고르지 않아도 됩니다.</p>
       </article>
 
       <article className="panel">

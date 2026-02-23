@@ -630,8 +630,12 @@ function buildQuickDialog(
   reading: SpreadDrawResult
 ) {
   const core = highlights.find((item) => item.title.includes('결론'))?.body || highlights[0]?.body || '';
-  const action = highlights.find((item) => item.title.includes('할 일') || item.title.includes('실행'))?.body || actionPlan.today;
-  const caution = highlights.find((item) => item.title.includes('주의'))?.body || '속도를 줄이고 핵심 기준부터 고정해볼게요.';
+  const actionRaw = highlights.find((item) => item.title.includes('할 일') || item.title.includes('실행'))?.body || actionPlan.today;
+  const cautionRaw = highlights.find((item) => item.title.includes('주의'))?.body || '속도를 줄이고 핵심 기준부터 고정해볼게요.';
+  const action = isSameMeaning(actionRaw, cautionRaw) ? actionPlan.today : actionRaw;
+  const caution = isSameMeaning(cautionRaw, action)
+    ? '핵심은 과속을 줄이고 반응을 확인하면서 강도를 조절하는 흐름이에요'
+    : cautionRaw;
   const bridge = buildTarotBridge(reading.context);
   const evidence = buildCardEvidenceLead(reading.items);
   const learningGuide = buildLearningGuide(reading);
@@ -641,8 +645,7 @@ function buildQuickDialog(
     buildTurn('tarot', 'evidence', `근거 카드는 ${evidence}`),
     buildTurn('tarot', 'caution', `주의 포인트는 ${caution}`),
     buildTurn('tarot', 'action', `지금 실행 기준은 ${action}`),
-    buildTurn('learning', 'coach', learningGuide),
-    buildTurn('learning', 'coach', `실행 확인은 이번 주 ${actionPlan.thisWeek}`)
+    buildTurn('learning', 'coach', learningGuide)
   ];
   return dedupeTurns(turns);
 }
@@ -664,7 +667,7 @@ function buildDialogFromLines(lines: string[], sectionTitle: string) {
   lines.forEach((line, lineIdx) => {
     buildSectionDialog(line, sectionTitle, lineIdx).forEach((turn) => {
       if (!turn.dedupeKey) return;
-      if (turn.speaker === 'learning' && learningCount >= 2) return;
+      if (turn.speaker === 'learning' && learningCount >= 1) return;
       turns.push(turn);
       if (turn.speaker === 'learning') learningCount += 1;
     });
@@ -735,6 +738,10 @@ function sanitizeDialogLine(text: string) {
     .replace(/^\s*실행 가이드:\s*/g, '')
     .replace(/^\s*한 줄 테마:\s*/g, '')
     .replace(/핵심부터 말씀드리면[, ]*/g, '')
+    .replace(/이번 주\s*이번 주에는/g, '이번 주에는')
+    .replace(/근거 카드는 핵심 메시지의\s*/g, '근거 카드는 ')
+    .replace(/핵심 메시지의\s*/g, '')
+    .replace(/\.?\s*으로 읽힙니다\.?/g, '으로 읽힙니다.')
     .replace(/지금은 흐름을 살려 실행해보실 수 있는 구간입니다\.?/g, '지금은 실행 여지가 열려 있는 구간입니다')
     .replace(/지금은 속도를 낮추고 정비를 먼저 두시는 편이 안정적입니다\.?/g, '지금은 속도를 낮추고 정비를 먼저 두는 편이 안정적입니다')
     .replace(/\s+/g, ' ')
@@ -770,16 +777,18 @@ function isSameMeaning(a: string, b: string) {
 }
 
 function buildCardEvidenceLead(items: SpreadDrawResult['items']) {
-  const top = items.slice(0, 3).map((item) => `${item.position.name}의 ${item.card.nameKo} ${item.orientation === 'reversed' ? '역방향' : '정방향'}`);
-  return top.join(', ');
+  const primary = items[0];
+  if (!primary) return '첫 번째 포지션 카드입니다';
+  const orientation = primary.orientation === 'reversed' ? '역방향' : '정방향';
+  return `${primary.card.nameKo} ${orientation} (${primary.position.name})입니다`;
 }
 
 function buildLearningGuide(reading: SpreadDrawResult) {
   const primary = reading.items[0];
-  if (!primary) return '학습리더 팁: 오늘 25분 실행 + 5분 기록으로 1세트만 진행하고 결과 숫자 1개를 남겨요.';
+  if (!primary) return '학습리더 팁: 오늘 25분 실행 + 5분 기록 1세트만 진행하고, 실행 후 맞음/어긋남을 1줄로 남겨요.';
   const focus = primary.card.keywords?.[0] || '핵심';
   return softenLine(
-    `학습리더 팁: 오늘은 ${primary.position.name} 기준으로 25분 실행 + 5분 기록 1세트만 진행하고, ${focus} 관련 체감 점수를 10점 척도로 남겨요`
+    `학습리더 팁: 오늘은 ${primary.position.name} 기준으로 25분 실행 + 5분 기록 1세트만 진행하고, ${focus} 관련 체감 점수와 맞음/어긋남을 1줄로 남겨요`
   );
 }
 
