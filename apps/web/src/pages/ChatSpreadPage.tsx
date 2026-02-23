@@ -4,7 +4,6 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { api } from '../lib/api';
 import type { Spread, SpreadDrawResult } from '../types';
 import { TarotImage } from '../components/TarotImage';
-import { normalizeDisplayText } from './spreads-presenters';
 import { recommendSpreadForQuestion } from '../lib/spread-recommendation';
 import { buildDisplaySpreads, resolveDisplaySpreadId } from '../lib/spread-display';
 import { loadChatDrawCache, saveChatDrawCache } from '../lib/chat-draw-cache';
@@ -12,9 +11,6 @@ import { exportReadingPdf, exportReadingTxt } from '../lib/reading-export';
 import { toCanonicalReadingLines, toDisplayLine } from '../lib/tone-render';
 import {
   findDrawnItemForSlot,
-  parseMonthlySummary,
-  parseWeeklySummary,
-  parseYearlySummary,
   toParagraphBlocks
 } from './spreads-helpers';
 
@@ -444,69 +440,9 @@ function ChatSummaryView({ reading }: { reading: SpreadDrawResult }) {
     );
   }
 
-  const structured = buildStructuredSummary(reading);
-  if (structured) {
-    const quickDialog = buildQuickDialog(structured.highlights, structured.actionPlan, reading);
-    return (
-      <section className="chat-summary-shell">
-        <div className="chat-dialog-stream">
-          {quickDialog.map((turn, idx) => (
-            <article key={`quick-${idx}`} className={`chat-dialog-turn chat-dialog-${turn.speaker}`}>
-              <h6 className="chat-dialog-speaker">{turn.speaker === 'tarot' ? '타로리더' : '학습리더'}</h6>
-              <p className="chat-natural-paragraph chat-dialog-bubble">{turn.text}</p>
-            </article>
-          ))}
-        </div>
-        <div className="chat-summary-accordion-wrap">
-          {structured.sections.map((section, idx) => (
-            <section key={`${section.title}-${idx}`} className="chat-summary-accordion chat-summary-section">
-              <h6 className="chat-summary-section-title">{section.title}</h6>
-              <div className="chat-summary-accordion-body">
-                {section.monthItems?.length ? (
-                  <div className="chat-month-accordion-list">
-                    {section.monthItems.map((item, monthIdx) => (
-                      <article key={`${item.title}-${monthIdx}`} className="chat-month-accordion">
-                        <h6 className="chat-month-title">{item.title}</h6>
-                        <div className="chat-month-accordion-body">
-                          <div className="chat-dialog-stream">
-                            {buildExpandedNarrativeDialogFromLines(
-                              reading,
-                              toParagraphBlocks(item.body),
-                              `${section.title} ${item.title}`
-                            ).map((turn, turnIdx) => (
-                              <article key={`${item.title}-${turnIdx}`} className={`chat-dialog-turn chat-dialog-${turn.speaker}`}>
-                                <h6 className="chat-dialog-speaker">{turn.speaker === 'tarot' ? '타로리더' : '학습리더'}</h6>
-                                <p className="chat-natural-paragraph chat-dialog-bubble">{turn.text}</p>
-                              </article>
-                            ))}
-                          </div>
-                        </div>
-                      </article>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="chat-dialog-stream">
-                    {buildExpandedNarrativeDialogFromLines(reading, section.lines, section.title).map((turn, lineIdx) => (
-                      <article key={`${section.title}-${lineIdx}`} className={`chat-dialog-turn chat-dialog-${turn.speaker}`}>
-                        <h6 className="chat-dialog-speaker">{turn.speaker === 'tarot' ? '타로리더' : '학습리더'}</h6>
-                        <p className="chat-natural-paragraph chat-dialog-bubble">{turn.text}</p>
-                      </article>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </section>
-          ))}
-        </div>
-      </section>
-    );
-  }
-
-  const narrativeParagraph = buildNaturalNarrativeParagraph(reading);
-  const narrativeBubbles = buildNarrativeBubbles(narrativeParagraph);
-  const highlights = buildGenericHighlights(narrativeBubbles);
-  const actionPlan = buildActionPlan(narrativeBubbles.join(' '));
-  const quickDialog = buildQuickDialog(highlights, actionPlan, reading);
+  const canonicalLines = toCanonicalReadingLines(reading, { includeCheckin: true });
+  const quickDialog = buildQuickDialogFromCanonicalLines(reading, canonicalLines);
+  const detailedDialog = buildExpandedNarrativeDialogFromLines(reading, canonicalLines, '상세 대화');
   return (
     <section className="chat-summary-shell">
       <div className="chat-dialog-stream">
@@ -521,7 +457,7 @@ function ChatSummaryView({ reading }: { reading: SpreadDrawResult }) {
         <h6 className="chat-summary-section-title">상세 대화</h6>
         <div className="chat-summary-accordion-body">
           <div className="chat-dialog-stream">
-            {buildExpandedNarrativeDialogFromLines(reading, narrativeBubbles, '상세 리딩').map((turn, idx) => (
+            {detailedDialog.map((turn, idx) => (
               <article key={`summary-bubble-${idx}`} className={`chat-dialog-turn chat-dialog-${turn.speaker}`}>
                 <h6 className="chat-dialog-speaker">{turn.speaker === 'tarot' ? '타로리더' : '학습리더'}</h6>
                 <p className="chat-natural-paragraph chat-dialog-bubble">{turn.text}</p>
@@ -647,187 +583,26 @@ function buildQuickDialogFromReadingV3(reading: SpreadDrawResult) {
   return dedupeTurns(turns);
 }
 
-function buildStructuredSummary(reading: SpreadDrawResult) {
-  const summary = sanitizeSummaryForChat(reading.summary);
-  const yearly = parseYearlySummary(summary);
-  if (yearly) {
-    const quarterLines = toParagraphBlocks(yearly.quarterly);
-    const monthlyLines = yearly.monthly.map((line) => compactLine(line));
-    const monthItems = toMonthlyItems(monthlyLines);
-    const highlights = ensureDistinctHighlights([
-      { title: '핵심 결론', body: firstMeaningfulLine(yearly.overall) },
-      { title: '지금 할 일', body: firstMeaningfulLine(yearly.closing || quarterLines[0] || yearly.overall) },
-      { title: '주의 포인트', body: findCautionLine([...quarterLines, ...monthlyLines]) }
-    ], [yearly.overall, yearly.closing, ...quarterLines, ...monthlyLines]);
-    const actionPlan = buildActionPlan([yearly.closing, ...quarterLines, yearly.overall].join(' '));
-    return {
-      highlights,
-      actionPlan,
-      sections: [
-        { title: '총평', lines: toParagraphBlocks(yearly.overall), open: true },
-        { title: '분기별 운세', lines: quarterLines, open: true },
-        { title: '월별 운세 (12개월)', lines: [], monthItems, open: false },
-        { title: '실행 정리', lines: toParagraphBlocks(yearly.closing), open: false }
-      ]
-    };
-  }
-
-  const monthly = parseMonthlySummary(summary);
-  if (monthly) {
-    const weekLines = monthly.weekly.map((line) => compactLine(line));
-    const highlights = ensureDistinctHighlights([
-      { title: '핵심 결론', body: firstMeaningfulLine(monthly.overall) },
-      { title: '이번 달 실행', body: firstMeaningfulLine(monthly.actionGuide || monthly.bridge) },
-      { title: '주의 포인트', body: findCautionLine([...weekLines, monthly.bridge, monthly.actionGuide]) }
-    ], [monthly.overall, monthly.actionGuide, monthly.bridge, ...weekLines]);
-    const actionPlan = buildActionPlan([monthly.actionGuide, monthly.bridge, monthly.overall].join(' '));
-    return {
-      highlights,
-      actionPlan,
-      sections: [
-        { title: '총평', lines: toParagraphBlocks(monthly.overall), open: true },
-        { title: '주차 흐름', lines: weekLines, open: true },
-        { title: '월-주 연결', lines: toParagraphBlocks(monthly.bridge), open: false },
-        { title: '실행 가이드', lines: toParagraphBlocks(monthly.actionGuide), open: false }
-      ]
-    };
-  }
-
-  const weekly = parseWeeklySummary(summary);
-  if (weekly) {
-    const dailyLines = weekly.daily.map((line) => compactLine(line));
-    const highlights = ensureDistinctHighlights([
-      { title: '핵심 결론', body: firstMeaningfulLine(weekly.overall) },
-      { title: '이번 주 실행', body: firstMeaningfulLine(weekly.actionGuide || dailyLines[0] || weekly.overall) },
-      { title: '주의 포인트', body: findCautionLine([...dailyLines, weekly.actionGuide]) }
-    ], [weekly.overall, weekly.actionGuide, weekly.theme, ...dailyLines]);
-    const actionPlan = buildActionPlan([weekly.actionGuide, weekly.theme, weekly.overall].join(' '));
-    return {
-      highlights,
-      actionPlan,
-      sections: [
-        { title: '총평', lines: toParagraphBlocks(weekly.overall), open: true },
-        { title: '일별 흐름', lines: dailyLines, open: true },
-        { title: '실행 가이드', lines: toParagraphBlocks(weekly.actionGuide), open: false },
-        { title: '한 줄 테마', lines: toParagraphBlocks(weekly.theme), open: false }
-      ]
-    };
-  }
-
-  return null;
-}
-
 function compactLine(text: string) {
   const blocks = toParagraphBlocks(text);
   return blocks.join(' ');
 }
 
-function toMonthlyItems(lines: string[]) {
-  return lines.map((line, index) => {
-    const m = line.match(/^((?:[1-9]|1[0-2])월\([^)]*\))은?\s*(.*)$/);
-    if (m) {
-      return { title: m[1], body: m[2] || line };
-    }
-    return { title: `${index + 1}월`, body: line };
-  });
-}
-
-function firstMeaningfulLine(text: string) {
-  const blocks = toParagraphBlocks(text);
-  return blocks[0] || '핵심 흐름을 기준으로 작은 실행부터 시작하세요.';
-}
-
-function findCautionLine(lines: string[]) {
-  const picked = lines.find((line) => /주의|리스크|소모|충돌|지연|과속|불안|피해야|조절/.test(line));
-  return compactLine(picked || lines[0] || '속도를 줄이고 기준을 먼저 고정하세요.');
-}
-
-function buildGenericHighlights(lines: string[]) {
-  const conclusion = pickDistinctLine(lines, [/결론|총평|핵심|테마/], []);
-  const action = pickDistinctLine(lines, [/실행|행동|할 일|추천|진행/], [conclusion]);
-  const cautionRaw = findCautionLine(lines);
-  const caution = isSameMeaning(cautionRaw, conclusion) || isSameMeaning(cautionRaw, action)
-    ? pickDistinctLine(lines, [/주의|리스크|소모|충돌|지연|과속|불안|피해야|조절/], [conclusion, action])
-    : cautionRaw;
-  return [
-    { title: '핵심 결론', body: compactLine(conclusion) || '핵심 흐름을 기준으로 속도부터 조절해보세요.' },
-    { title: '지금 할 일', body: compactLine(action) || '행동 1개만 정해 짧게 실행하고 기록해보세요.' },
-    { title: '주의 포인트', body: caution }
-  ];
-}
-
-function ensureDistinctHighlights(
-  highlights: Array<{ title: string; body: string }>,
-  fallbackPool: string[]
-) {
-  const used = new Set<string>();
-  return highlights.map((item) => {
-    let body = compactLine(item.body);
-    let key = normalizeDialogKey(body);
-    if (!key || used.has(key)) {
-      const replacement = fallbackPool
-        .map((line) => compactLine(line))
-        .find((line) => {
-          const candidateKey = normalizeDialogKey(line);
-          return Boolean(candidateKey) && !used.has(candidateKey);
-        }) || body;
-      body = replacement;
-      key = normalizeDialogKey(body);
-    }
-    if (key) used.add(key);
-    return { ...item, body };
-  });
-}
-
-function buildActionPlan(text: string) {
-  const blocks = toParagraphBlocks(text);
-  const joined = blocks.join(' ');
-  const today = selectActionLine(blocks, ['오늘', '지금', '즉시', '당장'])
-    || fallbackAction(joined, 'today');
-  const thisWeek = selectActionLine(blocks, ['이번 주', '주간', '이번주'])
-    || fallbackAction(joined, 'week');
-  const thisMonth = selectActionLine(blocks, ['이번 달', '월간', '한 달', '이번달'])
-    || fallbackAction(joined, 'month');
-  return { today, thisWeek, thisMonth };
-}
-
-function selectActionLine(lines: string[], hints: string[]) {
-  const found = lines.find((line) => hints.some((hint) => line.includes(hint)));
-  if (!found) return '';
-  return compactLine(found);
-}
-
-function fallbackAction(joined: string, scope: 'today' | 'week' | 'month') {
-  const base = compactLine(joined || '핵심 흐름을 기준으로 작은 실행부터 시작하세요.');
-  if (scope === 'today') return base ? `오늘은 ${base}` : '오늘은 기준 1개를 정하고 행동 1개만 실행하세요.';
-  if (scope === 'week') return base ? `이번 주에는 ${base}` : '이번 주는 실행 기록을 남기며 속도를 조절하세요.';
-  return base ? `이번 달은 ${base}` : '이번 달은 무리한 확장보다 루틴 고정을 우선하세요.';
-}
-
-function buildQuickDialog(
-  highlights: Array<{ title: string; body: string }>,
-  actionPlan: { today: string; thisWeek: string; thisMonth: string },
-  reading: SpreadDrawResult
-) {
-  const core = highlights.find((item) => item.title.includes('결론'))?.body || highlights[0]?.body || '';
-  const actionRaw = highlights.find((item) => item.title.includes('할 일') || item.title.includes('실행'))?.body || actionPlan.today;
-  const cautionRaw = highlights.find((item) => item.title.includes('주의'))?.body || '속도를 줄이고 핵심 기준부터 고정해볼게요.';
-  const action = isSameMeaning(actionRaw, cautionRaw) ? actionPlan.today : actionRaw;
-  const caution = isSameMeaning(cautionRaw, action)
-    ? '핵심은 과속을 줄이고 반응을 확인하면서 강도를 조절하는 흐름이에요'
-    : cautionRaw;
-  const bridge = buildTarotBridge(reading.context);
-  const evidence = buildCardEvidenceLead(reading.items);
-  const learningGuide = buildLearningGuide(reading);
+function buildQuickDialogFromCanonicalLines(reading: SpreadDrawResult, lines: string[]) {
+  const fallbackLines = lines.length
+    ? lines
+    : toParagraphBlocks(reading.summary).map((line) => compactLine(line)).filter(Boolean);
+  const [bridge = '', verdict = '', evidence = '', caution = '', action = '', checkin = ''] = fallbackLines;
   const turns: DialogueTurn[] = [
-    buildTurn('tarot', 'bridge', bridge),
-    buildTurn('tarot', 'verdict', `핵심 흐름은 ${core}`),
-    buildTurn('tarot', 'evidence', `근거 카드는 ${evidence}이고, 상징 단서는 첫 카드 키워드를 중심으로 읽습니다`),
-    buildTurn('tarot', 'caution', `주의 포인트는 ${caution}`),
-    buildTurn('tarot', 'action', `지금 실행 기준은 ${action}`),
-    buildTurn('learning', 'coach', learningGuide)
+    ...(bridge ? [buildTurn('tarot', 'bridge', bridge)] : []),
+    ...(verdict ? [buildTurn('tarot', 'verdict', verdict)] : []),
+    ...(evidence ? [buildTurn('tarot', 'evidence', evidence)] : []),
+    ...(caution ? [buildTurn('tarot', 'caution', caution)] : []),
+    ...(action ? [buildTurn('tarot', 'action', action)] : []),
+    ...(checkin ? [buildTurn('learning', 'coach', checkin)] : [])
   ];
-  return dedupeTurns(turns);
+  if (turns.length > 0) return dedupeTurns(turns);
+  return [buildTurn('tarot', 'detail', '리딩 메시지를 준비 중입니다. 질문을 조금 더 구체적으로 적어주시면 더 정확히 안내할게요.')];
 }
 
 function buildSectionDialog(line: string, sectionTitle: string, index = 0) {
@@ -924,12 +699,6 @@ function extractPrimaryNoun(text: string) {
   return token || '핵심 포인트';
 }
 
-function buildTarotBridge(context: string) {
-  const q = String(context || '').trim();
-  if (!q) return '지금 마음이 머무는 장면부터 천천히 비춰보겠습니다. 서두르지 않고 흐름의 결을 함께 읽어볼게요.';
-  return `질문("${q}")이 마음 한가운데에 걸려 있는 장면이 보입니다. 감정의 결을 먼저 정리한 뒤, 지금 흐름이 어디로 기우는지 차분히 짚어보겠습니다.`;
-}
-
 function sanitizeDialogLine(text: string) {
   return String(text || '')
     .replace(/^\s*정리하면\s*/g, '')
@@ -967,42 +736,6 @@ function normalizeDialogKey(text: string) {
     .trim();
 }
 
-function pickDistinctLine(lines: string[], patterns: RegExp[], exclude: string[]) {
-  const excluded = exclude.map((item) => normalizeDialogKey(item)).filter(Boolean);
-  for (const line of lines) {
-    if (!patterns.some((pattern) => pattern.test(line))) continue;
-    const key = normalizeDialogKey(line);
-    if (!key || excluded.includes(key)) continue;
-    return line;
-  }
-  for (const line of lines) {
-    const key = normalizeDialogKey(line);
-    if (!key || excluded.includes(key)) continue;
-    return line;
-  }
-  return '';
-}
-
-function isSameMeaning(a: string, b: string) {
-  return normalizeDialogKey(a) !== '' && normalizeDialogKey(a) === normalizeDialogKey(b);
-}
-
-function buildCardEvidenceLead(items: SpreadDrawResult['items']) {
-  const primary = items[0];
-  if (!primary) return '첫 번째 포지션 카드입니다';
-  const orientation = primary.orientation === 'reversed' ? '역방향' : '정방향';
-  return `${primary.card.nameKo} ${orientation} (${primary.position.name})입니다`;
-}
-
-function buildLearningGuide(reading: SpreadDrawResult) {
-  const primary = reading.items[0];
-  if (!primary) return '학습리더 팁: 오늘 25분 실행 + 5분 기록 1세트만 진행하고, 실행 후 맞음/어긋남을 1줄로 남겨요.';
-  const focus = primary.card.keywords?.[0] || '핵심';
-  return softenLine(
-    `학습리더 팁: 오늘은 ${primary.position.name} 기준으로 25분 실행 + 5분 기록 1세트만 진행하고, ${focus} 관련 체감 점수와 맞음/어긋남을 1줄로 남겨요`
-  );
-}
-
 function inferVerdict(reading: SpreadDrawResult): { kind: 'yes' | 'no' | 'maybe'; label: string } {
   const modelLabel = reading.readingModel?.verdict?.label;
   if (modelLabel === 'yes') return { kind: 'yes', label: 'YES' };
@@ -1036,72 +769,6 @@ function inferVerdict(reading: SpreadDrawResult): { kind: 'yes' | 'no' | 'maybe'
   if (/\byes\b/.test(conclusionLower)) return { kind: 'yes', label: 'YES' };
   if (/\bno\b/.test(conclusionLower)) return { kind: 'no', label: 'NO' };
   return { kind: 'maybe', label: 'MAYBE' };
-}
-
-function sanitizeSummaryForChat(summary = '') {
-  const raw = String(summary || '').trim();
-  if (!raw) return raw;
-  const lines = raw
-    .split('\n')
-    .map((line) => line.trim())
-    .filter((line) => line && line !== '오늘의 테마');
-
-  return lines
-    .join('\n')
-    .replace(/(^|\s)오늘의 테마는\s*/g, '$1')
-    .replace(/(^|\n)오늘의 테마:\s*/g, '$1')
-    .trim();
-}
-
-function buildNaturalNarrativeParagraph(reading: SpreadDrawResult) {
-  const summary = sanitizeDialogLine(sanitizeSummaryForChat(reading.summary))
-    .replace(/\n+/g, ' ')
-    .replace(/\s{2,}/g, ' ')
-    .trim();
-
-  const evidence = reading.items
-    .slice(0, 6)
-    .map((item, idx) => buildPositionEvidenceLine(item, idx))
-    .join(' ');
-
-  return [summary, evidence]
-    .filter(Boolean)
-    .join(' ')
-    .replace(/\s{2,}/g, ' ')
-    .trim();
-}
-
-function buildPositionEvidenceLine(item: SpreadDrawResult['items'][number], idx = 0) {
-  const orientation = item.orientation === 'reversed' ? '역방향' : '정방향';
-  const keyword = item.card.keywords?.[0] || '흐름';
-  const position = item.position.name;
-  const lead = `${position}의 ${item.card.nameKo} ${orientation} 카드(${keyword})`;
-  if (/과거|가까운 과거/.test(position)) {
-    return `${lead}는 지금 판단에 남아 있는 배경 패턴을 보여줍니다.`;
-  }
-  if (/현재|문제|상황/.test(position)) {
-    return `${lead}는 지금 당장 조절해야 할 핵심 변수로 읽힙니다.`;
-  }
-  if (/미래|결과|가까운 미래/.test(position)) {
-    return `${lead}는 현재 선택을 유지했을 때 이어질 가능성이 큰 전개를 보여줍니다.`;
-  }
-  return idx % 2 === 0
-    ? `${lead}는 이번 질문의 핵심 축을 잡아주는 카드입니다.`
-    : `${lead}는 실행 타이밍과 강도를 조절하라는 신호로 읽힙니다.`;
-}
-
-function buildNarrativeBubbles(text: string) {
-  const blocks = toParagraphBlocks(String(text || ''));
-  if (blocks.length > 0) return blocks;
-  const fallback = String(text || '').trim();
-  return fallback ? [fallback] : ['리딩 메시지를 준비 중입니다.'];
-}
-
-function firstSentence(text = '') {
-  const cleaned = normalizeDisplayText(String(text || '').replace(/\n+/g, ' ').trim());
-  if (!cleaned) return '';
-  const sentence = cleaned.split(/(?<=[.!?])\s+/)[0] || cleaned;
-  return sentence.replace(/\s{2,}/g, ' ').trim();
 }
 
 function buildFollowupQuestions({

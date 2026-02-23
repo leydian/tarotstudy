@@ -179,6 +179,15 @@ npm run docs:check-handoff
 npm run verify:quality
 ```
 
+### 운영 규칙 (머지/릴리즈)
+- 머지 전 필수: `npm run verify:quality`
+- 실패 역추적 순서: `lint -> typecheck:web -> test:web -> test:api -> verify:quality`
+- 문서 변경 포함 PR은 `npm run docs:check-handoff` 결과까지 확인
+
+### 케이스셋 갱신 주기
+- 정기 주기: 주 1회 `npm run qa:refresh-cases`
+- 릴리즈 전: `npm run qa:refresh-cases` 후 `npm run qa:question-understanding`, `npm run qa:summary-regression`
+
 ### QA 실행 모드
 - 기본값(`QA_API_MODE=auto`): API가 살아 있지 않으면 QA 스크립트가 API를 자동 기동합니다.
 - 외부 API 강제(`QA_API_MODE=external`): `API_BASE_URL`의 API가 반드시 떠 있어야 합니다.
