@@ -31,6 +31,26 @@ function buildItems(spreadId, offset = 0) {
   }));
 }
 
+function buildWeeklyItemsForCalibration(reversedCount = 3) {
+  const spread = spreads.find((item) => item.id === 'weekly-fortune');
+  assert.ok(spread, 'missing spread weekly-fortune');
+  return spread.positions.map((position, idx) => ({
+    position: { name: position.name, meaning: position.meaning || '' },
+    orientation: idx < reversedCount ? 'reversed' : 'upright',
+    card: {
+      id: `test-safe-${idx}`,
+      name: `safe-${idx}`,
+      nameKo: `안전카드${idx}`,
+      arcana: 'Minor',
+      suit: 'Cups',
+      suitKo: '컵',
+      rank: String(idx + 1),
+      rankKo: String(idx + 1),
+      keywords: ['균형', '관찰']
+    }
+  }));
+}
+
 test('reading v3 generates immersive structure with guardrails', () => {
   const result = buildReadingV3ForQa({
     spreadId: 'three-card',
@@ -94,4 +114,29 @@ test('reading v3 bridge tone is not always heavy', () => {
   });
 
   assert.equal(/마음이 무거울 수 있어요/.test(neutral.bridge), false);
+});
+
+test('reading v3 relaxes hold verdict for weekly relationship when risk is moderate', () => {
+  const result = buildReadingV3ForQa({
+    spreadId: 'weekly-fortune',
+    spreadName: '주별 운세',
+    items: buildWeeklyItemsForCalibration(3),
+    context: '이번 주 관계 흐름을 보고 싶어',
+    level: 'beginner'
+  });
+
+  assert.equal(result.verdict.label, 'conditional');
+  assert.match(result.verdict.sentence, /조건부/);
+});
+
+test('reading v3 keeps hold verdict for weekly relationship when risk is severe', () => {
+  const result = buildReadingV3ForQa({
+    spreadId: 'weekly-fortune',
+    spreadName: '주별 운세',
+    items: buildWeeklyItemsForCalibration(4),
+    context: '이번 주 관계 흐름을 보고 싶어',
+    level: 'beginner'
+  });
+
+  assert.equal(result.verdict.label, 'hold');
 });

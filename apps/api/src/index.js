@@ -967,18 +967,25 @@ function buildReadingV3({
 }) {
   const analysis = analyzeQuestionContextV2Sync(context, { mode: 'hybrid', flag: true });
   const signal = analyzeSpreadSignal(items, analysis.intent);
+  const calibratedSignalLabel = calibrateVerdictLabelForRelationshipWeekly({
+    signalLabel: signal.label,
+    spreadId,
+    intent: analysis.intent,
+    timeHorizon: analysis.timeHorizon,
+    items
+  });
   const primary = items[0];
   const primaryKeyword = primary?.card?.keywords?.[0] || '핵심 흐름';
   const normalizedContext = String(context || '').trim();
   const domain = resolveReadingDomain({ intent: analysis.intent, context });
   const bridge = buildImmersiveBridge({
     context: normalizedContext,
-    signalLabel: signal.label,
+    signalLabel: calibratedSignalLabel,
     domain
   });
 
   const verdict = buildImmersiveVerdict({
-    label: signal.label,
+    label: calibratedSignalLabel,
     questionType: analysis.questionType,
     context,
     level,
@@ -1010,7 +1017,7 @@ function buildReadingV3({
     context,
     spreadId,
     domain,
-    verdictLabel: signal.label,
+    verdictLabel: calibratedSignalLabel,
     questionType: analysis.questionType
   });
 
@@ -1020,7 +1027,7 @@ function buildReadingV3({
       spreadId,
       intent: analysis.intent,
       subIntent: analysis.subIntent,
-      verdictLabel: signal.label,
+      verdictLabel: calibratedSignalLabel,
       timeHorizon: analysis.timeHorizon
     }),
     checkin: buildCheckinV3({
@@ -1040,7 +1047,7 @@ function buildReadingV3({
   }
 
   const closing = softenAbsolutes(
-    signal.label === '우세'
+    calibratedSignalLabel === '우세'
       ? (
         domain === 'study'
           ? '오늘 학습 리듬을 지키면 다음 시도에서 체감 안정성이 더 높아질 가능성이 큽니다.'
@@ -1048,7 +1055,7 @@ function buildReadingV3({
             ? '준비 품질을 유지하면 다음 기회에서 선택 폭이 더 넓어질 가능성이 큽니다.'
             : '지금의 힘을 무리 없이 이어가면 다음 장면은 더 선명해질 가능성이 큽니다.'
       )
-      : signal.label === '박빙'
+      : calibratedSignalLabel === '박빙'
         ? (
           domain === 'relationship'
             ? '작은 말투 조정만으로도 분위기가 달라질 수 있어요. 대화를 길게 끌지 않는 편이 좋습니다.'
@@ -1074,6 +1081,32 @@ function buildReadingV3({
       duplicateRateMax: 0.34
     }
   };
+}
+
+function calibrateVerdictLabelForRelationshipWeekly({
+  signalLabel = '조건부',
+  spreadId = '',
+  intent = 'general',
+  timeHorizon = 'unspecified',
+  items = []
+}) {
+  if (signalLabel !== '조건부') return signalLabel;
+  const isRelationship = intent === 'relationship' || intent === 'relationship-repair';
+  const isWeekly = spreadId === 'weekly-fortune' || timeHorizon === 'week';
+  if (!isRelationship || !isWeekly) return signalLabel;
+  if (!Array.isArray(items) || items.length === 0) return signalLabel;
+
+  const risks = items.map((item) => scoreCardRisk(item));
+  const reversedCount = items.filter((item) => item?.orientation === 'reversed').length;
+  const severeRiskCount = risks.filter((risk) => risk >= 3).length;
+  const veryHighRiskReversedCount = items.filter((item) => item?.orientation === 'reversed' && scoreCardRisk(item) >= 4).length;
+  const avgRisk = risks.reduce((acc, risk) => acc + risk, 0) / risks.length;
+
+  const severe = reversedCount >= 4
+    || severeRiskCount >= 3
+    || veryHighRiskReversedCount >= 1
+    || avgRisk >= 2.6;
+  return severe ? signalLabel : '박빙';
 }
 
 function buildImmersiveVerdict({

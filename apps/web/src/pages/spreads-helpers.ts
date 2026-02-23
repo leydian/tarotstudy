@@ -330,6 +330,31 @@ export function scoreItemRisk(item: SpreadDrawResult['items'][number] | undefine
   return score;
 }
 
+function calibrateInsightVerdictForRelationshipWeekly({
+  spreadId,
+  context,
+  items,
+  verdict
+}: {
+  spreadId: string;
+  context: string;
+  items: SpreadDrawResult['items'];
+  verdict: 'go' | 'conditional' | 'hold';
+}) {
+  if (verdict !== 'hold') return verdict;
+  if (spreadId !== 'weekly-fortune') return verdict;
+  const domain = inferQuestionDomain(context);
+  if (domain !== 'relationship') return verdict;
+  if (!items.length) return verdict;
+
+  const risks = items.map((item) => scoreItemRisk(item));
+  const reversedCount = items.filter((item) => item.orientation === 'reversed').length;
+  const severeRiskCount = risks.filter((risk) => risk >= 2).length;
+  const avgRisk = risks.reduce((acc, risk) => acc + risk, 0) / risks.length;
+  const severe = reversedCount >= 4 || severeRiskCount >= 4 || avgRisk >= 1.4;
+  return severe ? verdict : 'conditional';
+}
+
 export function buildReadingInsights({
   spreadId,
   context,
@@ -346,9 +371,15 @@ export function buildReadingInsights({
   const openCount = items.filter((item) => item.orientation === 'upright').length;
   const riskTotal = items.reduce((acc, item) => acc + scoreItemRisk(item), 0);
   const isOneCard = spreadId === 'one-card' || items.length <= 1;
-  const verdict: 'go' | 'conditional' | 'hold' = isOneCard
+  const rawVerdict: 'go' | 'conditional' | 'hold' = isOneCard
     ? (openCount >= 1 && riskTotal <= 1 ? 'go' : openCount >= 1 ? 'conditional' : 'hold')
     : (openCount >= 2 && riskTotal <= 2 ? 'go' : openCount >= 1 ? 'conditional' : 'hold');
+  const verdict = calibrateInsightVerdictForRelationshipWeekly({
+    spreadId,
+    context,
+    items,
+    verdict: rawVerdict
+  });
   const verdictLabel = verdict === 'go' ? '진행 권장' : verdict === 'conditional' ? '조건부 진행' : '보류 후 정비';
   const verdictReason = (() => {
     if (domain === 'study' && isOneCard) {
