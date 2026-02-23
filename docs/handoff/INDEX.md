@@ -1,7 +1,7 @@
 # 세션 인수인계 인덱스
 
 작성일: 2026-02-22  
-최종 갱신: 2026-02-23 (reading output quality fix)
+최종 갱신: 2026-02-23 (latest architecture overhaul)
 
 ## 1) 목적
 - 작업 내역을 `메인 -> 인덱스 -> 세부내역` 3계층으로 분리해 탐색성과 유지보수성을 높입니다.
@@ -25,6 +25,11 @@
 - `docs/handoff/details/docs-ops-structure-2026-02-22.md`
 
 ## 4) 주제별 빠른 이동
+- 백엔드 아키텍처 모듈화(5,000행 `index.js` 분해/도메인화): `docs/handoff/details/backend-reading-quality-2026-02-22.md`
+- 개인화 복기 피드백 루프(과거 리뷰 연동 리딩): `docs/handoff/details/backend-reading-quality-2026-02-22.md`
+- 스프레드 라이브러리 UI(100종 탐색/필터/검색): `docs/handoff/details/frontend-layout-theme-2026-02-22.md`
+- 데이터 동기화 상태 가시화(`syncStatus` 인디케이터): `docs/handoff/details/frontend-layout-theme-2026-02-22.md`
+- 연간 운세 취업 시기 품질 고도화(시기+도메인행동 강제): `SESSION_HANDOFF.md`
 - Chat UI 안정화 핫픽스(라이트 테마 보정/추천질문 중복제거/API 대기완화): `docs/session-handoff-2026-02-23-ui-stability-hotfix.md`
 - 말투/출력 파이프라인 정규화(`readingModel v1`, 채널 통합): `docs/session-handoff-2026-02-23-reading-model-v1-details.md`
 - 페르소나 원페이지 정책 강제(문서->런타임 정책/즉시 실패): `SESSION_HANDOFF.md`
