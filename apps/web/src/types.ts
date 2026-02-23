@@ -230,6 +230,8 @@ export interface SpreadDrawResult {
   readingV3?: SpreadReadingV3;
   tonePayload?: SpreadTonePayload;
   readingModel?: ReadingModel;
+  policyVersion?: string;
+  policySource?: string;
 }
 
 export interface QuestionUnderstandingV2 {

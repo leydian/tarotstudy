@@ -13,6 +13,7 @@ import { createProgressStore } from './progress-store.js';
 import { buildLearningKpi } from './learning-kpi.js';
 import { buildLearningFunnel, buildNextActions, buildReviewInbox } from './learning-read-models.js';
 import { buildReadingModel, splitSummaryLines } from './reading-model-builder.js';
+import { loadPersonaPolicy } from './persona-policy-loader.js';
 import {
   getTarotPredictedQuestions,
   getTarotPredictedQuestionsByTopic
@@ -33,6 +34,13 @@ const port = Number(process.env.PORT || 8787);
 const host = process.env.HOST || '127.0.0.1';
 const readingToneMode = String(process.env.READING_TONE_MODE || 'conversational').toLowerCase().trim();
 const useConversationalTone = readingToneMode !== 'template';
+const personaPolicy = loadPersonaPolicy();
+const expectedToneMode = String(personaPolicy.toneMode || '').toLowerCase().trim();
+if (expectedToneMode && expectedToneMode !== readingToneMode) {
+  throw new Error(
+    `persona-onepager policy violation: READING_TONE_MODE(${readingToneMode}) must match policy tone mode(${expectedToneMode})`
+  );
+}
 const summaryNaturalMinScore = Number(process.env.SUMMARY_NATURAL_MIN_SCORE || 74);
 const summarySpecificityMinScore = Number(process.env.SUMMARY_SPECIFICITY_MIN_SCORE || 66);
 const summaryRepetitionMaxScore = Number(process.env.SUMMARY_REPETITION_MAX_SCORE || 34);
@@ -450,7 +458,9 @@ function performSpreadDraw({
     summary,
     readingV3,
     tonePayload,
-    readingModel
+    readingModel,
+    policyVersion: personaPolicy.policyVersion,
+    policySource: personaPolicy.sourcePath
   };
 }
 

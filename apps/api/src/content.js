@@ -1,4 +1,5 @@
 import { cards, getCardById } from './data/cards.js';
+import { getPersonaPolicy } from './persona-policy-loader.js';
 import {
   analyzeQuestionContextSync,
   parseChoiceOptions as parseChoiceOptionsEnhanced
@@ -14,6 +15,19 @@ const NATURAL_SPECIFICITY_MIN_SCORE = Number(process.env.NATURAL_SPECIFICITY_MIN
 const NATURAL_REPETITION_MAX_SCORE = Number(process.env.NATURAL_REPETITION_MAX_SCORE || 30);
 const NATURAL_TEMPLATE_MAX_SCORE = Number(process.env.NATURAL_TEMPLATE_MAX_SCORE || 34);
 const TAROT_NARRATIVE_GUARDRAIL_LEVEL = String(process.env.TAROT_NARRATIVE_GUARDRAIL_LEVEL || 'medium').toLowerCase().trim();
+const PERSONA_POLICY = getPersonaPolicy();
+const POLICY_DEFAULT_PERSONA = PERSONA_POLICY.personaResolution.defaultPersona;
+const POLICY_SUPPORTED_PERSONA_KEYS = new Set(
+  PERSONA_POLICY.personaResolution.supportedPersonas.map((item) => `${item.group}:${item.id}`)
+);
+const POLICY_TAROT_PROMPT_LINES = PERSONA_POLICY.roles.tarotLeaderPrompt
+  .split('\n')
+  .map((line) => line.trim())
+  .filter(Boolean);
+const POLICY_COMMON_RULE_LINES = PERSONA_POLICY.roles.commonRulesPrompt
+  .split('\n')
+  .map((line) => line.trim())
+  .filter(Boolean);
 const TAROT_LEARNING_LEAK_PATTERNS = [
   /\[학습 리더\]/g,
   /학습 코칭/g,
@@ -2103,6 +2117,10 @@ function resolveReaderPersonaProfile({ context = '', personaGroup = '', personaI
   const group = String(personaGroup || '').trim();
   const id = String(personaId || '').trim();
   if (group && id) {
+    const explicitKey = `${group}:${id}`;
+    if (!POLICY_SUPPORTED_PERSONA_KEYS.has(explicitKey)) {
+      throw new Error(`persona-onepager policy violation: unsupported explicit persona ${explicitKey}`);
+    }
     return { group, id, source: 'explicit' };
   }
   const text = String(context || '').toLowerCase();
@@ -2119,13 +2137,25 @@ function resolveReaderPersonaProfile({ context = '', personaGroup = '', personaI
   if (/(상담사|내담자|상담)/.test(text)) return { group: 'domain-expert', id: 'counselor', source: 'inferred' };
   if (/(학습코치|코칭|학습자)/.test(text)) return { group: 'domain-expert', id: 'learning_coach', source: 'inferred' };
   if (/(데이터|지표|신뢰구간|분석)/.test(text)) return { group: 'domain-expert', id: 'data_analyst', source: 'inferred' };
-  return { group: 'user', id: 'beginner', source: 'inferred' };
+  return { group: POLICY_DEFAULT_PERSONA.group, id: POLICY_DEFAULT_PERSONA.id, source: 'inferred' };
+}
+
+function buildPolicySteeringLines({ context = '' }) {
+  const out = [];
+  if (POLICY_TAROT_PROMPT_LINES[1]) {
+    out.push(POLICY_TAROT_PROMPT_LINES[1]);
+  }
+  if (/(불안|걱정|초조|두려)/.test(String(context || '')) && POLICY_TAROT_PROMPT_LINES[3]) {
+    out.push(POLICY_TAROT_PROMPT_LINES[3]);
+  }
+  return out;
 }
 
 function applyPersonaAdaptation({ coreMessage = '', interpretation = '', context = '', orientation = 'upright', persona }) {
   let nextCore = String(coreMessage || '').trim();
   let nextInterpretation = String(interpretation || '').trim();
   const extraLines = [];
+  extraLines.push(...buildPolicySteeringLines({ context }));
 
   const byPersona = {
     'user:beginner': '어렵게 넓히지 말고 오늘 실행 1개만 고정하면 흐름이 선명해집니다.',
@@ -2280,7 +2310,7 @@ function enforceTarotGuardrails(text = '') {
     applied = true;
     next = `${next} 지금은 조건을 하나씩 확인하면서 움직이면 판단이 더 안정됩니다.`.trim();
   }
-  const fallbackTail = '지금은 조건을 하나씩 확인하면서 움직이면 판단이 더 안정됩니다.';
+  const fallbackTail = POLICY_COMMON_RULE_LINES[2] || '지금은 조건을 하나씩 확인하면서 움직이면 판단이 더 안정됩니다.';
   const fallbackCount = (next.match(new RegExp(escapeRegex(fallbackTail), 'g')) || []).length;
   if (fallbackCount > 1) {
     applied = true;

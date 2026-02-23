@@ -95,13 +95,17 @@ export const api = {
     variantId?: string | null;
     level: 'beginner' | 'intermediate';
     context?: string;
+    personaGroup?: 'user' | 'planner' | 'developer' | 'domain-expert';
+    personaId?: string;
   }) {
     return request<SpreadDrawResult>(`/api/spreads/${input.spreadId}/draw`, {
       method: 'POST',
       body: JSON.stringify({
         variantId: input.variantId ?? '',
         level: input.level,
-        context: input.context ?? ''
+        context: input.context ?? '',
+        personaGroup: input.personaGroup ?? '',
+        personaId: input.personaId ?? ''
       })
     });
   },
@@ -111,6 +115,8 @@ export const api = {
     level: 'beginner' | 'intermediate';
     context?: string;
     styleMode?: 'neutral' | 'immersive_safe' | 'immersive_v3';
+    personaGroup?: 'user' | 'planner' | 'developer' | 'domain-expert';
+    personaId?: string;
   }) {
     return request<SpreadDrawResultV2>(`/api/v2/spreads/${input.spreadId}/draw`, {
       method: 'POST',
@@ -118,7 +124,9 @@ export const api = {
         variantId: input.variantId ?? '',
         level: input.level,
         context: input.context ?? '',
-        styleMode: input.styleMode ?? 'neutral'
+        styleMode: input.styleMode ?? 'neutral',
+        personaGroup: input.personaGroup ?? '',
+        personaId: input.personaId ?? ''
       })
     });
   },
