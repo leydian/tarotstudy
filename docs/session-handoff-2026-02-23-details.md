@@ -1041,3 +1041,103 @@
 - `495ab5e` Support light theme chat UI and clean duplicate summary lines
 - `234ab04` Refine chat verdict parsing and chatbot-style layout
 - `408c0a3` Add chat-based spread reading UI with route toggle
+
+## 23) 2026-02-23 최신 추가 (스프레드 100종/대화형 리딩/양방향 복원/내보내기)
+
+### 23.1 스프레드 카탈로그 100종 확장 및 핵심변형 통합
+- 변경 파일:
+  - `apps/api/src/index.js`
+  - `apps/web/src/lib/spread-display.ts`
+  - `apps/web/src/pages/SpreadsPage.tsx`
+  - `apps/web/src/pages/spreads-helpers.ts`
+- 핵심:
+  - API 레벨에서 스프레드 카탈로그를 100종으로 확장
+    - 원본 스프레드 + 확장형(동형 배열) 생성
+  - 동일 배열 스프레드 통합 규칙을 전 카드 수로 확장
+    - 기존 4/5/6 카드 제한 제거
+  - 핵심변형 생성 시 목적문구 중복 삽입 방지
+  - 카드뷰/챗뷰 배열 매핑 공통화
+    - `findDrawnItemForSlot`로 슬롯 매칭 로직 통일
+
+### 23.2 도메인별 확장 네이밍 체계 도입
+- 변경 파일:
+  - `apps/api/src/index.js`
+- 핵심:
+  - 확장 스프레드 이름을 `핵심변형 N`에서 도메인 기반 테마명으로 전환
+  - 도메인 자동 판별(`관계/커리어/학습/재정/건강/라이프/일반`) 후 테마 풀 순환 적용
+  - 예시:
+    - `연간 운세 (12개월) · 신뢰 재정렬`
+    - `시험 합격 5카드 · 학습 루틴 안정화`
+
+### 23.3 챗리딩 UI 구조 개선 및 중복 카드 표시 제거
+- 변경 파일:
+  - `apps/web/src/pages/ChatSpreadPage.tsx`
+  - `apps/web/src/styles/spreads.css`
+- 핵심:
+  - 챗 버블에서 첫 카드 별도 spotlight 제거(연간운세 중복 표기 해소)
+  - 배열 렌더를 카드뷰와 동일 슬롯 매핑으로 통일
+  - 긴 요약을 구조화된 섹션 기반 렌더로 개선 후, 전체 펼침 모드로 고정
+  - 월별 운세 12개월을 개별 블록으로 분리하여 스캔성 향상
+
+### 23.4 2페르소나 대화형 리딩 고도화
+- 변경 파일:
+  - `apps/web/src/pages/ChatSpreadPage.tsx`
+- 핵심:
+  - 타로리더 중심 발화 + 학습리더 보조 코칭 비중으로 재조정
+  - 타로리더 브릿지 문구(맥락 파악 + 공감) 추가
+  - 대화 턴 정규화/중복 제거 강화
+    - 템플릿 접두 제거
+    - 의미 중복 키 기반 dedupe
+  - 포지션 근거 문장 다양화
+    - 과거: 배경 패턴
+    - 현재: 조절 변수
+    - 미래: 조건부 전개
+  - 학습리더 코칭 구체화
+    - `25분 실행 + 5분 기록`
+    - `완료율/체감점수`
+    - `맞음/어긋남 비교`
+
+### 23.5 카드뷰↔챗봇 동일 리딩 복원
+- 변경 파일:
+  - `apps/web/src/lib/chat-draw-cache.ts` (신규)
+  - `apps/web/src/pages/ChatSpreadPage.tsx`
+  - `apps/web/src/pages/SpreadsPage.tsx`
+- 핵심:
+  - 드로우 결과를 세션 캐시에 저장
+  - URL 파라미터(`fromChat/fromCard`, `chatDrawAt`, `rawSpreadId`)로 복원 조건 고정
+  - 카드뷰→챗봇, 챗봇→카드뷰 이동 시 같은 리딩 결과를 동일하게 재렌더
+
+### 23.6 TXT/PDF 내보내기 기능 도입 및 리치 포맷 고도화
+- 변경 파일:
+  - `apps/web/src/lib/reading-export.ts` (신규 후 고도화)
+  - `apps/web/src/pages/ChatSpreadPage.tsx`
+  - `apps/web/src/pages/SpreadsPage.tsx`
+  - `apps/web/test/smoke.test.mjs`
+- 핵심:
+  - 카드뷰/챗봇 공통 내보내기 버튼 추가
+    - `TXT 내보내기`
+    - `PDF 내보내기`
+  - TXT 포맷:
+    - 대화 요약
+    - 실행 체크리스트
+    - 카드별 근거(핵심/해석/학습)
+  - PDF 포맷:
+    - 브라우저 print 기반 리치 템플릿
+    - 메타(질문/시각) + 요약 박스 + 체크리스트 + 카드 근거 섹션
+  - 참고:
+    - `jspdf` 설치 시 네트워크 오류(`EAI_AGAIN`)가 발생해 외부 라이브러리 없이 구현
+
+### 23.7 검증 로그
+- `npm run typecheck:web` 통과 (반복 실행 기준)
+- `npm run test:web` 통과 (smoke 강화 포함)
+- `npm run test:api` 통과 (해당 백엔드 변경 시점 기준)
+
+### 23.8 관련 커밋
+- `f38371e` feat: expand spread catalog to 100 and unify spread/chat layouts
+- `a7587b6` feat: shift chat reading to dual-persona conversational layout
+- `e6fd8dd` feat: preserve chat draw in card view and rebalance dual-persona dialogue
+- `c1b6c9d` feat: make chat summary fully expanded and sync reading across views
+- `3e013e6` fix: improve dialogue quality and deduplicate chat reading turns
+- `5206cd9` fix: reduce repetitive tarot dialogue and diversify position evidence
+- `45253f1` feat: add txt/pdf export for chat and card views
+- `4df4365` feat: enhance conversational flow and rich export formatting

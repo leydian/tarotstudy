@@ -558,3 +558,39 @@
   - `docs/session-handoff-2026-02-23-details.md`
   - `docs/codex-updates-2026-02-22.md`
   - 최신 추가 내역은 `docs/session-handoff-2026-02-23-details.md`의 `21)` 섹션 참조
+
+## 7) 2026-02-23 최신 후속 반영 (스프레드/챗리딩/내보내기)
+- 스프레드 확장/핵심변형 통합
+  - API 기준 스프레드 카탈로그를 100종으로 확장
+  - 동일 배열 스프레드는 카드 수 제한 없이 핵심변형으로 자동 묶음
+  - 도메인별 확장 이름(관계/커리어/학습/재정/건강/라이프/일반) 적용
+- 챗리딩/카드뷰 정합성 개선
+  - 챗에서 보이는 배열과 카드뷰 배열 매핑 로직을 공통화
+  - 연간운세 첫 카드 중복 표기 제거(배열 12장만 표시)
+  - 긴 요약을 구조화(요약+섹션)하고 이후 전체 펼침 모드로 고정
+- 2페르소나 대화형 리딩 고도화
+  - 타로리더 중심 설명 + 학습리더 보조 코칭 비중 조정
+  - 맥락 브릿지(공감형 도입 문구) 추가
+  - 반복 문장/중복 턴 제거(정규화 키 + dedupe)
+  - 포지션별 근거 문장을 역할 기반으로 분기(과거/현재/미래)
+- 카드뷰↔챗봇 동일 리딩 복원
+  - `sessionStorage` 캐시 + URL 파라미터(`fromChat/fromCard`, `chatDrawAt`, `rawSpreadId`)로 양방향 복원
+  - 챗에서 카드뷰로, 카드뷰에서 챗으로 이동해도 동일 드로우 결과 유지
+- 내보내기 기능 추가/고도화
+  - 카드뷰/챗봇 공통 `TXT 내보내기`, `PDF 내보내기` 추가
+  - TXT: 대화 요약 + 실행 체크리스트 + 카드 근거 포함
+  - PDF: 브라우저 print 기반 리치 템플릿(메타/요약/체크리스트/카드근거 섹션)
+  - 참고: `jspdf` 설치는 네트워크(`EAI_AGAIN`)로 실패하여 외부 의존성 없이 구현
+- 검증
+  - `npm run typecheck:web` 통과
+  - `npm run test:web` 통과
+  - `npm run test:api` 통과(해당 구간 변경 시점 기준)
+- 최신 관련 커밋
+  - `f38371e` feat: expand spread catalog to 100 and unify spread/chat layouts
+  - `a7587b6` feat: shift chat reading to dual-persona conversational layout
+  - `e6fd8dd` feat: preserve chat draw in card view and rebalance dual-persona dialogue
+  - `c1b6c9d` feat: make chat summary fully expanded and sync reading across views
+  - `3e013e6` fix: improve dialogue quality and deduplicate chat reading turns
+  - `5206cd9` fix: reduce repetitive tarot dialogue and diversify position evidence
+  - `45253f1` feat: add txt/pdf export for chat and card views
+  - `4df4365` feat: enhance conversational flow and rich export formatting
