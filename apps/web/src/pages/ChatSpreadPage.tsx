@@ -517,8 +517,8 @@ function buildExpandedCardDialog(reading: SpreadDrawResult) {
     const next = items[idx + 1];
 
     turns.push(buildTurn('tarot', 'detail', lead));
-    if (core) turns.push(buildTurn('tarot', 'detail', `이 자리의 핵심은 ${core}`));
-    if (interpretation) turns.push(buildTurn('tarot', 'detail', `같은 신호를 더 풀면 ${interpretation}`));
+    if (core) turns.push(buildTurn('tarot', 'detail', `여기서 핵심만 짚으면 ${core}`));
+    if (interpretation) turns.push(buildTurn('tarot', 'detail', `쉽게 말하면 ${interpretation}`));
     if (next) {
       turns.push(buildTurn('tarot', 'detail', `${item.position.name} 장면 다음에는 ${next.position.name} 장면으로 흐름이 이어지고, 여기서 판단 강도가 결정됩니다`));
     }
@@ -877,39 +877,56 @@ function sanitizeDialogLine(text: string) {
 }
 
 function applyTarotStoryVoice(text: string, purpose: DialoguePurpose) {
-  const line = String(text || '').trim();
+  const line = humanizeTarotLine(String(text || '').trim());
   if (!line) return line;
   if (purpose === 'bridge') {
     return /장면|흐름/.test(line)
       ? line
-      : `지금 펼쳐진 장면을 먼저 비춰보면, ${line}`;
+      : `지금 상황부터 가볍게 짚어보면, ${line}`;
   }
   if (purpose === 'verdict') {
     return /흐름|전개/.test(line)
-      ? `차분히 보면 ${line}`
-      : `차분히 보면 핵심 흐름은 ${line}`;
+      ? `지금 흐름만 보면 ${line}`
+      : `지금 흐름만 보면 핵심은 ${line}`;
   }
   if (purpose === 'evidence') {
     return /상징/.test(line)
-      ? `카드 상징을 기준으로 근거를 묶으면 ${line}`
-      : `카드 상징을 기준으로 근거를 묶으면 ${line}, 이 신호가 해석의 축이 됩니다`;
+      ? `카드 근거를 모아보면 ${line}`
+      : `카드 근거를 모아보면 ${line}, 이 신호가 지금 판단의 기준점이에요`;
   }
   if (purpose === 'caution') {
     return /주의 포인트/.test(line)
-      ? `${line} 이 구간에서는 해석 단정을 늦추는 편이 안전합니다`
+      ? `${line} 이 구간은 단정하지 말고 반응을 한 번 더 확인하는 게 안전해요`
       : `주의 포인트는 ${line}`;
   }
   if (purpose === 'action') {
     return /실행 기준/.test(line)
-      ? `${line} 오늘은 행동 1개와 관찰 1개만 남겨 다음 장면으로 넘겨보세요`
+      ? `${line} 오늘은 행동 1개만 하고, 반응 1개만 확인해 다음으로 넘기면 돼요`
       : `지금 실행 기준은 ${line}`;
   }
   if (purpose === 'detail') {
     return /장면|상징|흐름|실행/.test(line)
       ? line
-      : `이 장면에서 보면 ${line}`;
+      : `지금 장면에서 보면 ${line}`;
   }
   return line;
+}
+
+function humanizeTarotLine(text: string) {
+  return String(text || '')
+    .replace(/실행 여지가 열려 있는 구간입니다/g, '지금은 해볼 만한 타이밍이에요')
+    .replace(/오늘의 테마는\s*"?([^"]+)"?\s*신호를 무리 없이 이어가는 운영입니다/g, '오늘 포인트는 $1 흐름을 무리 없이 이어가는 거예요')
+    .replace(/핵심 변수와 즉시 대응을 기준으로 읽으실 때 판단이 가장 선명해집니다/g, '지금은 중요한 포인트 하나만 잡고 바로 반응을 보는 게 제일 정확해요')
+    .replace(/감정 반응보다 기준 문장을 먼저 고정하는 편이 정확합니다/g, '감정이 먼저 튀기 전에 기준 문장 하나를 먼저 잡는 편이 더 정확해요')
+    .replace(/재점검 기준은 실행 후 체감 변화 1개입니다/g, '확인할 건 실행 후 체감 변화 한 가지면 충분해요')
+    .replace(/기준이 개선되지 않으면 강도를 더 낮추는 쪽으로 조정하세요/g, '체감이 안 좋아지면 강도를 한 단계 더 낮춰 조정해보세요')
+    .replace(/결론을 내리기보다 확인 질문 1개만 먼저 건네보세요/g, '결론부터 내리지 말고 확인 질문 하나만 먼저 보내보세요')
+    .replace(/가장 선명해집니다/g, '가장 또렷해져요')
+    .replace(/정리됩니다/g, '정리돼요')
+    .replace(/입니다\./g, '이에요.')
+    .replace(/습니다\./g, '어요.')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 function normalizeDialogKey(text: string) {
