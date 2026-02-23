@@ -1078,6 +1078,19 @@
   margin: 0;
 }
 
+.chat-summary-bubbles {
+  margin-top: 12px;
+  display: grid;
+  gap: 8px;
+}
+
+.chat-natural-bubble {
+  border: 1px solid color-mix(in srgb, #6a4fcb 28%, var(--line));
+  border-radius: 14px;
+  background: linear-gradient(160deg, #1a1d31 0%, #131628 100%);
+  padding: 10px 12px;
+}
+
 .chat-evidence-block {
   margin-top: 12px;
 }
@@ -1223,6 +1236,11 @@
 
 :root[data-theme='light'] .chat-natural-paragraph {
   color: var(--ink-0);
+}
+
+:root[data-theme='light'] .chat-natural-bubble {
+  background: linear-gradient(160deg, #ffffff 0%, #f4f7ff 100%);
+  border-color: color-mix(in srgb, #4f6de6 22%, var(--line));
 }
 
 :root[data-theme='light'] .chat-evidence-inline h5 {

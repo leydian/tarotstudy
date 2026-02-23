@@ -6,6 +6,8 @@ import type { Spread, SpreadDrawResult } from '../types';
 import { TarotImage } from '../components/TarotImage';
 import { normalizeDisplayText } from './spreads-presenters';
 import { recommendSpreadForQuestion } from '../lib/spread-recommendation';
+import { buildDisplaySpreads, resolveDisplaySpreadId } from '../lib/spread-display';
+import { findDrawnItemForSlot, toParagraphBlocks } from './spreads-helpers';
 
 type ChatMessage =
   | {
@@ -30,7 +32,8 @@ const STARTER_PROMPTS = [
 export function ChatSpreadPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const spreadsQuery = useQuery({ queryKey: ['spreads'], queryFn: api.getSpreads });
-  const spreads = spreadsQuery.data ?? [];
+  const rawSpreads = spreadsQuery.data ?? [];
+  const spreads = useMemo(() => buildDisplaySpreads(rawSpreads), [rawSpreads]);
 
   const selectedSpreadIdFromQuery = searchParams.get('spreadId') || '';
   const levelFromQuery = searchParams.get('level') === 'intermediate' ? 'intermediate' : 'beginner';
@@ -73,10 +76,10 @@ export function ChatSpreadPage() {
 
   const drawMutation = useMutation({
     mutationFn: async (question: string) => {
-      if (!spreads.length) throw new Error('No spread available');
+      if (!rawSpreads.length) throw new Error('No spread available');
       const recommendation = await recommendSpreadForQuestion({
         question,
-        spreads,
+        spreads: rawSpreads,
         analyze: async (text) => {
           const result = await api.analyzeQuestionV2({ text, mode: 'hybrid' });
           return {
@@ -95,7 +98,7 @@ export function ChatSpreadPage() {
       });
     },
     onSuccess: (payload, question) => {
-      setSelectedSpreadId(payload.spreadId);
+      setSelectedSpreadId(resolveDisplaySpreadId(payload.spreadId, spreads));
       setMessages((prev) => [
         ...prev,
         { id: `u-${Date.now()}-${prev.length}`, role: 'user', type: 'text', text: question },
@@ -244,29 +247,29 @@ function ChatBubble({
 
   const reading = message.payload;
   const narrativeParagraph = buildNaturalNarrativeParagraph(reading);
+  const narrativeBubbles = buildNarrativeBubbles(narrativeParagraph);
   const spreadMeta = spreads.find((item) => item.id === reading.spreadId) || null;
-  const spotlight = reading.items[0] || null;
+  const effectiveSpreadMeta = spreadMeta
+    || spreads.find((item) => (item.variants || []).some((variant) => variant.sourceSpreadId === reading.spreadId))
+    || null;
   const verdict = inferVerdict(reading.summary);
   const keyQuestion = reading.context?.trim() || '질문';
 
   return (
     <div className="chat-row chat-row-assistant">
       <article className="chat-bubble chat-bubble-assistant chat-reading-bubble">
-        {spotlight && spreadMeta && (
+        {effectiveSpreadMeta && (
           <section className="chat-spread-layout-wrap">
-            <h5 className="chat-layout-title">{spreadMeta.name} 배열</h5>
+            <h5 className="chat-layout-title">{effectiveSpreadMeta.name} 배열</h5>
             <div
               className="chat-spread-layout"
               style={{
-                gridTemplateColumns: `repeat(${spreadMeta.layout.cols}, minmax(86px, 1fr))`,
-                gridTemplateRows: `repeat(${spreadMeta.layout.rows}, auto)`
+                gridTemplateColumns: `repeat(${effectiveSpreadMeta.layout.cols}, minmax(86px, 1fr))`,
+                gridTemplateRows: `repeat(${effectiveSpreadMeta.layout.rows}, auto)`
               }}
             >
-              {spreadMeta.layout.slots.map((slot, idx) => {
-                const byName = reading.items.find((item) => item.position.name === slot.position) || null;
-                const index = Number(slot.position) - 1;
-                const byIndex = Number.isNaN(index) ? null : reading.items[index];
-                const drawn = byName ?? byIndex ?? null;
+              {effectiveSpreadMeta.layout.slots.map((slot, idx) => {
+                const drawn = findDrawnItemForSlot(reading.items, slot);
                 if (!drawn) return null;
                 return (
                   <div
@@ -294,26 +297,14 @@ function ChatBubble({
           </section>
         )}
 
-        {spotlight && (
-          <section className="chat-spotlight-card">
-            <TarotImage
-              src={spotlight.card.imageUrl}
-              sources={spotlight.card.imageSources}
-              cardId={spotlight.card.id}
-              alt={spotlight.card.nameKo}
-              className={`chat-spotlight-thumb ${spotlight.orientation === 'reversed' ? 'card-reversed' : ''}`}
-              loading="lazy"
-            />
-            <p className="chat-spotlight-name">{spotlight.card.nameKo}</p>
-          </section>
-        )}
-
         <div className="chat-verdict-wrap">
           <span className={`chat-verdict-pill chat-verdict-${verdict.kind}`}>{verdict.label}</span>
         </div>
 
-        <section className="chat-summary-card chat-summary-card-deep">
-          <p className="chat-natural-paragraph">{narrativeParagraph}</p>
+        <section className="chat-summary-bubbles">
+          {narrativeBubbles.map((line, idx) => (
+            <p key={`summary-bubble-${idx}`} className="chat-natural-paragraph chat-natural-bubble">{line}</p>
+          ))}
         </section>
 
         <div className="chat-reading-actions">
@@ -393,6 +384,13 @@ function buildNaturalNarrativeParagraph(reading: SpreadDrawResult) {
     .join(' ')
     .replace(/\s{2,}/g, ' ')
     .trim();
+}
+
+function buildNarrativeBubbles(text: string) {
+  const blocks = toParagraphBlocks(String(text || ''));
+  if (blocks.length > 0) return blocks;
+  const fallback = String(text || '').trim();
+  return fallback ? [fallback] : ['리딩 메시지를 준비 중입니다.'];
 }
 
 function firstSentence(text = '') {

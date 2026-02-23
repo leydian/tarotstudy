@@ -5,7 +5,6 @@ type SpreadVariantLike = NonNullable<Spread['variants']>[number];
 export function buildDisplaySpreads(rawSpreads: Spread[]) {
   const groups = new Map<string, Spread[]>();
   for (const spread of rawSpreads) {
-    if (![4, 5, 6].includes(spread.cardCount)) continue;
     const key = buildLayoutSignature(spread);
     const list = groups.get(key) || [];
     list.push(spread);
@@ -31,10 +30,11 @@ export function buildDisplaySpreads(rawSpreads: Spread[]) {
       }))
     ];
     const dedupedVariants = dedupeVariants(baseVariants);
+    const hasMergedPurpose = /동일 배열 스프레드는 핵심 변형에서 선택할 수 있습니다\.$/.test(base.purpose);
 
     mergedById.set(base.id, {
       ...base,
-      purpose: `${base.purpose} 동일 배열 스프레드는 핵심 변형에서 선택할 수 있습니다.`,
+      purpose: hasMergedPurpose ? base.purpose : `${base.purpose} 동일 배열 스프레드는 핵심 변형에서 선택할 수 있습니다.`,
       variants: dedupedVariants
     });
 
@@ -47,6 +47,16 @@ export function buildDisplaySpreads(rawSpreads: Spread[]) {
   return rawSpreads
     .map((spread) => mergedById.get(spread.id))
     .filter(Boolean) as Spread[];
+}
+
+export function resolveDisplaySpreadId(
+  rawSpreadId: string,
+  displaySpreads: Array<{ id: string; variants?: Array<{ sourceSpreadId?: string }> }>
+) {
+  const exact = displaySpreads.find((spread) => spread.id === rawSpreadId);
+  if (exact) return exact.id;
+  const grouped = displaySpreads.find((spread) => (spread.variants || []).some((variant) => variant.sourceSpreadId === rawSpreadId));
+  return grouped?.id ?? rawSpreadId;
 }
 
 function dedupeVariants(variants: SpreadVariantLike[]) {

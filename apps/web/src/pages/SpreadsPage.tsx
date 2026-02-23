@@ -3,7 +3,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { Link, useSearchParams } from 'react-router-dom';
 import { api } from '../lib/api';
 import { recommendSpreadForQuestion } from '../lib/spread-recommendation';
-import { buildDisplaySpreads } from '../lib/spread-display';
+import { buildDisplaySpreads, resolveDisplaySpreadId } from '../lib/spread-display';
 import { TarotImage } from '../components/TarotImage';
 import { getProgressUserId, useProgressStore } from '../state/progress';
 import type { SpreadDrawResult } from '../types';
@@ -12,6 +12,7 @@ import {
   buildLearningDigest,
   buildReadingInsights,
   cleanCoachPrefix,
+  findDrawnItemForSlot,
   mergeReviewNoteAndChecklist,
   mergeTarotMessage,
   parseChecklistFromNote,
@@ -186,7 +187,6 @@ export function SpreadsPage() {
     () => Array.from(new Set(drawItems.flatMap((item) => item.card.keywords || []).filter(Boolean))),
     [drawItems]
   );
-  const cardByPosition = new Map(drawItems.map((item) => [item.position.name, item]));
   const spreadVisualPreset =
     (selected ? SPREAD_VISUAL_PRESETS[selected.id] : null) ??
     ((selected?.cardCount ?? 1) <= 5
@@ -372,10 +372,7 @@ export function SpreadsPage() {
         >
           {selected.layout.slots.map((slot, idx) => (
             (() => {
-              const byName = cardByPosition.get(slot.position);
-              const index = Number(slot.position) - 1;
-              const byIndex = Number.isNaN(index) ? null : drawItems[index];
-              const drawn = byName ?? byIndex ?? null;
+              const drawn = findDrawnItemForSlot(drawItems, slot);
 
               return (
                 <div
@@ -846,13 +843,6 @@ export function SpreadsPage() {
       </article>
     </section>
   );
-}
-
-function resolveDisplaySpreadId(rawSpreadId: string, displaySpreads: Array<{ id: string; variants?: Array<{ sourceSpreadId?: string }> }>) {
-  const exact = displaySpreads.find((spread) => spread.id === rawSpreadId);
-  if (exact) return exact.id;
-  const grouped = displaySpreads.find((spread) => (spread.variants || []).some((variant) => variant.sourceSpreadId === rawSpreadId));
-  return grouped?.id ?? rawSpreadId;
 }
 
 function CoachSummaryView({

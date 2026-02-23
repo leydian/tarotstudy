@@ -7,6 +7,17 @@ export type ReviewChecklist = {
   condition: boolean;
 };
 
+export function findDrawnItemForSlot(
+  items: SpreadDrawResult['items'],
+  slot: { position: string }
+) {
+  const byName = items.find((item) => item.position.name === slot.position);
+  if (byName) return byName;
+  const index = Number(slot.position) - 1;
+  if (Number.isNaN(index)) return null;
+  return items[index] ?? null;
+}
+
 export function toParagraphBlocks(text: string) {
   const rawBlocks = String(text || '')
     .split(/\n{2,}/)
