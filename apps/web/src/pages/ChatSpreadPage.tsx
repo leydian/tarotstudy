@@ -913,7 +913,7 @@ function applyTarotStoryVoice(text: string, purpose: DialoguePurpose) {
 }
 
 function humanizeTarotLine(text: string) {
-  return String(text || '')
+  const plain = String(text || '')
     .replace(/실행 여지가 열려 있는 구간입니다/g, '지금은 해볼 만한 타이밍이에요')
     .replace(/오늘의 테마는\s*"?([^"]+)"?\s*신호를 무리 없이 이어가는 운영입니다/g, '오늘 포인트는 $1 흐름을 무리 없이 이어가는 거예요')
     .replace(/핵심 변수와 즉시 대응을 기준으로 읽으실 때 판단이 가장 선명해집니다/g, '지금은 중요한 포인트 하나만 잡고 바로 반응을 보는 게 제일 정확해요')
@@ -925,6 +925,39 @@ function humanizeTarotLine(text: string) {
     .replace(/정리됩니다/g, '정리돼요')
     .replace(/입니다\./g, '이에요.')
     .replace(/습니다\./g, '어요.')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return simplifyTarotWordsForStudents(plain);
+}
+
+function simplifyTarotWordsForStudents(text: string) {
+  return String(text || '')
+    .replace(/핵심 변수/g, '중요한 포인트')
+    .replace(/변수/g, '포인트')
+    .replace(/즉시 대응/g, '바로 대응')
+    .replace(/판단/g, '결정')
+    .replace(/해석/g, '뜻풀이')
+    .replace(/국면/g, '상황')
+    .replace(/전개/g, '흐름')
+    .replace(/기준점/g, '기준')
+    .replace(/정렬/g, '정리')
+    .replace(/운영/g, '진행')
+    .replace(/강도/g, '세기')
+    .replace(/단정/g, '확정')
+    .replace(/관찰/g, '확인')
+    .replace(/체감/g, '느낌')
+    .replace(/완충 행동/g, '실수 줄이는 행동')
+    .replace(/리스크/g, '위험')
+    .replace(/소모/g, '에너지 빠짐')
+    .replace(/이번 주에는 상대 마음 추측 대신/g, '이번 주에는 상대 마음을 넘겨짚지 말고')
+    .replace(/흐름이 이어지고/g, '흐름이 계속되고')
+    .replace(/짚어보겠습니다/g, '같이 볼게요')
+    .replace(/확인해보세요/g, '확인해봐요')
+    .replace(/기록해보세요/g, '적어봐요')
+    .replace(/정해보세요/g, '정해봐요')
+    .replace(/정리해보세요/g, '정리해봐요')
+    .replace(/해석의 축/g, '뜻풀이의 중심')
+    .replace(/가장 또렷해져요/g, '훨씬 잘 보여요')
     .replace(/\s+/g, ' ')
     .trim();
 }
