@@ -12,12 +12,22 @@ export function buildReadingModel({
   items = [],
   context = '',
   summary = '',
-  readingV3 = null
+  readingV3 = null,
+  voiceProfileMeta = null
 }) {
   const analysis = analyzeQuestionContextV2Sync(context, { mode: 'hybrid', flag: true });
   const hasV3 = readingV3 && typeof readingV3 === 'object';
   const summaryLines = splitSummaryLines(summary);
   const v3Evidence = Array.isArray(readingV3?.evidence) ? readingV3.evidence : [];
+
+  // 방안 2: voiceProfile 메타 실연결 — storyDensity로 chatDetail 문장 수 상한 결정
+  const storyDensity = voiceProfileMeta?.storyDensity || (hasV3 ? 'mid' : 'low');
+  const chatDetailMaxSentences = storyDensity === 'high' ? 5 : storyDensity === 'low' ? 3 : 4;
+  // symbolHits 임계치 미달 시 quality gate 보강 플래그
+  const symbolHits = typeof voiceProfileMeta?.symbolHits === 'number' ? voiceProfileMeta.symbolHits : null;
+  const symbolHitsInsufficient = symbolHits !== null && symbolHits < 2;
+  // arcProgression으로 카드 근거 문장 시제/톤 분기
+  const arcProgression = voiceProfileMeta?.arcProgression || 'general';
   const evidence = v3Evidence.slice(0, 3).map((entry) => ({
     position: String(entry?.position || ''),
     cardName: String(entry?.cardName || ''),
@@ -25,11 +35,24 @@ export function buildReadingModel({
     keyword: String(entry?.keyword || ''),
     line: String(entry?.narrativeLine || '').trim()
   }));
+  // 방안 5: evidence 라인에 arcPhase 연결어 삽입 (다카드 전용)
+  const evidenceWithArc = evidence.map((item, idx) => {
+    const total = evidence.length;
+    if (total <= 1) return item.line;
+    const arcPhase = idx === 0 ? 'rising'
+      : idx === total - 1 ? 'resolution'
+      : 'peak';
+    const connector = arcPhase === 'rising' ? ''
+      : arcPhase === 'peak' ? '이 흐름 위에서, '
+      : '이 모든 흐름을 종합하면, ';
+    return connector ? `${connector}${item.line}` : item.line;
+  }).filter(Boolean);
+
   const cardBlocks = hasV3
     ? [
       String(readingV3.bridge || '').trim(),
       String(readingV3.verdict?.sentence || '').trim(),
-      ...evidence.map((item) => item.line).filter(Boolean),
+      ...evidenceWithArc,
       String(readingV3.caution || '').trim(),
       String(readingV3.action?.now || '').trim(),
       String(readingV3.closing || '').trim()
@@ -51,16 +74,31 @@ export function buildReadingModel({
       text: line
     }));
 
+  // 방안 2: arcProgression으로 카드 위치별 톤 분기 접두어
+  const totalItems = Math.min(items.length, 6);
+  function resolveArcTonePrefix(idx, total, arcProg) {
+    if (total <= 1) return '';
+    const phase = idx === 0 ? 'rising'
+      : idx === total - 1 ? 'resolution'
+      : (idx <= 1 ? 'rising' : 'peak');
+    if (arcProg === 'falling' && phase === 'peak') return '흐름이 전환되면서, ';
+    if (phase === 'rising') return idx === 0 ? '' : '이 흐름 위에서, ';
+    if (phase === 'peak') return '앞 카드의 흐름을 이어받아, ';
+    if (phase === 'resolution') return '이 모든 흐름을 종합하면, ';
+    return '';
+  }
+
   const detailTurns = [];
-  for (const item of items.slice(0, 6)) {
+  for (let i = 0; i < totalItems; i += 1) {
+    const item = items[i];
     const orientation = item?.orientation === 'reversed' ? '역방향' : '정방향';
-    const keyword = item?.card?.keywords?.[0] || '핵심 신호';
     const position = item?.position?.name || '포지션';
     const cardName = item?.card?.nameKo || '카드';
+    const arcPrefix = resolveArcTonePrefix(i, totalItems, arcProgression);
     detailTurns.push({
       speaker: 'tarot',
       purpose: 'detail',
-      text: `${position} 자리에서 ${cardName} ${orientation} 카드가 나왔습니다.`
+      text: `${arcPrefix}${position} 자리에서 ${cardName} ${orientation} 카드가 나왔습니다.`
     });
     if (item?.coreMessage) {
       detailTurns.push({
@@ -76,9 +114,11 @@ export function buildReadingModel({
         text: String(item.interpretation).trim()
       });
     }
+    // 방안 2: chatDetailMaxSentences 상한 적용 (항목별 누적 제한)
+    if (detailTurns.filter((t) => t.speaker === 'tarot').length >= chatDetailMaxSentences * (i + 1)) break;
   }
   if (!detailTurns.length) {
-    for (const line of summaryLines.slice(0, 10)) {
+    for (const line of summaryLines.slice(0, chatDetailMaxSentences * 2)) {
       detailTurns.push({ speaker: 'tarot', purpose: 'detail', text: line });
     }
   }
@@ -148,8 +188,16 @@ export function buildReadingModel({
     }
   };
 
-  const quality = enforceModelQualityProfileB(model);
-  model.meta.quality = quality;
+  // 방안 2: symbolHits 미달 시 quality gate 강화 — specificityScore 임계치를 낮춰 재작성 빈도 증가
+  const quality = enforceModelQualityProfileB(model, { symbolHitsInsufficient });
+  model.meta.quality = {
+    ...quality,
+    voiceProfile: voiceProfileMeta?.voiceProfile || 'calm-oracle',
+    storyDensity,
+    symbolHits: symbolHits ?? 0,
+    arcProgression,
+    symbolHitsInsufficient
+  };
   return model;
 }
 
@@ -257,7 +305,7 @@ function rewriteModelLines(lines = [], context = '') {
   return out;
 }
 
-function enforceModelQualityProfileB(model) {
+function enforceModelQualityProfileB(model, options = {}) {
   const sourceLines = Array.isArray(model?.channel?.card?.blocks)
     ? model.channel.card.blocks.map((line) => normalizeLine(line)).filter(Boolean)
     : [];
@@ -271,7 +319,10 @@ function enforceModelQualityProfileB(model) {
   let redundancyScore = scoreRedundancy(context);
   let rewriteApplied = false;
 
-  if (naturalnessScore < 80 || specificityScore < 80 || repetitionScore > 30 || templateScore > 0 || grammarScore < 90 || redundancyScore > 25) {
+  // 방안 2: symbolHits 미달 시 specificityScore 임계치를 60으로 낮춰 재작성 게이트 더 자주 발동
+  const specificityThreshold = options.symbolHitsInsufficient ? 60 : 80;
+
+  if (naturalnessScore < 80 || specificityScore < specificityThreshold || repetitionScore > 30 || templateScore > 0 || grammarScore < 90 || redundancyScore > 25) {
     workingLines = rewriteModelLines(sourceLines, context);
     const rewritten = workingLines.join(' ');
     naturalnessScore = scoreNaturalness(rewritten);

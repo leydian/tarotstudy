@@ -139,14 +139,27 @@ export function makeDrawEngine({ spreadCatalog, progressStore, telemetryStore, p
       items,
       context,
       level,
-      userHistory
+      userHistory,
+      personaGroup,
+      personaId
     });
+    // 방안 2: items에서 첫 번째 tarotPersonaMeta의 voiceProfile 메타를 readingModel에 전달
+    const firstPersonaMeta = items[0]?.tarotPersonaMeta || null;
+    const voiceProfileMeta = firstPersonaMeta
+      ? {
+        voiceProfile: firstPersonaMeta.voiceProfile || 'calm-oracle',
+        storyDensity: firstPersonaMeta.storyDensity || 'mid',
+        symbolHits: firstPersonaMeta.symbolHits ?? 0,
+        arcProgression: firstPersonaMeta.arcProgression || 'general'
+      }
+      : null;
     const readingModel = buildReadingModel({
       spreadId: spread.id,
       items,
       context,
       summary,
-      readingV3: rawReadingV3
+      readingV3: rawReadingV3,
+      voiceProfileMeta
     });
     const readingV3 = deriveReadingV3FromModel(readingModel) || rawReadingV3;
     const tonePayload = deriveTonePayloadFromModel(readingModel, summary);

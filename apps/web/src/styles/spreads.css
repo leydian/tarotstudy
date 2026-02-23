@@ -13,120 +13,107 @@
 }
 
 .spread-card {
+  aspect-ratio: 5 / 8;
+  width: 100%;
+  max-width: 160px;
   border: 1px solid color-mix(in srgb, var(--brand-1) 30%, var(--line));
-  border-radius: 12px;
+  border-radius: 8px;
   background: color-mix(in srgb, var(--accent-soft) 50%, var(--reading-bg));
+  /* Card Back Pattern for empty slots */
+  background-image: 
+    repeating-linear-gradient(45deg, transparent, transparent 10px, color-mix(in srgb, var(--brand-1) 5%, transparent) 10px, color-mix(in srgb, var(--brand-1) 5%, transparent) 20px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--accent-soft) 20%, var(--reading-bg)), color-mix(in srgb, var(--accent-soft) 40%, var(--reading-bg)));
   color: var(--ink-0);
-  font-size: 1rem;
   display: flex;
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 8px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-  flex-direction: column;
-  gap: 10px;
+  padding: 0;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.12), inset 0 0 0 1px rgba(255,255,255,0.05);
   position: relative;
   transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  overflow: hidden;
 }
 
 .spread-card-drawn {
   border-color: var(--brand-1);
   background: var(--reading-bg);
-  box-shadow: 0 12px 24px color-mix(in srgb, var(--brand-1) 20%, transparent);
-  transform: translateY(-4px) scale(1.02);
+  background-image: none;
+  box-shadow: 0 15px 35px color-mix(in srgb, var(--brand-1) 25%, transparent);
+  transform: translateY(-6px) rotate(0deg);
   z-index: 10;
 }
 
-.spread-card-drawn strong {
-  font-size: 0.9rem;
-}
-
 .spread-slot-thumb {
-  width: 108px;
-  min-width: 108px;
-  height: 162px;
-  border-radius: 10px;
-  border: 1px solid color-mix(in srgb, var(--brand-1) 28%, var(--line));
+  width: 100%;
+  height: 100%;
   object-fit: cover;
-  background: var(--reading-bg);
-  transition: transform 0.3s ease;
-}
-
-.card-reversed {
-  transform: rotate(180deg);
-}
-
-.spread-slot-link {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  color: inherit;
-  text-decoration: none;
+  transition: transform 0.5s ease;
 }
 
 .spread-slot-link-drawn {
   width: 100%;
-  min-height: 100%;
+  height: 100%;
+  display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  text-align: center;
 }
 
 .spread-slot-meta {
-  min-width: 0;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%);
+  padding: 20px 8px 8px;
+  color: #fff;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  align-items: center;
-  justify-content: center;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.spread-card-drawn:hover .spread-slot-meta {
+  opacity: 1;
 }
 
 .spread-slot-position {
-  font-size: 1.1rem;
-  font-weight: 700;
-  line-height: 1.2;
-  letter-spacing: -0.01em;
-}
-
-.spread-slot-position-empty {
-  margin: auto;
-  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .spread-slot-name {
-  font-size: 1.2rem;
+  font-size: 0.95rem;
   font-weight: 700;
-  letter-spacing: -0.012em;
-  line-height: 1.2;
-}
-
-.spread-slot-orientation {
-  border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--brand-1) 35%, var(--line));
-  background: color-mix(in srgb, var(--accent-soft) 66%, var(--reading-bg));
-  font-size: 0.82rem;
-  padding: 2px 9px;
 }
 
 .spread-slot-index {
   position: absolute;
-  top: -10px;
-  left: -10px;
-  width: 24px;
-  height: 24px;
+  top: 8px;
+  left: 8px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   background: var(--brand-1);
   color: #fff;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 800;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  z-index: 5;
+}
+
+.spread-slot-position-empty {
+  font-size: 0.8rem;
+  color: var(--ink-2);
+  padding: 12px;
+  line-height: 1.3;
+  opacity: 0.6;
 }
 
 /* Category & Library Styles */

@@ -14,6 +14,11 @@ const WEIGHTS = {
   daily: ['오늘', '운세', '흐름', '하루', 'daily', 'today', 'luck', '이번 주', '이번달', '이번 달']
 };
 
+// 방안 3: 다차원 신호 가중치 — 감정/시점/관계주체 신호
+const ANXIETY_SIGNAL_PATTERNS = /(불안|두려|무서|망할|망했|떨어질|압박|막막|초조|공황|무너|끝나|걱정돼|걱정되|너무 힘|무섭|겁나)/;
+const TIMING_SIGNAL_PATTERNS = /(언제가 좋|시기|타이밍|좋은 때|적절한 때|언제 해야|언제부터|언제쯤|몇 월|몇 달 후|어느 시점)/;
+const RELATIONSHIP_SUBJECT_PATTERNS = /(남자친구|여자친구|전남친|전여친|남친|여친|상사|남편|아내|배우자|파트너|연인|썸남|썸녀|짝사랑)/;
+
 function includesWord(text = '', token = '') {
   return String(text).includes(String(token));
 }
@@ -40,6 +45,7 @@ export function classifyQuestionLocal(context = '') {
   });
 
   const scores = Object.fromEntries(INTENTS.map((intent) => [intent, 0]));
+  const inferenceSignals = [];
 
   for (const [intent, tokens] of Object.entries(WEIGHTS)) {
     for (const token of tokens) {
@@ -58,6 +64,23 @@ export function classifyQuestionLocal(context = '') {
 
   if (legacyIntent !== 'general') scores[legacyIntent] += 1.8;
 
+  // 방안 3: 다차원 신호 가중치 추가
+  if (ANXIETY_SIGNAL_PATTERNS.test(text)) {
+    scores['relationship'] = (scores['relationship'] || 0) + 0.5;
+    inferenceSignals.push({ signal: 'anxiety', weight: 2.5, boostedIntent: 'persona:anxious' });
+    // anxious 신호는 intent보다 페르소나 추론에 영향 (별도 필드로 노출)
+  }
+  if (TIMING_SIGNAL_PATTERNS.test(text)) {
+    scores['career'] = (scores['career'] || 0) + 1.5;
+    inferenceSignals.push({ signal: 'timing', weight: 1.5, boostedIntent: 'career' });
+  }
+  if (RELATIONSHIP_SUBJECT_PATTERNS.test(text)) {
+    scores['relationship'] = (scores['relationship'] || 0) + 2.5;
+    inferenceSignals.push({ signal: 'relationship_subject', weight: 2.5, boostedIntent: 'relationship' });
+  }
+
+  const hasAnxietySignal = inferenceSignals.some((s) => s.signal === 'anxiety');
+
   const ranked = Object.entries(scores).sort((a, b) => b[1] - a[1]);
   const [topIntent, topScore] = ranked[0];
   const secondScore = ranked[1]?.[1] ?? 0;
@@ -70,6 +93,8 @@ export function classifyQuestionLocal(context = '') {
     confidence,
     questionType,
     choice,
-    source: 'local_model'
+    source: 'local_model',
+    inferenceSignals,
+    hasAnxietySignal
   };
 }

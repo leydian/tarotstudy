@@ -168,7 +168,8 @@ export function analyzeQuestionContextSync(context = '', options = {}) {
   if (!enabled || mode === 'legacy') return fallback;
 
   const local = classifyQuestionLocal(normalized);
-  const confidenceThreshold = Number(options.confidenceThreshold || process.env.QUESTION_UNDERSTANDING_CONFIDENCE_THRESHOLD || 0.58);
+  // 방안 3: 신뢰도 임계치 0.58 → 0.65 상향으로 외부 AI 보조 판단 활용 빈도 증가
+  const confidenceThreshold = Number(options.confidenceThreshold || process.env.QUESTION_UNDERSTANDING_CONFIDENCE_THRESHOLD || 0.65);
 
   if (mode === 'shadow') {
     return {
@@ -199,11 +200,17 @@ export function analyzeQuestionContextSync(context = '', options = {}) {
       confidence: local.confidence,
       confidenceBand: classifyConfidenceBand(local.confidence),
       entities,
-      source: local.source
+      source: local.source,
+      inferenceSignals: local.inferenceSignals || [],
+      hasAnxietySignal: local.hasAnxietySignal || false
     };
   }
 
-  return fallback;
+  return {
+    ...fallback,
+    inferenceSignals: local.inferenceSignals || [],
+    hasAnxietySignal: local.hasAnxietySignal || false
+  };
 }
 
 export async function analyzeQuestionContext(context = '', options = {}) {

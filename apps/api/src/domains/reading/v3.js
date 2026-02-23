@@ -7,7 +7,9 @@ export function buildReadingV3({
   spreadName = '',
   items = [],
   context = '',
-  level = 'beginner'
+  level = 'beginner',
+  personaGroup = '',
+  personaId = ''
 }) {
   const analysis = analyzeQuestionContextSync(context, { mode: 'hybrid', flag: true });
   const signal = analyzeSpreadSignal(items, analysis.intent);
@@ -27,12 +29,15 @@ export function buildReadingV3({
   const choiceA = choice?.hasChoice ? String(choice?.optionA || '').trim() : '';
   const choiceB = choice?.hasChoice ? String(choice?.optionB || '').trim() : '';
   
+  const anxietyLevel = detectAnxietyLevel(normalizedContext, personaGroup, personaId);
+
   const bridge = buildImmersiveBridge({
     context: normalizedContext,
     signalLabel: calibratedSignalLabel,
     domain,
     choiceA,
-    choiceB
+    choiceB,
+    anxietyLevel
   });
 
   const verdict = buildImmersiveVerdict({
@@ -101,25 +106,13 @@ export function buildReadingV3({
   }
 
   const closing = softenAbsolutes(
-    calibratedSignalLabel === '우세'
-      ? (
-        domain === 'study'
-          ? '오늘 학습 리듬을 지키면 다음 시도에서 체감 안정성이 더 높아질 가능성이 큽니다.'
-          : domain === 'career'
-            ? '준비 품질을 유지하면 다음 기회에서 선택 폭이 더 넓어질 가능성이 큽니다.'
-            : '지금의 힘을 무리 없이 이어가면 다음 장면은 더 선명해질 가능성이 큽니다.'
-      )
-      : calibratedSignalLabel === '박빙'
-        ? (
-          domain === 'relationship'
-            ? '작은 말투 조정만으로도 분위기가 달라질 수 있어요. 대화를 길게 끌지 않는 편이 좋습니다.'
-            : '오늘은 작은 조정만으로도 흐름이 달라질 수 있어요. 너무 몰아붙이지 마세요.'
-        )
-        : (
-          domain === 'finance'
-            ? '오늘 조정이 손실을 줄이면 다음 판단이 훨씬 쉬워집니다. 숫자 기준만 유지해보세요.'
-            : '지금 결과가 전부를 결정하진 않아요. 리듬을 회복하면 다음 기회를 더 안정적으로 만들 수 있습니다.'
-        )
+    buildPersonaClosingLine({
+      label: calibratedSignalLabel,
+      domain,
+      personaGroup,
+      personaId,
+      context: normalizedContext
+    })
   );
 
   return {
@@ -248,10 +241,39 @@ function buildImmersiveVerdict({
   };
 }
 
-function buildImmersiveBridge({ context = '', signalLabel = '조건부', domain = 'general', choiceA = '', choiceB = '' }) {
+function detectAnxietyLevel(context = '', personaGroup = '', personaId = '') {
+  if (personaGroup === 'user' && personaId === 'anxious') return 'high';
+  const raw = String(context || '').toLowerCase();
+  const highSignals = (raw.match(/(불안|두려|무서|망할|망했|떨어질|압박|막막|초조|공황|무너|끝나)/g) || []).length;
+  const lowSignals = (raw.match(/(걱정|고민|어렵|힘들|모르겠)/g) || []).length;
+  if (highSignals >= 2 || (highSignals >= 1 && lowSignals >= 1)) return 'high';
+  if (highSignals >= 1 || lowSignals >= 2) return 'low';
+  return 'none';
+}
+
+const ANXIETY_CALM_OPENINGS = [
+  '지금 많이 불안하신 것 같아요. 먼저 숨을 고르고, 카드 흐름을 천천히 따라가볼게요.',
+  '걱정이 크게 느껴지시겠어요. 차분하게, 카드가 보여주는 신호를 하나씩 살펴보겠습니다.',
+  '지금 이 상황이 많이 무거울 수 있어요. 카드 흐름을 따라 천천히 정리해보겠습니다.'
+];
+
+function buildImmersiveBridge({ context = '', signalLabel = '조건부', domain = 'general', choiceA = '', choiceB = '', anxietyLevel = 'none' }) {
   const raw = String(context || '').trim();
+
+  // 방안 4: 불안 high 시 안정 오프닝 우선 고정
+  if (anxietyLevel === 'high') {
+    const seed = hashText(raw || signalLabel);
+    const calmOpening = pickByNumber(ANXIETY_CALM_OPENINGS, seed);
+    if (choiceA && choiceB) {
+      return `${calmOpening} "${choiceA}"와 "${choiceB}" 각각의 흐름을 카드 신호로 살펴보겠습니다.`;
+    }
+    return raw
+      ? `${calmOpening} "${raw}"에 대해 카드 흐름을 함께 짚어보겠습니다.`
+      : calmOpening;
+  }
+
   if (choiceA && choiceB) {
-    const heavy = /(불안|걱정|무섭|망|실패|떨어|불가능|압박|막막)/.test(raw);
+    const heavy = anxietyLevel === 'low' || /(불안|걱정|무섭|망|실패|떨어|불가능|압박|막막)/.test(raw);
     return heavy
       ? `"${choiceA}"와 "${choiceB}" 사이에서 많이 고민되실 것 같아요. 카드 신호로 각 선택의 흐름을 차분히 살펴보겠습니다.`
       : `"${choiceA}"와 "${choiceB}" 중 지금 흐름에 더 맞는 쪽을 카드를 기준으로 함께 짚어보겠습니다.`;
@@ -261,8 +283,7 @@ function buildImmersiveBridge({ context = '', signalLabel = '조건부', domain 
       ? '지금 흐름의 강점을 놓치지 않도록, 카드 신호를 차분히 정리해보겠습니다.'
       : '지금 걸린 지점을 먼저 정돈하면서 카드 흐름을 차분히 따라가보겠습니다.';
   }
-  const heavy = /(불안|걱정|무섭|망|실패|떨어|불가능|압박|막막)/.test(raw);
-  if (heavy) return `"${raw}"가 크게 걸려 있네요. 부담이 클 수 있어요. 카드 흐름을 차분히 따라가보겠습니다.`;
+  if (anxietyLevel === 'low') return `"${raw}"가 걱정되시는군요. 카드 흐름을 차분히 따라가보겠습니다.`;
   if (domain === 'action') return `"${raw}" 기준으로 바로 실행 가능한 한 가지를 중심으로 흐름을 짚어보겠습니다.`;
   return `"${raw}"를 기준으로 지금 흐름에서 가장 유효한 판단 포인트를 차분히 짚어보겠습니다.`;
 }
@@ -325,6 +346,177 @@ function buildImmersiveEvidenceLine({ spreadId = '', position = '', card = '', o
     `${position}의 ${card} ${orientationKo} 카드는 "${keyword}" 신호를 기준으로 오늘 행동 1개를 먼저 고정하라는 메시지입니다.`
   ];
   return softenAbsolutes(pickByNumber(uptightPool, evidenceSeed));
+}
+
+// 방안 1: 페르소나별 클로징 풀 독립화
+const PERSONA_CLOSING_POOLS = {
+  'user:beginner': {
+    '우세': [
+      '오늘 작은 실행 1개를 고정해보면 다음 흐름이 훨씬 분명해질 거예요.',
+      '지금 흐름이 잘 열려 있어요. 오늘 할 수 있는 것 하나만 먼저 해보세요.',
+      '이 흐름을 이어가면 다음 장면이 더 선명해질 가능성이 큽니다. 작은 한 걸음으로 충분해요.',
+      '흐름이 좋으니까, 오늘은 가장 쉬운 한 가지부터 시작해보세요.'
+    ],
+    '박빙': [
+      '조금만 방향을 맞추면 흐름이 달라질 수 있어요. 너무 무리하지 마세요.',
+      '지금은 작은 조정이 큰 차이를 만들 수 있어요. 오늘 한 가지만 바꿔보세요.',
+      '아직 결과가 정해진 건 아니에요. 오늘 실행 1개만 고정해도 흐름이 바뀝니다.',
+      '작은 선택이 방향을 바꿀 수 있어요. 너무 크게 생각하지 말고 오늘만 집중해보세요.'
+    ],
+    '조건부': [
+      '지금은 서두르기보다 기준을 다시 잡는 편이 맞아요. 한 가지씩 정리해보세요.',
+      '흐름을 회복하면 다음 기회를 더 안정적으로 만들 수 있어요.',
+      '오늘은 무리한 확장보다 안정부터 찾는 편이 좋아요. 작게 시작해도 괜찮습니다.',
+      '지금 결과가 전부를 결정하지 않아요. 리듬을 찾으면 기회는 다시 옵니다.'
+    ]
+  },
+  'user:anxious': {
+    '우세': [
+      '불안한 마음이 들어도 흐름은 열려 있어요. 오늘 하루만 집중해봐요.',
+      '걱정이 있어도 괜찮아요. 지금 흐름에 맞게 한 걸음씩 가면 돼요.',
+      '힘들 때일수록 작은 실행 하나가 큰 힘이 돼요. 오늘 한 가지만 해보세요.',
+      '지금 이 흐름을 믿어도 괜찮아요. 작게라도 실행해보세요.'
+    ],
+    '박빙': [
+      '지금 걱정이 크시겠지만, 작은 조정만으로도 흐름이 달라질 수 있어요.',
+      '불안할 때일수록 한 가지만 집중하면 흔들림이 줄어들어요.',
+      '긴장이 느껴지시겠어요. 오늘은 속도보다 방향만 잡아도 충분합니다.',
+      '마음이 무거울 때는 작은 한 걸음이 제일 안전해요.'
+    ],
+    '조건부': [
+      '지금 많이 힘드시겠지만, 리듬을 찾으면 다음 기회는 반드시 와요.',
+      '불안할 때는 멈추는 것도 방법이에요. 조금 쉬고 다시 시작해도 괜찮아요.',
+      '지금 결과가 전부가 아니에요. 차분히 숨 고르고 다음 단계를 준비해보세요.',
+      '걱정이 크시겠지만, 오늘 하루를 버티는 것만으로도 충분해요.'
+    ]
+  },
+  'planner:service_planner': {
+    '우세': [
+      '정책 일관성을 유지하면 사용자 체감이 안정되고 운영 부담이 줄어듭니다.',
+      '현재 흐름에서 UX 기준을 고정하면 다음 릴리즈의 품질 편차가 줄어듭니다.',
+      '지금 정책 방향을 확정하면 예외 처리 비용이 낮아집니다.',
+      '사용자 경험 일관성을 지금 확보하면 다음 개선 사이클이 수월해집니다.'
+    ],
+    '박빙': [
+      '정책 기준을 한 가지만 더 명확히 하면 구현 간격이 좁아집니다.',
+      'UX 흐름의 작은 조정이 사용자 체감을 크게 개선할 수 있습니다.',
+      '지금은 정책 예외 조건을 먼저 정의하면 운영이 단순해집니다.',
+      '기준을 조금만 더 구체화하면 팀 전체 방향이 정렬됩니다.'
+    ],
+    '조건부': [
+      '정책 기준을 재정의하면 다음 단계의 실행 비용이 낮아집니다.',
+      '지금은 UX 원칙을 다시 정렬하는 편이 장기 운영에 유리합니다.',
+      '기준 정비 후 재실행하면 사용자 체감과 운영 효율이 함께 올라갑니다.',
+      '정책 드리프트를 지금 잡으면 다음 스프린트가 훨씬 가벼워집니다.'
+    ]
+  },
+  'developer:backend': {
+    '우세': [
+      '현재 신뢰성 지표를 유지하면 SLO 안정성이 다음 분기에도 이어집니다.',
+      '운영 리듬이 안정적이니 이번 주기에서 개선 1건을 추가 반영해도 좋습니다.',
+      '지금 모니터링 기준을 확정하면 장애 대응 속도가 올라갑니다.',
+      '복구 경로가 명확하면 다음 배포에서 리스크가 낮아집니다.'
+    ],
+    '박빙': [
+      '오류율 임계치를 하나 더 잡으면 알람 노이즈가 줄어듭니다.',
+      '지금 운영 리듬에서 병목 1개를 해소하면 전체 처리량이 안정됩니다.',
+      '모니터링 기준을 조정하면 온콜 부담이 낮아집니다.',
+      '장애 대응 시나리오를 한 가지 더 추가하면 복구 속도가 빨라집니다.'
+    ],
+    '조건부': [
+      '운영 안정성을 먼저 확보한 뒤 기능 확장으로 전환하는 편이 안전합니다.',
+      'SLO 기준을 다시 검토하면 이후 배포 판단이 명확해집니다.',
+      '복구 경로를 먼저 정비하면 다음 장애 대응이 훨씬 빠릅니다.',
+      '지금은 확장보다 신뢰성 지표 안정이 우선입니다.'
+    ]
+  },
+  'developer:frontend': {
+    '우세': [
+      '컴포넌트 일관성을 지금 확보하면 다음 스프린트 속도가 올라갑니다.',
+      '가독성 기준을 고정하면 QA 사이클이 단축됩니다.',
+      '접근성 기준을 이번에 반영하면 다음 릴리즈 리스크가 줄어듭니다.',
+      '디자인 시스템 정합성이 유지되면 유지보수 비용이 낮아집니다.'
+    ],
+    '박빙': [
+      '컴포넌트 1개만 더 정렬하면 전체 일관성이 크게 올라갑니다.',
+      '가독성 토큰을 하나 통일하면 스타일 부채가 줄어듭니다.',
+      '레이아웃 기준을 명확히 하면 반응형 대응이 쉬워집니다.',
+      '접근성 체크 1개를 이번 PR에 추가하면 다음 검토가 가벼워집니다.'
+    ],
+    '조건부': [
+      '컴포넌트 구조를 먼저 정리하면 다음 기능 추가가 수월합니다.',
+      '디자인 시스템 기준을 다시 맞추면 개발 비용이 낮아집니다.',
+      '가독성과 접근성을 지금 잡으면 QA 반복이 줄어듭니다.',
+      '지금은 새 기능보다 기존 컴포넌트 안정화가 우선입니다.'
+    ]
+  }
+};
+
+const DEFAULT_CLOSING_POOL = {
+  '우세': {
+    study: [
+      '오늘 학습 리듬을 지키면 다음 시도에서 체감 안정성이 더 높아질 가능성이 큽니다.',
+      '지금의 흐름을 유지하면 다음 시험에서 결과가 달라질 가능성이 큽니다.',
+      '루틴을 끊기지 않게 이어가면 체감 성취가 빠르게 올라옵니다.',
+      '오늘 집중한 만큼 다음 복기 정확도가 올라갑니다.'
+    ],
+    career: [
+      '준비 품질을 유지하면 다음 기회에서 선택 폭이 더 넓어질 가능성이 큽니다.',
+      '지금의 방향을 이어가면 다음 기회에서 훨씬 유리한 위치가 됩니다.',
+      '오늘 준비한 것이 다음 기회의 기반이 됩니다.',
+      '지금 흐름을 유지하면 원하는 방향으로 가까워질 가능성이 큽니다.'
+    ],
+    general: [
+      '지금의 힘을 무리 없이 이어가면 다음 장면은 더 선명해질 가능성이 큽니다.',
+      '이 흐름을 이어가면 다음 선택이 훨씬 쉬워집니다.',
+      '오늘의 실행이 다음 기회를 만드는 기반이 됩니다.',
+      '지금의 방향을 믿고 한 걸음씩 나아가면 됩니다.'
+    ]
+  },
+  '박빙': {
+    relationship: [
+      '작은 말투 조정만으로도 분위기가 달라질 수 있어요. 대화를 길게 끌지 않는 편이 좋습니다.',
+      '오늘 대화 1개만 신중하게 하면 관계 흐름이 달라질 수 있어요.',
+      '지금은 결론보다 분위기를 먼저 안정시키는 편이 효과적입니다.',
+      '작은 배려가 관계 흐름을 크게 바꿀 수 있어요.'
+    ],
+    general: [
+      '오늘은 작은 조정만으로도 흐름이 달라질 수 있어요. 너무 몰아붙이지 마세요.',
+      '지금 한 가지만 바꿔도 흐름이 달라질 수 있어요.',
+      '작은 차이가 큰 결과를 만드는 구간입니다. 한 가지만 집중해보세요.',
+      '지금은 속도보다 방향이 중요합니다. 한 가지만 먼저 맞춰보세요.'
+    ]
+  },
+  '조건부': {
+    finance: [
+      '오늘 조정이 손실을 줄이면 다음 판단이 훨씬 쉬워집니다. 숫자 기준만 유지해보세요.',
+      '지금 지출 기준을 고정하면 다음 달 부담이 줄어듭니다.',
+      '오늘 한 가지 지출을 줄이면 다음 선택이 훨씬 가벼워집니다.',
+      '재정 리듬을 지금 잡으면 다음 기회가 더 안전해집니다.'
+    ],
+    general: [
+      '지금 결과가 전부를 결정하진 않아요. 리듬을 회복하면 다음 기회를 더 안정적으로 만들 수 있습니다.',
+      '흐름을 회복하면 다음 기회는 더 안정적으로 열립니다.',
+      '지금은 정비 구간입니다. 기준을 다시 잡으면 다음 단계가 가벼워집니다.',
+      '오늘 멈추는 것이 다음을 위한 준비가 됩니다.'
+    ]
+  }
+};
+
+function buildPersonaClosingLine({ label = '조건부', domain = 'general', personaGroup = '', personaId = '', context = '' }) {
+  const personaKey = personaGroup && personaId ? `${personaGroup}:${personaId}` : '';
+  const personaPool = PERSONA_CLOSING_POOLS[personaKey];
+  if (personaPool) {
+    const pool = personaPool[label] || personaPool['조건부'];
+    const seed = hashText(`${context}:${label}:${personaKey}`);
+    return pickByNumber(pool, seed);
+  }
+  // 기본 도메인별 풀 사용
+  const labelPool = DEFAULT_CLOSING_POOL[label] || DEFAULT_CLOSING_POOL['조건부'];
+  const domainKey = labelPool[domain] ? domain : 'general';
+  const pool = labelPool[domainKey];
+  const seed = hashText(`${context}:${label}:${domain}`);
+  return pickByNumber(pool, seed);
 }
 
 export function resolveReadingDomain({ intent = 'general', context = '' }) {

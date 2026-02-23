@@ -20,11 +20,12 @@ export function SpreadLibrary({ spreads, onSelect }: Props) {
 
   const categories = [
     { id: 'all', label: '전체' },
-    { id: 'decision', label: '결단 (V자형)' },
-    { id: 'goal', label: '목표 (화살표형)' },
-    { id: 'relationship', label: '관계 (다이아몬드형)' },
-    { id: 'recovery', label: '치유 (역삼각형)' },
-    { id: 'strategy', label: '전략 (십자형)' }
+    { id: 'daily', label: '오늘/메시지' },
+    { id: 'strategy', label: '흐름/전략 (3카드)' },
+    { id: 'decision', label: '선택/구매 (V자형)' },
+    { id: 'relationship', label: '연애/재회 (다이아몬드)' },
+    { id: 'goal', label: '합격/성공 (계단형)' },
+    { id: 'fortune', label: '운세/순환 (원형)' }
   ];
 
   const groupedSpreads = useMemo(() => {

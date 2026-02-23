@@ -492,6 +492,8 @@ export function SpreadsPageContainer() {
             {selected.layout.slots.map((slot, idx) => (
               (() => {
                 const drawn = findDrawnItemForSlot(drawItems, slot);
+                // Dynamically resolve position name from variant or base spread
+                const dynamicPositionName = activeVariant?.positions?.[idx]?.name ?? slot.position;
 
                 return (
                   <div
@@ -502,7 +504,7 @@ export function SpreadsPageContainer() {
                       gridRow: String(slot.row),
                       transform: slot.rotate ? `rotate(${slot.rotate}deg)` : 'none'
                     }}
-                    title={slot.position}
+                    title={dynamicPositionName}
                   >
                     <span className="spread-slot-index">{idx + 1}</span>
                     {drawn ? (
@@ -516,13 +518,13 @@ export function SpreadsPageContainer() {
                           loading="lazy"
                         />
                         <span className="spread-slot-meta">
-                          <span className="spread-slot-position">{slot.position}</span>
+                          <span className="spread-slot-position">{dynamicPositionName}</span>
                           <strong className="spread-slot-name">{drawn.card.nameKo}</strong>
                           <span className="spread-slot-orientation">{drawn.orientation === 'reversed' ? '역방향' : '정방향'}</span>
                         </span>
                       </Link>
                     ) : (
-                      <span className="spread-slot-position spread-slot-position-empty">{slot.position}</span>
+                      <span className="spread-slot-position spread-slot-position-empty">{dynamicPositionName}</span>
                     )}
                   </div>
                 );
