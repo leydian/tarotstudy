@@ -253,11 +253,6 @@ export function ChatSpreadPage() {
               {messages.length === 0 && (
                 <div className="chat-empty">
                   <p>아직 대화가 없습니다. 아래 추천 질문으로 시작해보세요.</p>
-                  <div className="chip-wrap">
-                    {starterPrompts.map((prompt) => (
-                      <button key={prompt} className="chip-link" onClick={() => setInput(prompt)}>{prompt}</button>
-                    ))}
-                  </div>
                 </div>
               )}
 

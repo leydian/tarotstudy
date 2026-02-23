@@ -3,6 +3,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { Link, useSearchParams } from 'react-router-dom';
 import { api } from '../lib/api';
 import { recommendSpreadForQuestion } from '../lib/spread-recommendation';
+import { recommendRandomQuestions } from '../lib/question-recommendations';
 import { buildDisplaySpreads, resolveDisplaySpreadId } from '../lib/spread-display';
 import { loadChatDrawCache, saveChatDrawCache } from '../lib/chat-draw-cache';
 import { exportReadingPdf, exportReadingTxt } from '../lib/reading-export';
@@ -240,6 +241,16 @@ export function SpreadsPage() {
     const unreviewed = recentSpreadHistory.length - reviewed;
     return { reviewed, unreviewed };
   }, [recentSpreadHistory]);
+  const spreadStarterPrompts = useMemo(
+    () => recommendRandomQuestions({
+      count: 6,
+      poolSize: 3000,
+      spreadName: selected?.name || '',
+      context: activeDraw?.context || context,
+      seedKey: selected?.id || 'spread-starter'
+    }),
+    [activeDraw?.context, context, selected?.id, selected?.name]
+  );
   const sendSpreadEvent = (payload: {
     type: 'spread_drawn' | 'spread_review_saved';
     spreadId: string;
@@ -325,41 +336,45 @@ export function SpreadsPage() {
       </article>
 
       <article className="panel">
-        <p className="badge">{selected.level === 'beginner' ? '입문 권장' : '중급 권장'} · {selected.cardCount}장</p>
-        <h3>{selected.name}</h3>
-        <p>{selected.purpose}</p>
-        {recommendedHint && <p className="sub">자동 추천: {recommendedHint}</p>}
-        <div className="chip-wrap">
-          {(() => {
-            const chatSpreadId = activeDraw ? resolveDisplaySpreadId(activeDraw.spreadId, spreads) : selected.id;
-            const chatLevel = activeDraw?.level ?? readingLevel;
-            const chatContext = activeDraw?.context ?? context;
-            const extra = activeDraw
-              ? `&fromCard=1&chatDrawAt=${encodeURIComponent(activeDraw.drawnAt)}&rawSpreadId=${encodeURIComponent(activeDraw.spreadId)}`
-              : '';
-            return (
-              <Link
-                to={`/chat?spreadId=${encodeURIComponent(chatSpreadId)}&variantId=${encodeURIComponent(activeVariant?.id ?? '')}&level=${chatLevel}&context=${encodeURIComponent(chatContext)}${extra}`}
-                className="chip-link"
-              >
-                챗 리딩으로 전환
-              </Link>
-            );
-          })()}
-          <button
-            className="chip-link"
-            disabled={!activeDraw}
-            onClick={() => activeDraw && exportReadingTxt(activeDraw, '카드뷰 모드')}
-          >
-            TXT 내보내기
-          </button>
-          <button
-            className="chip-link"
-            disabled={!activeDraw}
-            onClick={() => activeDraw && exportReadingPdf(activeDraw, '카드뷰 모드')}
-          >
-            PDF 내보내기
-          </button>
+        <div className="spread-page-header">
+          <div>
+            <p className="badge">{selected.level === 'beginner' ? '입문 권장' : '중급 권장'} · {selected.cardCount}장</p>
+            <h3>{selected.name}</h3>
+            <p>{selected.purpose}</p>
+            {recommendedHint && <p className="sub">자동 추천: {recommendedHint}</p>}
+          </div>
+          <div className="chip-wrap spread-header-actions">
+            {(() => {
+              const chatSpreadId = activeDraw ? resolveDisplaySpreadId(activeDraw.spreadId, spreads) : selected.id;
+              const chatLevel = activeDraw?.level ?? readingLevel;
+              const chatContext = activeDraw?.context ?? context;
+              const extra = activeDraw
+                ? `&fromCard=1&chatDrawAt=${encodeURIComponent(activeDraw.drawnAt)}&rawSpreadId=${encodeURIComponent(activeDraw.spreadId)}`
+                : '';
+              return (
+                <Link
+                  to={`/chat?spreadId=${encodeURIComponent(chatSpreadId)}&variantId=${encodeURIComponent(activeVariant?.id ?? '')}&level=${chatLevel}&context=${encodeURIComponent(chatContext)}${extra}`}
+                  className="chip-link"
+                >
+                  챗 리딩으로 전환
+                </Link>
+              );
+            })()}
+            <button
+              className="chip-link"
+              disabled={!activeDraw}
+              onClick={() => activeDraw && exportReadingTxt(activeDraw, '카드뷰 모드')}
+            >
+              TXT 내보내기
+            </button>
+            <button
+              className="chip-link"
+              disabled={!activeDraw}
+              onClick={() => activeDraw && exportReadingPdf(activeDraw, '카드뷰 모드')}
+            >
+              PDF 내보내기
+            </button>
+          </div>
         </div>
 
         {selected.variants && selected.variants.length > 0 && (
@@ -398,6 +413,14 @@ export function SpreadsPage() {
           <button className="btn primary" onClick={() => drawMutation.mutate()} disabled={drawMutation.isPending}>
             {drawMutation.isPending ? '추천 스프레드 계산 중...' : '질문 기반 자동 추천 + 리딩 생성'}
           </button>
+        </div>
+        <h4>추천 질문</h4>
+        <div className="chip-wrap spread-prompt-bank">
+          {spreadStarterPrompts.map((prompt) => (
+            <button key={`spread-prompt-${prompt}`} className="chip-link" onClick={() => setContext(prompt)}>
+              {prompt}
+            </button>
+          ))}
         </div>
 
         <h4>스프레드 모양</h4>

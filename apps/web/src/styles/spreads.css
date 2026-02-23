@@ -868,6 +868,22 @@
   flex-wrap: wrap;
 }
 
+.spread-page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.spread-header-actions {
+  justify-content: flex-end;
+}
+
+.spread-prompt-bank {
+  margin-bottom: 2px;
+}
+
 .chat-top-panel {
   background: linear-gradient(140deg, color-mix(in srgb, var(--reading-bg) 88%, var(--accent-soft)), color-mix(in srgb, var(--reading-bg) 84%, var(--accent-warm)));
 }
