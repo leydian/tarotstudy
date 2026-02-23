@@ -469,6 +469,46 @@
     - 현재 환경에서 API 포트 바인딩(`127.0.0.1:8787`) 제약이 있어 일부 API 자동기동형 QA는 환경 의존
     - 질문 이해 엔진은 `legacy` 즉시 롤백 경로를 유지해 운영 리스크를 낮춤
 
+### 3-1) 최신 후속 반영 (2026-02-23 추가)
+- 스프레드 50종 확장 + 카드뷰 자동 추천 전환
+  - 파일:
+    - `apps/api/src/data/spreads.js`
+    - `apps/web/src/lib/spread-recommendation.ts`
+    - `apps/web/src/pages/ChatSpreadPage.tsx`
+    - `apps/web/src/pages/SpreadsPage.tsx`
+    - `scripts/summary-regression-cases.json`
+  - 변경:
+    - 스프레드 정의를 50종으로 확장(기존 19종 + 신규 31종)
+    - 질문 분석 API(`intent/questionType/timeHorizon`) + 키워드 + 메타 유사도 기반 점수형 추천 엔진 신설
+    - 챗봇과 카드뷰가 동일 추천 모듈(`spread-recommendation`)을 공유하도록 통합
+    - 카드뷰 드로우를 수동 선택 중심에서 `질문 기반 자동 추천 + 리딩 생성` 흐름으로 전환
+
+- 챗봇 모드 UX/출력 정책 고도화
+  - 파일:
+    - `apps/web/src/pages/ChatSpreadPage.tsx`
+    - `apps/web/src/styles/spreads.css`
+    - `apps/web/src/types.ts`
+  - 변경:
+    - 챗봇 다크/라이트 테마 동시 대응
+    - `조건부 예`/`예`/`아니오` 판정 충돌을 줄이는 결론 우선 배지 파싱 적용
+    - 중복 문구(`오늘의 테마`) 제거, 질문 반복 박스 제거
+    - 응답을 `요약+근거` 단일 자연어 문단으로 통합
+    - 챗봇 버블에서 스프레드 레이아웃(3카드 포함)을 슬롯 배열대로 렌더링
+
+- 4/5/6카드 동일 배열 스프레드 핵심변형 통합
+  - 파일:
+    - `apps/web/src/lib/spread-display.ts`
+    - `apps/web/src/pages/SpreadsPage.tsx`
+    - `apps/web/src/types.ts`
+  - 변경:
+    - 동일 레이아웃 시그니처를 가진 4/5/6카드 스프레드를 대표 스프레드 + 핵심변형으로 자동 그룹화
+    - 변형 선택 시 원본 스프레드 ID(`sourceSpreadId`)로 드로우 호출해 동작 정합성 보장
+
+- 검증:
+  - `npm run test:api` 통과
+  - `npm run typecheck:web` 통과
+  - `npm run build:web` 통과
+
 ## 4) 최근 커밋 타임라인 (최신 우선)
 - `b041618` Improve spread question understanding with hybrid intent parsing
 - `6584a26` Add full-spread summary regression QA and quality gate wiring

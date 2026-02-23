@@ -174,6 +174,7 @@ export interface Spread {
     id: string;
     name: string;
     positions: Array<{ name: string; meaning: string }>;
+    sourceSpreadId?: string;
   }>;
   layout: {
     cols: number;

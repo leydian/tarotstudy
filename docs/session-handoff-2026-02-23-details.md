@@ -981,3 +981,63 @@
 ### 21.6 관련 커밋
 - `8717a27` Expand question-understanding QA set to 3k with stronger eval gates
 - `f888b88` Refine reading narrative with empathy-first explanatory flow
+
+## 22) 챗봇/스프레드 자동추천 고도화 + 스프레드 50종 확장 (2026-02-23 추가)
+
+### 22.1 스프레드 정의 50종 확장
+- 변경 파일:
+  - `apps/api/src/data/spreads.js`
+  - `scripts/summary-regression-cases.json`
+- 핵심:
+  - 스프레드 정의를 50종으로 확장(기존 19종 + 신규 31종)
+  - 신규 스프레드 예시:
+    - 시험/면접/커리어 전환/프로젝트/번아웃/재정 점검/투자/이사/대화 리셋/내면 정리 등
+  - 회귀 케이스셋을 50종 기준으로 확장하여 스프레드당 최소 2건 규칙 유지
+
+### 22.2 추천 엔진 공용화(챗봇/카드뷰 공통)
+- 변경 파일:
+  - `apps/web/src/lib/spread-recommendation.ts` (신규)
+  - `apps/web/src/pages/ChatSpreadPage.tsx`
+  - `apps/web/src/pages/SpreadsPage.tsx`
+- 핵심:
+  - 점수형 추천 엔진 도입:
+    - 질문 분석 API(`intent/questionType/timeHorizon`) 신호
+    - 질문 키워드 매칭
+    - 스프레드 메타(이름/목적/사용 시점) 어휘 유사도
+  - 챗봇/카드뷰가 동일 추천 모듈을 사용하도록 통합
+  - 카드뷰 드로우 버튼도 질문 입력 시 자동 추천 스프레드를 선택해 실행하도록 전환
+
+### 22.3 챗봇 출력/시각화 개선
+- 변경 파일:
+  - `apps/web/src/pages/ChatSpreadPage.tsx`
+  - `apps/web/src/styles/spreads.css`
+  - `apps/web/src/types.ts`
+- 핵심:
+  - 다크/라이트 테마 모두 대응
+  - 결론 기반 배지 파싱(`조건부 예/예/아니오`) 충돌 보정
+  - `오늘의 테마` 중복 문구 제거, 질문 반복 박스 제거
+  - 응답을 `요약+근거` 단일 자연어 문단으로 통합
+  - 챗봇 버블에서 스프레드 실제 배열을 슬롯 단위로 렌더링(3카드 포함)
+
+### 22.4 4/5/6카드 동일 배열 스프레드의 핵심변형 통합
+- 변경 파일:
+  - `apps/web/src/lib/spread-display.ts` (신규)
+  - `apps/web/src/pages/SpreadsPage.tsx`
+  - `apps/web/src/types.ts`
+- 핵심:
+  - 동일 레이아웃 시그니처를 가진 4/5/6카드 스프레드를 대표 + 변형으로 자동 묶음
+  - 변형 선택 시 `sourceSpreadId`를 이용해 실제 원본 스프레드로 draw 호출
+  - 목록 중복을 줄이면서 기존 리딩 엔진과의 정합성 유지
+
+### 22.5 검증 로그
+- `npm run test:api` 통과
+- `npm run typecheck:web` 통과
+- `npm run build:web` 통과
+
+### 22.6 관련 커밋
+- `3abf39e` Expand to 50 spreads and enable auto-recommendation in card view
+- `aad6fde` Add 10 new spreads and overhaul auto recommendation ranking
+- `aefed23` Render chat mode as single natural-language narrative
+- `495ab5e` Support light theme chat UI and clean duplicate summary lines
+- `234ab04` Refine chat verdict parsing and chatbot-style layout
+- `408c0a3` Add chat-based spread reading UI with route toggle

@@ -171,6 +171,7 @@ export function ChatSpreadPage() {
             <ChatBubble
               key={message.id}
               message={message}
+              spreads={spreads}
               isPending={drawMutation.isPending}
               onRedraw={(question) => {
                 if (!question.trim() || drawMutation.isPending) return;
@@ -222,10 +223,12 @@ export function ChatSpreadPage() {
 
 function ChatBubble({
   message,
+  spreads,
   onRedraw,
   isPending
 }: {
   message: ChatMessage;
+  spreads: Spread[];
   onRedraw: (question: string) => void;
   isPending: boolean;
 }) {
@@ -241,6 +244,7 @@ function ChatBubble({
 
   const reading = message.payload;
   const narrativeParagraph = buildNaturalNarrativeParagraph(reading);
+  const spreadMeta = spreads.find((item) => item.id === reading.spreadId) || null;
   const spotlight = reading.items[0] || null;
   const verdict = inferVerdict(reading.summary);
   const keyQuestion = reading.context?.trim() || '질문';
@@ -248,6 +252,48 @@ function ChatBubble({
   return (
     <div className="chat-row chat-row-assistant">
       <article className="chat-bubble chat-bubble-assistant chat-reading-bubble">
+        {spotlight && spreadMeta && (
+          <section className="chat-spread-layout-wrap">
+            <h5 className="chat-layout-title">{spreadMeta.name} 배열</h5>
+            <div
+              className="chat-spread-layout"
+              style={{
+                gridTemplateColumns: `repeat(${spreadMeta.layout.cols}, minmax(86px, 1fr))`,
+                gridTemplateRows: `repeat(${spreadMeta.layout.rows}, auto)`
+              }}
+            >
+              {spreadMeta.layout.slots.map((slot, idx) => {
+                const byName = reading.items.find((item) => item.position.name === slot.position) || null;
+                const index = Number(slot.position) - 1;
+                const byIndex = Number.isNaN(index) ? null : reading.items[index];
+                const drawn = byName ?? byIndex ?? null;
+                if (!drawn) return null;
+                return (
+                  <div
+                    key={`chat-slot-${idx}-${slot.position}`}
+                    className="chat-spread-slot"
+                    style={{
+                      gridColumn: String(slot.col),
+                      gridRow: String(slot.row),
+                      transform: slot.rotate ? `rotate(${slot.rotate}deg)` : 'none'
+                    }}
+                  >
+                    <TarotImage
+                      src={drawn.card.imageUrl}
+                      sources={drawn.card.imageSources}
+                      cardId={drawn.card.id}
+                      alt={drawn.card.nameKo}
+                      className={`chat-spread-slot-thumb ${drawn.orientation === 'reversed' ? 'card-reversed' : ''}`}
+                      loading="lazy"
+                    />
+                    <p className="chat-spread-slot-label">{drawn.card.nameKo}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
         {spotlight && (
           <section className="chat-spotlight-card">
             <TarotImage

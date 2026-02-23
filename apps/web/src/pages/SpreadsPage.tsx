@@ -3,6 +3,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { Link, useSearchParams } from 'react-router-dom';
 import { api } from '../lib/api';
 import { recommendSpreadForQuestion } from '../lib/spread-recommendation';
+import { buildDisplaySpreads } from '../lib/spread-display';
 import { TarotImage } from '../components/TarotImage';
 import { getProgressUserId, useProgressStore } from '../state/progress';
 import type { SpreadDrawResult } from '../types';
@@ -85,7 +86,8 @@ export function SpreadsPage() {
   const reviewSpreadReading = useProgressStore((s) => s.reviewSpreadReading);
   const removeSpreadReading = useProgressStore((s) => s.removeSpreadReading);
   const removeSpreadReadingsBySpreadId = useProgressStore((s) => s.removeSpreadReadingsBySpreadId);
-  const spreads = spreadsQuery.data ?? [];
+  const rawSpreads = spreadsQuery.data ?? [];
+  const spreads = useMemo(() => buildDisplaySpreads(rawSpreads), [rawSpreads]);
   const selected = spreads.find((spread) => spread.id === selectedId) ?? spreads[0] ?? null;
   const reviewInboxQuery = useQuery({
     queryKey: ['review-inbox', userId, selected?.id || 'all'],
@@ -106,10 +108,19 @@ export function SpreadsPage() {
       let targetSpread = selected;
       let targetVariantId = activeVariant?.id ?? null;
 
+      const variantSourceId = activeVariant?.sourceSpreadId;
+      if (variantSourceId) {
+        const sourceSpread = rawSpreads.find((item) => item.id === variantSourceId);
+        if (sourceSpread) {
+          targetSpread = sourceSpread;
+          targetVariantId = null;
+        }
+      }
+
       if (question) {
         const recommendation = await recommendSpreadForQuestion({
           question,
-          spreads,
+          spreads: rawSpreads,
           analyze: async (text) => {
             const result = await api.analyzeQuestionV2({ text, mode: 'hybrid' });
             return {
@@ -119,7 +130,7 @@ export function SpreadsPage() {
             };
           }
         });
-        const found = spreads.find((item) => item.id === recommendation.spreadId);
+        const found = rawSpreads.find((item) => item.id === recommendation.spreadId);
         if (found) {
           targetSpread = found;
           targetVariantId = found.variants?.[0]?.id ?? null;
@@ -137,7 +148,7 @@ export function SpreadsPage() {
       });
     },
     onSuccess: (data) => {
-      setSelectedId(data.spreadId);
+      setSelectedId(resolveDisplaySpreadId(data.spreadId, spreads));
       setVariantId(data.variantId ?? null);
       setDetailView('reading');
       addSpreadReading({
@@ -835,6 +846,13 @@ export function SpreadsPage() {
       </article>
     </section>
   );
+}
+
+function resolveDisplaySpreadId(rawSpreadId: string, displaySpreads: Array<{ id: string; variants?: Array<{ sourceSpreadId?: string }> }>) {
+  const exact = displaySpreads.find((spread) => spread.id === rawSpreadId);
+  if (exact) return exact.id;
+  const grouped = displaySpreads.find((spread) => (spread.variants || []).some((variant) => variant.sourceSpreadId === rawSpreadId));
+  return grouped?.id ?? rawSpreadId;
 }
 
 function CoachSummaryView({
