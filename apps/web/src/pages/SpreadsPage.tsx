@@ -4,7 +4,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { api } from '../lib/api';
 import { recommendSpreadForQuestion } from '../lib/spread-recommendation';
 import { buildDisplaySpreads, resolveDisplaySpreadId } from '../lib/spread-display';
-import { loadChatDrawCache } from '../lib/chat-draw-cache';
+import { loadChatDrawCache, saveChatDrawCache } from '../lib/chat-draw-cache';
 import { TarotImage } from '../components/TarotImage';
 import { getProgressUserId, useProgressStore } from '../state/progress';
 import type { SpreadDrawResult } from '../types';
@@ -152,6 +152,7 @@ export function SpreadsPage() {
     },
     onSuccess: (data) => {
       setRestoredDraw(null);
+      saveChatDrawCache(data);
       setSelectedId(resolveDisplaySpreadId(data.spreadId, spreads));
       setVariantId(data.variantId ?? null);
       setDetailView('reading');
@@ -345,12 +346,22 @@ export function SpreadsPage() {
         <p>{selected.purpose}</p>
         {recommendedHint && <p className="sub">자동 추천: {recommendedHint}</p>}
         <div className="chip-wrap">
-          <Link
-            to={`/chat?spreadId=${encodeURIComponent(selected.id)}&variantId=${encodeURIComponent(activeVariant?.id ?? '')}&level=${readingLevel}&context=${encodeURIComponent(context)}`}
-            className="chip-link"
-          >
-            챗 리딩으로 전환
-          </Link>
+          {(() => {
+            const chatSpreadId = activeDraw ? resolveDisplaySpreadId(activeDraw.spreadId, spreads) : selected.id;
+            const chatLevel = activeDraw?.level ?? readingLevel;
+            const chatContext = activeDraw?.context ?? context;
+            const extra = activeDraw
+              ? `&fromCard=1&chatDrawAt=${encodeURIComponent(activeDraw.drawnAt)}&rawSpreadId=${encodeURIComponent(activeDraw.spreadId)}`
+              : '';
+            return (
+              <Link
+                to={`/chat?spreadId=${encodeURIComponent(chatSpreadId)}&variantId=${encodeURIComponent(activeVariant?.id ?? '')}&level=${chatLevel}&context=${encodeURIComponent(chatContext)}${extra}`}
+                className="chip-link"
+              >
+                챗 리딩으로 전환
+              </Link>
+            );
+          })()}
         </div>
 
         {selected.variants && selected.variants.length > 0 && (

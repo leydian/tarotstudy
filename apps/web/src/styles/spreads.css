@@ -1154,6 +1154,18 @@
   overflow: hidden;
 }
 
+.chat-summary-section {
+  padding-top: 8px;
+}
+
+.chat-summary-section-title {
+  margin: 0;
+  padding: 10px 12px 0;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #dde2ff;
+}
+
 .chat-summary-accordion > summary {
   cursor: pointer;
   list-style: none;
@@ -1184,12 +1196,12 @@
   border-radius: 10px;
   background: color-mix(in srgb, #141727 86%, #1b2140);
   overflow: hidden;
+  padding-top: 8px;
 }
 
-.chat-month-accordion > summary {
-  cursor: pointer;
-  list-style: none;
-  padding: 8px 10px;
+.chat-month-title {
+  margin: 0;
+  padding: 0 10px;
   color: #d7ddff;
   font-size: 0.86rem;
   font-weight: 700;
@@ -1367,6 +1379,10 @@
   color: var(--ink-0);
 }
 
+:root[data-theme='light'] .chat-summary-section-title {
+  color: var(--ink-0);
+}
+
 :root[data-theme='light'] .chat-dialog-tarot .chat-dialog-speaker,
 :root[data-theme='light'] .chat-dialog-learning .chat-dialog-speaker {
   color: var(--ink-1);
@@ -1387,7 +1403,7 @@
   border-color: color-mix(in srgb, #4f6de6 20%, var(--line));
 }
 
-:root[data-theme='light'] .chat-month-accordion > summary {
+:root[data-theme='light'] .chat-month-title {
   color: var(--ink-0);
 }
 

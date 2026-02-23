@@ -7,7 +7,7 @@ import { TarotImage } from '../components/TarotImage';
 import { normalizeDisplayText } from './spreads-presenters';
 import { recommendSpreadForQuestion } from '../lib/spread-recommendation';
 import { buildDisplaySpreads, resolveDisplaySpreadId } from '../lib/spread-display';
-import { saveChatDrawCache } from '../lib/chat-draw-cache';
+import { loadChatDrawCache, saveChatDrawCache } from '../lib/chat-draw-cache';
 import {
   findDrawnItemForSlot,
   parseMonthlySummary,
@@ -80,6 +80,27 @@ export function ChatSpreadPage() {
     if (!logRef.current) return;
     logRef.current.scrollTop = logRef.current.scrollHeight;
   }, [messages]);
+
+  useEffect(() => {
+    if (!spreads.length) return;
+    if (messages.length > 0) return;
+    const fromCard = searchParams.get('fromCard') === '1';
+    if (!fromCard) return;
+    const chatDrawAt = searchParams.get('chatDrawAt') || '';
+    const rawSpreadId = searchParams.get('rawSpreadId') || '';
+    const cached = loadChatDrawCache({
+      drawnAt: chatDrawAt || undefined,
+      spreadId: rawSpreadId || undefined
+    });
+    if (!cached) return;
+    setSelectedSpreadId(resolveDisplaySpreadId(cached.spreadId, spreads));
+    setReadingLevel(cached.level);
+    setInput(cached.context || '');
+    setMessages([
+      { id: `u-restore-${cached.drawnAt}`, role: 'user', type: 'text', text: cached.context || '이전 질문' },
+      { id: `a-restore-${cached.drawnAt}`, role: 'assistant', type: 'reading', payload: cached }
+    ]);
+  }, [messages.length, searchParams, spreads]);
 
   const drawMutation = useMutation({
     mutationFn: async (question: string) => {
@@ -338,7 +359,7 @@ function ChatBubble({
 function ChatSummaryView({ reading }: { reading: SpreadDrawResult }) {
   const structured = buildStructuredSummary(reading);
   if (structured) {
-    const quickDialog = buildQuickDialog(structured.highlights, structured.actionPlan);
+    const quickDialog = buildQuickDialog(structured.highlights, structured.actionPlan, reading.context);
     return (
       <section className="chat-summary-shell">
         <div className="chat-dialog-stream">
@@ -351,14 +372,14 @@ function ChatSummaryView({ reading }: { reading: SpreadDrawResult }) {
         </div>
         <div className="chat-summary-accordion-wrap">
           {structured.sections.map((section, idx) => (
-            <details key={`${section.title}-${idx}`} className="chat-summary-accordion" open={section.open}>
-              <summary>{section.title}</summary>
+            <section key={`${section.title}-${idx}`} className="chat-summary-accordion chat-summary-section">
+              <h6 className="chat-summary-section-title">{section.title}</h6>
               <div className="chat-summary-accordion-body">
                 {section.monthItems?.length ? (
                   <div className="chat-month-accordion-list">
                     {section.monthItems.map((item, monthIdx) => (
-                      <details key={`${item.title}-${monthIdx}`} className="chat-month-accordion" open={monthIdx < 2}>
-                        <summary>{item.title}</summary>
+                      <article key={`${item.title}-${monthIdx}`} className="chat-month-accordion">
+                        <h6 className="chat-month-title">{item.title}</h6>
                         <div className="chat-month-accordion-body">
                           <div className="chat-dialog-stream">
                             {buildSectionDialog(item.body, section.title, monthIdx).map((turn, turnIdx) => (
@@ -369,7 +390,7 @@ function ChatSummaryView({ reading }: { reading: SpreadDrawResult }) {
                             ))}
                           </div>
                         </div>
-                      </details>
+                      </article>
                     ))}
                   </div>
                 ) : (
@@ -383,7 +404,7 @@ function ChatSummaryView({ reading }: { reading: SpreadDrawResult }) {
                   </div>
                 )}
               </div>
-            </details>
+            </section>
           ))}
         </div>
       </section>
@@ -394,7 +415,7 @@ function ChatSummaryView({ reading }: { reading: SpreadDrawResult }) {
   const narrativeBubbles = buildNarrativeBubbles(narrativeParagraph);
   const highlights = buildGenericHighlights(narrativeBubbles);
   const actionPlan = buildActionPlan(narrativeBubbles.join(' '));
-  const quickDialog = buildQuickDialog(highlights, actionPlan);
+  const quickDialog = buildQuickDialog(highlights, actionPlan, reading.context);
   return (
     <section className="chat-summary-shell">
       <div className="chat-dialog-stream">
@@ -405,8 +426,8 @@ function ChatSummaryView({ reading }: { reading: SpreadDrawResult }) {
           </article>
         ))}
       </div>
-      <details className="chat-summary-accordion" open>
-        <summary>상세 대화</summary>
+      <section className="chat-summary-accordion chat-summary-section">
+        <h6 className="chat-summary-section-title">상세 대화</h6>
         <div className="chat-summary-accordion-body">
           <div className="chat-dialog-stream">
             {narrativeBubbles.flatMap((line, idx) => buildSectionDialog(line, '상세 리딩', idx)).map((turn, idx) => (
@@ -417,7 +438,7 @@ function ChatSummaryView({ reading }: { reading: SpreadDrawResult }) {
             ))}
           </div>
         </div>
-      </details>
+      </section>
     </section>
   );
 }
@@ -555,12 +576,15 @@ function fallbackAction(joined: string, scope: 'today' | 'week' | 'month') {
 
 function buildQuickDialog(
   highlights: Array<{ title: string; body: string }>,
-  actionPlan: { today: string; thisWeek: string; thisMonth: string }
+  actionPlan: { today: string; thisWeek: string; thisMonth: string },
+  context = ''
 ) {
   const core = highlights.find((item) => item.title.includes('결론'))?.body || highlights[0]?.body || '';
   const action = highlights.find((item) => item.title.includes('할 일') || item.title.includes('실행'))?.body || actionPlan.today;
   const caution = highlights.find((item) => item.title.includes('주의'))?.body || '속도를 줄이고 핵심 기준부터 고정해볼게요.';
+  const bridge = buildTarotBridge(context);
   return [
+    { speaker: 'tarot' as const, text: bridge },
     { speaker: 'tarot' as const, text: softenLine(`핵심 흐름부터 보면 ${core}`) },
     { speaker: 'tarot' as const, text: softenLine(`주의할 부분은 ${caution}`) },
     { speaker: 'tarot' as const, text: softenLine(`실행 기준은 ${action}`) },
@@ -586,13 +610,14 @@ function maybeBuildLearningHint(text: string, sectionTitle: string, lineIndex: n
   const isActionBlock = /실행|행동|루틴|체크|점검|복기|우선순위|가이드|정리/.test(joined);
   const shouldShow = isActionBlock ? lineIndex % 2 === 0 && chunkIndex === 0 : lineIndex % 4 === 0 && chunkIndex === 0;
   if (!shouldShow) return '';
+  const noun = extractPrimaryNoun(joined);
   if (/주의|리스크|소모|충돌|지연|불안|조절/.test(joined)) {
-    return softenLine('학습리더 팁: 지금은 속도보다 기준 고정이 먼저예요. 체크포인트 1개만 두고 확인해요');
+    return softenLine(`학습리더 팁: ${noun}는 오늘 15분 점검 타임을 잡고, '맞음/어긋남' 체크 1개만 기록해요`);
   }
   if (isActionBlock) {
-    return softenLine('학습리더 팁: 실행은 한 번에 많이보다 작은 단위 1개를 끝내는 방식이 가장 안정적이에요');
+    return softenLine(`학습리더 팁: ${noun}는 25분 실행 + 5분 기록으로 1세트만 끝내고, 결과를 숫자 1개로 남겨요`);
   }
-  return softenLine('학습리더 팁: 핵심 문장을 메모 한 줄로 남기면 다음 리딩에서 비교가 쉬워져요');
+  return softenLine(`학습리더 팁: 핵심 문장을 메모 1줄로 적고, 내일 같은 시간에 같은 기준으로 다시 확인해요`);
 }
 
 function softenLine(text: string) {
@@ -601,6 +626,19 @@ function softenLine(text: string) {
   const trimmed = line.replace(/\s+/g, ' ').trim();
   if (/[.!?]$/.test(trimmed)) return trimmed;
   return `${trimmed}.`;
+}
+
+function extractPrimaryNoun(text: string) {
+  const token = String(text || '')
+    .split(/\s+/)
+    .find((word) => /[가-힣A-Za-z]/.test(word) && word.length >= 2);
+  return token || '핵심 포인트';
+}
+
+function buildTarotBridge(context: string) {
+  const q = String(context || '').trim();
+  if (!q) return '지금 마음이 어디에 머무는지부터 같이 확인해볼게요.';
+  return `질문 맥락을 보면 "${q}"가 가장 크게 걸려 있네요. 그 고민 충분히 공감돼요, 흐름을 차분히 같이 볼게요.`;
 }
 
 function inferVerdict(summary: string): { kind: 'yes' | 'no' | 'maybe'; label: string } {
