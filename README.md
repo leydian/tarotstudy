@@ -26,6 +26,7 @@ npm run dev:web -- --host 127.0.0.1 --port 5173
 - Codex 변경 요약: [docs/codex-updates-2026-02-22.md](./docs/codex-updates-2026-02-22.md)
 - 관련 보고서:
   - [docs/persona-report-2026-02-22.md](./docs/persona-report-2026-02-22.md)
+  - [docs/persona-onepager.md](./docs/persona-onepager.md)
   - [docs/annual-fortune-job-timing-awkwardness-report-2026-02-22.md](./docs/annual-fortune-job-timing-awkwardness-report-2026-02-22.md)
 
 ## 최근 변경 요약 (2026-02-22)
