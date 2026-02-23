@@ -247,7 +247,7 @@ export function SpreadsPage() {
       poolSize: 3000,
       spreadName: selected?.name || '',
       context: activeDraw?.context || context,
-      seedKey: selected?.id || 'spread-starter'
+      seedKey: `${selected?.id || 'spread'}:prompt-bank`
     }),
     [activeDraw?.context, context, selected?.id, selected?.name]
   );
@@ -338,9 +338,6 @@ export function SpreadsPage() {
       <article className="panel">
         <div className="spread-page-header">
           <div>
-            <p className="badge">{selected.level === 'beginner' ? '입문 권장' : '중급 권장'} · {selected.cardCount}장</p>
-            <h3>{selected.name}</h3>
-            <p>{selected.purpose}</p>
             {recommendedHint && <p className="sub">자동 추천: {recommendedHint}</p>}
           </div>
           <div className="chip-wrap spread-header-actions">
@@ -360,44 +357,24 @@ export function SpreadsPage() {
                 </Link>
               );
             })()}
-            <button
-              className="chip-link"
-              disabled={!activeDraw}
-              onClick={() => activeDraw && exportReadingTxt(activeDraw, '카드뷰 모드')}
-            >
-              TXT 내보내기
-            </button>
-            <button
-              className="chip-link"
-              disabled={!activeDraw}
-              onClick={() => activeDraw && exportReadingPdf(activeDraw, '카드뷰 모드')}
-            >
-              PDF 내보내기
-            </button>
+            {activeDraw && (
+              <>
+                <button
+                  className="chip-link"
+                  onClick={() => exportReadingTxt(activeDraw, '카드뷰 모드')}
+                >
+                  TXT 내보내기
+                </button>
+                <button
+                  className="chip-link"
+                  onClick={() => exportReadingPdf(activeDraw, '카드뷰 모드')}
+                >
+                  PDF 내보내기
+                </button>
+              </>
+            )}
           </div>
         </div>
-
-        {selected.variants && selected.variants.length > 0 && (
-          <>
-            <h4>핵심 변형</h4>
-            <div className="chip-wrap">
-              {selected.variants.map((variant) => (
-                <button
-                  key={variant.id}
-                  className={`chip-link ${activeVariant?.id === variant.id ? 'chip-on' : ''}`}
-                  onClick={() => {
-                    setVariantId(variant.id);
-                    setDetailView('reading');
-                    setRestoredDraw(null);
-                    drawMutation.reset();
-                  }}
-                >
-                  {variant.name}
-                </button>
-              ))}
-            </div>
-          </>
-        )}
 
         <h4>실전 드로우</h4>
         <div className="filters spread-draw-controls">
@@ -414,14 +391,17 @@ export function SpreadsPage() {
             {drawMutation.isPending ? '추천 스프레드 계산 중...' : '질문 기반 자동 추천 + 리딩 생성'}
           </button>
         </div>
-        <h4>추천 질문</h4>
-        <div className="chip-wrap spread-prompt-bank">
-          {spreadStarterPrompts.map((prompt) => (
-            <button key={`spread-prompt-${prompt}`} className="chip-link" onClick={() => setContext(prompt)}>
-              {prompt}
-            </button>
-          ))}
-        </div>
+        <article className="result-item spread-prompt-card">
+          <p className="eyebrow">Prompt Bank</p>
+          <h4>추천 질문</h4>
+          <div className="chip-wrap spread-prompt-bank">
+            {spreadStarterPrompts.map((prompt) => (
+              <button key={`spread-prompt-${prompt}`} className="chip-link" onClick={() => setContext(prompt)}>
+                {prompt}
+              </button>
+            ))}
+          </div>
+        </article>
 
         <h4>스프레드 모양</h4>
         <div
@@ -474,20 +454,22 @@ export function SpreadsPage() {
 
         {drawMutation.isError && <p>드로우 생성에 실패했습니다. 잠시 후 다시 시도해주세요.</p>}
 
-        <div className="chip-wrap view-toggle">
-          <button
-            className={`chip-link ${detailView === 'reading' ? 'chip-on' : ''}`}
-            onClick={() => setDetailView('reading')}
-          >
-            스프레드 리딩 결과
-          </button>
-          <button
-            className={`chip-link ${detailView === 'guide' ? 'chip-on' : ''}`}
-            onClick={() => setDetailView('guide')}
-          >
-            스프레드 가이드/복기
-          </button>
-        </div>
+        {activeDraw && (
+          <div className="chip-wrap view-toggle">
+            <button
+              className={`chip-link ${detailView === 'reading' ? 'chip-on' : ''}`}
+              onClick={() => setDetailView('reading')}
+            >
+              스프레드 리딩 결과
+            </button>
+            <button
+              className={`chip-link ${detailView === 'guide' ? 'chip-on' : ''}`}
+              onClick={() => setDetailView('guide')}
+            >
+              스프레드 가이드/복기
+            </button>
+          </div>
+        )}
 
         {detailView === 'reading' && !activeDraw && (
           <p className="sub">카드를 뽑으면 이 영역에 리딩 결과가 표시됩니다.</p>

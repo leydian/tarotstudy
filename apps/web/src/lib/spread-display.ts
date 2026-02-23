@@ -30,11 +30,9 @@ export function buildDisplaySpreads(rawSpreads: Spread[]) {
       }))
     ];
     const dedupedVariants = dedupeVariants(baseVariants);
-    const hasMergedPurpose = /동일 배열 스프레드는 핵심 변형에서 선택할 수 있습니다\.$/.test(base.purpose);
 
     mergedById.set(base.id, {
       ...base,
-      purpose: hasMergedPurpose ? base.purpose : `${base.purpose} 동일 배열 스프레드는 핵심 변형에서 선택할 수 있습니다.`,
       variants: dedupedVariants
     });
 

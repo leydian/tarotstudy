@@ -220,20 +220,22 @@ export function ChatSpreadPage() {
             >
               카드뷰로 보기
             </Link>
-            <button
-              className="chip-link"
-              disabled={!latestReading}
-              onClick={() => latestReading && exportReadingTxt(latestReading, '챗봇 모드')}
-            >
-              TXT 내보내기
-            </button>
-            <button
-              className="chip-link"
-              disabled={!latestReading}
-              onClick={() => latestReading && exportReadingPdf(latestReading, '챗봇 모드')}
-            >
-              PDF 내보내기
-            </button>
+            {latestReading && (
+              <>
+                <button
+                  className="chip-link"
+                  onClick={() => exportReadingTxt(latestReading, '챗봇 모드')}
+                >
+                  TXT 내보내기
+                </button>
+                <button
+                  className="chip-link"
+                  onClick={() => exportReadingPdf(latestReading, '챗봇 모드')}
+                >
+                  PDF 내보내기
+                </button>
+              </>
+            )}
           </div>
         </div>
 

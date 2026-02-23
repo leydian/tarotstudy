@@ -878,10 +878,43 @@
 
 .spread-header-actions {
   justify-content: flex-end;
+  align-items: center;
+  gap: 6px;
+}
+
+.spread-header-actions .chip-link {
+  -webkit-line-clamp: 1;
+  white-space: nowrap;
+  padding: 8px 11px;
+}
+
+.spread-page-header h3 {
+  margin-bottom: 10px;
+}
+
+.spread-page-header p {
+  margin-top: 0;
+}
+
+.spread-prompt-card {
+  margin-top: 12px;
+  border-top: 0;
+  padding-top: 8px;
+}
+
+.spread-prompt-card h4 {
+  margin: 4px 0 10px;
 }
 
 .spread-prompt-bank {
-  margin-bottom: 2px;
+  gap: 7px;
+}
+
+.spread-prompt-bank .chip-link {
+  -webkit-line-clamp: 1;
+  white-space: nowrap;
+  max-width: min(100%, 320px);
+  padding: 7px 11px;
 }
 
 .chat-top-panel {
