@@ -12,6 +12,14 @@ function read(relPath) {
   return fs.readFileSync(path.join(root, relPath), 'utf-8');
 }
 
+function readFirst(candidates) {
+  for (const relPath of candidates) {
+    const abs = path.join(root, relPath);
+    if (fs.existsSync(abs)) return fs.readFileSync(abs, 'utf-8');
+  }
+  throw new Error(`No candidate source found: ${candidates.join(', ')}`);
+}
+
 test('question recommendation module defines 1000~10000 pool boundaries', () => {
   const source = read('apps/web/src/lib/question-recommendations.ts');
   assert.equal(source.includes('const MIN_POOL_SIZE = 1000;'), true);
@@ -20,7 +28,10 @@ test('question recommendation module defines 1000~10000 pool boundaries', () => 
 });
 
 test('chat page consumes random question recommendation pool', () => {
-  const source = read('apps/web/src/pages/ChatSpreadPage.tsx');
+  const source = readFirst([
+    'apps/web/src/features/chat-reading/ChatReadingPageContainer.tsx',
+    'apps/web/src/pages/ChatSpreadPage.tsx'
+  ]);
   assert.equal(source.includes('recommendRandomQuestions'), true);
   assert.equal(source.includes('poolSize: 3000'), true);
   assert.equal(source.includes('count: 6'), true);

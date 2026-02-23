@@ -30,6 +30,7 @@ import {
   parseChoiceOptions as parseChoiceOptionsEnhanced
 } from './question-understanding/index.js';
 import { inferShortUtterance } from './question-understanding/short-utterance-rules.js';
+import { registerSpreadsV3Routes } from './routes/spreads-v3.routes.js';
 
 dotenv.config();
 
@@ -600,6 +601,8 @@ function inferSpreadDomain(spread) {
   if (/(연간|월간|주간|일별|life|travel|move|relocation|direction)/.test(source)) return 'life';
   return 'general';
 }
+
+registerSpreadsV3Routes(app, { performSpreadDraw });
 
 app.post('/api/spreads/:spreadId/draw', async (request, reply) => {
   const { spreadId } = request.params;

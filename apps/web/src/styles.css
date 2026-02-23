@@ -1,4 +1,6 @@
 @import './styles/theme.css';
 @import './styles/layout.css';
-@import './styles/spreads.css';
 @import './styles/magazine.css';
+@import './styles/spreads.css';
+@import './styles/features/spreads/entry.css';
+@import './styles/features/chat/entry.css';

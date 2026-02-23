@@ -234,6 +234,51 @@ export interface SpreadDrawResult {
   policySource?: string;
 }
 
+export interface CanonicalReadingBlock {
+  summary: string[];
+  detail: string[];
+  checklist: string[];
+  evidence: Array<{
+    index: number;
+    cardName: string;
+    narrative: string;
+  }>;
+}
+
+export interface CanonicalReadingPayload {
+  spreadId: string;
+  spreadName: string;
+  variantId: string | null;
+  variantName: string | null;
+  level: 'beginner' | 'intermediate';
+  context: string;
+  readingExperiment?: 'A' | 'B';
+  drawnAt: string;
+  items: SpreadDrawResult['items'];
+  reading: CanonicalReadingBlock;
+  verdict: {
+    label: string;
+    sentence: string;
+  };
+  actions: {
+    now: string;
+    caution: string;
+    checkin: string;
+  };
+  meta: {
+    policyVersion: string;
+    policySource: string;
+    modelVersion: string;
+    generatedAt: string;
+  };
+  compatibility: {
+    summary: string;
+    readingV3: SpreadDrawResult['readingV3'] | null;
+    tonePayload: SpreadDrawResult['tonePayload'] | null;
+    readingModel: SpreadDrawResult['readingModel'] | null;
+  };
+}
+
 export interface QuestionUnderstandingV2 {
   text: string;
   normalizedText: string;

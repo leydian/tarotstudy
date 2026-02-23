@@ -12,6 +12,14 @@ function read(relPath) {
   return fs.readFileSync(path.join(root, relPath), 'utf-8');
 }
 
+function readFirst(candidates) {
+  for (const relPath of candidates) {
+    const abs = path.join(root, relPath);
+    if (fs.existsSync(abs)) return fs.readFileSync(abs, 'utf-8');
+  }
+  throw new Error(`No candidate source found: ${candidates.join(', ')}`);
+}
+
 test('App routes expose core pages', () => {
   const appSource = read('apps/web/src/App.tsx');
   const requiredRoutes = [
@@ -28,15 +36,24 @@ test('App routes expose core pages', () => {
 });
 
 test('Spreads page reports draw and review telemetry', () => {
-  const source = read('apps/web/src/pages/SpreadsPage.tsx');
+  const source = readFirst([
+    'apps/web/src/features/spreads/SpreadsPageContainer.tsx',
+    'apps/web/src/pages/SpreadsPage.tsx'
+  ]);
   assert.equal(source.includes("type: 'spread_drawn'"), true);
   assert.equal(source.includes("type: 'spread_review_saved'"), true);
   assert.equal(source.includes('api.reportSpreadEvent'), true);
 });
 
 test('Chat and card views expose export controls', () => {
-  const chatSource = read('apps/web/src/pages/ChatSpreadPage.tsx');
-  const spreadsSource = read('apps/web/src/pages/SpreadsPage.tsx');
+  const chatSource = readFirst([
+    'apps/web/src/features/chat-reading/ChatReadingPageContainer.tsx',
+    'apps/web/src/pages/ChatSpreadPage.tsx'
+  ]);
+  const spreadsSource = readFirst([
+    'apps/web/src/features/spreads/SpreadsPageContainer.tsx',
+    'apps/web/src/pages/SpreadsPage.tsx'
+  ]);
   const exportSource = read('apps/web/src/lib/reading-export.ts');
 
   assert.equal(chatSource.includes('TXT 내보내기'), true);

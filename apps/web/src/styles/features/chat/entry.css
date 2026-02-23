@@ -1,0 +1,23 @@
+.chat-top-panel {
+  background: linear-gradient(
+    140deg,
+    color-mix(in srgb, var(--reading-bg) 88%, var(--accent-soft)),
+    color-mix(in srgb, var(--reading-bg) 84%, var(--accent-warm))
+  );
+}
+
+.chat-shell {
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--reading-line);
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, var(--reading-bg) 90%, var(--accent-soft)),
+    color-mix(in srgb, var(--reading-bg) 94%, var(--accent-warm))
+  );
+}
+
+.chat-shell-dark {
+  background: radial-gradient(120% 90% at 20% 0%, #1a1531 0%, #100f1c 48%, #0a0a12 100%);
+  border-color: color-mix(in srgb, #7a58d8 35%, var(--line));
+}

@@ -12,8 +12,19 @@ function read(relPath) {
   return fs.readFileSync(path.join(root, relPath), 'utf-8');
 }
 
+function readFirst(candidates) {
+  for (const relPath of candidates) {
+    const abs = path.join(root, relPath);
+    if (fs.existsSync(abs)) return fs.readFileSync(abs, 'utf-8');
+  }
+  throw new Error(`No candidate source found: ${candidates.join(', ')}`);
+}
+
 test('tarot leader readability rules stay enforced in chat renderer', () => {
-  const source = read('apps/web/src/pages/ChatSpreadPage.tsx');
+  const source = readFirst([
+    'apps/web/src/features/chat-reading/ChatReadingPageContainer.tsx',
+    'apps/web/src/pages/ChatSpreadPage.tsx'
+  ]);
   assert.equal(source.includes('function compactTarotTurn'), true);
   assert.equal(source.includes("toDisplayLine(String(text || ''), purpose === 'detail' ? 'detail' : 'quick')"), true);
   assert.equal(source.includes('toCanonicalReadingLines'), true);
