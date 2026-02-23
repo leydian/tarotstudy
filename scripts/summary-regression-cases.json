@@ -1,6 +1,6 @@
 {
-  "generatedDate": "2026-02-22",
-  "version": 1,
+  "generatedDate": "2026-02-23",
+  "version": 2,
   "cases": [
     {
       "id": "one-card-career-1",
@@ -8,8 +8,16 @@
       "level": "beginner",
       "context": "오늘 이직 지원서를 제출해도 될까?",
       "expect": {
-        "requiredAny": ["실행", "지원", "정비", "한 줄 테마:"],
-        "forbidden": ["소모을", "  ?"]
+        "requiredAny": [
+          "실행",
+          "지원",
+          "정비",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
       }
     },
     {
@@ -18,8 +26,15 @@
       "level": "beginner",
       "context": "오늘 연락을 먼저 해도 될까?",
       "expect": {
-        "requiredAny": ["연락", "대화", "한 줄 테마:"],
-        "forbidden": ["소모을", "  ?"]
+        "requiredAny": [
+          "연락",
+          "대화",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
       }
     },
     {
@@ -28,8 +43,15 @@
       "level": "beginner",
       "context": "오늘 면접 준비 흐름은 어때?",
       "expect": {
-        "requiredAny": ["하루", "오늘", "한 줄 테마:"],
-        "forbidden": ["소모을", "  ?"]
+        "requiredAny": [
+          "하루",
+          "오늘",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
       }
     },
     {
@@ -38,8 +60,15 @@
       "level": "beginner",
       "context": "오늘 운세는 어때?",
       "expect": {
-        "requiredAny": ["오늘", "흐름", "한 줄 테마:"],
-        "forbidden": ["소모을", "  ?"]
+        "requiredAny": [
+          "오늘",
+          "흐름",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
       }
     },
     {
@@ -48,8 +77,16 @@
       "level": "beginner",
       "context": "시험 준비를 이번 주에 어떻게 운영하면 좋을까?",
       "expect": {
-        "requiredAll": ["결론:", "근거:", "실행 가이드:", "한 줄 테마:"],
-        "forbidden": ["소모을", "  ?"]
+        "requiredAll": [
+          "결론:",
+          "근거:",
+          "실행 가이드:",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
       }
     },
     {
@@ -58,8 +95,16 @@
       "level": "beginner",
       "context": "관계를 이어갈지 잠시 거리를 둘지 고민이야",
       "expect": {
-        "requiredAll": ["결론:", "근거:", "실행 가이드:", "한 줄 테마:"],
-        "forbidden": ["소모을", "  ?"]
+        "requiredAll": [
+          "결론:",
+          "근거:",
+          "실행 가이드:",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
       }
     },
     {
@@ -68,8 +113,16 @@
       "level": "beginner",
       "context": "부산을 갈까 광주를 갈까?",
       "expect": {
-        "requiredAny": ["이동 거리", "정착 난이도", "관계망/지원망", "한 줄 테마:"],
-        "forbidden": ["소모을", "  ?"]
+        "requiredAny": [
+          "이동 거리",
+          "정착 난이도",
+          "관계망/지원망",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
       }
     },
     {
@@ -78,8 +131,15 @@
       "level": "beginner",
       "context": "재회할 수 있을까?",
       "expect": {
-        "requiredAny": ["관계", "대화", "한 줄 테마:"],
-        "forbidden": ["소모을", "  ?"]
+        "requiredAny": [
+          "관계",
+          "대화",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
       }
     },
     {
@@ -88,8 +148,27 @@
       "level": "beginner",
       "context": "다음 주 이직 준비를 어떻게 하면 좋을까?",
       "expect": {
-        "requiredAll": ["총평:", "일별 흐름:", "실행 가이드:", "한 줄 테마:", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일", "일요일"],
-        "forbidden": ["주간 테마", "월-화", "수-목", "주간 조언", "소모을", "  ?"]
+        "requiredAll": [
+          "총평:",
+          "일별 흐름:",
+          "실행 가이드:",
+          "한 줄 테마:",
+          "월요일",
+          "화요일",
+          "수요일",
+          "목요일",
+          "금요일",
+          "토요일",
+          "일요일"
+        ],
+        "forbidden": [
+          "주간 테마",
+          "월-화",
+          "수-목",
+          "주간 조언",
+          "소모을",
+          "  ?"
+        ]
       }
     },
     {
@@ -98,8 +177,27 @@
       "level": "beginner",
       "context": "이번 주 관계 흐름을 알고 싶어",
       "expect": {
-        "requiredAll": ["총평:", "일별 흐름:", "실행 가이드:", "한 줄 테마:", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일", "일요일"],
-        "forbidden": ["주간 테마", "월-화", "수-목", "주간 조언", "소모을", "  ?"]
+        "requiredAll": [
+          "총평:",
+          "일별 흐름:",
+          "실행 가이드:",
+          "한 줄 테마:",
+          "월요일",
+          "화요일",
+          "수요일",
+          "목요일",
+          "금요일",
+          "토요일",
+          "일요일"
+        ],
+        "forbidden": [
+          "주간 테마",
+          "월-화",
+          "수-목",
+          "주간 조언",
+          "소모을",
+          "  ?"
+        ]
       }
     },
     {
@@ -108,8 +206,17 @@
       "level": "intermediate",
       "context": "다음 달 이직 준비 전략을 세우고 싶어",
       "expect": {
-        "requiredAll": ["총평:", "주차 흐름:", "월-주 연결:", "실행 가이드:", "한 줄 테마:"],
-        "forbidden": ["소모을", "  ?"]
+        "requiredAll": [
+          "총평:",
+          "주차 흐름:",
+          "월-주 연결:",
+          "실행 가이드:",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
       }
     },
     {
@@ -118,8 +225,17 @@
       "level": "intermediate",
       "context": "다음 달 지출을 어떻게 관리하면 좋을까?",
       "expect": {
-        "requiredAll": ["총평:", "주차 흐름:", "월-주 연결:", "실행 가이드:", "한 줄 테마:"],
-        "forbidden": ["소모을", "  ?"]
+        "requiredAll": [
+          "총평:",
+          "주차 흐름:",
+          "월-주 연결:",
+          "실행 가이드:",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
       }
     },
     {
@@ -128,8 +244,21 @@
       "level": "intermediate",
       "context": "올해 취직 시기와 준비 포인트가 궁금해",
       "expect": {
-        "requiredAll": ["총평:", "분기별 운세:", "월별 운세:", "1분기(1~3월)", "2분기(4~6월)", "3분기(7~9월)", "4분기(10~12월)", "한 줄 테마:", "연말"],
-        "forbidden": ["소모을", "  ?"]
+        "requiredAll": [
+          "총평:",
+          "분기별 운세:",
+          "월별 운세:",
+          "1분기(1~3월)",
+          "2분기(4~6월)",
+          "3분기(7~9월)",
+          "4분기(10~12월)",
+          "한 줄 테마:",
+          "연말"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
       }
     },
     {
@@ -138,8 +267,22 @@
       "level": "intermediate",
       "context": "올해 연애 흐름을 알고 싶어",
       "expect": {
-        "requiredAll": ["총평:", "분기별 운세:", "월별 운세:", "1분기(1~3월)", "2분기(4~6월)", "3분기(7~9월)", "4분기(10~12월)", "한 줄 테마:", "연말"],
-        "forbidden": ["취직 시기 관점으로 정리하면", "소모을", "  ?"]
+        "requiredAll": [
+          "총평:",
+          "분기별 운세:",
+          "월별 운세:",
+          "1분기(1~3월)",
+          "2분기(4~6월)",
+          "3분기(7~9월)",
+          "4분기(10~12월)",
+          "한 줄 테마:",
+          "연말"
+        ],
+        "forbidden": [
+          "취직 시기 관점으로 정리하면",
+          "소모을",
+          "  ?"
+        ]
       }
     },
     {
@@ -148,9 +291,20 @@
       "level": "beginner",
       "context": "헤어진 사람과 재회 가능성이 있을까?",
       "expect": {
-        "requiredAll": ["핵심 진단:", "관계 리스크:", "7일 행동 계획:"],
-        "requiredAny": ["재회", "대화", "연락"],
-        "forbidden": ["소모을", "  ?"]
+        "requiredAll": [
+          "핵심 진단:",
+          "관계 리스크:",
+          "7일 행동 계획:"
+        ],
+        "requiredAny": [
+          "재회",
+          "대화",
+          "연락"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
       }
     },
     {
@@ -159,9 +313,20 @@
       "level": "beginner",
       "context": "최근 다툰 상대와 어떻게 화해할까?",
       "expect": {
-        "requiredAll": ["핵심 진단:", "관계 리스크:", "7일 행동 계획:"],
-        "requiredAny": ["갈등", "오해", "대화"],
-        "forbidden": ["소모을", "  ?"]
+        "requiredAll": [
+          "핵심 진단:",
+          "관계 리스크:",
+          "7일 행동 계획:"
+        ],
+        "requiredAny": [
+          "갈등",
+          "오해",
+          "대화"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
       }
     },
     {
@@ -170,8 +335,16 @@
       "level": "intermediate",
       "context": "이번 분기 커리어 전환을 해도 될까?",
       "expect": {
-        "requiredAny": ["현재", "교차/장애", "결과", "한 줄 테마:"],
-        "forbidden": ["소모을", "  ?"]
+        "requiredAny": [
+          "현재",
+          "교차/장애",
+          "결과",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
       }
     },
     {
@@ -180,8 +353,16 @@
       "level": "intermediate",
       "context": "관계 갈등을 풀 수 있을까?",
       "expect": {
-        "requiredAny": ["현재", "교차/장애", "결과", "한 줄 테마:"],
-        "forbidden": ["소모을", "  ?"]
+        "requiredAny": [
+          "현재",
+          "교차/장애",
+          "결과",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
       }
     },
     {
@@ -190,8 +371,16 @@
       "level": "beginner",
       "context": "이번 시험 합격 가능성과 전략이 궁금해",
       "expect": {
-        "requiredAny": ["합격", "실행", "흐름", "한 줄 테마:"],
-        "forbidden": ["소모을", "  ?"]
+        "requiredAny": [
+          "합격",
+          "실행",
+          "흐름",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
       }
     },
     {
@@ -200,8 +389,16 @@
       "level": "beginner",
       "context": "모의고사 점수가 불안정한데 뭘 먼저 고치면 좋을까?",
       "expect": {
-        "requiredAny": ["취약", "강점", "실행", "한 줄 테마:"],
-        "forbidden": ["소모을", "  ?"]
+        "requiredAny": [
+          "취약",
+          "강점",
+          "실행",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
       }
     },
     {
@@ -210,8 +407,16 @@
       "level": "beginner",
       "context": "내일 면접에서 어떤 답변 톤이 좋을까?",
       "expect": {
-        "requiredAny": ["면접", "강점", "질문", "한 줄 테마:"],
-        "forbidden": ["소모을", "  ?"]
+        "requiredAny": [
+          "면접",
+          "강점",
+          "질문",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
       }
     },
     {
@@ -220,8 +425,16 @@
       "level": "beginner",
       "context": "면접 꼬리질문 대응을 어떻게 준비하면 좋을까?",
       "expect": {
-        "requiredAny": ["보완", "인상", "실행", "한 줄 테마:"],
-        "forbidden": ["소모을", "  ?"]
+        "requiredAny": [
+          "보완",
+          "인상",
+          "실행",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
       }
     },
     {
@@ -230,8 +443,16 @@
       "level": "intermediate",
       "context": "지금 이직 전환을 시작해도 될까?",
       "expect": {
-        "requiredAny": ["전환", "리스크", "실행", "한 줄 테마:"],
-        "forbidden": ["소모을", "  ?"]
+        "requiredAny": [
+          "전환",
+          "리스크",
+          "실행",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
       }
     },
     {
@@ -240,8 +461,16 @@
       "level": "intermediate",
       "context": "직무 변경 전에 어떤 준비 과제가 우선일까?",
       "expect": {
-        "requiredAny": ["준비", "타이밍", "결론", "한 줄 테마:"],
-        "forbidden": ["소모을", "  ?"]
+        "requiredAny": [
+          "준비",
+          "타이밍",
+          "결론",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
       }
     },
     {
@@ -250,8 +479,16 @@
       "level": "beginner",
       "context": "이번 프로젝트 일정이 계속 밀리는데 원인이 뭘까?",
       "expect": {
-        "requiredAny": ["병목", "마감", "실행", "한 줄 테마:"],
-        "forbidden": ["소모을", "  ?"]
+        "requiredAny": [
+          "병목",
+          "마감",
+          "실행",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
       }
     },
     {
@@ -260,8 +497,16 @@
       "level": "beginner",
       "context": "신규 프로젝트 킥오프 전에 뭘 정리해야 할까?",
       "expect": {
-        "requiredAny": ["목표", "자원", "전략", "한 줄 테마:"],
-        "forbidden": ["소모을", "  ?"]
+        "requiredAny": [
+          "목표",
+          "자원",
+          "전략",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
       }
     },
     {
@@ -270,8 +515,16 @@
       "level": "beginner",
       "context": "요즘 번아웃이 심한데 회복 흐름이 궁금해",
       "expect": {
-        "requiredAny": ["소진", "회복", "즉시", "한 줄 테마:"],
-        "forbidden": ["소모을", "  ?"]
+        "requiredAny": [
+          "소진",
+          "회복",
+          "즉시",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
       }
     },
     {
@@ -280,8 +533,16 @@
       "level": "beginner",
       "context": "피로가 누적될 때 일주일 회복 계획을 어떻게 잡을까?",
       "expect": {
-        "requiredAny": ["7일", "원인", "회복", "한 줄 테마:"],
-        "forbidden": ["소모을", "  ?"]
+        "requiredAny": [
+          "7일",
+          "원인",
+          "회복",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
       }
     },
     {
@@ -290,8 +551,16 @@
       "level": "beginner",
       "context": "이번 달 지출 누수를 점검하고 싶어",
       "expect": {
-        "requiredAny": ["수입", "지출", "누수", "한 줄 테마:"],
-        "forbidden": ["소모을", "  ?"]
+        "requiredAny": [
+          "수입",
+          "지출",
+          "누수",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
       }
     },
     {
@@ -300,8 +569,16 @@
       "level": "beginner",
       "context": "다음 30일 예산 운영 전략을 알고 싶어",
       "expect": {
-        "requiredAny": ["30일", "균형", "전략", "한 줄 테마:"],
-        "forbidden": ["소모을", "  ?"]
+        "requiredAny": [
+          "30일",
+          "균형",
+          "전략",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
       }
     },
     {
@@ -310,8 +587,16 @@
       "level": "intermediate",
       "context": "현재 투자 포트폴리오를 조정해야 할까?",
       "expect": {
-        "requiredAny": ["시장", "리스크", "운영", "한 줄 테마:"],
-        "forbidden": ["소모을", "  ?"]
+        "requiredAny": [
+          "시장",
+          "리스크",
+          "운영",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
       }
     },
     {
@@ -320,8 +605,16 @@
       "level": "intermediate",
       "context": "추가 매수와 현금 비중 중 어떤 쪽이 우선일까?",
       "expect": {
-        "requiredAny": ["현금", "매수", "결론", "한 줄 테마:"],
-        "forbidden": ["소모을", "  ?"]
+        "requiredAny": [
+          "현금",
+          "매수",
+          "결론",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
       }
     },
     {
@@ -330,8 +623,16 @@
       "level": "beginner",
       "context": "지금 이사하는 게 맞을까?",
       "expect": {
-        "requiredAny": ["거주", "이동", "리스크", "한 줄 테마:"],
-        "forbidden": ["소모을", "  ?"]
+        "requiredAny": [
+          "거주",
+          "이동",
+          "리스크",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
       }
     },
     {
@@ -340,8 +641,16 @@
       "level": "beginner",
       "context": "주거 선택에서 비용과 생활 리듬 중 뭐가 더 중요할까?",
       "expect": {
-        "requiredAny": ["비용", "생활", "선택", "한 줄 테마:"],
-        "forbidden": ["소모을", "  ?"]
+        "requiredAny": [
+          "비용",
+          "생활",
+          "선택",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
       }
     },
     {
@@ -350,8 +659,16 @@
       "level": "beginner",
       "context": "대화가 계속 꼬이는데 어떻게 리셋할까?",
       "expect": {
-        "requiredAny": ["대화", "오해", "방식", "한 줄 테마:"],
-        "forbidden": ["소모을", "  ?"]
+        "requiredAny": [
+          "대화",
+          "오해",
+          "방식",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
       }
     },
     {
@@ -360,8 +677,16 @@
       "level": "beginner",
       "context": "말투를 어떻게 바꾸면 갈등이 줄어들까?",
       "expect": {
-        "requiredAny": ["전달", "결과", "리셋", "한 줄 테마:"],
-        "forbidden": ["소모을", "  ?"]
+        "requiredAny": [
+          "전달",
+          "결과",
+          "리셋",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
       }
     },
     {
@@ -370,8 +695,16 @@
       "level": "intermediate",
       "context": "같은 감정 패턴이 반복되는 이유를 알고 싶어",
       "expect": {
-        "requiredAny": ["감정", "패턴", "통합", "한 줄 테마:"],
-        "forbidden": ["소모을", "  ?"]
+        "requiredAny": [
+          "감정",
+          "패턴",
+          "통합",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
       }
     },
     {
@@ -380,8 +713,1070 @@
       "level": "intermediate",
       "context": "내면 작업을 현실 행동으로 연결하는 방법이 궁금해",
       "expect": {
-        "requiredAny": ["욕구", "회복", "행동", "한 줄 테마:"],
-        "forbidden": ["소모을", "  ?"]
+        "requiredAny": [
+          "욕구",
+          "회복",
+          "행동",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
+      }
+    },
+    {
+      "id": "relationship-depth-7-auto-1",
+      "spreadId": "relationship-depth-7",
+      "level": "intermediate",
+      "context": "관계 심층 분석 7카드 스프레드로 지금 상황 핵심과 실행 포인트를 알려줘",
+      "expect": {
+        "requiredAny": [
+          "흐름",
+          "실행",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
+      }
+    },
+    {
+      "id": "relationship-depth-7-auto-2",
+      "spreadId": "relationship-depth-7",
+      "level": "intermediate",
+      "context": "관계 심층 분석 7카드 스프레드로 지금 상황 핵심과 실행 포인트를 알려줘",
+      "expect": {
+        "requiredAny": [
+          "흐름",
+          "실행",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
+      }
+    },
+    {
+      "id": "reconciliation-timing-4-auto-1",
+      "spreadId": "reconciliation-timing-4",
+      "level": "beginner",
+      "context": "화해 타이밍 4카드 스프레드로 지금 상황 핵심과 실행 포인트를 알려줘",
+      "expect": {
+        "requiredAny": [
+          "흐름",
+          "실행",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
+      }
+    },
+    {
+      "id": "reconciliation-timing-4-auto-2",
+      "spreadId": "reconciliation-timing-4",
+      "level": "beginner",
+      "context": "화해 타이밍 4카드 스프레드로 지금 상황 핵심과 실행 포인트를 알려줘",
+      "expect": {
+        "requiredAny": [
+          "흐름",
+          "실행",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
+      }
+    },
+    {
+      "id": "job-offer-choice-5-auto-1",
+      "spreadId": "job-offer-choice-5",
+      "level": "beginner",
+      "context": "오퍼 선택 5카드 스프레드로 지금 상황 핵심과 실행 포인트를 알려줘",
+      "expect": {
+        "requiredAny": [
+          "흐름",
+          "실행",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
+      }
+    },
+    {
+      "id": "job-offer-choice-5-auto-2",
+      "spreadId": "job-offer-choice-5",
+      "level": "beginner",
+      "context": "오퍼 선택 5카드 스프레드로 지금 상황 핵심과 실행 포인트를 알려줘",
+      "expect": {
+        "requiredAny": [
+          "흐름",
+          "실행",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
+      }
+    },
+    {
+      "id": "startup-launch-6-auto-1",
+      "spreadId": "startup-launch-6",
+      "level": "intermediate",
+      "context": "창업 런칭 6카드 스프레드로 지금 상황 핵심과 실행 포인트를 알려줘",
+      "expect": {
+        "requiredAny": [
+          "흐름",
+          "실행",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
+      }
+    },
+    {
+      "id": "startup-launch-6-auto-2",
+      "spreadId": "startup-launch-6",
+      "level": "intermediate",
+      "context": "창업 런칭 6카드 스프레드로 지금 상황 핵심과 실행 포인트를 알려줘",
+      "expect": {
+        "requiredAny": [
+          "흐름",
+          "실행",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
+      }
+    },
+    {
+      "id": "study-routine-4-auto-1",
+      "spreadId": "study-routine-4",
+      "level": "beginner",
+      "context": "학습 루틴 4카드 스프레드로 지금 상황 핵심과 실행 포인트를 알려줘",
+      "expect": {
+        "requiredAny": [
+          "흐름",
+          "실행",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
+      }
+    },
+    {
+      "id": "study-routine-4-auto-2",
+      "spreadId": "study-routine-4",
+      "level": "beginner",
+      "context": "학습 루틴 4카드 스프레드로 지금 상황 핵심과 실행 포인트를 알려줘",
+      "expect": {
+        "requiredAny": [
+          "흐름",
+          "실행",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
+      }
+    },
+    {
+      "id": "exam-subject-priority-6-auto-1",
+      "spreadId": "exam-subject-priority-6",
+      "level": "intermediate",
+      "context": "과목 우선순위 6카드 스프레드로 지금 상황 핵심과 실행 포인트를 알려줘",
+      "expect": {
+        "requiredAny": [
+          "흐름",
+          "실행",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
+      }
+    },
+    {
+      "id": "exam-subject-priority-6-auto-2",
+      "spreadId": "exam-subject-priority-6",
+      "level": "intermediate",
+      "context": "과목 우선순위 6카드 스프레드로 지금 상황 핵심과 실행 포인트를 알려줘",
+      "expect": {
+        "requiredAny": [
+          "흐름",
+          "실행",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
+      }
+    },
+    {
+      "id": "portfolio-review-5-auto-1",
+      "spreadId": "portfolio-review-5",
+      "level": "intermediate",
+      "context": "포트폴리오 점검 5카드 스프레드로 지금 상황 핵심과 실행 포인트를 알려줘",
+      "expect": {
+        "requiredAny": [
+          "흐름",
+          "실행",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
+      }
+    },
+    {
+      "id": "portfolio-review-5-auto-2",
+      "spreadId": "portfolio-review-5",
+      "level": "intermediate",
+      "context": "포트폴리오 점검 5카드 스프레드로 지금 상황 핵심과 실행 포인트를 알려줘",
+      "expect": {
+        "requiredAny": [
+          "흐름",
+          "실행",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
+      }
+    },
+    {
+      "id": "side-project-4-auto-1",
+      "spreadId": "side-project-4",
+      "level": "beginner",
+      "context": "사이드 프로젝트 4카드 스프레드로 지금 상황 핵심과 실행 포인트를 알려줘",
+      "expect": {
+        "requiredAny": [
+          "흐름",
+          "실행",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
+      }
+    },
+    {
+      "id": "side-project-4-auto-2",
+      "spreadId": "side-project-4",
+      "level": "beginner",
+      "context": "사이드 프로젝트 4카드 스프레드로 지금 상황 핵심과 실행 포인트를 알려줘",
+      "expect": {
+        "requiredAny": [
+          "흐름",
+          "실행",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
+      }
+    },
+    {
+      "id": "sleep-rhythm-3-auto-1",
+      "spreadId": "sleep-rhythm-3",
+      "level": "beginner",
+      "context": "수면 리듬 3카드 스프레드로 지금 상황 핵심과 실행 포인트를 알려줘",
+      "expect": {
+        "requiredAny": [
+          "흐름",
+          "실행",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
+      }
+    },
+    {
+      "id": "sleep-rhythm-3-auto-2",
+      "spreadId": "sleep-rhythm-3",
+      "level": "beginner",
+      "context": "수면 리듬 3카드 스프레드로 지금 상황 핵심과 실행 포인트를 알려줘",
+      "expect": {
+        "requiredAny": [
+          "흐름",
+          "실행",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
+      }
+    },
+    {
+      "id": "stress-balance-4-auto-1",
+      "spreadId": "stress-balance-4",
+      "level": "beginner",
+      "context": "스트레스 밸런스 4카드 스프레드로 지금 상황 핵심과 실행 포인트를 알려줘",
+      "expect": {
+        "requiredAny": [
+          "흐름",
+          "실행",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
+      }
+    },
+    {
+      "id": "stress-balance-4-auto-2",
+      "spreadId": "stress-balance-4",
+      "level": "beginner",
+      "context": "스트레스 밸런스 4카드 스프레드로 지금 상황 핵심과 실행 포인트를 알려줘",
+      "expect": {
+        "requiredAny": [
+          "흐름",
+          "실행",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
+      }
+    },
+    {
+      "id": "habit-reset-5-auto-1",
+      "spreadId": "habit-reset-5",
+      "level": "beginner",
+      "context": "습관 리셋 5카드 스프레드로 지금 상황 핵심과 실행 포인트를 알려줘",
+      "expect": {
+        "requiredAny": [
+          "흐름",
+          "실행",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
+      }
+    },
+    {
+      "id": "habit-reset-5-auto-2",
+      "spreadId": "habit-reset-5",
+      "level": "beginner",
+      "context": "습관 리셋 5카드 스프레드로 지금 상황 핵심과 실행 포인트를 알려줘",
+      "expect": {
+        "requiredAny": [
+          "흐름",
+          "실행",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
+      }
+    },
+    {
+      "id": "debt-plan-5-auto-1",
+      "spreadId": "debt-plan-5",
+      "level": "beginner",
+      "context": "부채 정리 5카드 스프레드로 지금 상황 핵심과 실행 포인트를 알려줘",
+      "expect": {
+        "requiredAny": [
+          "흐름",
+          "실행",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
+      }
+    },
+    {
+      "id": "debt-plan-5-auto-2",
+      "spreadId": "debt-plan-5",
+      "level": "beginner",
+      "context": "부채 정리 5카드 스프레드로 지금 상황 핵심과 실행 포인트를 알려줘",
+      "expect": {
+        "requiredAny": [
+          "흐름",
+          "실행",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
+      }
+    },
+    {
+      "id": "savings-goal-4-auto-1",
+      "spreadId": "savings-goal-4",
+      "level": "beginner",
+      "context": "저축 목표 4카드 스프레드로 지금 상황 핵심과 실행 포인트를 알려줘",
+      "expect": {
+        "requiredAny": [
+          "흐름",
+          "실행",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
+      }
+    },
+    {
+      "id": "savings-goal-4-auto-2",
+      "spreadId": "savings-goal-4",
+      "level": "beginner",
+      "context": "저축 목표 4카드 스프레드로 지금 상황 핵심과 실행 포인트를 알려줘",
+      "expect": {
+        "requiredAny": [
+          "흐름",
+          "실행",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
+      }
+    },
+    {
+      "id": "travel-plan-5-auto-1",
+      "spreadId": "travel-plan-5",
+      "level": "beginner",
+      "context": "여행 계획 5카드 스프레드로 지금 상황 핵심과 실행 포인트를 알려줘",
+      "expect": {
+        "requiredAny": [
+          "흐름",
+          "실행",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
+      }
+    },
+    {
+      "id": "travel-plan-5-auto-2",
+      "spreadId": "travel-plan-5",
+      "level": "beginner",
+      "context": "여행 계획 5카드 스프레드로 지금 상황 핵심과 실행 포인트를 알려줘",
+      "expect": {
+        "requiredAny": [
+          "흐름",
+          "실행",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
+      }
+    },
+    {
+      "id": "relocation-abroad-6-auto-1",
+      "spreadId": "relocation-abroad-6",
+      "level": "intermediate",
+      "context": "해외 이동 6카드 스프레드로 지금 상황 핵심과 실행 포인트를 알려줘",
+      "expect": {
+        "requiredAny": [
+          "흐름",
+          "실행",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
+      }
+    },
+    {
+      "id": "relocation-abroad-6-auto-2",
+      "spreadId": "relocation-abroad-6",
+      "level": "intermediate",
+      "context": "해외 이동 6카드 스프레드로 지금 상황 핵심과 실행 포인트를 알려줘",
+      "expect": {
+        "requiredAny": [
+          "흐름",
+          "실행",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
+      }
+    },
+    {
+      "id": "team-conflict-5-auto-1",
+      "spreadId": "team-conflict-5",
+      "level": "beginner",
+      "context": "팀 갈등 조정 5카드 스프레드로 지금 상황 핵심과 실행 포인트를 알려줘",
+      "expect": {
+        "requiredAny": [
+          "흐름",
+          "실행",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
+      }
+    },
+    {
+      "id": "team-conflict-5-auto-2",
+      "spreadId": "team-conflict-5",
+      "level": "beginner",
+      "context": "팀 갈등 조정 5카드 스프레드로 지금 상황 핵심과 실행 포인트를 알려줘",
+      "expect": {
+        "requiredAny": [
+          "흐름",
+          "실행",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
+      }
+    },
+    {
+      "id": "leadership-style-4-auto-1",
+      "spreadId": "leadership-style-4",
+      "level": "intermediate",
+      "context": "리더십 스타일 4카드 스프레드로 지금 상황 핵심과 실행 포인트를 알려줘",
+      "expect": {
+        "requiredAny": [
+          "흐름",
+          "실행",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
+      }
+    },
+    {
+      "id": "leadership-style-4-auto-2",
+      "spreadId": "leadership-style-4",
+      "level": "intermediate",
+      "context": "리더십 스타일 4카드 스프레드로 지금 상황 핵심과 실행 포인트를 알려줘",
+      "expect": {
+        "requiredAny": [
+          "흐름",
+          "실행",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
+      }
+    },
+    {
+      "id": "family-dynamics-5-auto-1",
+      "spreadId": "family-dynamics-5",
+      "level": "beginner",
+      "context": "가족 관계 5카드 스프레드로 지금 상황 핵심과 실행 포인트를 알려줘",
+      "expect": {
+        "requiredAny": [
+          "흐름",
+          "실행",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
+      }
+    },
+    {
+      "id": "family-dynamics-5-auto-2",
+      "spreadId": "family-dynamics-5",
+      "level": "beginner",
+      "context": "가족 관계 5카드 스프레드로 지금 상황 핵심과 실행 포인트를 알려줘",
+      "expect": {
+        "requiredAny": [
+          "흐름",
+          "실행",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
+      }
+    },
+    {
+      "id": "friendship-check-4-auto-1",
+      "spreadId": "friendship-check-4",
+      "level": "beginner",
+      "context": "우정 점검 4카드 스프레드로 지금 상황 핵심과 실행 포인트를 알려줘",
+      "expect": {
+        "requiredAny": [
+          "흐름",
+          "실행",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
+      }
+    },
+    {
+      "id": "friendship-check-4-auto-2",
+      "spreadId": "friendship-check-4",
+      "level": "beginner",
+      "context": "우정 점검 4카드 스프레드로 지금 상황 핵심과 실행 포인트를 알려줘",
+      "expect": {
+        "requiredAny": [
+          "흐름",
+          "실행",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
+      }
+    },
+    {
+      "id": "networking-strategy-5-auto-1",
+      "spreadId": "networking-strategy-5",
+      "level": "beginner",
+      "context": "네트워킹 전략 5카드 스프레드로 지금 상황 핵심과 실행 포인트를 알려줘",
+      "expect": {
+        "requiredAny": [
+          "흐름",
+          "실행",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
+      }
+    },
+    {
+      "id": "networking-strategy-5-auto-2",
+      "spreadId": "networking-strategy-5",
+      "level": "beginner",
+      "context": "네트워킹 전략 5카드 스프레드로 지금 상황 핵심과 실행 포인트를 알려줘",
+      "expect": {
+        "requiredAny": [
+          "흐름",
+          "실행",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
+      }
+    },
+    {
+      "id": "content-creation-4-auto-1",
+      "spreadId": "content-creation-4",
+      "level": "beginner",
+      "context": "콘텐츠 제작 4카드 스프레드로 지금 상황 핵심과 실행 포인트를 알려줘",
+      "expect": {
+        "requiredAny": [
+          "흐름",
+          "실행",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
+      }
+    },
+    {
+      "id": "content-creation-4-auto-2",
+      "spreadId": "content-creation-4",
+      "level": "beginner",
+      "context": "콘텐츠 제작 4카드 스프레드로 지금 상황 핵심과 실행 포인트를 알려줘",
+      "expect": {
+        "requiredAny": [
+          "흐름",
+          "실행",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
+      }
+    },
+    {
+      "id": "business-growth-6-auto-1",
+      "spreadId": "business-growth-6",
+      "level": "intermediate",
+      "context": "사업 확장 6카드 스프레드로 지금 상황 핵심과 실행 포인트를 알려줘",
+      "expect": {
+        "requiredAny": [
+          "흐름",
+          "실행",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
+      }
+    },
+    {
+      "id": "business-growth-6-auto-2",
+      "spreadId": "business-growth-6",
+      "level": "intermediate",
+      "context": "사업 확장 6카드 스프레드로 지금 상황 핵심과 실행 포인트를 알려줘",
+      "expect": {
+        "requiredAny": [
+          "흐름",
+          "실행",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
+      }
+    },
+    {
+      "id": "customer-feedback-5-auto-1",
+      "spreadId": "customer-feedback-5",
+      "level": "beginner",
+      "context": "고객 피드백 5카드 스프레드로 지금 상황 핵심과 실행 포인트를 알려줘",
+      "expect": {
+        "requiredAny": [
+          "흐름",
+          "실행",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
+      }
+    },
+    {
+      "id": "customer-feedback-5-auto-2",
+      "spreadId": "customer-feedback-5",
+      "level": "beginner",
+      "context": "고객 피드백 5카드 스프레드로 지금 상황 핵심과 실행 포인트를 알려줘",
+      "expect": {
+        "requiredAny": [
+          "흐름",
+          "실행",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
+      }
+    },
+    {
+      "id": "product-roadmap-5-auto-1",
+      "spreadId": "product-roadmap-5",
+      "level": "intermediate",
+      "context": "제품 로드맵 5카드 스프레드로 지금 상황 핵심과 실행 포인트를 알려줘",
+      "expect": {
+        "requiredAny": [
+          "흐름",
+          "실행",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
+      }
+    },
+    {
+      "id": "product-roadmap-5-auto-2",
+      "spreadId": "product-roadmap-5",
+      "level": "intermediate",
+      "context": "제품 로드맵 5카드 스프레드로 지금 상황 핵심과 실행 포인트를 알려줘",
+      "expect": {
+        "requiredAny": [
+          "흐름",
+          "실행",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
+      }
+    },
+    {
+      "id": "health-routine-4-auto-1",
+      "spreadId": "health-routine-4",
+      "level": "beginner",
+      "context": "건강 루틴 4카드 스프레드로 지금 상황 핵심과 실행 포인트를 알려줘",
+      "expect": {
+        "requiredAny": [
+          "흐름",
+          "실행",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
+      }
+    },
+    {
+      "id": "health-routine-4-auto-2",
+      "spreadId": "health-routine-4",
+      "level": "beginner",
+      "context": "건강 루틴 4카드 스프레드로 지금 상황 핵심과 실행 포인트를 알려줘",
+      "expect": {
+        "requiredAny": [
+          "흐름",
+          "실행",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
+      }
+    },
+    {
+      "id": "workout-plan-4-auto-1",
+      "spreadId": "workout-plan-4",
+      "level": "beginner",
+      "context": "운동 계획 4카드 스프레드로 지금 상황 핵심과 실행 포인트를 알려줘",
+      "expect": {
+        "requiredAny": [
+          "흐름",
+          "실행",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
+      }
+    },
+    {
+      "id": "workout-plan-4-auto-2",
+      "spreadId": "workout-plan-4",
+      "level": "beginner",
+      "context": "운동 계획 4카드 스프레드로 지금 상황 핵심과 실행 포인트를 알려줘",
+      "expect": {
+        "requiredAny": [
+          "흐름",
+          "실행",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
+      }
+    },
+    {
+      "id": "nutrition-balance-4-auto-1",
+      "spreadId": "nutrition-balance-4",
+      "level": "beginner",
+      "context": "식단 밸런스 4카드 스프레드로 지금 상황 핵심과 실행 포인트를 알려줘",
+      "expect": {
+        "requiredAny": [
+          "흐름",
+          "실행",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
+      }
+    },
+    {
+      "id": "nutrition-balance-4-auto-2",
+      "spreadId": "nutrition-balance-4",
+      "level": "beginner",
+      "context": "식단 밸런스 4카드 스프레드로 지금 상황 핵심과 실행 포인트를 알려줘",
+      "expect": {
+        "requiredAny": [
+          "흐름",
+          "실행",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
+      }
+    },
+    {
+      "id": "digital-detox-3-auto-1",
+      "spreadId": "digital-detox-3",
+      "level": "beginner",
+      "context": "디지털 디톡스 3카드 스프레드로 지금 상황 핵심과 실행 포인트를 알려줘",
+      "expect": {
+        "requiredAny": [
+          "흐름",
+          "실행",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
+      }
+    },
+    {
+      "id": "digital-detox-3-auto-2",
+      "spreadId": "digital-detox-3",
+      "level": "beginner",
+      "context": "디지털 디톡스 3카드 스프레드로 지금 상황 핵심과 실행 포인트를 알려줘",
+      "expect": {
+        "requiredAny": [
+          "흐름",
+          "실행",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
+      }
+    },
+    {
+      "id": "monthly-goals-4-auto-1",
+      "spreadId": "monthly-goals-4",
+      "level": "beginner",
+      "context": "월간 목표 4카드 스프레드로 지금 상황 핵심과 실행 포인트를 알려줘",
+      "expect": {
+        "requiredAny": [
+          "흐름",
+          "실행",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
+      }
+    },
+    {
+      "id": "monthly-goals-4-auto-2",
+      "spreadId": "monthly-goals-4",
+      "level": "beginner",
+      "context": "월간 목표 4카드 스프레드로 지금 상황 핵심과 실행 포인트를 알려줘",
+      "expect": {
+        "requiredAny": [
+          "흐름",
+          "실행",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
+      }
+    },
+    {
+      "id": "quarter-review-5-auto-1",
+      "spreadId": "quarter-review-5",
+      "level": "intermediate",
+      "context": "분기 회고 5카드 스프레드로 지금 상황 핵심과 실행 포인트를 알려줘",
+      "expect": {
+        "requiredAny": [
+          "흐름",
+          "실행",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
+      }
+    },
+    {
+      "id": "quarter-review-5-auto-2",
+      "spreadId": "quarter-review-5",
+      "level": "intermediate",
+      "context": "분기 회고 5카드 스프레드로 지금 상황 핵심과 실행 포인트를 알려줘",
+      "expect": {
+        "requiredAny": [
+          "흐름",
+          "실행",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
+      }
+    },
+    {
+      "id": "life-direction-6-auto-1",
+      "spreadId": "life-direction-6",
+      "level": "intermediate",
+      "context": "인생 방향 6카드 스프레드로 지금 상황 핵심과 실행 포인트를 알려줘",
+      "expect": {
+        "requiredAny": [
+          "흐름",
+          "실행",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
+      }
+    },
+    {
+      "id": "life-direction-6-auto-2",
+      "spreadId": "life-direction-6",
+      "level": "intermediate",
+      "context": "인생 방향 6카드 스프레드로 지금 상황 핵심과 실행 포인트를 알려줘",
+      "expect": {
+        "requiredAny": [
+          "흐름",
+          "실행",
+          "한 줄 테마:"
+        ],
+        "forbidden": [
+          "소모을",
+          "  ?"
+        ]
       }
     }
   ]

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Link, useSearchParams } from 'react-router-dom';
 import { api } from '../lib/api';
+import { recommendSpreadForQuestion } from '../lib/spread-recommendation';
 import { TarotImage } from '../components/TarotImage';
 import { getProgressUserId, useProgressStore } from '../state/progress';
 import type { SpreadDrawResult } from '../types';
@@ -76,6 +77,7 @@ export function SpreadsPage() {
   const [historyOutcome, setHistoryOutcome] = useState<'all' | 'matched' | 'partial' | 'different' | 'unreviewed'>('all');
   const [historyQuery, setHistoryQuery] = useState('');
   const [expandedHistory, setExpandedHistory] = useState<Record<string, boolean>>({});
+  const [recommendedHint, setRecommendedHint] = useState('');
   const spreadsQuery = useQuery({ queryKey: ['spreads'], queryFn: api.getSpreads });
   const userId = getProgressUserId();
   const spreadHistory = useProgressStore((s) => s.spreadHistory);
@@ -98,18 +100,45 @@ export function SpreadsPage() {
 
   const positions = activeVariant?.positions ?? selected?.positions ?? [];
   const drawMutation = useMutation({
-    mutationFn: () => {
+    mutationFn: async () => {
       if (!selected) throw new Error('No spread selected');
-      return (
-      api.drawSpread({
-        spreadId: selected.id,
-        variantId: activeVariant?.id ?? null,
+      const question = String(context || '').trim();
+      let targetSpread = selected;
+      let targetVariantId = activeVariant?.id ?? null;
+
+      if (question) {
+        const recommendation = await recommendSpreadForQuestion({
+          question,
+          spreads,
+          analyze: async (text) => {
+            const result = await api.analyzeQuestionV2({ text, mode: 'hybrid' });
+            return {
+              intent: result.analysis.intent,
+              questionType: result.analysis.questionType,
+              timeHorizon: result.analysis.timeHorizon
+            };
+          }
+        });
+        const found = spreads.find((item) => item.id === recommendation.spreadId);
+        if (found) {
+          targetSpread = found;
+          targetVariantId = found.variants?.[0]?.id ?? null;
+          setRecommendedHint(recommendation.reason);
+        }
+      } else {
+        setRecommendedHint('');
+      }
+
+      return api.drawSpread({
+        spreadId: targetSpread.id,
+        variantId: targetVariantId,
         level: readingLevel,
         context
-      })
-      );
+      });
     },
     onSuccess: (data) => {
+      setSelectedId(data.spreadId);
+      setVariantId(data.variantId ?? null);
       setDetailView('reading');
       addSpreadReading({
         id: `${data.spreadId}:${data.drawnAt}`,
@@ -275,6 +304,7 @@ export function SpreadsPage() {
         <p className="badge">{selected.level === 'beginner' ? '입문 권장' : '중급 권장'} · {selected.cardCount}장</p>
         <h3>{selected.name}</h3>
         <p>{selected.purpose}</p>
+        {recommendedHint && <p className="sub">자동 추천: {recommendedHint}</p>}
         <div className="chip-wrap">
           <Link
             to={`/chat?spreadId=${encodeURIComponent(selected.id)}&variantId=${encodeURIComponent(activeVariant?.id ?? '')}&level=${readingLevel}&context=${encodeURIComponent(context)}`}
@@ -317,7 +347,7 @@ export function SpreadsPage() {
             placeholder="질문 맥락(예: 이직 시점, 관계 회복)"
           />
           <button className="btn primary" onClick={() => drawMutation.mutate()} disabled={drawMutation.isPending}>
-            {drawMutation.isPending ? '카드 뽑는 중...' : '카드 뽑고 리딩 생성'}
+            {drawMutation.isPending ? '추천 스프레드 계산 중...' : '질문 기반 자동 추천 + 리딩 생성'}
           </button>
         </div>
 
