@@ -12,7 +12,7 @@ export function PageHero({ eyebrow, title, description, actions }: PageHeroProps
     <article className="hero-card page-hero">
       <div>
         <p className="eyebrow">{eyebrow}</p>
-        <h2>{title}</h2>
+        <h2 className="heading-gradient">{title}</h2>
         <p>{description}</p>
       </div>
       {actions ? <div className="hero-actions">{actions}</div> : null}

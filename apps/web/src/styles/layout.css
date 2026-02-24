@@ -118,8 +118,10 @@ nav {
   border: 1px solid var(--border-gold);
   border-radius: 18px;
   padding: 20px;
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
   box-shadow: var(--shadow-soft);
+  transition: box-shadow var(--transition-base);
 }
 
 .alert-panel {
@@ -145,6 +147,16 @@ nav {
   color: var(--ink-0);
   padding: 10px 14px;
   cursor: pointer;
+  transition: transform var(--transition-fast), background var(--transition-fast),
+              box-shadow var(--transition-fast), border-color var(--transition-fast);
+}
+
+.btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.btn:active:not(:disabled) {
+  transform: translateY(0);
 }
 
 .btn.primary {
@@ -157,7 +169,8 @@ nav {
 
 .btn.primary:hover {
   opacity: 0.92;
-  box-shadow: 0 6px 24px rgba(184, 134, 11, 0.38);
+  box-shadow: 0 8px 28px rgba(184, 134, 11, 0.44);
+  transform: translateY(-2px);
 }
 
 .btn.danger {

@@ -62,12 +62,31 @@ h4 {
     radial-gradient(ellipse 280px 200px at 50% -20%, color-mix(in srgb, var(--mag-accent) 18%, transparent), transparent),
     linear-gradient(170deg, color-mix(in srgb, var(--mag-paper) 88%, var(--mag-paper-deep)), color-mix(in srgb, var(--mag-paper) 72%, var(--mag-paper-deep)));
   box-shadow: var(--mag-shadow);
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
 }
 
 .brand {
-  border-bottom: 1px solid color-mix(in srgb, var(--mag-muted) 24%, transparent);
-  padding-bottom: 14px;
+  border-bottom: 0;
+  padding-bottom: 20px;
+  position: relative;
   text-align: center;
+}
+
+.brand::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 15%;
+  right: 15%;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--mag-accent) 35%,
+    color-mix(in srgb, var(--mag-accent) 55%, var(--mag-olive)) 65%,
+    transparent 100%
+  );
 }
 
 .brand-eyebrow,
@@ -81,6 +100,11 @@ h4 {
 .brand h1 {
   font-family: 'Iropke Batang', 'Noto Serif KR', 'Nanum Myeongjo', serif;
   font-size: clamp(1.4rem, 1.2rem + 0.7vw, 2rem);
+  margin: 8px 0 6px;
+  background: linear-gradient(135deg, var(--mag-accent) 0%, color-mix(in srgb, var(--mag-accent) 50%, var(--mag-olive)) 55%, var(--mag-olive) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .topbar-actions {
@@ -101,13 +125,31 @@ h4 {
   background: color-mix(in srgb, var(--mag-paper) 76%, var(--mag-paper-deep));
   font-weight: 600;
   color: var(--mag-ink);
+  position: relative;
+  transition: background var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.topbar .nav-link:hover:not(.on) {
+  background: color-mix(in srgb, var(--mag-paper) 55%, var(--mag-accent-soft));
+  border-color: color-mix(in srgb, var(--mag-accent) 30%, transparent);
 }
 
 .topbar .nav-link.on {
   color: #fff;
-  border-color: color-mix(in srgb, var(--mag-accent) 40%, transparent);
+  border-color: transparent;
   background: linear-gradient(130deg, var(--mag-accent), var(--mag-olive));
   box-shadow: var(--shadow-gold);
+}
+
+.topbar .nav-link.on::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 20%;
+  height: 60%;
+  width: 3px;
+  background: rgba(255, 255, 255, 0.75);
+  border-radius: 0 2px 2px 0;
 }
 
 .theme-toggle {
@@ -154,6 +196,16 @@ h4 {
   margin: 8px 0 10px;
 }
 
+.page-hero h2.heading-gradient::after {
+  display: block;
+  content: '';
+  width: 52px;
+  height: 2px;
+  background: linear-gradient(90deg, var(--mag-accent), color-mix(in srgb, var(--mag-accent) 40%, var(--mag-olive)));
+  margin-top: 12px;
+  border-radius: 1px;
+}
+
 .page-hero p {
   line-height: var(--lh-relaxed);
   color: color-mix(in srgb, var(--mag-ink) 70%, var(--mag-muted));
@@ -179,16 +231,57 @@ h4 {
 
 .kpi-card {
   border-radius: 14px;
-  padding: 14px;
+  padding: 18px;
+  position: relative;
+  overflow: hidden;
+  transition: transform var(--transition-base), box-shadow var(--transition-base);
+}
+
+.kpi-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--mag-accent), color-mix(in srgb, var(--mag-accent) 50%, var(--mag-olive)), var(--mag-olive));
+}
+
+.kpi-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-gold);
 }
 
 .kpi-card .sub {
   color: var(--mag-muted);
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  font-size: var(--fs-caption);
 }
 
 .kpi-card h3 {
   font-size: clamp(1.15rem, 1.02rem + 0.55vw, 1.58rem);
+  margin: 5px 0 0;
+}
+
+.panel h3,
+.hero-card h3 {
+  position: relative;
+  padding-bottom: 10px;
+  margin-bottom: 14px;
+}
+
+.panel h3::after,
+.hero-card h3::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 32px;
+  height: 2px;
+  background: linear-gradient(90deg, var(--mag-accent), transparent);
+  border-radius: 1px;
 }
 
 .content-grid {
@@ -359,6 +452,18 @@ h4 {
 .reading-digest-title,
 .history-row p {
   color: color-mix(in srgb, var(--mag-ink) 58%, var(--mag-muted));
+}
+
+.section-divider {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in srgb, var(--mag-accent) 35%, transparent) 25%,
+    color-mix(in srgb, var(--mag-accent) 35%, transparent) 75%,
+    transparent 100%
+  );
+  margin: 2px 0;
 }
 
 @media (max-width: 1120px) {
