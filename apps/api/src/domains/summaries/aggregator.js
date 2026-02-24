@@ -28,41 +28,32 @@ import { summarizeCelticCross } from './celtic-cross.js';
 import { summarizeRelationshipRecovery } from './relationship-recovery.js';
 import { summarizeOneCard } from './one-card.js';
 
+const SPREAD_HANDLERS = {
+  'yearly-fortune': summarizeYearlyFortune,
+  'monthly-fortune': summarizeMonthlyFortune,
+  'weekly-fortune': summarizeWeeklyFortune,
+  'three-card': summarizeThreeCard,
+  'celtic-cross': summarizeCelticCross,
+  'relationship-recovery': summarizeRelationshipRecovery,
+  'one-card': summarizeOneCard
+};
+
 export { summarizeYearlyFortune, summarizeMonthlyFortune, summarizeWeeklyFortune, summarizeThreeCard, summarizeCelticCross, summarizeRelationshipRecovery, summarizeOneCard };
 
 export function summarizeSpread({ spreadId = '', spreadName, items, context = '', level = 'beginner', userHistory = null }) {
   const normalizedContext = normalizeContextForSpread({ spreadName, context });
-  if (spreadId === 'one-card') {
-    return summarizeOneCard({ items, context: normalizedContext, userHistory });
-  }
-  let rawSummary = '';
-  if (spreadId === 'yearly-fortune') {
-    rawSummary = summarizeYearlyFortune({ items, context: normalizedContext, level, userHistory });
+  
+  const handler = SPREAD_HANDLERS[spreadId];
+  if (handler) {
+    const rawSummary = handler({ items, context: normalizedContext, level, userHistory });
+    // one-card는 별도 finalization 없이 직접 반환하는 기존 로직 유지 (기존 코드 흐름 존중)
+    if (spreadId === 'one-card') return rawSummary;
     return finalizeSpreadSummary({ spreadId, spreadName, items, context: normalizedContext, rawSummary, userHistory });
   }
-  if (spreadId === 'weekly-fortune') {
-    rawSummary = summarizeWeeklyFortune({ items, context: normalizedContext, level, userHistory });
-    return finalizeSpreadSummary({ spreadId, spreadName, items, context: normalizedContext, rawSummary, userHistory });
-  }
-  if (spreadId === 'monthly-fortune') {
-    rawSummary = summarizeMonthlyFortune({ items, context: normalizedContext, level, userHistory });
-    return finalizeSpreadSummary({ spreadId, spreadName, items, context: normalizedContext, rawSummary, userHistory });
-  }
-  if (spreadId === 'three-card') {
-    rawSummary = summarizeThreeCard({ items, context: normalizedContext, level, userHistory });
-    return finalizeSpreadSummary({ spreadId, spreadName, items, context: normalizedContext, rawSummary, userHistory });
-  }
-  if (spreadId === 'relationship-recovery') {
-    rawSummary = summarizeRelationshipRecovery({ items, context: normalizedContext, level, userHistory });
-    return finalizeSpreadSummary({ spreadId, spreadName, items, context: normalizedContext, rawSummary, userHistory });
-  }
-  if (spreadId === 'celtic-cross') {
-    rawSummary = summarizeCelticCross({ items, context: normalizedContext, level, userHistory });
-    return finalizeSpreadSummary({ spreadId, spreadName, items, context: normalizedContext, rawSummary, userHistory });
-  }
+
+  // 기본 공통 요약 로직 (핸들러가 없는 경우나 폴백용)
   const contextTone = inferSummaryContextTone(normalizedContext);
   const topKeywords = pickTopKeywords(items, 3);
-  // items array check
   const safeItems = Array.isArray(items) ? items : [];
   if (!safeItems.length) return '';
   
@@ -98,7 +89,7 @@ export function summarizeSpread({ spreadId = '', spreadName, items, context = ''
     context: normalizedContext
   });
   const themeLine = buildSummaryTheme({ spreadName, context: normalizedContext, items: safeItems, topKeywords });
-  rawSummary = polishSummary([leadLine, focusLine, polishedActionLine, themeLine].filter(Boolean).join(' '));
+  const rawSummary = polishSummary([leadLine, focusLine, polishedActionLine, themeLine].filter(Boolean).join(' '));
   return finalizeSpreadSummary({ spreadId, spreadName, items: safeItems, context: normalizedContext, rawSummary });
 }
 

@@ -6,7 +6,7 @@
   border: 2px solid color-mix(in srgb, var(--brand-1) 15%, var(--line));
   border-radius: 24px;
   background: radial-gradient(circle at center, color-mix(in srgb, var(--accent-soft) 40%, var(--reading-bg)), var(--reading-bg));
-  background-image: radial-gradient(var(--line) 1px, transparent 1px);
+  background-image: radial-gradient(color-mix(in srgb, var(--brand-1) 22%, var(--line)) 1px, transparent 1px);
   background-size: 32px 32px;
   overflow-x: auto;
   box-shadow: inset 0 0 40px rgba(0,0,0,0.1);
@@ -312,7 +312,7 @@
 }
 
 .chat-speaker-learning {
-  color: #3b82f6;
+  color: var(--brand-2);
 }
 
 /* Card Spotlight (Optimized Size) */
@@ -370,8 +370,8 @@
 }
 
 .chat-dialog-learning .chat-bubble {
-  background: color-mix(in srgb, #3b82f6 6%, var(--reading-bg));
-  border-left: 4px solid #3b82f6;
+  background: color-mix(in srgb, var(--brand-2) 6%, var(--reading-bg));
+  border-left: 4px solid var(--brand-2);
 }
 
 /* Input Area Fix */

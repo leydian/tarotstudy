@@ -21,39 +21,31 @@ export function buildLearningKpi({ progressRows = [], courses = [], lessonsByCou
     : 0;
 
   const stageOrder = ['기초 입문', '입문 실전', '입문 심화', '중급 코어', '중급 심화', '고급 운영', '전문가 랩'];
-  const stageDropoff = stageOrder
+  const userCompletedSets = rows.map(({ snapshot }) => new Set(snapshot.completedLessons || []));
+
+  const stageResults = stageOrder
     .filter((stage) => lessonIdsByStage.has(stage))
-    .map((stage, index, arr) => {
+    .map((stage) => {
       const stageLessons = lessonIdsByStage.get(stage) || [];
       const stageTotal = stageLessons.length || 1;
-      const stageDoneRate = rows.length
-        ? Math.round((rows.reduce((acc, { snapshot }) => {
-          const set = new Set(snapshot.completedLessons || []);
-          const done = stageLessons.filter((id) => set.has(id)).length;
-          return acc + (done / stageTotal) * 100;
-        }, 0) / rows.length))
-        : 0;
-
-      const prev = index > 0 ? arr[index - 1] : null;
-      const prevRate = prev
-        ? (() => {
-          const prevLessons = lessonIdsByStage.get(prev) || [];
-          const prevTotal = prevLessons.length || 1;
-          if (!rows.length) return 0;
-          return Math.round((rows.reduce((acc, { snapshot }) => {
-            const set = new Set(snapshot.completedLessons || []);
-            const done = prevLessons.filter((id) => set.has(id)).length;
-            return acc + (done / prevTotal) * 100;
-          }, 0) / rows.length));
-        })()
-        : stageDoneRate;
-
+      const totalDoneRate = userCompletedSets.reduce((acc, completedSet) => {
+        const doneCount = stageLessons.filter((id) => completedSet.has(id)).length;
+        return acc + (doneCount / stageTotal) * 100;
+      }, 0);
       return {
         stage,
-        completionRate: stageDoneRate,
-        dropoffFromPrev: Math.max(0, prevRate - stageDoneRate)
+        rate: userCompletedSets.length ? Math.round(totalDoneRate / userCompletedSets.length) : 0
       };
     });
+
+  const stageDropoff = stageResults.map((result, index) => {
+    const prevRate = index > 0 ? stageResults[index - 1].rate : result.rate;
+    return {
+      stage: result.stage,
+      completionRate: result.rate,
+      dropoffFromPrev: Math.max(0, prevRate - result.rate)
+    };
+  });
 
   const convertedUsers = rows.filter(({ snapshot }) => {
     const hasQuiz = (snapshot.quizHistory || []).length > 0;

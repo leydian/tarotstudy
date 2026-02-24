@@ -1,23 +1,23 @@
 :root {
-  --mag-paper: #f3efe8;
+  --mag-paper: #f2ece0;
   --mag-paper-deep: #e7ded2;
   --mag-ink: #201a14;
   --mag-muted: #695b4c;
-  --mag-accent: #a6673d;
-  --mag-accent-soft: #eedfce;
-  --mag-olive: #647255;
+  --mag-accent: #b8860b;
+  --mag-accent-soft: #e8d9a8;
+  --mag-olive: #5b3f7a;
   --mag-shadow: 0 16px 38px rgba(34, 25, 16, 0.1);
 }
 
 :root[data-theme='dark'] {
-  --mag-paper: #181512;
+  --mag-paper: #170f08;
   --mag-paper-deep: #26211b;
   --mag-ink: #f6efe6;
   --mag-muted: #c4b5a5;
-  --mag-accent: #d29567;
-  --mag-accent-soft: #372b22;
-  --mag-olive: #9bae89;
-  --mag-shadow: 0 18px 42px rgba(0, 0, 0, 0.38);
+  --mag-accent: #d4a017;
+  --mag-accent-soft: #2a1c08;
+  --mag-olive: #9b6ec8;
+  --mag-shadow: 0 20px 48px rgba(0, 0, 0, 0.44);
 }
 
 body {
@@ -58,7 +58,9 @@ h4 {
   padding: 20px 16px;
   min-height: calc(100vh - 34px);
   border: 1px solid color-mix(in srgb, var(--mag-muted) 25%, transparent);
-  background: linear-gradient(170deg, color-mix(in srgb, var(--mag-paper) 88%, var(--mag-paper-deep)), color-mix(in srgb, var(--mag-paper) 72%, var(--mag-paper-deep)));
+  background:
+    radial-gradient(ellipse 280px 200px at 50% -20%, color-mix(in srgb, var(--mag-accent) 18%, transparent), transparent),
+    linear-gradient(170deg, color-mix(in srgb, var(--mag-paper) 88%, var(--mag-paper-deep)), color-mix(in srgb, var(--mag-paper) 72%, var(--mag-paper-deep)));
   box-shadow: var(--mag-shadow);
 }
 
@@ -71,13 +73,14 @@ h4 {
 .brand-eyebrow,
 .eyebrow {
   color: var(--mag-accent);
-  letter-spacing: 0.18em;
+  letter-spacing: 0.22em;
   font-size: var(--fs-caption);
   font-weight: 700;
 }
 
 .brand h1 {
-  font-size: clamp(1.3rem, 1.15rem + 0.6vw, 1.9rem);
+  font-family: 'Iropke Batang', 'Noto Serif KR', 'Nanum Myeongjo', serif;
+  font-size: clamp(1.4rem, 1.2rem + 0.7vw, 2rem);
 }
 
 .topbar-actions {
@@ -103,8 +106,8 @@ h4 {
 .topbar .nav-link.on {
   color: #fff;
   border-color: color-mix(in srgb, var(--mag-accent) 40%, transparent);
-  background: linear-gradient(130deg, var(--mag-accent), color-mix(in srgb, var(--mag-accent) 70%, #8f2e13));
-  box-shadow: 0 10px 18px color-mix(in srgb, var(--mag-accent) 36%, transparent);
+  background: linear-gradient(130deg, var(--mag-accent), var(--mag-olive));
+  box-shadow: var(--shadow-gold);
 }
 
 .theme-toggle {
@@ -146,7 +149,8 @@ h4 {
 }
 
 .page-hero h2 {
-  font-size: clamp(1.5rem, 1.3rem + 1.1vw, 2.35rem);
+  font-size: clamp(1.65rem, 1.4rem + 1.3vw, 2.55rem);
+  letter-spacing: -0.025em;
   margin: 8px 0 10px;
 }
 
@@ -163,8 +167,9 @@ h4 {
 }
 
 .btn.primary {
-  background: linear-gradient(120deg, color-mix(in srgb, var(--mag-accent) 90%, #000), color-mix(in srgb, var(--mag-accent) 68%, #7a2913));
+  background: linear-gradient(120deg, var(--mag-accent), var(--mag-olive));
   color: #fff;
+  box-shadow: var(--shadow-gold);
 }
 
 .kpi-row {
