@@ -1,10 +1,28 @@
+# Dependencies
 node_modules
-dist
-.env
-.DS_Store
+.pnp
+.pnp.js
+
+# Testing
 coverage
-*.log
-apps/api/tmp/
-tmp/*-report.json
-tmp/*-report.md
-tmp/qa-sample-results-*.json
+
+# Production
+build
+dist
+
+# Misc
+.DS_Store
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Vite
+.vite
+
+# IDEs
+.vscode
+.idea
+
+# API tmp
+apps/api/tmp

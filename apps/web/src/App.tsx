@@ -1,76 +1,42 @@
-import { Suspense, lazy, useEffect } from 'react';
-import { Route, Routes } from 'react-router-dom';
-import { Nav } from './components/Nav';
-import { RouteFallback } from './components/RouteFallback';
+import React from 'react';
+import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
+import { Home } from './pages/Home';
+import { Cards } from './pages/Cards';
+import { Reading } from './pages/Reading';
+import { Learning } from './pages/Learning';
+import './styles/theme.css';
 
-const HomePage = lazy(() => import('./pages/HomePage').then((m) => ({ default: m.HomePage })));
-const CoursesPage = lazy(() => import('./pages/CoursesPage').then((m) => ({ default: m.CoursesPage })));
-const LessonPage = lazy(() => import('./pages/LessonPage').then((m) => ({ default: m.LessonPage })));
-const LibraryPage = lazy(() => import('./pages/LibraryPage').then((m) => ({ default: m.LibraryPage })));
-const CardDetailPage = lazy(() => import('./pages/CardDetailPage').then((m) => ({ default: m.CardDetailPage })));
-const QuizPage = lazy(() => import('./pages/QuizPage').then((m) => ({ default: m.QuizPage })));
-const DashboardPage = lazy(() => import('./pages/DashboardPage').then((m) => ({ default: m.DashboardPage })));
-const SpreadsPage = lazy(() => import('./pages/SpreadsPage').then((m) => ({ default: m.SpreadsPage })));
-const ChatSpreadPage = lazy(() => import('./pages/ChatSpreadPage').then((m) => ({ default: m.ChatSpreadPage })));
-
-const routePreloaders = [
-  () => import('./pages/HomePage'),
-  () => import('./pages/CoursesPage'),
-  () => import('./pages/LessonPage'),
-  () => import('./pages/LibraryPage'),
-  () => import('./pages/CardDetailPage'),
-  () => import('./pages/QuizPage'),
-  () => import('./pages/DashboardPage'),
-  () => import('./pages/SpreadsPage'),
-  () => import('./pages/ChatSpreadPage')
-];
-
-export function App() {
-  useEffect(() => {
-    const preload = () => {
-      for (const loader of routePreloaders) {
-        void loader().catch(() => {});
-      }
-    };
-    const browser = globalThis as Window & typeof globalThis;
-
-    if ('requestIdleCallback' in browser) {
-      const idleId = (browser as Window & { requestIdleCallback: (cb: () => void) => number }).requestIdleCallback(preload);
-      return () => {
-        if ('cancelIdleCallback' in browser) {
-          (browser as Window & { cancelIdleCallback: (id: number) => void }).cancelIdleCallback(idleId);
-        }
-      };
-    }
-
-    const timer = globalThis.setTimeout(preload, 400);
-    return () => globalThis.clearTimeout(timer);
-  }, []);
-
+function App() {
   return (
-    <div className="app-root">
-      <div className="ambient-orb orb-a" aria-hidden="true" />
-      <div className="ambient-orb orb-b" aria-hidden="true" />
-      <div className="ambient-orb orb-c" aria-hidden="true" />
-      <div className="app-shell">
-        <Nav />
-        <main className="content page-stage">
-          <Suspense fallback={<RouteFallback />}>
-            <Routes>
-              <Route path="/" element={<HomePage />} />
-              <Route path="/courses" element={<CoursesPage />} />
-              <Route path="/courses/:courseId/lessons/:lessonId" element={<LessonPage />} />
-              <Route path="/library" element={<LibraryPage />} />
-              <Route path="/spreads" element={<SpreadsPage />} />
-              <Route path="/chat" element={<ChatSpreadPage />} />
-              <Route path="/cards/:cardId" element={<CardDetailPage />} />
-              <Route path="/quiz/:lessonId" element={<QuizPage />} />
-              <Route path="/dashboard" element={<DashboardPage />} />
-              <Route path="*" element={<p>페이지를 찾을 수 없습니다.</p>} />
-            </Routes>
-          </Suspense>
+    <BrowserRouter>
+      <div className="app-container">
+        <header style={{ padding: '2rem', textAlign: 'center', borderBottom: '1px solid var(--border-gold)' }}>
+          <h1 style={{ margin: 0, fontSize: '2.5rem' }}>STUDY CODEX II</h1>
+          <p style={{ color: 'var(--text-secondary)', fontStyle: 'italic' }}>Arcane Knowledge & Tarot Mastery</p>
+          <nav style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'center', gap: '2rem' }}>
+            <Link to="/">대시보드</Link>
+            <Link to="/cards">카드 도서관</Link>
+            <Link to="/reading">운명 읽기</Link>
+            <Link to="/learning">학습의 여정</Link>
+          </nav>
+        </header>
+
+        <main style={{ padding: '3rem max(5vw, 2rem)', maxWidth: '1200px', margin: '0 auto' }}>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/cards" element={<Cards />} />
+            <Route path="/reading" element={<Reading />} />
+            <Route path="/learning" element={<Learning />} />
+          </Routes>
         </main>
+
+        <footer style={{ padding: '4rem 2rem', textAlign: 'center', opacity: 0.6, fontSize: '0.9rem' }}>
+          <div style={{ marginBottom: '1rem', height: '1px', background: 'linear-gradient(to right, transparent, var(--border-gold), transparent)' }}></div>
+          &copy; 2026 Study Codex II. All rights reserved.
+        </footer>
       </div>
-    </div>
+    </BrowserRouter>
   );
 }
+
+export default App;

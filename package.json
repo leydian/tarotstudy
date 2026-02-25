@@ -1,30 +1,15 @@
 {
-  "name": "tarot-study-app",
+  "name": "studycodex2",
   "private": true,
   "version": "0.1.0",
+  "type": "module",
   "workspaces": [
     "apps/*"
   ],
   "scripts": {
-    "dev:web": "npm run dev -w @tarot/web",
     "dev:api": "npm run dev -w @tarot/api",
-    "build:web": "npm run build -w @tarot/web",
-    "typecheck:web": "npm run typecheck -w @tarot/web",
-    "test:web": "npm run test -w @tarot/web",
-    "lint": "node scripts/lint-check.mjs",
-    "start:api": "npm run start -w @tarot/api",
-    "test:api": "node --test apps/api/test/*.test.js",
-    "qa:learning-leader:raw": "node scripts/learning-leader-quality-check.mjs",
-    "qa:refresh-cases": "node scripts/refresh-qa-cases.mjs",
-    "qa:learning-leader": "node scripts/run-learning-leader-qa.mjs",
-    "qa:tarot-reader:raw": "node scripts/tarot-reader-quality-check.mjs",
-    "qa:tarot-reader": "node scripts/run-tarot-reader-qa.mjs",
-    "qa:relationship-recovery": "node scripts/relationship-recovery-variation-check.mjs",
-    "qa:spread-telemetry": "node scripts/spread-telemetry-rollup.mjs",
-    "qa:yearly-fortune": "node scripts/yearly-fortune-regression-check.mjs",
-    "qa:question-understanding": "node scripts/question-understanding-eval.mjs",
-    "qa:summary-regression": "node scripts/summary-regression-check.mjs",
-    "docs:check-handoff": "node scripts/check-handoff-docs.mjs",
-    "verify:quality": "npm run lint && npm run typecheck:web && npm run test:web && npm run test:api && npm run qa:learning-leader && npm run qa:tarot-reader && npm run qa:relationship-recovery && npm run qa:yearly-fortune && npm run qa:question-understanding && npm run qa:summary-regression && npm run docs:check-handoff"
+    "dev:web": "npm run dev -w @tarot/web",
+    "install:all": "npm install",
+    "build:web": "npm run build -w @tarot/web"
   }
 }
