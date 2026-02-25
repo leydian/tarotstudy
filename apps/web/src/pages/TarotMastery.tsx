@@ -33,7 +33,12 @@ export function TarotMastery() {
     "현재의 모습": "지금 당신의 마음가짐과 현실에서 가장 크게 작용하고 있는 힘을 뜻합니다.",
     "미래의 빛": "현재의 흐름이 이어졌을 때 도달하게 될 최종 결과와 운명의 방향입니다.",
     "선택 A의 길": "첫 번째 선택지를 택했을 때 펼쳐질 미래의 시나리오와 기운을 보여줍니다.",
-    "선택 B의 길": "두 번째 선택지를 택했을 때 마주하게 될 상황과 결과의 흐름입니다."
+    "선택 B의 길": "두 번째 선택지를 택했을 때 마주하게 될 상황과 결과의 흐름입니다.",
+    "과거": "당신이 지나온 여정과 지금의 상황을 만든 뿌리 깊은 원인을 상징합니다.",
+    "현재": "지금 이 순간 당신의 에너지가 집중되어 있는 핵심적인 지점입니다.",
+    "미래": "현재의 흐름이 계속될 때 마주하게 될 운명적인 결과입니다.",
+    "핵심": "전체 리딩을 관통하는 가장 중요한 주제이자 조언의 중심입니다.",
+    "기반": "당신이 딛고 서 있는 토대이며, 이번 질문의 근저에 깔린 무의식적 배경입니다."
   };
 
   const handleStartRitual = async (e: React.FormEvent) => {
@@ -100,7 +105,7 @@ export function TarotMastery() {
         const card = drawnCards[idx];
         setMessages(prev => [...prev, { 
           role: 'bot', 
-          text: `[학습 리딩: ${card.nameKo}]\n\n◈ 해석: ${interpretation}\n\n◈ ${posLabel}의 의미: ${info.posDesc}\n\n◈ 카드 상징: ${card.description || card.summary}\n\n◈ 키워드: ${card.keywords?.join(', ') || '정보 없음'}` 
+          text: `[학습: ${card.nameKo}]\n\n◈ 위치: ${info.posLabel}\n☞ ${info.posDesc}\n\n◈ 상징 분석: ${card.description || card.summary}\n\n◈ 키워드: ${card.keywords?.join(', ') || '정보 없음'}` 
         }]);
       } else {
         setMessages(prev => [...prev, { role: 'bot', text: `[${posLabel}: ${drawnCards[idx].nameKo}]\n${interpretation}` }]);
@@ -146,20 +151,18 @@ export function TarotMastery() {
                 onClick={() => {
                   const nextMode = !isStudyMode;
                   setIsStudyMode(nextMode);
-                  if (nextMode) {
-                    setMessages(prev => [...prev, { role: 'bot', text: "✨ 학습 모드가 활성화되었습니다. 이번 리딩의 각 카드를 상징학적으로 분석해 드릴게요." }]);
-                    drawnCards.forEach((card, i) => {
-                      setTimeout(() => {
-                        const info = getPositionInfo(i);
-                        const interpretation = reading?.evidence[i]?.split(']')[1] || '';
-                        setMessages(prev => [...prev, { 
-                          role: 'bot', 
-                          text: `[심화 학습: ${card.nameKo}]\n\n◈ ${info.posLabel}: ${info.posDesc}\n\n◈ 상징 분석: ${card.description || card.summary}\n\n◈ 키워드: ${card.keywords?.join(', ') || ''}\n\n◈ 이번 리딩에서의 해석: ${interpretation}` 
-                        }]);
-                      }, 600 * (i + 1));
-                    });
-                  }
-                }} 
+                                  if (nextMode) {
+                                    setMessages(prev => [...prev, { role: 'bot', text: "✨ 학습 모드가 활성화되었습니다. 이번 리딩에 사용된 카드들의 깊은 상징을 분석해 드릴게요." }]);
+                                    drawnCards.forEach((card, i) => {
+                                      setTimeout(() => {
+                                        const info = getPositionInfo(i);
+                                        setMessages(prev => [...prev, { 
+                                          role: 'bot', 
+                                          text: `[심화 학습: ${card.nameKo}]\n\n◈ ${info.posLabel}의 의미: ${info.posDesc}\n\n◈ 카드 본질 상징: ${card.description || card.summary}\n\n◈ 핵심 키워드: ${card.keywords?.join(', ') || ''}` 
+                                        }]);
+                                      }, 600 * (i + 1));
+                                    });
+                                  }                }} 
                 style={{ fontSize: '0.8rem', padding: '8px 16px', borderRadius: '12px', backgroundColor: isStudyMode ? 'var(--accent-gold)' : '#333', color: isStudyMode ? 'black' : 'white', border: 'none', cursor: 'pointer', fontWeight: 'bold', transition: 'all 0.3s' }}
               >
                 학습 모드 {isStudyMode ? 'ON' : 'OFF'}
