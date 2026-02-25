@@ -55,13 +55,26 @@ export function TarotMastery() {
 
     try {
       let cardCount = 3;
-      if (userQuestion.includes('언제') || userQuestion.includes('몇월')) cardCount = 3;
-      else if (userQuestion.includes('할까') || userQuestion.includes('말까') || userQuestion.includes('vs')) cardCount = 2;
-      else if (userQuestion.length > 25) cardCount = 7;
+      const relationshipKeywords = ['속마음', '그 사람', '연애', '사랑', '재회', '커플', '썸'];
+      const careerKeywords = ['이직', '취업', '퇴사', '직장', '승진', '회사', '합격', '공부'];
+      const choiceKeywords = ['할까', '말까', 'vs', '또는', '중에서'];
+      const timingKeywords = ['언제', '몇월', '시기', '날짜'];
+
+      if (relationshipKeywords.some(k => userQuestion.includes(k))) cardCount = 7;
+      else if (careerKeywords.some(k => userQuestion.includes(k))) cardCount = 5;
+      else if (choiceKeywords.some(k => userQuestion.includes(k))) cardCount = 2;
+      else if (timingKeywords.some(k => userQuestion.includes(k))) cardCount = 3;
+      else if (userQuestion.length > 30) cardCount = 10; // 매우 긴 질문은 켈틱 크로스
 
       const spreadsRes = await fetch('/api/spreads');
       const spreads: Spread[] = await spreadsRes.json();
-      const currentSpread = spreads.find(s => s.positions.length === cardCount) || spreads[0];
+      
+      // 7장일 경우 '관계의 거울' 우선 선택, 5장일 경우 '커리어 패스' 우선 선택
+      let currentSpread;
+      if (cardCount === 7) currentSpread = spreads.find(s => s.id === 'relationship') || spreads.find(s => s.positions.length === 7);
+      else if (cardCount === 5) currentSpread = spreads.find(s => s.id === 'career-path') || spreads.find(s => s.positions.length === 5);
+      else currentSpread = spreads.find(s => s.positions.length === cardCount) || spreads[0];
+      
       setSpreadLayout(currentSpread);
 
       const allCardsRes = await fetch('/api/cards');
