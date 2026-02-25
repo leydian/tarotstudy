@@ -2,17 +2,17 @@
   "version": 2,
   "functions": {
     "apps/api/src/index.js": {
-      "runtime": "vercel-node@latest"
+      "maxDuration": 10
     }
   },
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "apps/api/src/index.js"
+      "destination": "/apps/api/src/index.js"
     },
     {
       "source": "/(.*)",
-      "destination": "apps/web/dist/$1"
+      "destination": "/apps/web/dist/$1"
     }
   ]
 }
