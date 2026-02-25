@@ -1,16 +1,10 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "apps/api/src/index.js",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "package.json",
-      "use": "@vercel/static-build",
-      "config": { "distDir": "apps/web/dist" }
+  "functions": {
+    "apps/api/src/index.js": {
+      "runtime": "vercel-node@latest"
     }
-  ],
+  },
   "rewrites": [
     {
       "source": "/api/(.*)",
@@ -18,7 +12,7 @@
     },
     {
       "source": "/(.*)",
-      "destination": "/$1"
+      "destination": "apps/web/dist/$1"
     }
   ]
 }
