@@ -30,7 +30,9 @@ export const generateReadingV3 = (cards, question, timeframe = 'daily', category
   const isLight = question.length < 10 || ['커피', '메뉴', '할까', '말까', '점심', '저녁', '야식'].some(k => question.includes(k));
   const isModern = /[a-zA-Z]/.test(question) || ['코인', '가챠', '덕질', '티켓팅', '게임', '앱', '개발'].some(k => question.includes(k));
 
-  const isBinary = (question.includes('할까') && question.includes('말까')) || question.includes(' 아니면 ') || question.includes(' vs ');
+  // 양자택일 감지 강화: "A 할까 B 할까", "갈까 말까", "A 아니면 B" 등 패턴 매칭
+  const binaryPattern = /(.+)(할까|갈까|마실까|먹을까|될까).+\1?\2/;
+  const isBinary = binaryPattern.test(question) || question.includes(' 아니면 ') || question.includes(' vs ');
   const isMultiChoice = (question.includes('중') && (question.includes('어디') || question.includes('누구') || question.includes('무엇'))) || question.split(',').length > 1;
 
   // 3. 원소 밸런스 및 시너지
@@ -111,10 +113,8 @@ export const generateReadingV3 = (cards, question, timeframe = 'daily', category
     conclusion = `[분석 결과] ${timeGreeting} ${elementTheme} 현재 ${bridge} 이러한 흐름을 바탕으로, 현대적인 관점에서 조언을 드릴게요.`;
   }
 
-  // 결론에 판정 결과 병합
-  if (isMultiChoice || isBinary || isTiming || ['할까', '될까', '맞을까', '있을까', '있나요'].some(k => question.includes(k))) {
-    conclusion = `${conclusion}\n\n[운명의 나침반] ${verdictKo}`;
-  }
+  // 결론에 판정 결과 항상 병합 (Master V5.1)
+  conclusion = `${conclusion}\n\n[운명의 나침반] ${verdictKo}`;
 
   // 7. 시각적 카드 묘사 및 해설 (스마트 컨텍스트 변환 적용)
   const evidence = cards.map((card, i) => {
