@@ -183,9 +183,9 @@ export function ChatReading() {
             {msg.cards && (
               <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
                 {msg.cards.map((c, idx) => (
-                  <div key={`${c.id}-${idx}`} style={{ width: '80px', textAlign: 'center' }}>
-                    <img src={c.image} alt={c.nameKo} style={{ width: '100%', borderRadius: '4px', border: '1px solid var(--accent-gold)' }} />
-                    <div style={{ fontSize: '0.7rem', color: 'var(--accent-gold)', marginTop: '0.2rem', fontWeight: 'bold' }}>{c.nameKo}</div>
+                  <div key={`${c.id}-${idx}`} style={{ width: '80px', textAlign: 'center', userSelect: 'none' }}>
+                    <img src={c.image} alt="" style={{ width: '100%', borderRadius: '4px', border: '1px solid var(--accent-gold)' }} />
+                    <div style={{ fontSize: '0.7rem', color: 'var(--accent-gold)', marginTop: '0.2rem', fontWeight: 'bold', userSelect: 'text' }}>{c.nameKo}</div>
                   </div>
                 ))}
               </div>
