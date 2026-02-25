@@ -11,6 +11,7 @@
     "dev:web": "npm run dev -w @tarot/web",
     "install:all": "npm install",
     "build:web": "npm run build -w @tarot/web",
-    "vercel-build": "npm run build:web"
+    "vercel-build": "npm run build:web",
+    "build": "npm run build:web"
   }
 }

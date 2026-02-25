@@ -1,68 +1,70 @@
-// AI 리딩 엔진 V3.7 (전체 장수 대응 및 안정화 버전)
+// AI 리딩 엔진 V3.8 (Arcane Insight - 고도화 버전)
 export const generateReadingV3 = (cards, question, timeframe = 'daily', category = 'general') => {
   if (!cards || cards.length === 0) return null;
 
-  // 조사(과/와, 을/를) 자동 선택 함수
-  const getParticle = (word, type) => {
-    const lastChar = word.charCodeAt(word.length - 1);
-    const hasBatchim = (lastChar - 0xac00) % 28 !== 0;
-    if (type === 'wa/gwa') return hasBatchim ? '과' : '와';
-    if (type === 'eul/reul') return hasBatchim ? '을' : '를';
-    return '';
+  const cardCount = cards.length;
+  
+  // 1. 상황 및 페르소나 인지 (Persona Awareness)
+  const isStudent = ['시험', '공부', '합격', '입시', '성적', '대학'].some(k => question.includes(k));
+  const isWorker = ['이직', '회사', '상사', '퇴사', '연봉', '업무', '프로젝트'].some(k => question.includes(k));
+  const isSolo = ['썸', '소개팅', '언제쯤', '생길까'].some(k => question.includes(k));
+  const isCouple = ['남자친구', '여자친구', '남친', '여친', '부부', '싸움', '권태기'].some(k => question.includes(k));
+  const isLight = question.length < 10 || ['커피', '점심', '메뉴', '할까', '말까'].some(k => question.includes(k));
+
+  // 2. 원소 밸런스 분석 (Elemental Analysis)
+  const suits = {
+    fire: cards.filter(c => c.id.startsWith('w')).length,    // Wands (열정, 실행)
+    water: cards.filter(c => c.id.startsWith('c')).length,   // Cups (감정, 관계)
+    air: cards.filter(c => c.id.startsWith('s')).length,     // Swords (생각, 갈등)
+    earth: cards.filter(c => c.id.startsWith('p')).length,   // Pentacles (현실, 금전)
+    spirit: cards.filter(c => c.id.startsWith('m')).length   // Major (운명, 정신)
   };
 
-  const timeframeKo = { daily: '오늘 하루', weekly: '이번 한 주', monthly: '이번 한 달', yearly: '이번 한 해' }[timeframe] || '이번 시기';
-  const categoryName = { general: '종합적인 운세', love: '연애운', career: '직업운', finance: '금전운' }[category] || '운세';
-  const categoryWithEul = `${categoryName}${getParticle(categoryName, 'eul/reul')}`;
-  const categoryWithGwa = `${categoryName}${getParticle(categoryName, 'wa/gwa')}`;
+  let elementAnalysis = "";
+  if (suits.spirit >= cardCount * 0.5) elementAnalysis = "현재 삶에서 매우 중대한 영적 전환점을 맞이하고 계시군요. ";
+  else if (suits.fire > suits.water && suits.fire > suits.air) elementAnalysis = "지금은 생각보다 행동이 앞서는 에너지가 강합니다. 추진력이 좋은 시기네요. ";
+  else if (suits.water > suits.fire && suits.water > suits.earth) elementAnalysis = "이성적인 판단보다는 감정적인 흐름에 몸을 맡기고 있는 상태입니다. ";
+  else if (suits.air > suits.fire) elementAnalysis = "논리적이고 냉철한 분석이 앞서 있지만, 그만큼 스트레스와 고민이 깊어 보입니다. ";
+  else if (suits.earth > suits.water) elementAnalysis = "매우 현실적이고 실질적인 결과물에 집중하고 계시는군요. ";
 
-  const cardCount = cards.length;
-  const majorCount = cards.filter(c => c.id.startsWith('m')).length;
-  const isNegative = (card) => ['m13', 'm15', 'm16', 's03', 's05', 's08', 's09', 's10', 'w10', 'c05', 'c08'].includes(card.id) || card.id.startsWith('s');
-  const cleanAdvice = (text) => text.endsWith('.') ? text.slice(0, -1) : text;
+  // 3. 카드 간 시너지/콤비네이션 감지 (Card Combinations)
+  const cardIds = cards.map(c => c.id);
+  let synergyNarrative = "";
+  if (cardIds.includes('m13') && cardIds.includes('m19')) synergyNarrative = "고통스러운 종결(Death) 뒤에 찬란한 부활(Sun)이 기다리는 '전화위복'의 강한 기운이 보입니다. ";
+  if (cardIds.includes('m06') && cardIds.includes('m15')) synergyNarrative = "진실한 사랑(Lovers) 뒤에 숨은 집착이나 유혹(Devil)을 경계해야 하는 시기입니다. ";
+  if (cardIds.includes('m10') && cardIds.includes('m00')) synergyNarrative = "운명의 수레바퀴가 돌기 시작했습니다. 아무런 두려움 없이 새로운 여정을 시작해도 좋습니다. ";
 
-  // 1. 공통 결론 (Conclusion) 생성
+  // 4. 스프레드 위치학 (Positional Logic)
+  const getPositionMeaning = (index, count) => {
+    if (count === 1) return "핵심 조언";
+    if (count === 2) return index === 0 ? "선택 A의 흐름" : "선택 B의 흐름";
+    if (count === 3) return ["과거(원인)", "현재(진행)", "미래(결과)"][index];
+    if (count === 5) return ["과거", "현재", "미래", "장애물", "최종 조언"][index];
+    if (count === 7) return ["당신의 상태", "상대방의 마음", "두 사람의 관계", "과거의 영향", "숨겨진 변수", "가까운 미래", "최종 결론"][index];
+    return `단계 ${index + 1}`;
+  };
+
+  // 5. 서사 조립
   const firstCard = cards[0];
   const lastCard = cards[cards.length - 1];
-  const firstNeg = isNegative(firstCard);
-  const lastNeg = isNegative(lastCard);
+  
+  let conclusion = isLight ? "가벼운 질문에 대한 타로의 직관적인 답입니다. " : `${elementAnalysis}${synergyNarrative}`;
+  if (conclusion === "") conclusion = "카드들이 보여주는 오늘의 운명적 흐름을 정리해 드립니다. ";
 
-  let conclusion = `${timeframeKo} 당신의 ${categoryWithEul} 분석한 결과입니다. `;
-  if (majorCount >= 1) conclusion += `운명의 중대한 변화를 상징하는 메이저 기운이 느껴지네요. `;
+  const evidence = cards.map((card, i) => {
+    const pos = getPositionMeaning(i, cardCount);
+    let meaning = card.summary;
+    if (isCouple || isSolo) meaning = card.meanings.love;
+    else if (isWorker || category === 'career') meaning = card.meanings.career;
+    else if (category === 'finance') meaning = card.meanings.finance;
 
-  if (firstNeg && !lastNeg) {
-    conclusion += `시작은 [${firstCard.nameKo}]로 인해 다소 무겁지만, 결국 [${lastCard.nameKo}]의 밝은 에너지가 '고진감래'의 결실을 가져다줄 것입니다. `;
-  } else if (!firstNeg && lastNeg) {
-    conclusion += `현재 [${firstCard.nameKo}]의 기세는 좋으나, 갈수록 [${lastCard.nameKo}]가 주는 경고가 매섭습니다. '유비무환'의 자세가 필요합니다. `;
-  } else if (firstNeg && lastNeg) {
-    conclusion += `처음과 끝 모두 [${firstCard.nameKo}]와 [${lastCard.nameKo}] 같은 긴장감 있는 카드들이 배치되어, 지금은 무리한 전진보다 내실을 기할 때입니다. `;
-  } else {
-    conclusion += `[${firstCard.nameKo}]에서 [${lastCard.nameKo}]까지 에너지가 막힘없이 흐르는 아주 상서로운 형국입니다. 자신감을 갖고 나아가세요. `;
-  }
+    return `[${pos}: ${card.nameKo}] (${card.keywords.slice(0,2).join(', ')}): ${meaning}`;
+  });
 
-  // 2. 증거 (Evidence) 생성 - 카드 장수에 따라 유연하게 대응
-  let evidence = [];
-  if (cardCount >= 10) {
-    // 켈틱/연간은 요약 위주
-    evidence = cards.map((c, i) => `${cardCount === 12 ? (i+1)+'월' : '위치 '+ (i+1)}: [${c.nameKo}] - ${c.keywords[0]}`);
-  } else {
-    // 일반(1, 2, 3, 5장)은 상세 해설
-    evidence = cards.map(card => {
-      const meaning = category === 'love' ? card.meanings.love : category === 'career' ? card.meanings.career : category === 'finance' ? card.meanings.finance : card.summary;
-      return `[${card.nameKo}] (${card.keywords.slice(0,2).join(', ')}): ${meaning}`;
-    });
-  }
-
-  // 3. 행동 (Action) 생성
   const action = [
-    `[단계 1: 내면 조율] "${cleanAdvice(firstCard.meanings.advice)}" 하는 태도를 유지하세요.`,
-    `[단계 2: 실천적 도약] "${cleanAdvice(lastCard.meanings.advice)}" 하는 방향으로 움직이십시오.`
+    `[내면의 지혜] "${firstCard.meanings.advice.replace(/\.$/, '')}" 하는 마음가짐이 가장 중요합니다.`,
+    `[실천적 지침] ${isWorker ? '업무적으로는' : (isCouple ? '관계에 있어서는' : '현실적으로는')} "${lastCard.meanings.advice.replace(/\.$/, '')}" 하는 방향을 추천합니다.`
   ];
-
-  const challengingCard = cards.find(isNegative);
-  if (challengingCard) {
-    action.push(`[주의사항] 리딩 중 나타난 [${challengingCard.nameKo}] 카드의 '${challengingCard.keywords[0]}' 기운을 경계하며 신중함을 잃지 마세요.`);
-  }
 
   return { conclusion, evidence, action };
 };

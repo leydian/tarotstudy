@@ -48,6 +48,11 @@ export function ChatReading() {
                         (userMessage.match(/\?/g) || []).length >= 2 ||
                         choiceKeywords.some(key => userMessage.includes(key));
 
+      let category = 'general';
+      if (relationshipKeywords.some(k => userMessage.includes(k))) category = 'love';
+      else if (careerKeywords.some(k => userMessage.includes(k))) category = 'career';
+      else if (userMessage.includes('돈') || userMessage.includes('금전') || userMessage.includes('재물') || userMessage.includes('부자')) category = 'finance';
+
       if (yearlyKeywords.some(k => userMessage.includes(k))) {
         cardCount = 12;
         spreadName = '연간 호로스코프(12-Card)';
@@ -86,7 +91,7 @@ export function ChatReading() {
           cardIds: selectedCards.map(c => c.id), 
           question: userMessage,
           timeframe: cardCount === 12 ? 'yearly' : (cardCount === 5 ? 'monthly' : 'daily'),
-          category: 'general'
+          category: category
         })
       });
       
@@ -155,10 +160,10 @@ export function ChatReading() {
 
             {msg.cards && (
               <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
-                {msg.cards.map(c => (
-                  <div key={c.id} style={{ width: '80px', textAlign: 'center' }}>
+                {msg.cards.map((c, idx) => (
+                  <div key={`${c.id}-${idx}`} style={{ width: '80px', textAlign: 'center' }}>
                     <img src={c.image} alt={c.nameKo} style={{ width: '100%', borderRadius: '4px', border: '1px solid var(--accent-gold)' }} />
-                    <div style={{ fontSize: '0.7rem', color: 'var(--accent-gold)', marginTop: '0.2rem' }}>{c.nameKo}</div>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--accent-gold)', marginTop: '0.2rem', fontWeight: 'bold' }}>{c.nameKo}</div>
                   </div>
                 ))}
               </div>
