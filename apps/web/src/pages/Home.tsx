@@ -19,16 +19,10 @@ export function Home() {
           >
             오늘의 카드 뽑기
           </button>
-          <button onClick={() => navigate('/learning')}>학습 이어가기</button>
         </div>
       </section>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
-        <div className="card-panel">
-          <h3>최근 학습</h3>
-          <p style={{ color: 'var(--text-secondary)' }}>아직 진행 중인 강의가 없습니다. 타로의 기초부터 시작해볼까요?</p>
-          <button style={{ marginTop: '1rem', width: '100%' }} onClick={() => navigate('/learning')}>기초 강의 보기</button>
-        </div>
         <div className="card-panel">
           <h3>운명의 흐름</h3>
           <p style={{ color: 'var(--text-secondary)' }}>당신을 위한 맞춤형 스프레드 리딩이 준비되어 있습니다.</p>
