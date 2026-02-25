@@ -94,7 +94,17 @@ export function TarotMastery() {
       
       const posLabel = spreadLayout?.positions[idx].label || '해석';
       const interpretation = reading?.evidence[idx]?.split(']')[1] || '카드가 뒤집혔습니다.';
-      setMessages(prev => [...prev, { role: 'bot', text: `[${posLabel}: ${drawnCards[idx].nameKo}]\n${interpretation}` }]);
+      
+      if (isStudyMode) {
+        const info = getPositionInfo(idx);
+        const card = drawnCards[idx];
+        setMessages(prev => [...prev, { 
+          role: 'bot', 
+          text: `[학습 리딩: ${card.nameKo}]\n\n◈ 해석: ${interpretation}\n\n◈ ${posLabel}의 의미: ${info.posDesc}\n\n◈ 카드 상징: ${card.description || card.summary}\n\n◈ 키워드: ${card.keywords?.join(', ') || '정보 없음'}` 
+        }]);
+      } else {
+        setMessages(prev => [...prev, { role: 'bot', text: `[${posLabel}: ${drawnCards[idx].nameKo}]\n${interpretation}` }]);
+      }
     }
   };
 
@@ -107,13 +117,13 @@ export function TarotMastery() {
 
   return (
     <div className="tarot-mastery-page" style={{ 
-      maxWidth: '1600px', 
+      maxWidth: '1800px', 
       margin: '0 auto', 
       display: 'grid', 
-      gridTemplateColumns: '500px 1fr', 
-      gap: '3rem', 
-      height: 'calc(100vh - 180px)',
-      padding: '0 2rem'
+      gridTemplateColumns: '450px 1fr', 
+      gap: '3.5rem', 
+      height: 'calc(100vh - 160px)',
+      padding: '0 3rem'
     }}>
       
       {/* 왼쪽: 챗봇 세션 (상담 기록) */}
@@ -129,7 +139,26 @@ export function TarotMastery() {
         <div style={{ padding: '1.8rem', borderBottom: '1px solid #333', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'linear-gradient(to right, #1a1a1a, #161616)' }}>
           <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--accent-gold)', letterSpacing: '1px' }}>아르카나 사서</h3>
           {step === 'result' && (
-            <button onClick={() => setIsStudyMode(!isStudyMode)} style={{ fontSize: '0.75rem', padding: '6px 14px', borderRadius: '12px', backgroundColor: isStudyMode ? 'var(--accent-gold)' : '#333', color: isStudyMode ? 'black' : 'white', border: 'none', cursor: 'pointer', fontWeight: 'bold', transition: 'all 0.3s' }}>
+            <button 
+              onClick={() => {
+                const nextMode = !isStudyMode;
+                setIsStudyMode(nextMode);
+                if (nextMode) {
+                  setMessages(prev => [...prev, { role: 'bot', text: "✨ 학습 모드가 활성화되었습니다. 이번 리딩의 각 카드를 상징학적으로 분석해 드릴게요." }]);
+                  drawnCards.forEach((card, i) => {
+                    setTimeout(() => {
+                      const info = getPositionInfo(i);
+                      const interpretation = reading?.evidence[i]?.split(']')[1] || '';
+                      setMessages(prev => [...prev, { 
+                        role: 'bot', 
+                        text: `[심화 학습: ${card.nameKo}]\n\n◈ ${info.posLabel}: ${info.posDesc}\n\n◈ 상징 분석: ${card.description || card.summary}\n\n◈ 키워드: ${card.keywords?.join(', ') || ''}\n\n◈ 이번 리딩에서의 해석: ${interpretation}` 
+                      }]);
+                    }, 600 * (i + 1));
+                  });
+                }
+              }} 
+              style={{ fontSize: '0.75rem', padding: '6px 14px', borderRadius: '12px', backgroundColor: isStudyMode ? 'var(--accent-gold)' : '#333', color: isStudyMode ? 'black' : 'white', border: 'none', cursor: 'pointer', fontWeight: 'bold', transition: 'all 0.3s' }}
+            >
               학습 모드 {isStudyMode ? 'ON' : 'OFF'}
             </button>
           )}
@@ -250,7 +279,7 @@ export function TarotMastery() {
                 boxShadow: '0 15px 40px rgba(107,76,154,0.1)' 
               }}>
                 <h4 style={{ color: 'var(--accent-purple)', marginTop: 0, fontSize: '1.6rem', marginBottom: '1.5rem', borderBottom: '1px solid rgba(107,76,154,0.2)', paddingBottom: '1rem' }}>✨ 아르카나의 지침</h4>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2.5rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                   {reading.action.map((act: string, i: number) => (
                     <div key={i} style={{ display: 'flex', gap: '1.2rem', alignItems: 'flex-start' }}>
                       <span style={{ color: 'var(--accent-purple)', fontSize: '1.3rem' }}>●</span>
