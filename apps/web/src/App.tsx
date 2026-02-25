@@ -2,9 +2,9 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
 import { Home } from './pages/Home';
 import { Cards } from './pages/Cards';
-import { Reading } from './pages/Reading';
-import { ChatReading } from './pages/ChatReading';
-import { StudyReading } from './pages/StudyReading';
+import { Home } from './pages/Home';
+import { Cards } from './pages/Cards';
+import { TarotMastery } from './pages/TarotMastery';
 import './styles/theme.css';
 
 function App() {
@@ -17,19 +17,15 @@ function App() {
           <nav style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'center', gap: '2rem' }}>
             <Link to="/">대시보드</Link>
             <Link to="/cards">카드 도서관</Link>
-            <Link to="/reading">운명 읽기</Link>
-            <Link to="/chat-reading">챗봇 리딩</Link>
-            <Link to="/study-reading" style={{ color: 'var(--accent-gold)', fontWeight: 'bold' }}>운명 학습</Link>
+            <Link to="/mastery" style={{ color: 'var(--accent-gold)', fontWeight: 'bold' }}>아르카나 성소</Link>
           </nav>
         </header>
 
-        <main style={{ padding: '3rem max(5vw, 2rem)', maxWidth: '1200px', margin: '0 auto' }}>
+        <main style={{ padding: '3rem max(5vw, 2rem)', maxWidth: '1400px', margin: '0 auto' }}>
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/cards" element={<Cards />} />
-            <Route path="/reading" element={<Reading />} />
-            <Route path="/chat-reading" element={<ChatReading />} />
-            <Route path="/study-reading" element={<StudyReading />} />
+            <Route path="/mastery" element={<TarotMastery />} />
           </Routes>
         </main>
 
