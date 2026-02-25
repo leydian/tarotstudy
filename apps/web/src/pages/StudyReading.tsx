@@ -17,6 +17,7 @@ export function StudyReading() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [sessionCards, setSessionCards] = useState<any[]>([]);
+  const [sessionReading, setSessionReading] = useState<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
@@ -76,6 +77,7 @@ export function StudyReading() {
       });
       
       const reading = await res.json();
+      setSessionReading(reading);
 
       // 리딩 출력
       setTimeout(() => {
@@ -89,8 +91,7 @@ export function StudyReading() {
       setTimeout(() => {
         setMessages(prev => [...prev, { 
           role: 'bot', 
-          text: `💡 학습 포인트:
-오늘 뽑힌 ${cardCount}장의 카드는 당신의 운명에 중요한 메시지를 담고 있습니다. 각 카드의 상징을 더 깊이 공부해 보시겠습니까?`,
+          text: `💡 학습 포인트:\n오늘 뽑힌 ${cardCount}장의 카드는 당신의 운명에 중요한 메시지를 담고 있습니다. 각 카드가 이번 질문에서 어떤 역할을 했는지 더 깊이 공부해 보시겠습니까?`,
           isStudyLink: true
         }]);
       }, 3500);
@@ -103,21 +104,15 @@ export function StudyReading() {
   };
 
   const startLearning = () => {
-    setMessages(prev => [...prev, { role: 'bot', text: '탁월한 선택입니다! 각 카드의 숨겨진 상징과 의미를 상세히 분석해 드릴게요. 궁금한 카드를 클릭하거나 아래 설명을 확인해 보세요.' }]);
+    setMessages(prev => [...prev, { role: 'bot', text: '탁월한 선택입니다! 이번 리딩에서 각 카드가 어떤 역할을 맡았는지, 그리고 그 숨겨진 상징은 무엇인지 상세히 분석해 드릴게요.' }]);
     
     sessionCards.forEach((card, i) => {
       setTimeout(() => {
+        const originalInterpretation = sessionReading?.evidence[i] || '';
+
         setMessages(prev => [...prev, { 
           role: 'bot', 
-          text: `[학습: ${card.nameKo}]
-
-◈ 상징 분석:
-${card.symbolism || '준비 중인 데이터입니다.'}
-
-◈ 상세 설명:
-${card.description}
-
-◈ 키워드: ${card.keywords.join(', ')}`
+          text: `[학습: ${card.nameKo}]\n\n◈ 이번 질문에서의 역할 및 해석:\n${originalInterpretation}\n\n◈ 깊은 상징 분석:\n${card.symbolism || '준비 중인 데이터입니다.'}\n\n◈ 상세 설명:\n${card.description}\n\n◈ 키워드: ${card.keywords.join(', ')}`
         }]);
       }, 1000 * (i + 1));
     });
