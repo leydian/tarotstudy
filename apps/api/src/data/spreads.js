@@ -37,6 +37,46 @@ export const spreads = [
     ]
   },
   {
+    id: 'relationship',
+    name: '관계의 거울 (Relationship - 7-Card)',
+    description: '두 사람 사이의 에너지와 속마음을 심층 분석합니다.',
+    positions: [
+      { id: 1, label: '나의 현재', x: -250, y: -150 },
+      { id: 2, label: '상대의 현재', x: 250, y: -150 },
+      { id: 3, label: '나의 속마음', x: -250, y: 50 },
+      { id: 4, label: '상대의 속마음', x: 250, y: 50 },
+      { id: 5, label: '관계의 장애물', x: 0, y: -50 },
+      { id: 6, label: '가까운 변화', x: 0, y: 150 },
+      { id: 7, label: '최종적 유대', x: 0, y: 350 }
+    ]
+  },
+  {
+    id: 'career-path',
+    name: '커리어 패스 (Career Path - 5-Card)',
+    description: '직업적 성취와 나아가야 할 길을 제시합니다.',
+    positions: [
+      { id: 1, label: '현재의 실력', x: 0, y: 150 },
+      { id: 2, label: '잠재적 재능', x: -200, y: 0 },
+      { id: 3, label: '숨겨진 기회', x: 200, y: 0 },
+      { id: 4, label: '현실적 장애', x: 0, y: -150 },
+      { id: 5, label: '성공의 열쇠', x: 0, y: -350 }
+    ]
+  },
+  {
+    id: 'horseshoe',
+    name: '행운의 말편자 (Horseshoe - 7-Card)',
+    description: '과거부터 미래까지 전체적인 흐름을 유려하게 분석합니다.',
+    positions: [
+      { id: 1, label: '과거의 상황', x: -350, y: 200 },
+      { id: 2, label: '현재의 위치', x: -250, y: -50 },
+      { id: 3, label: '숨겨진 영향', x: -100, y: -250 },
+      { id: 4, label: '문제의 핵심', x: 100, y: -250 },
+      { id: 5, label: '타인의 시선', x: 250, y: -50 },
+      { id: 6, label: '해야 할 행동', x: 350, y: 200 },
+      { id: 7, label: '최종 결과', x: 0, y: 50 }
+    ]
+  },
+  {
     id: 'celtic',
     name: '켈틱 크로스 (10 Cards)',
     description: '문제의 근본부터 결말까지 모든 면을 분석하는 최고 권위의 스프레드입니다.',

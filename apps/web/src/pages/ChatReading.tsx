@@ -38,6 +38,9 @@ export function ChatReading() {
       const yearlyKeywords = ['올해', '이번 년', '연간', '1년', '년도'];
       const celticKeywords = ['심층', '자세히', '켈틱', '정밀', '상세히', '깊게'];
       const monthlyKeywords = ['이번 달', '월별', '한 달'];
+      const relationshipKeywords = ['그 사람', '속마음', '연애', '사랑', '재회', '커플', '썸', '연인'];
+      const careerKeywords = ['이직', '취업', '퇴사', '직장', '승진', '회사', '합격', '공부'];
+      const horseshoeKeywords = ['흐름', '앞으로', '전체적인', '말편자', '전망'];
       const choiceKeywords = ['vs', '또는', '중에서', '어떤게', '어느게', '아니면'];
       const lightKeywords = ['커피', '점심', '메뉴', '할까', '말까', '먹을까', '살까'];
 
@@ -51,6 +54,15 @@ export function ChatReading() {
       } else if (celticKeywords.some(k => userMessage.includes(k))) {
         cardCount = 10;
         spreadName = '켈틱 크로스(10-Card)';
+      } else if (relationshipKeywords.some(k => userMessage.includes(k))) {
+        cardCount = 7;
+        spreadName = '관계의 거울(7-Card)';
+      } else if (careerKeywords.some(k => userMessage.includes(k))) {
+        cardCount = 5;
+        spreadName = '커리어 패스(5-Card)';
+      } else if (horseshoeKeywords.some(k => userMessage.includes(k))) {
+        cardCount = 7;
+        spreadName = '행운의 말편자(7-Card)';
       } else if (monthlyKeywords.some(k => userMessage.includes(k))) {
         cardCount = 5;
         spreadName = '월별 펜타(5-Card)';
@@ -62,12 +74,12 @@ export function ChatReading() {
         spreadName = '마스터의 직관(1-Card)';
       }
 
-      const allCardsRes = await fetch('http://localhost:8787/api/cards');
+      const allCardsRes = await fetch('/api/cards');
       const allCards = await allCardsRes.json();
       const shuffled = [...allCards].sort(() => 0.5 - Math.random());
       const selectedCards = shuffled.slice(0, cardCount);
 
-      const res = await fetch('http://localhost:8787/api/reading', {
+      const res = await fetch('/api/reading', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 

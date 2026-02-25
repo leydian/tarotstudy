@@ -29,7 +29,7 @@ export function Cards() {
   const [selectedCard, setSelectedCard] = useState<Card | null>(null);
 
   useEffect(() => {
-    fetch('http://localhost:8787/api/cards')
+    fetch('/api/cards')
       .then(res => res.json())
       .then(data => setCards(data));
   }, []);
