@@ -189,31 +189,32 @@ export function TarotMastery() {
             </div>
           ))}
 
-          {/* 2. 카드 드로우 영역 (진행 중일 때만) */}
-          {(step === 'reading' || (step === 'result' && revealedIdx.length < drawnCards.length)) && spreadLayout && (
+          {/* 2. 카드 드로우 영역 (카드가 뽑힌 이후에는 계속 유지) */}
+          {(step === 'reading' || step === 'result') && spreadLayout && (
             <div style={{ 
-              padding: '3rem 0',
-              backgroundColor: 'rgba(0,0,0,0.2)', 
+              padding: '2rem 0',
+              backgroundColor: 'rgba(212, 175, 55, 0.03)', 
               borderRadius: '24px', 
               border: '1px solid rgba(212,175,55,0.1)',
               position: 'relative',
-              minHeight: '500px'
+              minHeight: '480px',
+              marginTop: '1rem'
             }}>
               <div style={{ position: 'absolute', top: '50%', left: '50%', width: 0, height: 0 }}>
                 {spreadLayout.positions.map((pos, idx) => {
                   const isRevealed = revealedIdx.includes(idx);
                   const info = getPositionInfo(idx);
                   return (
-                    <div key={pos.id} style={{ position: 'absolute', left: `${pos.x * 0.8}px`, top: `${pos.y * 0.8}px`, transform: 'translate(-50%, -50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+                    <div key={pos.id} style={{ position: 'absolute', left: `${pos.x * 0.8}px`, top: `${pos.y * 0.8}px`, transform: 'translate(-50%, -50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.8rem' }}>
                       <div onClick={() => revealCard(idx)} style={{ 
-                        width: '100px', 
-                        height: '180px', 
+                        width: '90px', 
+                        height: '160px', 
                         perspective: '1000px', 
                         cursor: isRevealed && !isStudyMode ? 'default' : 'pointer'
                       }}>
                         <div style={{ position: 'relative', width: '100%', height: '100%', transition: 'transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275)', transformStyle: 'preserve-3d', transform: isRevealed ? 'rotateY(180deg)' : 'rotateY(0deg)' }}>
                           <div style={{ position: 'absolute', width: '100%', height: '100%', backfaceVisibility: 'hidden', backgroundColor: '#1a1a1a', borderRadius: '8px', border: '2px solid var(--accent-gold)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <span style={{ fontSize: '2rem', opacity: 0.2, color: 'var(--accent-gold)' }}>?</span>
+                            <span style={{ fontSize: '1.8rem', opacity: 0.2, color: 'var(--accent-gold)' }}>?</span>
                           </div>
                           <div style={{ position: 'absolute', width: '100%', height: '100%', backfaceVisibility: 'hidden', transform: 'rotateY(180deg)', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--accent-gold)' }}>
                             <img src={info.card.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -221,8 +222,8 @@ export function TarotMastery() {
                         </div>
                       </div>
                       <div style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: '0.65rem', color: 'var(--accent-gold)', fontWeight: 'bold' }}>{pos.label}</div>
-                        <div style={{ fontSize: '0.8rem', color: isRevealed ? 'white' : '#555' }}>{isRevealed ? info.card.nameKo : '미공개'}</div>
+                        <div style={{ fontSize: '0.6rem', color: 'var(--accent-gold)', fontWeight: 'bold' }}>{pos.label}</div>
+                        <div style={{ fontSize: '0.75rem', color: isRevealed ? 'white' : '#555' }}>{isRevealed ? info.card.nameKo : '미공개'}</div>
                       </div>
                     </div>
                   );
