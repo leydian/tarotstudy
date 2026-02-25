@@ -5,6 +5,7 @@ type Message = {
   text: string;
   cards?: any[];
   isAction?: boolean;
+  yesNo?: 'YES' | 'NO' | 'MAYBE';
 };
 
 export function ChatReading() {
@@ -107,7 +108,11 @@ export function ChatReading() {
       }, 600);
 
       setTimeout(() => {
-        setMessages(prev => [...prev, { role: 'bot', text: reading.conclusion }]);
+        setMessages(prev => [...prev, { 
+          role: 'bot', 
+          text: reading.conclusion,
+          yesNo: reading.yesNoVerdict 
+        }]);
       }, 1800);
 
       if (cardCount > 1) {
@@ -153,8 +158,25 @@ export function ChatReading() {
               border: msg.role === 'user' ? 'none' : '1px solid #333',
               whiteSpace: 'pre-wrap',
               lineHeight: '1.6',
-              boxShadow: '0 4px 15px rgba(0,0,0,0.2)'
+              boxShadow: '0 4px 15px rgba(0,0,0,0.2)',
+              position: 'relative'
             }}>
+              {msg.yesNo && (
+                <div style={{ 
+                  position: 'absolute', 
+                  top: '-12px', 
+                  right: '10px', 
+                  backgroundColor: msg.yesNo === 'YES' ? '#69db7c' : (msg.yesNo === 'NO' ? '#ff6b6b' : '#ffd43b'),
+                  color: 'black',
+                  padding: '2px 10px',
+                  borderRadius: '10px',
+                  fontSize: '0.7rem',
+                  fontWeight: 'bold',
+                  boxShadow: '0 2px 5px rgba(0,0,0,0.5)'
+                }}>
+                  {msg.yesNo}
+                </div>
+              )}
               {msg.text}
             </div>
 
