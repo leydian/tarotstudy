@@ -35,13 +35,13 @@ app.get('/api/spreads', (req, res) => {
 
 // AI 리딩 생성 (V3 모델)
 app.post('/api/reading', (req, res) => {
-  const { cardIds, question } = req.body;
+  const { cardIds, question, timeframe, category } = req.body;
   if (!cardIds || !Array.isArray(cardIds) || cardIds.length === 0) {
     return res.status(400).json({ error: 'cardIds 배열이 필요합니다.' });
   }
 
   const selectedCards = cardIds.map(id => getCardById(id)).filter(Boolean);
-  const reading = generateReadingV3(selectedCards, question || '나의 현재 상황은?');
+  const reading = generateReadingV3(selectedCards, question || '나의 현재 상황은?', timeframe, category);
   
   res.json(reading);
 });
@@ -51,6 +51,10 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-app.listen(port, () => {
-  console.log(`[Tarot API] Server is running on http://localhost:${port}`);
-});
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(port, () => {
+    console.log(`[Tarot API] Server is running on http://localhost:${port}`);
+  });
+}
+
+export default app;
