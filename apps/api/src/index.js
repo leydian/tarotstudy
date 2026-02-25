@@ -3,7 +3,6 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { cards, getCardById } from './data/cards.js';
 import { spreads, getSpreadById } from './data/spreads.js';
-import { courses } from './data/courses.js';
 import { generateReadingV3 } from './domains/reading/v3.js';
 
 dotenv.config();
@@ -32,11 +31,6 @@ app.get('/api/cards/:id', (req, res) => {
 // 스프레드 목록 조회
 app.get('/api/spreads', (req, res) => {
   res.json(spreads);
-});
-
-// 학습 코스 조회
-app.get('/api/courses', (req, res) => {
-  res.json(courses);
 });
 
 // AI 리딩 생성 (V3 모델)

@@ -3,7 +3,6 @@ import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
 import { Home } from './pages/Home';
 import { Cards } from './pages/Cards';
 import { Reading } from './pages/Reading';
-import { Learning } from './pages/Learning';
 import './styles/theme.css';
 
 function App() {
@@ -17,7 +16,6 @@ function App() {
             <Link to="/">대시보드</Link>
             <Link to="/cards">카드 도서관</Link>
             <Link to="/reading">운명 읽기</Link>
-            <Link to="/learning">학습의 여정</Link>
           </nav>
         </header>
 
@@ -26,7 +24,6 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/cards" element={<Cards />} />
             <Route path="/reading" element={<Reading />} />
-            <Route path="/learning" element={<Learning />} />
           </Routes>
         </main>
 
