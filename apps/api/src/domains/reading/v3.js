@@ -98,34 +98,38 @@ export const generateReadingV3 = (cards, question, timeframe = 'daily', category
   const selectedMetaphor = metaphors[Math.floor(Math.random() * metaphors.length)];
 
   // 6. 유기적 서사 조립
+  // 6. 유기적 서사 조립 (Master Report Narrative System)
   const firstCard = cards[0];
   const lastCard = cards[cards.length - 1];
   
   let bridge = "";
-  if (firstCard.id.startsWith('s') && lastCard.id.startsWith('c')) bridge = "머릿속의 복잡한 계산을 끝내고 이제 마음의 평온을 찾아가는 흐름입니다.";
-  else if (firstCard.id.startsWith('w') && lastCard.id.startsWith('p')) bridge = "열정적으로 구상하던 계획이 현실적인 결과물로 맺어지는 과정에 있습니다.";
-  else bridge = `${firstCard.nameKo}의 기운이 ${lastCard.nameKo}의 결과로 이어지는 흐름입니다.`;
+  if (firstCard.id.startsWith('s') && lastCard.id.startsWith('c')) bridge = "현재 당신을 괴롭히는 차가운 이성의 고민과 날카로운 상황들을 지나, 결국 따스한 감정의 안식처에 도달하게 되는 치유의 흐름입니다.";
+  else if (firstCard.id.startsWith('w') && lastCard.id.startsWith('p')) bridge = "뜨거운 열정으로 시작한 도전이 마침내 손에 잡히는 구체적인 결실과 안정적인 물질적 보상으로 이어지는 성공의 여정입니다.";
+  else if (firstCard.id.startsWith('m') && lastCard.id.startsWith('m')) bridge = "운명의 거대한 수레바퀴가 돌며 당신의 삶을 근본적으로 뒤흔들고, 새로운 차원의 성숙으로 인도하는 강력한 변화의 시기입니다.";
+  else bridge = `${firstCard.nameKo}의 에너지가 ${lastCard.nameKo}의 최종적인 결과로 수렴되며, 당신의 운명이 하나의 완성된 원을 그려가는 과정에 있습니다.`;
 
-  let conclusion = isLight ? `${timeGreeting} 가벼운 고민 속에 담긴 운명의 조각을 찾아보았습니다. 너무 심각하게 고민하기보다 카드가 전하는 가벼운 힌트에 귀를 기울여 보세요.` : `${timeGreeting} ${personaIntro}\n\n${elementTheme} ${bridge}`;
-  
-  // 운명의 서사 (Narrative Synthesis) - 중복 제거 및 유기적 연결
+  let introduction = isLight 
+    ? `${timeGreeting} 가벼운 고민 속에 담긴 운명의 조각을 찾아보았습니다. 너무 심각하게 고민하기보다 카드가 전하는 가벼운 힌트에 귀를 기울여 보세요.` 
+    : `${timeGreeting} ${personaIntro}\n\n${elementTheme} ${bridge}`;
+
+  // 운명의 서사 (Narrative Synthesis) - 심층적 연결 강화
   const narrative = cards.map((c, i) => {
-    let posLabel = "";
-    if (isBinary) posLabel = i === 0 ? "첫 번째 길" : "두 번째 길";
-    else {
-      posLabel = {
-        1: "핵심", 2: i === 0 ? "상황" : "전망", 3: ["과거", "현재", "미래"][i],
-        5: ["기점", "중심", "전망", "장애", "결론"][i]
-      }[cardCount] || `단계 ${i+1}`;
-    }
-    
-    // 가벼운 질문일 경우 요약본만 사용
-    const coreMeaning = isLight ? c.summary.split('.')[0] : c.summary;
     const positionName = c.positionLabel || (isBinary ? (i === 0 ? "첫 번째 길" : "두 번째 길") : (cardCount === 1 ? "핵심" : `단계 ${i+1}`));
-    return `◈ ${positionName}: [${c.nameKo}] 카드가 나타났습니다. 이는 ${coreMeaning}.`;
+    const coreMeaning = isLight ? c.summary.split('.')[0] : c.summary;
+    
+    // 카드 간 연결 문구 생성
+    let connective = "";
+    if (i === 0) connective = "이번 여정의 시작점인";
+    else if (i === cards.length - 1) connective = "마지막으로 모든 흐름이 귀결되는";
+    else connective = "이어서 상황을 진전시키는";
+
+    return `◈ ${positionName}: ${connective} [${c.nameKo}] 카드는 ${coreMeaning}. 이는 현재 당신이 ${c.description.split('.')[0]}을(를) 경험하고 있음을 의미하며, 이 과정에서 "${c.meanings.advice.replace(/\.$/, '')}" 하는 태도가 다음 단계로 나아가는 중요한 열쇠가 될 것입니다.`;
   }).join('\n\n');
 
-  conclusion = `${conclusion}\n\n[운명의 서사 분석]\n${narrative}\n\n[운명의 나침반] ${verdictKo}`;
+  // 결론 요약 문장 (질문 기반 맞춤형)
+  const finalSummary = `\n\n[종합 분석] 이번 리딩은 당신의 질문 "${question}"에 대해, ${firstCard.nameKo}의 초기 상황을 ${lastCard.nameKo}의 지혜로 해결해 나가야 함을 시사합니다. 전체적으로 ${verdictKo} 판정이 나온 만큼, 카드가 전하는 조언을 등불 삼아 한 걸음씩 나아가시길 바랍니다.`;
+
+  const conclusion = `${introduction}\n\n[운명의 서사 분석]\n${narrative}${finalSummary}\n\n[운명의 나침반] ${verdictKo}`;
 
   // 7. 시각적 카드 묘사 및 해설 (스마트 컨텍스트 변환 적용)
   const evidence = cards.map((card, i) => {
