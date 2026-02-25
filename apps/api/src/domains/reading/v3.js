@@ -102,27 +102,26 @@ export const generateReadingV3 = (cards, question, timeframe = 'daily', category
   const lastCard = cards[cards.length - 1];
   
   let bridge = "";
-  if (firstCard.id.startsWith('s') && lastCard.id.startsWith('c')) bridge = "차가운 이성의 고민을 지나 마침내 따스한 감정의 항구에 도착하는 흐름입니다.";
-  else if (firstCard.id.startsWith('w') && lastCard.id.startsWith('p')) bridge = "뜨거운 열정의 씨앗이 마침내 단단한 현실의 열매를 맺어가는 과정에 있습니다.";
-  else if (firstCard.id.startsWith('m') && lastCard.id.startsWith('m')) bridge = "정신적인 성숙함이 또 다른 차원의 깨달음으로 이어지는 매우 강력한 변화의 시기입니다.";
-  else bridge = `${firstCard.nameKo}의 에너지가 ${lastCard.nameKo}의 결과로 이어지는 유기적인 여정이 그려집니다.`;
+  if (firstCard.id.startsWith('s') && lastCard.id.startsWith('c')) bridge = "머릿속의 복잡한 계산을 끝내고 이제 마음의 평온을 찾아가는 흐름입니다.";
+  else if (firstCard.id.startsWith('w') && lastCard.id.startsWith('p')) bridge = "열정적으로 구상하던 계획이 현실적인 결과물로 맺어지는 과정에 있습니다.";
+  else bridge = `${firstCard.nameKo}의 기운이 ${lastCard.nameKo}의 결과로 이어지는 흐름입니다.`;
 
-  let conclusion = isLight ? `${timeGreeting} 가벼운 질문 속에 담긴 운명의 조각을 찾아보았습니다.` : `${timeGreeting} ${personaIntro}\n\n${elementTheme} ${bridge}`;
+  let conclusion = isLight ? `${timeGreeting} 가벼운 고민 속에 담긴 운명의 조각을 찾아보았습니다. 너무 심각하게 고민하기보다 카드가 전하는 가벼운 힌트에 귀를 기울여 보세요.` : `${timeGreeting} ${personaIntro}\n\n${elementTheme} ${bridge}`;
   
-  if (isModern && !isLight) {
-    conclusion = `[분석 결과] ${timeGreeting} ${elementTheme} 현재 ${bridge} 이러한 흐름을 바탕으로, 현대적인 관점에서 조언을 드릴게요.`;
-  }
-
-  // 운명의 서사 (Narrative Synthesis) - 리딩 분량 대폭 확대
+  // 운명의 서사 (Narrative Synthesis) - 중복 제거 및 유기적 연결
   const narrative = cards.map((c, i) => {
-    const posLabel = {
-      1: ["핵심"], 2: ["선택 A", "선택 B"], 3: ["과거", "현재", "미래"],
-      5: ["기점", "중심", "전망", "장애", "결론"],
-      7: ["나", "상대", "인연", "그림자", "변수", "시기", "결론"],
-      10: ["상황", "도전", "목표", "기반", "지나온길", "다가올길", "태도", "환경", "희망", "결과"]
-    }[cardCount]?.[i] || `단계 ${i+1}`;
+    let posLabel = "";
+    if (isBinary) posLabel = i === 0 ? "첫 번째 길" : "두 번째 길";
+    else {
+      posLabel = {
+        1: "핵심", 2: i === 0 ? "상황" : "전망", 3: ["과거", "현재", "미래"][i],
+        5: ["기점", "중심", "전망", "장애", "결론"][i]
+      }[cardCount] || `단계 ${i+1}`;
+    }
     
-    return `◈ ${posLabel}의 자리에 나타난 [${c.nameKo}] 카드는 ${c.summary} 이를 통해 볼 때, 이 시점의 당신은 ${c.description.split('.')[0]}.`;
+    // 가벼운 질문일 경우 요약본만 사용
+    const coreMeaning = isLight ? c.summary.split('.')[0] : c.summary;
+    return `◈ ${posLabel}: [${c.nameKo}] 카드가 나타났습니다. 이는 ${coreMeaning}.`;
   }).join('\n\n');
 
   conclusion = `${conclusion}\n\n[운명의 서사 분석]\n${narrative}\n\n[운명의 나침반] ${verdictKo}`;
