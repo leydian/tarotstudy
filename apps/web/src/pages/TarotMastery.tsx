@@ -197,19 +197,31 @@ ${interpretation}` }]);
 
         {step === 'result' && (
           <div style={{ paddingBottom: '3rem', animation: 'fadeIn 1s' }}>
-            <div style={{ backgroundColor: '#1e1e1e', padding: '2rem', borderRadius: '24px', borderLeft: '6px solid var(--accent-gold)', marginBottom: '2rem' }}>
-              <h3 style={{ color: 'var(--accent-gold)', marginTop: 0 }}>📜 운명의 마스터 리포트</h3>
-              <p style={{ lineHeight: '1.8', whiteSpace: 'pre-wrap' }}>{reading.conclusion}</p>
+            {/* 마스터 리포트 메인 */}
+            <div style={{ backgroundColor: '#1e1e1e', padding: '2.5rem', borderRadius: '24px', borderLeft: '6px solid var(--accent-gold)', marginBottom: '2rem', boxShadow: '0 10px 40px rgba(0,0,0,0.4)' }}>
+              <h3 style={{ color: 'var(--accent-gold)', marginTop: 0, fontSize: '1.6rem', borderBottom: '1px solid rgba(212,175,55,0.2)', paddingBottom: '1rem' }}>📜 운명의 마스터 리포트</h3>
+              <p style={{ lineHeight: '1.9', whiteSpace: 'pre-wrap', fontSize: '1.1rem', color: '#f0f0f0' }}>{reading.conclusion}</p>
             </div>
+
+            {/* 카드별 상세 심층 분석 (새로 추가된 긴 해설 섹션) */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', marginBottom: '2rem' }}>
+              <h4 style={{ color: 'var(--text-secondary)', fontSize: '1.2rem', paddingLeft: '1rem', borderLeft: '2px solid #444' }}>◈ 카드별 심층 분석</h4>
+              {reading.evidence.map((ev: string, i: number) => (
+                <div key={i} style={{ backgroundColor: 'rgba(255,255,255,0.03)', padding: '1.8rem', borderRadius: '16px', border: '1px solid #333', lineHeight: '1.7' }}>
+                  <p style={{ margin: 0, whiteSpace: 'pre-wrap', color: '#ccc' }}>{ev}</p>
+                </div>
+              ))}
+            </div>
+
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-              <div style={{ backgroundColor: 'rgba(107, 76, 154, 0.1)', padding: '1.5rem', borderRadius: '20px', border: '1px solid var(--accent-purple)' }}>
-                <h4 style={{ color: 'var(--accent-purple)', marginTop: 0 }}>✨ 아르카나의 지침</h4>
+              <div style={{ backgroundColor: 'rgba(107, 76, 154, 0.1)', padding: '2rem', borderRadius: '20px', border: '1px solid var(--accent-purple)' }}>
+                <h4 style={{ color: 'var(--accent-purple)', marginTop: 0, fontSize: '1.3rem' }}>✨ 아르카나의 지침</h4>
                 <ul style={{ paddingLeft: '1.2rem', margin: 0 }}>
-                  {reading.action.map((act: string, i: number) => <li key={i} style={{ marginBottom: '0.5rem', color: '#e2d1b3' }}>{act}</li>)}
+                  {reading.action.map((act: string, i: number) => <li key={i} style={{ marginBottom: '0.8rem', color: '#e2d1b3', fontSize: '1.05rem', lineHeight: '1.6' }}>{act}</li>)}
                 </ul>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <button onClick={() => { setStep('input'); setReading(null); setMessages([{ role: 'bot', text: '새로운 의식을 시작할 준비가 되었습니다. 무엇이 궁금하신가요?' }]); setRevealedIdx([]); }} style={{ padding: '1rem 3rem', backgroundColor: 'transparent', color: 'var(--accent-gold)', border: '1px solid var(--accent-gold)', borderRadius: '50px', fontWeight: 'bold', cursor: 'pointer' }}>새로운 질문하기</button>
+                <button onClick={() => { setStep('input'); setReading(null); setMessages([{ role: 'bot', text: '새로운 의식을 시작할 준비가 되었습니다. 무엇이 궁금하신가요?' }]); setRevealedIdx([]); }} style={{ padding: '1.2rem 3.5rem', backgroundColor: 'transparent', color: 'var(--accent-gold)', border: '1px solid var(--accent-gold)', borderRadius: '50px', fontWeight: 'bold', cursor: 'pointer', fontSize: '1.1rem' }}>새로운 질문하기</button>
               </div>
             </div>
           </div>

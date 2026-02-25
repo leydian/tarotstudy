@@ -113,8 +113,19 @@ export const generateReadingV3 = (cards, question, timeframe = 'daily', category
     conclusion = `[분석 결과] ${timeGreeting} ${elementTheme} 현재 ${bridge} 이러한 흐름을 바탕으로, 현대적인 관점에서 조언을 드릴게요.`;
   }
 
-  // 결론에 판정 결과 항상 병합 (Master V5.1)
-  conclusion = `${conclusion}\n\n[운명의 나침반] ${verdictKo}`;
+  // 운명의 서사 (Narrative Synthesis) - 리딩 분량 대폭 확대
+  const narrative = cards.map((c, i) => {
+    const posLabel = {
+      1: ["핵심"], 2: ["선택 A", "선택 B"], 3: ["과거", "현재", "미래"],
+      5: ["기점", "중심", "전망", "장애", "결론"],
+      7: ["나", "상대", "인연", "그림자", "변수", "시기", "결론"],
+      10: ["상황", "도전", "목표", "기반", "지나온길", "다가올길", "태도", "환경", "희망", "결과"]
+    }[cardCount]?.[i] || `단계 ${i+1}`;
+    
+    return `◈ ${posLabel}의 자리에 나타난 [${c.nameKo}] 카드는 ${c.summary} 이를 통해 볼 때, 이 시점의 당신은 ${c.description.split('.')[0]}.`;
+  }).join('\n\n');
+
+  conclusion = `${conclusion}\n\n[운명의 서사 분석]\n${narrative}\n\n[운명의 나침반] ${verdictKo}`;
 
   // 7. 시각적 카드 묘사 및 해설 (스마트 컨텍스트 변환 적용)
   const evidence = cards.map((card, i) => {
@@ -135,24 +146,22 @@ export const generateReadingV3 = (cards, question, timeframe = 'daily', category
       }[cardCount]?.[i] || `여정의 ${i+1}단계`;
     }
 
-    const visualHint = card.description ? card.description.split('.')[1]?.trim() + "." : card.summary;
+    const visualHint = card.description || card.summary;
     
     let meaning = card.summary;
     if (isRelationship) meaning = card.meanings.love;
     else if (isFinance) meaning = card.meanings.finance;
     else if (isStudy) {
-      // 직장/커리어 데이터를 학업 데이터로 스마트 치환
       meaning = `[학업/시험] ` + (card.meanings.career 
         ? card.meanings.career.replace(/직장|업무|프로젝트|사업/g, '학업').replace(/동료|상사/g, '학우/교수님').replace(/취업/g, '합격').replace(/승진/g, '성적 향상')
         : card.summary);
     } else if (isHealth) {
-      // 기본 요약을 건강 맥락으로 포장
       meaning = `[건강/심리] ` + card.summary + ` 이 시기에는 무리하지 말고 내면과 신체의 소리에 귀 기울이는 것이 좋습니다.`;
     } else if (isWorker || category === 'career') {
       meaning = card.meanings.career;
     }
 
-    return `[${posLabel}: ${card.nameKo}]\n"${visualHint}"\n${meaning}`;
+    return `[${posLabel}: ${card.nameKo}]\n\n◈ 시각적 형상:\n"${visualHint.split('.')[0]}."\n\n◈ 심층적 해석:\n${meaning}\n\n◈ 조언:\n${card.meanings.advice}`;
   });
 
   // 8. 감성적 비유 조언
