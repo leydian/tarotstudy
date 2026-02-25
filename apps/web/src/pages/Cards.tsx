@@ -88,6 +88,15 @@ export function Cards() {
         ))}
       </div>
 
+      <div style={{ marginTop: '5rem', padding: '3rem', borderTop: '1px solid var(--border-gold)', textAlign: 'center', opacity: 0.8 }}>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+          <strong>이미지 라이선스 정보</strong><br/>
+          본 서비스에서 사용된 타로 카드 이미지는 1909년 아서 에드워드 웨이트와 파멜라 콜먼 스미스가 제작한 <strong>Rider-Waite-Smith Tarot</strong> 덱입니다.<br/>
+          이 이미지는 저작권 보호 기간이 만료된 <strong>퍼블릭 도메인(Public Domain)</strong> 저작물입니다.<br/>
+          이미지 출처: <a href="https://commons.wikimedia.org/wiki/Category:Rider-Waite_tarot" target="_blank" rel="noreferrer" style={{ color: 'var(--accent-gold)', textDecoration: 'underline' }}>Wikimedia Commons</a>
+        </p>
+      </div>
+
       {/* 상세 정보 모달 */}
       {selectedCard && (
         <div 

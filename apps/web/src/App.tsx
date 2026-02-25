@@ -31,6 +31,10 @@ function App() {
 
         <footer style={{ padding: '4rem 2rem', textAlign: 'center', opacity: 0.6, fontSize: '0.9rem' }}>
           <div style={{ marginBottom: '1rem', height: '1px', background: 'linear-gradient(to right, transparent, var(--border-gold), transparent)' }}></div>
+          <div style={{ marginBottom: '1rem', color: 'var(--text-secondary)' }}>
+            All card images are from the <strong>Rider-Waite-Smith Tarot (1909)</strong>, which is in the <strong>Public Domain</strong>.<br/>
+            Images provided by <a href="https://commons.wikimedia.org" target="_blank" rel="noreferrer" style={{ textDecoration: 'underline' }}>Wikimedia Commons</a>.
+          </div>
           &copy; 2026 Tarot Study Web App. All rights reserved.
         </footer>
       </div>
