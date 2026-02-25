@@ -46,7 +46,6 @@ export function TarotMastery() {
     setInput('');
 
     try {
-      // 1. 스프레드 결정 로직 (지능형)
       let cardCount = 3;
       if (userQuestion.includes('언제') || userQuestion.includes('몇월')) cardCount = 3;
       else if (userQuestion.includes('할까') || userQuestion.includes('말까') || userQuestion.includes('vs')) cardCount = 2;
@@ -95,8 +94,7 @@ export function TarotMastery() {
       
       const posLabel = spreadLayout?.positions[idx].label || '해석';
       const interpretation = reading?.evidence[idx]?.split(']')[1] || '카드가 뒤집혔습니다.';
-      setMessages(prev => [...prev, { role: 'bot', text: `[${posLabel}: ${drawnCards[idx].nameKo}]
-${interpretation}` }]);
+      setMessages(prev => [...prev, { role: 'bot', text: `[${posLabel}: ${drawnCards[idx].nameKo}]\n${interpretation}` }]);
     }
   };
 
@@ -108,29 +106,47 @@ ${interpretation}` }]);
   };
 
   return (
-    <div className="tarot-mastery-page" style={{ maxWidth: '1400px', margin: '0 auto', display: 'grid', gridTemplateColumns: '350px 1fr', gap: '2rem', height: 'calc(100vh - 180px)' }}>
+    <div className="tarot-mastery-page" style={{ 
+      maxWidth: '1600px', 
+      margin: '0 auto', 
+      display: 'grid', 
+      gridTemplateColumns: '500px 1fr', 
+      gap: '3rem', 
+      height: 'calc(100vh - 180px)',
+      padding: '0 2rem'
+    }}>
       
-      {/* 왼쪽: 챗봇 세션 (상담 기록) */}
-      <div className="chat-sidebar" style={{ backgroundColor: '#161616', borderRadius: '24px', display: 'flex', flexDirection: 'column', overflow: 'hidden', border: '1px solid #333' }}>
-        <div style={{ padding: '1.5rem', borderBottom: '1px solid #333', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h3 style={{ margin: 0, fontSize: '1rem', color: 'var(--accent-gold)' }}>아르카나 사서</h3>
+      {/* 왼쪽: 챗봇 세션 (상담 기록) - 대폭 확장 */}
+      <div className="chat-sidebar" style={{ 
+        backgroundColor: '#161616', 
+        borderRadius: '28px', 
+        display: 'flex', 
+        flexDirection: 'column', 
+        overflow: 'hidden', 
+        border: '1px solid #333',
+        boxShadow: '0 20px 50px rgba(0,0,0,0.5)'
+      }}>
+        <div style={{ padding: '1.8rem', borderBottom: '1px solid #333', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'linear-gradient(to right, #1a1a1a, #161616)' }}>
+          <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--accent-gold)', letterSpacing: '1px' }}>아르카나 사서</h3>
           {step === 'result' && (
-            <button onClick={() => setIsStudyMode(!isStudyMode)} style={{ fontSize: '0.7rem', padding: '4px 10px', borderRadius: '10px', backgroundColor: isStudyMode ? 'var(--accent-gold)' : '#333', color: isStudyMode ? 'black' : 'white', border: 'none', cursor: 'pointer' }}>
+            <button onClick={() => setIsStudyMode(!isStudyMode)} style={{ fontSize: '0.75rem', padding: '6px 14px', borderRadius: '12px', backgroundColor: isStudyMode ? 'var(--accent-gold)' : '#333', color: isStudyMode ? 'black' : 'white', border: 'none', cursor: 'pointer', fontWeight: 'bold', transition: 'all 0.3s' }}>
               학습 모드 {isStudyMode ? 'ON' : 'OFF'}
             </button>
           )}
         </div>
-        <div style={{ flex: 1, overflowY: 'auto', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           {messages.map((msg, i) => (
-            <div key={i} style={{ alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start', maxWidth: '90%' }}>
+            <div key={i} style={{ alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start', maxWidth: '92%' }}>
               <div style={{ 
-                padding: '0.8rem 1.2rem', 
-                borderRadius: '15px', 
+                padding: '1.1rem 1.5rem', 
+                borderRadius: msg.role === 'user' ? '20px 20px 2px 20px' : '20px 20px 20px 20px', 
                 backgroundColor: msg.role === 'user' ? 'var(--accent-gold)' : '#252525',
                 color: msg.role === 'user' ? 'black' : 'white',
-                fontSize: '0.9rem',
-                lineHeight: '1.6',
-                whiteSpace: 'pre-wrap'
+                fontSize: '1rem',
+                lineHeight: '1.7',
+                whiteSpace: 'pre-wrap',
+                boxShadow: '0 4px 15px rgba(0,0,0,0.2)',
+                position: 'relative'
               }}>
                 {msg.text}
               </div>
@@ -139,53 +155,69 @@ ${interpretation}` }]);
           <div ref={messagesEndRef} />
         </div>
         {step === 'input' && (
-          <form onSubmit={handleStartRitual} style={{ padding: '1.5rem', borderTop: '1px solid #333', display: 'flex', gap: '0.5rem' }}>
-            <input type="text" value={input} onChange={e => setInput(e.target.value)} placeholder="질문을 입력하세요..." style={{ flex: 1, backgroundColor: '#000', border: '1px solid #444', color: 'white', padding: '0.8rem', borderRadius: '8px' }} />
-            <button type="submit" disabled={loading} style={{ backgroundColor: 'var(--accent-gold)', border: 'none', padding: '0 1rem', borderRadius: '8px', cursor: 'pointer' }}>{loading ? '...' : '전송'}</button>
+          <form onSubmit={handleStartRitual} style={{ padding: '1.8rem', borderTop: '1px solid #333', display: 'flex', gap: '0.8rem', backgroundColor: '#1a1a1a' }}>
+            <input type="text" value={input} onChange={e => setInput(e.target.value)} placeholder="당신의 운명을 물어보세요..." style={{ flex: 1, backgroundColor: '#000', border: '1px solid #444', color: 'white', padding: '1rem', borderRadius: '12px', fontSize: '1rem' }} />
+            <button type="submit" disabled={loading} style={{ backgroundColor: 'var(--accent-gold)', border: 'none', padding: '0 1.5rem', borderRadius: '12px', cursor: 'pointer', fontWeight: 'bold' }}>{loading ? '...' : '전송'}</button>
           </form>
         )}
       </div>
 
       {/* 오른쪽: 메인 작업 영역 (스프레드 시각화 및 리포트) */}
-      <div className="main-ritual-area" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', overflowY: 'auto' }}>
+      <div className="main-ritual-area" style={{ display: 'flex', flexDirection: 'column', gap: '2rem', overflowY: 'auto', paddingRight: '1rem' }}>
         
         {step === 'input' && (
-          <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', flexDirection: 'column', gap: '2rem', opacity: 0.8 }}>
-            <div style={{ fontSize: '4rem' }}>🃏</div>
-            <h2 style={{ fontSize: '2rem', color: 'var(--accent-gold)' }}>의식을 시작할 준비가 되셨나요?</h2>
-            <p>질문을 입력하시면 카드들이 당신의 길을 비추어 줄 것입니다.</p>
+          <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', flexDirection: 'column', gap: '2.5rem', opacity: 0.8 }}>
+            <div style={{ fontSize: '5rem', filter: 'drop-shadow(0 0 20px var(--accent-gold))' }}>🃏</div>
+            <h2 style={{ fontSize: '2.5rem', color: 'var(--accent-gold)', letterSpacing: '-1px' }}>의식을 시작할 준비가 되셨나요?</h2>
+            <p style={{ fontSize: '1.2rem', color: '#888' }}>질문을 입력하시면 카드들이 당신의 길을 비추어 줄 것입니다.</p>
           </div>
         )}
 
         {(step === 'reading' || step === 'result') && spreadLayout && (
-          <div style={{ position: 'relative', height: '600px', backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: '30px', border: '1px solid rgba(212,175,55,0.1)', backgroundImage: 'radial-gradient(circle at center, rgba(212,175,55,0.05) 0%, transparent 80%)' }}>
+          <div style={{ 
+            position: 'relative', 
+            minHeight: '650px', 
+            backgroundColor: 'rgba(0,0,0,0.4)', 
+            borderRadius: '32px', 
+            border: '1px solid rgba(212,175,55,0.1)', 
+            backgroundImage: 'radial-gradient(circle at center, rgba(212,175,55,0.08) 0%, transparent 80%)',
+            boxShadow: 'inset 0 0 50px rgba(0,0,0,0.5)'
+          }}>
             <div style={{ position: 'absolute', top: '50%', left: '50%', width: 0, height: 0 }}>
               {spreadLayout.positions.map((pos, idx) => {
                 const isRevealed = revealedIdx.includes(idx);
                 const info = getPositionInfo(idx);
                 return (
-                  <div key={pos.id} style={{ position: 'absolute', left: `${pos.x}px`, top: `${pos.y}px`, transform: 'translate(-50%, -50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
-                    <div onClick={() => revealCard(idx)} style={{ width: '120px', height: '210px', perspective: '1000px', cursor: isRevealed && !isStudyMode ? 'default' : 'pointer' }}>
-                      <div style={{ position: 'relative', width: '100%', height: '100%', transition: 'transform 0.8s', transformStyle: 'preserve-3d', transform: isRevealed ? 'rotateY(180deg)' : 'rotateY(0deg)' }}>
-                        <div style={{ position: 'absolute', width: '100%', height: '100%', backfaceVisibility: 'hidden', backgroundColor: '#1a1a1a', borderRadius: '8px', border: '2px solid var(--accent-gold)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <span style={{ fontSize: '2rem', opacity: 0.3 }}>?</span>
+                  <div key={pos.id} style={{ position: 'absolute', left: `${pos.x}px`, top: `${pos.y}px`, transform: 'translate(-50%, -50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.2rem' }}>
+                    <div onClick={() => revealCard(idx)} style={{ 
+                      width: '130px', 
+                      height: '230px', 
+                      perspective: '1000px', 
+                      cursor: isRevealed && !isStudyMode ? 'default' : 'pointer',
+                      transition: 'transform 0.3s'
+                    }}
+                    onMouseOver={e => !isRevealed && (e.currentTarget.style.transform = 'scale(1.05)')}
+                    onMouseOut={e => e.currentTarget.style.transform = 'scale(1)'}
+                    >
+                      <div style={{ position: 'relative', width: '100%', height: '100%', transition: 'transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275)', transformStyle: 'preserve-3d', transform: isRevealed ? 'rotateY(180deg)' : 'rotateY(0deg)' }}>
+                        <div style={{ position: 'absolute', width: '100%', height: '100%', backfaceVisibility: 'hidden', backgroundColor: '#1a1a1a', borderRadius: '10px', border: '2px solid var(--accent-gold)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 10px 20px rgba(0,0,0,0.4)' }}>
+                          <span style={{ fontSize: '2.5rem', opacity: 0.2, color: 'var(--accent-gold)' }}>?</span>
                         </div>
-                        <div style={{ position: 'absolute', width: '100%', height: '100%', backfaceVisibility: 'hidden', transform: 'rotateY(180deg)', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--accent-gold)' }}>
+                        <div style={{ position: 'absolute', width: '100%', height: '100%', backfaceVisibility: 'hidden', transform: 'rotateY(180deg)', borderRadius: '10px', overflow: 'hidden', border: '1px solid var(--accent-gold)', boxShadow: '0 15px 40px rgba(0,0,0,0.6)' }}>
                           <img src={info.card.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         </div>
                       </div>
                     </div>
                     <div style={{ textAlign: 'center' }}>
-                      <div style={{ fontSize: '0.65rem', color: 'var(--accent-gold)' }}>{pos.label}</div>
-                      <div style={{ fontSize: '0.8rem', fontWeight: 'bold' }}>{isRevealed ? info.card.nameKo : '미공개'}</div>
+                      <div style={{ fontSize: '0.7rem', color: 'var(--accent-gold)', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>{pos.label}</div>
+                      <div style={{ fontSize: '0.9rem', color: isRevealed ? 'white' : '#555' }}>{isRevealed ? info.card.nameKo : '미공개'}</div>
                     </div>
 
-                    {/* 학습 모드 팝오버 */}
                     {isStudyMode && isRevealed && (
-                      <div style={{ position: 'absolute', top: '-100px', width: '250px', backgroundColor: '#222', padding: '1rem', borderRadius: '12px', border: '1px solid var(--accent-gold)', zIndex: 1000, boxShadow: '0 10px 30px rgba(0,0,0,0.5)', fontSize: '0.8rem' }}>
-                        <div style={{ color: 'var(--accent-gold)', fontWeight: 'bold', marginBottom: '0.5rem' }}>◈ {info.posLabel} 의 의미</div>
-                        <p style={{ margin: 0, opacity: 0.8, lineHeight: '1.4' }}>{info.posDesc}</p>
-                        <div style={{ marginTop: '0.8rem', paddingTop: '0.8rem', borderTop: '1px solid #444', fontStyle: 'italic' }}>"{info.card.summary}"</div>
+                      <div style={{ position: 'absolute', top: '-120px', width: '280px', backgroundColor: '#222', padding: '1.5rem', borderRadius: '16px', border: '1px solid var(--accent-gold)', zIndex: 1000, boxShadow: '0 20px 50px rgba(0,0,0,0.8)', fontSize: '0.85rem', animation: 'fadeIn 0.3s' }}>
+                        <div style={{ color: 'var(--accent-gold)', fontWeight: 'bold', marginBottom: '0.6rem', borderBottom: '1px solid #444', paddingBottom: '0.4rem' }}>◈ {info.posLabel} 의 정의</div>
+                        <p style={{ margin: 0, color: '#eee', lineHeight: '1.5' }}>{info.posDesc}</p>
+                        <div style={{ marginTop: '1rem', color: 'var(--accent-gold)', fontStyle: 'italic', fontSize: '0.8rem' }}>"{info.card.summary}"</div>
                       </div>
                     )}
                   </div>
@@ -196,32 +228,30 @@ ${interpretation}` }]);
         )}
 
         {step === 'result' && (
-          <div style={{ paddingBottom: '3rem', animation: 'fadeIn 1s' }}>
-            {/* 마스터 리포트 메인 */}
-            <div style={{ backgroundColor: '#1e1e1e', padding: '2.5rem', borderRadius: '24px', borderLeft: '6px solid var(--accent-gold)', marginBottom: '2rem', boxShadow: '0 10px 40px rgba(0,0,0,0.4)' }}>
-              <h3 style={{ color: 'var(--accent-gold)', marginTop: 0, fontSize: '1.6rem', borderBottom: '1px solid rgba(212,175,55,0.2)', paddingBottom: '1rem' }}>📜 운명의 마스터 리포트</h3>
-              <p style={{ lineHeight: '1.9', whiteSpace: 'pre-wrap', fontSize: '1.1rem', color: '#f0f0f0' }}>{reading.conclusion}</p>
+          <div style={{ paddingBottom: '4rem', animation: 'fadeIn 1s' }}>
+            <div style={{ backgroundColor: '#1e1e1e', padding: '3rem', borderRadius: '32px', borderLeft: '8px solid var(--accent-gold)', marginBottom: '2.5rem', boxShadow: '0 25px 60px rgba(0,0,0,0.5)' }}>
+              <h3 style={{ color: 'var(--accent-gold)', marginTop: 0, fontSize: '1.8rem', marginBottom: '1.5rem', borderBottom: '1px solid rgba(212,175,55,0.2)', paddingBottom: '1rem' }}>📜 운명의 마스터 리포트</h3>
+              <p style={{ lineHeight: '2', whiteSpace: 'pre-wrap', fontSize: '1.15rem', color: '#f0f0f0' }}>{reading.conclusion}</p>
             </div>
 
-            {/* 카드별 상세 심층 분석 (새로 추가된 긴 해설 섹션) */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', marginBottom: '2rem' }}>
-              <h4 style={{ color: 'var(--text-secondary)', fontSize: '1.2rem', paddingLeft: '1rem', borderLeft: '2px solid #444' }}>◈ 카드별 심층 분석</h4>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.8rem', marginBottom: '3rem' }}>
+              <h4 style={{ color: 'var(--text-secondary)', fontSize: '1.3rem', paddingLeft: '1.2rem', borderLeft: '3px solid #444', letterSpacing: '1px' }}>◈ 카드별 심층 분석</h4>
               {reading.evidence.map((ev: string, i: number) => (
-                <div key={i} style={{ backgroundColor: 'rgba(255,255,255,0.03)', padding: '1.8rem', borderRadius: '16px', border: '1px solid #333', lineHeight: '1.7' }}>
-                  <p style={{ margin: 0, whiteSpace: 'pre-wrap', color: '#ccc' }}>{ev}</p>
+                <div key={i} style={{ backgroundColor: 'rgba(255,255,255,0.02)', padding: '2.2rem', borderRadius: '24px', border: '1px solid #333', lineHeight: '1.8', boxShadow: '0 10px 30px rgba(0,0,0,0.2)' }}>
+                  <p style={{ margin: 0, whiteSpace: 'pre-wrap', color: '#ddd', fontSize: '1.05rem' }}>{ev}</p>
                 </div>
               ))}
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-              <div style={{ backgroundColor: 'rgba(107, 76, 154, 0.1)', padding: '2rem', borderRadius: '20px', border: '1px solid var(--accent-purple)' }}>
-                <h4 style={{ color: 'var(--accent-purple)', marginTop: 0, fontSize: '1.3rem' }}>✨ 아르카나의 지침</h4>
-                <ul style={{ paddingLeft: '1.2rem', margin: 0 }}>
-                  {reading.action.map((act: string, i: number) => <li key={i} style={{ marginBottom: '0.8rem', color: '#e2d1b3', fontSize: '1.05rem', lineHeight: '1.6' }}>{act}</li>)}
+            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '2rem' }}>
+              <div style={{ backgroundColor: 'rgba(107, 76, 154, 0.08)', padding: '2.5rem', borderRadius: '28px', border: '1px solid var(--accent-purple)', boxShadow: '0 15px 40px rgba(107,76,154,0.1)' }}>
+                <h4 style={{ color: 'var(--accent-purple)', marginTop: 0, fontSize: '1.5rem', marginBottom: '1.5rem' }}>✨ 아르카나의 지침</h4>
+                <ul style={{ paddingLeft: '1.5rem', margin: 0 }}>
+                  {reading.action.map((act: string, i: number) => <li key={i} style={{ marginBottom: '1rem', color: '#e2d1b3', fontSize: '1.1rem', lineHeight: '1.7' }}>{act}</li>)}
                 </ul>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <button onClick={() => { setStep('input'); setReading(null); setMessages([{ role: 'bot', text: '새로운 의식을 시작할 준비가 되었습니다. 무엇이 궁금하신가요?' }]); setRevealedIdx([]); }} style={{ padding: '1.2rem 3.5rem', backgroundColor: 'transparent', color: 'var(--accent-gold)', border: '1px solid var(--accent-gold)', borderRadius: '50px', fontWeight: 'bold', cursor: 'pointer', fontSize: '1.1rem' }}>새로운 질문하기</button>
+                <button onClick={() => { setStep('input'); setReading(null); setMessages([{ role: 'bot', text: '새로운 의식을 시작할 준비가 되었습니다. 무엇이 궁금하신가요?' }]); setRevealedIdx([]); }} style={{ padding: '1.4rem 4rem', backgroundColor: 'var(--accent-gold)', color: 'black', border: 'none', borderRadius: '60px', fontWeight: 'bold', cursor: 'pointer', fontSize: '1.2rem', boxShadow: '0 15px 40px rgba(212,175,55,0.3)', transition: 'transform 0.2s' }}>새로운 질문하기</button>
               </div>
             </div>
           </div>
@@ -229,7 +259,11 @@ ${interpretation}` }]);
       </div>
 
       <style>{`
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .chat-sidebar::-webkit-scrollbar { width: 6px; }
+        .chat-sidebar::-webkit-scrollbar-thumb { backgroundColor: #333; borderRadius: 10px; }
+        .main-ritual-area::-webkit-scrollbar { width: 6px; }
+        .main-ritual-area::-webkit-scrollbar-thumb { backgroundColor: #333; borderRadius: 10px; }
       `}</style>
     </div>
   );
