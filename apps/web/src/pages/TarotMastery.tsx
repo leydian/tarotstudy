@@ -116,7 +116,7 @@ export function TarotMastery() {
       padding: '0 2rem'
     }}>
       
-      {/* 왼쪽: 챗봇 세션 (상담 기록) - 대폭 확장 */}
+      {/* 왼쪽: 챗봇 세션 (상담 기록) */}
       <div className="chat-sidebar" style={{ 
         backgroundColor: '#161616', 
         borderRadius: '28px', 
@@ -162,7 +162,7 @@ export function TarotMastery() {
         )}
       </div>
 
-      {/* 오른쪽: 메인 작업 영역 (스프레드 시각화 및 리포트) */}
+      {/* 오른쪽: 메인 작업 영역 */}
       <div className="main-ritual-area" style={{ display: 'flex', flexDirection: 'column', gap: '2rem', overflowY: 'auto', paddingRight: '1rem' }}>
         
         {step === 'input' && (
@@ -195,15 +195,12 @@ export function TarotMastery() {
                       perspective: '1000px', 
                       cursor: isRevealed && !isStudyMode ? 'default' : 'pointer',
                       transition: 'transform 0.3s'
-                    }}
-                    onMouseOver={e => !isRevealed && (e.currentTarget.style.transform = 'scale(1.05)')}
-                    onMouseOut={e => e.currentTarget.style.transform = 'scale(1)'}
-                    >
+                    }}>
                       <div style={{ position: 'relative', width: '100%', height: '100%', transition: 'transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275)', transformStyle: 'preserve-3d', transform: isRevealed ? 'rotateY(180deg)' : 'rotateY(0deg)' }}>
-                        <div style={{ position: 'absolute', width: '100%', height: '100%', backfaceVisibility: 'hidden', backgroundColor: '#1a1a1a', borderRadius: '10px', border: '2px solid var(--accent-gold)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 10px 20px rgba(0,0,0,0.4)' }}>
+                        <div style={{ position: 'absolute', width: '100%', height: '100%', backfaceVisibility: 'hidden', backgroundColor: '#1a1a1a', borderRadius: '10px', border: '2px solid var(--accent-gold)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                           <span style={{ fontSize: '2.5rem', opacity: 0.2, color: 'var(--accent-gold)' }}>?</span>
                         </div>
-                        <div style={{ position: 'absolute', width: '100%', height: '100%', backfaceVisibility: 'hidden', transform: 'rotateY(180deg)', borderRadius: '10px', overflow: 'hidden', border: '1px solid var(--accent-gold)', boxShadow: '0 15px 40px rgba(0,0,0,0.6)' }}>
+                        <div style={{ position: 'absolute', width: '100%', height: '100%', backfaceVisibility: 'hidden', transform: 'rotateY(180deg)', borderRadius: '10px', overflow: 'hidden', border: '1px solid var(--accent-gold)' }}>
                           <img src={info.card.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         </div>
                       </div>
@@ -214,7 +211,7 @@ export function TarotMastery() {
                     </div>
 
                     {isStudyMode && isRevealed && (
-                      <div style={{ position: 'absolute', top: '-120px', width: '280px', backgroundColor: '#222', padding: '1.5rem', borderRadius: '16px', border: '1px solid var(--accent-gold)', zIndex: 1000, boxShadow: '0 20px 50px rgba(0,0,0,0.8)', fontSize: '0.85rem', animation: 'fadeIn 0.3s' }}>
+                      <div style={{ position: 'absolute', top: '-120px', width: '280px', backgroundColor: '#222', padding: '1.5rem', borderRadius: '16px', border: '1px solid var(--accent-gold)', zIndex: 1000, boxShadow: '0 20px 50px rgba(0,0,0,0.8)', fontSize: '0.85rem' }}>
                         <div style={{ color: 'var(--accent-gold)', fontWeight: 'bold', marginBottom: '0.6rem', borderBottom: '1px solid #444', paddingBottom: '0.4rem' }}>◈ {info.posLabel} 의 정의</div>
                         <p style={{ margin: 0, color: '#eee', lineHeight: '1.5' }}>{info.posDesc}</p>
                         <div style={{ marginTop: '1rem', color: 'var(--accent-gold)', fontStyle: 'italic', fontSize: '0.8rem' }}>"{info.card.summary}"</div>
@@ -243,15 +240,46 @@ export function TarotMastery() {
               ))}
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '2rem' }}>
-              <div style={{ backgroundColor: 'rgba(107, 76, 154, 0.08)', padding: '2.5rem', borderRadius: '28px', border: '1px solid var(--accent-purple)', boxShadow: '0 15px 40px rgba(107,76,154,0.1)' }}>
-                <h4 style={{ color: 'var(--accent-purple)', marginTop: 0, fontSize: '1.5rem', marginBottom: '1.5rem' }}>✨ 아르카나의 지침</h4>
-                <ul style={{ paddingLeft: '1.5rem', margin: 0 }}>
-                  {reading.action.map((act: string, i: number) => <li key={i} style={{ marginBottom: '1rem', color: '#e2d1b3', fontSize: '1.1rem', lineHeight: '1.7' }}>{act}</li>)}
-                </ul>
+            {/* 아르카나의 지침 - 와이드 레이아웃 */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '3rem' }}>
+              <div style={{ 
+                backgroundColor: 'rgba(107, 76, 154, 0.08)', 
+                padding: '3rem', 
+                borderRadius: '32px', 
+                border: '1px solid var(--accent-purple)', 
+                boxShadow: '0 15px 40px rgba(107,76,154,0.1)' 
+              }}>
+                <h4 style={{ color: 'var(--accent-purple)', marginTop: 0, fontSize: '1.6rem', marginBottom: '1.5rem', borderBottom: '1px solid rgba(107,76,154,0.2)', paddingBottom: '1rem' }}>✨ 아르카나의 지침</h4>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2.5rem' }}>
+                  {reading.action.map((act: string, i: number) => (
+                    <div key={i} style={{ display: 'flex', gap: '1.2rem', alignItems: 'flex-start' }}>
+                      <span style={{ color: 'var(--accent-purple)', fontSize: '1.3rem' }}>●</span>
+                      <p style={{ margin: 0, color: '#e2d1b3', fontSize: '1.15rem', lineHeight: '1.8' }}>{act}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <button onClick={() => { setStep('input'); setReading(null); setMessages([{ role: 'bot', text: '새로운 의식을 시작할 준비가 되었습니다. 무엇이 궁금하신가요?' }]); setRevealedIdx([]); }} style={{ padding: '1.4rem 4rem', backgroundColor: 'var(--accent-gold)', color: 'black', border: 'none', borderRadius: '60px', fontWeight: 'bold', cursor: 'pointer', fontSize: '1.2rem', boxShadow: '0 15px 40px rgba(212,175,55,0.3)', transition: 'transform 0.2s' }}>새로운 질문하기</button>
+              
+              <div style={{ display: 'flex', justifyContent: 'center' }}>
+                <button 
+                  onClick={() => { setStep('input'); setReading(null); setMessages([{ role: 'bot', text: '새로운 의식을 시작할 준비가 되었습니다. 무엇이 궁금하신가요?' }]); setRevealedIdx([]); }} 
+                  style={{ 
+                    padding: '1.5rem 6rem', 
+                    backgroundColor: 'var(--accent-gold)', 
+                    color: 'black', 
+                    border: 'none', 
+                    borderRadius: '60px', 
+                    fontWeight: 'bold', 
+                    cursor: 'pointer', 
+                    fontSize: '1.3rem', 
+                    boxShadow: '0 15px 40px rgba(212, 175, 55, 0.4)', 
+                    transition: 'transform 0.2s' 
+                  }}
+                  onMouseOver={e => e.currentTarget.style.transform = 'scale(1.05)'}
+                  onMouseOut={e => e.currentTarget.style.transform = 'scale(1)'}
+                >
+                  새로운 질문하기
+                </button>
               </div>
             </div>
           </div>
