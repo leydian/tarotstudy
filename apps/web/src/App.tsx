@@ -12,7 +12,7 @@ function App() {
     <BrowserRouter>
       <div className="app-container">
         <header style={{ padding: '2rem', textAlign: 'center', borderBottom: '1px solid var(--border-gold)' }}>
-          <h1 style={{ margin: 0, fontSize: '2.5rem' }}>STUDY CODEX II</h1>
+          <h1 style={{ margin: 0, fontSize: '2.5rem' }}>TAROT STUDY WEB APP</h1>
           <p style={{ color: 'var(--text-secondary)', fontStyle: 'italic' }}>Arcane Knowledge & Tarot Mastery</p>
           <nav style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'center', gap: '2rem' }}>
             <Link to="/">대시보드</Link>
@@ -31,7 +31,7 @@ function App() {
 
         <footer style={{ padding: '4rem 2rem', textAlign: 'center', opacity: 0.6, fontSize: '0.9rem' }}>
           <div style={{ marginBottom: '1rem', height: '1px', background: 'linear-gradient(to right, transparent, var(--border-gold), transparent)' }}></div>
-          &copy; 2026 Study Codex II. All rights reserved.
+          &copy; 2026 Tarot Study Web App. All rights reserved.
         </footer>
       </div>
     </BrowserRouter>

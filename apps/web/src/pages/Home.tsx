@@ -8,7 +8,7 @@ export function Home() {
     <div className="home-page" style={{ maxWidth: '1200px', margin: '0 auto', paddingTop: '2rem' }}>
       {/* 히어로 섹션 */}
       <section style={{ textAlign: 'center', marginBottom: '5rem', animation: 'fadeIn 1s' }}>
-        <h2 style={{ fontSize: '3.5rem', color: 'var(--accent-gold)', marginBottom: '1.5rem', letterSpacing: '-2px' }}>STUDY CODEX II</h2>
+        <h2 style={{ fontSize: '3.5rem', color: 'var(--accent-gold)', marginBottom: '1.5rem', letterSpacing: '-2px' }}>TAROT STUDY WEB APP</h2>
         <p style={{ fontSize: '1.25rem', color: '#aaa', maxWidth: '700px', margin: '0 auto', lineHeight: '1.8' }}>
           당신의 운명을 읽고, 타로의 깊은 상징을 배우는 지혜의 성소에 오신 것을 환영합니다.
           무엇을 먼저 시작하시겠습니까?
