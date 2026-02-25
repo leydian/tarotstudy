@@ -1,0 +1,213 @@
+.appContainer {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* ── HEADER ── */
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 clamp(1rem, 4vw, 3rem);
+  border-bottom: 1px solid var(--border-gold);
+  background: rgba(10, 10, 12, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  text-decoration: none;
+  color: var(--accent-gold);
+  font-family: 'Iropke Batang', Georgia, serif;
+  font-size: 1.25rem;
+  letter-spacing: 0.05em;
+  transition: color 0.3s ease;
+}
+
+.logo:hover {
+  color: var(--accent-gold-bright);
+}
+
+.logoIcon {
+  color: var(--accent-purple);
+}
+
+/* ── DESKTOP NAV ── */
+.desktopNav {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.navLink {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.9rem;
+  border-radius: 10px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: color 0.2s ease, background 0.2s ease;
+  border-bottom: 2px solid transparent;
+}
+
+.navLink:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.navLink.active {
+  color: var(--accent-gold);
+  border-bottom-color: var(--accent-gold);
+}
+
+.navLinkPrimary {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 1.1rem;
+  border-radius: 10px;
+  background: rgba(205, 186, 150, 0.08);
+  color: var(--accent-gold);
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border: 1px solid var(--border-gold);
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  margin-left: 0.5rem;
+}
+
+.navLinkPrimary:hover {
+  background: rgba(205, 186, 150, 0.16);
+  border-color: var(--accent-gold);
+  color: var(--accent-gold-bright);
+}
+
+.navLinkPrimary.active {
+  background: var(--accent-gold);
+  color: #0a0a0c;
+  border-color: var(--accent-gold);
+}
+
+/* ── HAMBURGER ── */
+.hamburger {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 40px;
+  height: 40px;
+  background: none;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: color 0.2s, border-color 0.2s;
+  padding: 0;
+}
+
+.hamburger:hover {
+  color: var(--accent-gold);
+  border-color: var(--border-gold);
+}
+
+/* ── MOBILE NAV ── */
+.mobileNav {
+  display: none;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.75rem clamp(1rem, 4vw, 3rem);
+  background: rgba(10, 10, 12, 0.97);
+  border-bottom: 1px solid var(--border-gold);
+  animation: slideDown 0.2s ease;
+}
+
+.mobileNavOpen {
+  display: flex;
+}
+
+.mobileNavLink {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 0.95rem;
+  font-weight: 500;
+  transition: color 0.2s ease, background 0.2s ease;
+}
+
+.mobileNavLink:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.mobileNavLink.active {
+  color: var(--accent-gold);
+  background: rgba(205, 186, 150, 0.06);
+}
+
+/* ── MAIN ── */
+.main {
+  flex: 1;
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 2rem clamp(1rem, 5vw, 4rem);
+}
+
+/* ── FOOTER ── */
+.footer {
+  padding: 3rem clamp(1rem, 4vw, 3rem);
+  text-align: center;
+  opacity: 0.7;
+  font-size: 0.875rem;
+}
+
+.footerDivider {
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--border-gold), transparent);
+  margin-bottom: 1.5rem;
+}
+
+.footerText {
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+
+.footerText a {
+  color: var(--accent-gold);
+  text-decoration: underline;
+  transition: color 0.3s ease;
+}
+
+.footerText a:hover {
+  color: var(--accent-gold-bright);
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 768px) {
+  .desktopNav {
+    display: none;
+  }
+
+  .hamburger {
+    display: flex;
+  }
+
+  .main {
+    padding: 1.5rem 1rem;
+  }
+}

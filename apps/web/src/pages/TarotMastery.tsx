@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Sparkles, Send, RefreshCw } from 'lucide-react';
 import { Card, Spread, Message, ReadingResponse } from '../types/tarot';
 import { tarotApi } from '../services/tarotService';
 import { TarotCard } from '../components/common/TarotCard';
 import { MessageBubble } from '../components/reading/MessageBubble';
+import styles from './TarotMastery.module.css';
 
 export function TarotMastery() {
   const [step, setStep] = useState<'input' | 'reading' | 'result'>('input');
@@ -17,7 +19,7 @@ export function TarotMastery() {
   const [revealedIdx, setRevealedIdx] = useState<number[]>([]);
   const [reading, setReading] = useState<ReadingResponse | null>(null);
   const [isStudyMode, setIsStudyMode] = useState(false);
-  
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
@@ -74,11 +76,11 @@ export function TarotMastery() {
         tarotApi.getCards()
       ]);
 
-      const currentSpread = (targetCardCount === 7 ? allSpreads.find(s => s.id === 'relationship') : 
-                            targetCardCount === 5 ? allSpreads.find(s => s.id === 'career-path') : null) 
-                            || allSpreads.find(s => s.positions.length === targetCardCount) 
+      const currentSpread = (targetCardCount === 7 ? allSpreads.find(s => s.id === 'relationship') :
+                            targetCardCount === 5 ? allSpreads.find(s => s.id === 'career-path') : null)
+                            || allSpreads.find(s => s.positions.length === targetCardCount)
                             || allSpreads[0];
-      
+
       setSpreadLayout(currentSpread);
 
       const shuffled = [...allCards].sort(() => 0.5 - Math.random());
@@ -115,13 +117,13 @@ export function TarotMastery() {
       }
       return next;
     });
-    
+
     const posLabel = spread.positions[idx].label;
     const interpretation = data.evidence[idx]?.split(']')[1] || '';
-    
-    setMessages(prev => [...prev, { 
-      role: 'bot', 
-      text: `[${posLabel}: ${cards[idx].nameKo}]\n${interpretation.trim().replace(/\.\.$/, '.')}` 
+
+    setMessages(prev => [...prev, {
+      role: 'bot',
+      text: `[${posLabel}: ${cards[idx].nameKo}]\n${interpretation.trim().replace(/\.\.$/, '.')}`
     }]);
   };
 
@@ -138,29 +140,29 @@ export function TarotMastery() {
     return { posLabel, posDesc, card };
   };
 
+  const handleReset = () => {
+    setStep('input');
+    setReading(null);
+    setMessages([{ role: 'bot', text: '새로운 의식을 시작할 준비가 되었습니다. 무엇이 궁금하신가요?' }]);
+    setRevealedIdx([]);
+    setDrawnCards([]);
+    setSpreadLayout(null);
+    setIsStudyMode(false);
+  };
+
   return (
-    <div className="tarot-mastery-page" style={{ maxWidth: '1100px', margin: '0 auto', height: 'calc(100vh - 140px)', display: 'flex', flexDirection: 'column', padding: '0 1rem' }}>
-      
-      <div className="unified-sanctuary" style={{ 
-        flex: 1, 
-        backgroundColor: 'rgba(18, 18, 21, 0.65)', 
-        backdropFilter: 'blur(20px)', 
-        WebkitBackdropFilter: 'blur(20px)', 
-        borderRadius: '32px 32px 0 0', 
-        display: 'flex', 
-        flexDirection: 'column', 
-        overflow: 'hidden', 
-        border: '1px solid var(--border-subtle)', 
-        borderBottom: 'none', 
-        boxShadow: '0 20px 50px rgba(0,0,0,0.5)' 
-      }}>
-        
-        {/* 헤더 */}
-        <div style={{ padding: '1.5rem 2.5rem', borderBottom: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', zIndex: 10 }}>
-          <h3 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--text-primary)', letterSpacing: '2px', fontWeight: 'bold' }}>🔮 아르카나 성소</h3>
-          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+    <div className={styles.page}>
+      <div className={styles.sanctuary}>
+
+        {/* 패널 헤더 */}
+        <div className={styles.panelHeader}>
+          <h3 className={styles.panelTitle}>
+            <Sparkles size={18} />
+            아르카나 성소
+          </h3>
+          <div className={styles.headerActions}>
             {step === 'result' && (
-              <button 
+              <button
                 onClick={() => {
                   const nextMode = !isStudyMode;
                   setIsStudyMode(nextMode);
@@ -169,15 +171,15 @@ export function TarotMastery() {
                     drawnCards.forEach((card, i) => {
                       setTimeout(() => {
                         const info = getPositionInfo(i);
-                        setMessages(prev => [...prev, { 
-                          role: 'bot', 
-                          text: `[심화 학습: ${card.nameKo}]\n\n◈ ${info.posLabel}의 의미: ${info.posDesc}\n\n◈ 카드 본질 상징: ${card.description || card.summary}\n\n◈ 핵심 키워드: ${card.keywords?.join(', ') || ''}` 
+                        setMessages(prev => [...prev, {
+                          role: 'bot',
+                          text: `[심화 학습: ${card.nameKo}]\n\n◈ ${info.posLabel}의 의미: ${info.posDesc}\n\n◈ 카드 본질 상징: ${card.description || card.summary}\n\n◈ 핵심 키워드: ${card.keywords?.join(', ') || ''}`
                         }]);
                       }, 600 * (i + 1));
                     });
                   }
-                }} 
-                style={{ fontSize: '0.8rem', padding: '8px 16px', borderRadius: '12px', backgroundColor: isStudyMode ? 'var(--accent-gold)' : 'rgba(255,255,255,0.05)', color: isStudyMode ? '#0a0a0c' : 'var(--text-primary)', border: isStudyMode ? 'none' : '1px solid var(--border-subtle)', cursor: 'pointer', fontWeight: '500', transition: 'all 0.3s' }}
+                }}
+                className={`${styles.studyToggle} ${isStudyMode ? styles.studyToggleOn : styles.studyToggleOff}`}
               >
                 학습 모드 {isStudyMode ? 'ON' : 'OFF'}
               </button>
@@ -185,21 +187,42 @@ export function TarotMastery() {
           </div>
         </div>
 
-        {/* 대화 영역 */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '2.5rem', display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
+        {/* 메시지 영역 */}
+        <div className={styles.messages}>
           {messages.map((msg, i) => <MessageBubble key={i} message={msg} />)}
 
-          {/* 카드 배치 */}
+          {/* 로딩 도트 */}
+          {loading && (
+            <div className={styles.typingWrapper}>
+              <div className={styles.typingBubble}>
+                <div className={styles.typingDots}>
+                  <span />
+                  <span />
+                  <span />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 카드 스프레드 */}
           {(step === 'reading' || step === 'result') && spreadLayout && (
-            <div style={{ padding: '2rem 0', backgroundColor: 'rgba(205, 186, 150, 0.02)', borderRadius: '24px', border: '1px solid var(--border-gold)', position: 'relative', minHeight: '480px', marginTop: '1rem' }}>
-              <div style={{ position: 'absolute', top: '50%', left: '50%', width: 0, height: 0 }}>
+            <div className={styles.spreadCanvas}>
+              <div className={styles.spreadCenter}>
                 {spreadLayout.positions.map((pos, idx) => (
-                  <div key={pos.id} style={{ position: 'absolute', left: `${pos.x * 0.8}px`, top: `${pos.y * 0.8}px`, transform: 'translate(-50%, -50%)' }}>
-                    <TarotCard 
-                      card={drawnCards[idx]} 
-                      isRevealed={revealedIdx.includes(idx)} 
-                      label={pos.label} 
-                      onClick={() => revealCard(idx)} 
+                  <div
+                    key={pos.id}
+                    style={{
+                      position: 'absolute',
+                      left: `${pos.x * 0.8}px`,
+                      top: `${pos.y * 0.8}px`,
+                      transform: 'translate(-50%, -50%)'
+                    }}
+                  >
+                    <TarotCard
+                      card={drawnCards[idx]}
+                      isRevealed={revealedIdx.includes(idx)}
+                      label={pos.label}
+                      onClick={() => revealCard(idx)}
                     />
                   </div>
                 ))}
@@ -209,49 +232,57 @@ export function TarotMastery() {
 
           {/* 리딩 결과 */}
           {step === 'result' && reading && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '3rem', animation: 'fadeIn 1s' }}>
-              <div style={{ backgroundColor: 'rgba(255,255,255,0.02)', padding: '2.5rem', borderRadius: '28px', borderLeft: '4px solid var(--accent-gold)', boxShadow: '0 20px 50px rgba(0,0,0,0.2)', backdropFilter: 'blur(10px)' }}>
-                <h3 style={{ color: 'var(--accent-gold)', marginTop: 0, fontSize: '1.5rem', marginBottom: '1.5rem', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '1rem', fontFamily: 'Iropke Batang, serif' }}>📜 운명의 마스터 리포트</h3>
-                <p style={{ lineHeight: '1.9', whiteSpace: 'pre-wrap', fontSize: '1.1rem', color: 'var(--text-primary)' }}>{reading.conclusion}</p>
+            <div className={styles.resultSection}>
+              <div className={styles.masterReport}>
+                <h3 className={styles.masterReportTitle}>
+                  운명의 마스터 리포트
+                </h3>
+                <p className={styles.masterReportText}>{reading.conclusion}</p>
               </div>
 
-              <div style={{ backgroundColor: 'rgba(159, 130, 196, 0.05)', padding: '2.5rem', borderRadius: '28px', border: '1px solid rgba(159, 130, 196, 0.2)' }}>
-                <h4 style={{ color: 'var(--accent-purple)', marginTop: 0, fontSize: '1.4rem', marginBottom: '1.5rem', borderBottom: '1px solid rgba(159, 130, 196, 0.2)', paddingBottom: '1rem', fontFamily: 'Iropke Batang, serif' }}>✨ 아르카나의 지침</h4>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              <div className={styles.arcanaGuidance}>
+                <h4 className={styles.arcanaTitle}>
+                  아르카나의 지침
+                </h4>
+                <div className={styles.arcanaList}>
                   {reading.action.map((act, i) => (
-                    <div key={i} style={{ display: 'flex', gap: '1.2rem', alignItems: 'flex-start' }}>
-                      <span style={{ color: 'var(--accent-purple)', fontSize: '1.2rem', marginTop: '2px' }}>●</span>
-                      <p style={{ margin: 0, color: 'var(--text-primary)', fontSize: '1.05rem', lineHeight: '1.7' }}>{act}</p>
+                    <div key={i} className={styles.arcanaItem}>
+                      <span className={styles.arcanaItemBullet}>●</span>
+                      <p className={styles.arcanaItemText}>{act}</p>
                     </div>
                   ))}
                 </div>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem 0' }}>
-                <button 
-                  onClick={() => { setStep('input'); setReading(null); setMessages([{ role: 'bot', text: '새로운 의식을 시작할 준비가 되었습니다. 무엇이 궁금하신가요?' }]); setRevealedIdx([]); }} 
-                  style={{ padding: '1.2rem 4rem', backgroundColor: 'var(--accent-gold)', color: '#0a0a0c', border: 'none', borderRadius: '60px', fontWeight: '600', cursor: 'pointer', fontSize: '1.1rem', boxShadow: '0 10px 30px rgba(205, 186, 150, 0.2)', transition: 'transform 0.2s' }}
-                >새로운 질문하기</button>
+              <div className={styles.newQuestionRow}>
+                <button onClick={handleReset} className={styles.newQuestionBtn}>
+                  <RefreshCw size={18} />
+                  새로운 질문하기
+                </button>
               </div>
             </div>
           )}
+
           <div ref={messagesEndRef} />
         </div>
 
         {/* 입력창 */}
         {step === 'input' && (
-          <form onSubmit={handleStartRitual} style={{ padding: '2rem 2.5rem', borderTop: '1px solid var(--border-subtle)', display: 'flex', gap: '1rem', backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: '0 0 32px 32px' }}>
-            <input type="text" value={input} onChange={e => setInput(e.target.value)} placeholder="운명의 도서관 사서에게 질문을 던져보세요..." style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-subtle)', color: 'var(--text-primary)', padding: '1.2rem', borderRadius: '16px', fontSize: '1.1rem', outline: 'none' }} />
-            <button type="submit" disabled={loading} style={{ backgroundColor: 'var(--accent-gold)', color: '#0a0a0c', border: 'none', padding: '0 2.5rem', borderRadius: '16px', cursor: 'pointer', fontWeight: '600' }}>{loading ? '...' : '의식 시작'}</button>
+          <form onSubmit={handleStartRitual} className={styles.inputForm}>
+            <input
+              type="text"
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              placeholder="운명의 도서관 사서에게 질문을 던져보세요..."
+              className={styles.inputField}
+            />
+            <button type="submit" disabled={loading} className={styles.submitBtn}>
+              <Send size={16} />
+              의식 시작
+            </button>
           </form>
         )}
       </div>
-
-      <style>{`
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        .unified-sanctuary div::-webkit-scrollbar { width: 8px; }
-        .unified-sanctuary div::-webkit-scrollbar-thumb { background-color: #333; border-radius: 10px; }
-      `}</style>
     </div>
   );
 }

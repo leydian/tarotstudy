@@ -1,0 +1,102 @@
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+/* ── SIZES ── */
+.cardSmall {
+  width: 80px;
+  height: 140px;
+}
+
+.cardMedium {
+  width: 100px;
+  height: 180px;
+}
+
+.cardLarge {
+  width: 130px;
+  height: 230px;
+}
+
+/* ── FLIP CONTAINER ── */
+.flipContainer {
+  perspective: 1000px;
+  cursor: pointer;
+}
+
+.flipContainer.revealed {
+  cursor: default;
+}
+
+.flipInner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transform-style: preserve-3d;
+}
+
+.flipInner.flipped {
+  transform: rotateY(180deg);
+}
+
+/* ── FACES ── */
+.cardFace {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  border-radius: 8px;
+}
+
+.cardBack {
+  background-color: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-gold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cardBackIcon {
+  font-size: 1.8rem;
+  opacity: 0.4;
+  color: var(--accent-gold);
+}
+
+.cardFront {
+  transform: rotateY(180deg);
+  overflow: hidden;
+  border: 1px solid var(--accent-gold);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.cardFront img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ── LABEL ── */
+.labelArea {
+  text-align: center;
+}
+
+.posLabel {
+  font-size: 0.65rem;
+  color: var(--accent-gold);
+  font-weight: 500;
+  letter-spacing: 1px;
+}
+
+.cardName {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.cardName.revealed {
+  color: var(--text-primary);
+}

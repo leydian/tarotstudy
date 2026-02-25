@@ -1,0 +1,486 @@
+.page {
+  padding-bottom: 4rem;
+}
+
+.pageTitle {
+  text-align: center;
+  margin-bottom: 0.75rem;
+  font-size: 2.5rem;
+  color: var(--accent-gold);
+}
+
+.pageSubtitle {
+  text-align: center;
+  color: var(--text-secondary);
+  margin-bottom: 2rem;
+  font-size: 1.1rem;
+  font-family: 'Pretendard', sans-serif;
+  font-weight: normal;
+}
+
+/* ── SEARCH BAR ── */
+.searchBar {
+  position: sticky;
+  top: 70px;
+  z-index: 50;
+  padding: 0.75rem 0;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  background: rgba(10, 10, 12, 0.7);
+  margin-bottom: 1.5rem;
+}
+
+.searchInputWrapper {
+  position: relative;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-secondary);
+  pointer-events: none;
+}
+
+.searchInput {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  padding: 0.85rem 1rem 0.85rem 2.8rem;
+  border-radius: 14px;
+  font-size: 0.95rem;
+  font-family: 'Pretendard', sans-serif;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.searchInput:focus {
+  border-color: rgba(205, 186, 150, 0.35);
+}
+
+.searchInput::placeholder {
+  color: var(--text-secondary);
+}
+
+/* ── FILTER TABS ── */
+.filterTabs {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-bottom: 2.5rem;
+}
+
+.filterTab {
+  padding: 0.45rem 1.1rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-family: 'Pretendard', sans-serif;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid var(--border-subtle);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-secondary);
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.filterTab:hover {
+  border-color: var(--border-gold);
+  color: var(--text-primary);
+}
+
+.filterTabActive {
+  background: var(--accent-gold);
+  color: #0a0a0c;
+  border-color: var(--accent-gold);
+  font-weight: 600;
+}
+
+/* ── SKELETON GRID ── */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 2rem;
+}
+
+/* ── SKELETON CARD ── */
+.skeleton {
+  border-radius: 20px;
+  overflow: hidden;
+  background: linear-gradient(90deg, #1a1a1e 25%, #222226 50%, #1a1a1e 75%);
+  background-size: 400px 100%;
+  animation: shimmer 1.5s infinite linear;
+  aspect-ratio: 2 / 4;
+}
+
+/* ── CARD ITEM ── */
+.cardItem {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  cursor: pointer;
+  border-radius: 20px;
+  padding: 1rem;
+  border: 1px solid rgba(205, 186, 150, 0.1);
+  background: linear-gradient(145deg, #1e1e1e, #141414);
+  backdrop-filter: blur(10px);
+  box-shadow: var(--shadow-soft);
+  transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.cardItem:hover {
+  transform: translateY(-10px);
+  border-color: rgba(205, 186, 150, 0.4);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(205, 186, 150, 0.08);
+}
+
+.cardImageWrapper {
+  width: 100%;
+  aspect-ratio: 2 / 3.5;
+  overflow: hidden;
+  border-radius: 8px;
+  background-color: #000;
+  transition: transform 0.35s ease;
+}
+
+.cardItem:hover .cardImageWrapper {
+  transform: scale(1.03);
+}
+
+.cardImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.9;
+  transition: opacity 0.3s ease;
+}
+
+.cardItem:hover .cardImage {
+  opacity: 1;
+}
+
+.cardInfo {
+  text-align: center;
+}
+
+.cardNameKo {
+  margin: 0.5rem 0 0.25rem;
+  color: var(--accent-gold);
+  font-size: 1rem;
+}
+
+.cardKeywords {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  margin: 0;
+  font-family: 'Pretendard', sans-serif;
+  font-weight: normal;
+}
+
+/* ── EMPTY STATE ── */
+.emptyState {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: var(--text-secondary);
+  grid-column: 1 / -1;
+}
+
+/* ── LICENSE FOOTER ── */
+.licenseFooter {
+  margin-top: 5rem;
+  padding: 3rem;
+  border-top: 1px solid var(--border-gold);
+  text-align: center;
+}
+
+.licenseText {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  line-height: 1.8;
+  font-family: 'Pretendard', sans-serif;
+  font-weight: normal;
+  margin: 0;
+}
+
+.licenseText a {
+  color: var(--accent-gold);
+  text-decoration: underline;
+  transition: color 0.3s ease;
+}
+
+.licenseText a:hover {
+  color: var(--accent-gold-bright);
+}
+
+/* ── MODAL OVERLAY ── */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease;
+}
+
+.modal {
+  position: relative;
+  background-color: #121212;
+  width: 95%;
+  max-width: 1200px;
+  height: 90vh;
+  border-radius: 16px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: row;
+  border: 1px solid #2a2a2a;
+  box-shadow: 0 0 60px rgba(0, 0, 0, 1);
+}
+
+/* ── MODAL IMAGE PANEL ── */
+.modalImagePanel {
+  flex: 0 0 360px;
+  background-color: #0a0a0a;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-right: 1px solid #1e1e1e;
+}
+
+.modalImage {
+  width: 100%;
+  border-radius: 10px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+}
+
+.modalCardMeta {
+  margin-top: 1.8rem;
+  text-align: center;
+  width: 100%;
+}
+
+.modalCardNameKo {
+  color: var(--accent-gold);
+  margin: 0 0 0.4rem;
+  font-size: 2rem;
+}
+
+.modalCardName {
+  color: var(--text-secondary);
+  letter-spacing: 2px;
+  font-size: 1rem;
+  font-family: 'Pretendard', sans-serif;
+  font-weight: normal;
+  margin: 0 0 1rem;
+}
+
+.modalKeywords {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  justify-content: center;
+}
+
+.modalKeywordTag {
+  padding: 3px 10px;
+  border-radius: 20px;
+  background-color: rgba(205, 186, 150, 0.1);
+  color: var(--accent-gold);
+  font-size: 0.78rem;
+  font-family: 'Pretendard', sans-serif;
+}
+
+/* ── MODAL TEXT PANEL ── */
+.modalTextPanel {
+  flex: 1;
+  padding: 3rem;
+  overflow-y: auto;
+  line-height: 1.8;
+  color: #e0e0e0;
+  font-family: 'Noto Serif KR', serif;
+  scrollbar-width: thin;
+  scrollbar-color: #333 transparent;
+}
+
+.modalTextPanel::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modalTextPanel::-webkit-scrollbar-thumb {
+  background-color: #333;
+  border-radius: 10px;
+}
+
+.closeBtn {
+  position: absolute;
+  top: 1.2rem;
+  right: 1.2rem;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 1.2rem;
+  line-height: 1;
+  transition: color 0.2s, background 0.2s;
+  z-index: 10;
+}
+
+.closeBtn:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* ── MODAL CONTENT ── */
+.modalSection {
+  margin-bottom: 3rem;
+}
+
+.modalSectionTitle {
+  color: var(--accent-gold);
+  border-bottom: 2px solid var(--accent-gold);
+  display: inline-block;
+  margin-bottom: 1.5rem;
+  padding-bottom: 2px;
+  font-size: 1.1rem;
+}
+
+.modalSectionText {
+  white-space: pre-wrap;
+  font-size: 1.05rem;
+  text-align: justify;
+  margin: 0;
+  line-height: 1.85;
+}
+
+.symbolismBox {
+  padding: 1.5rem;
+  background-color: rgba(255, 255, 255, 0.02);
+  border-radius: 10px;
+  margin: 0;
+  font-size: 0.95rem;
+  color: #ccc;
+  white-space: pre-wrap;
+  line-height: 1.8;
+}
+
+.meaningsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin-bottom: 3rem;
+}
+
+.uprightBox {
+  border: 1px solid rgba(105, 219, 124, 0.2);
+  padding: 1.5rem;
+  border-radius: 10px;
+}
+
+.reversedBox {
+  border: 1px solid rgba(255, 107, 107, 0.2);
+  padding: 1.5rem;
+  border-radius: 10px;
+}
+
+.uprightTitle {
+  color: #69db7c;
+  margin-bottom: 1.5rem;
+  text-align: center;
+  margin-top: 0;
+  font-size: 1rem;
+}
+
+.reversedTitle {
+  color: #ff6b6b;
+  margin-bottom: 1.5rem;
+  text-align: center;
+  margin-top: 0;
+  font-size: 1rem;
+}
+
+.meaningRow {
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.meaningLabel {
+  font-weight: 600;
+}
+
+.labelLove { color: #ff6b6b; }
+.labelCareer { color: #4dabf7; }
+.labelFinance { color: #ffd43b; }
+
+.adviceBox {
+  margin-top: 0.75rem;
+  padding: 1rem;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  line-height: 1.65;
+}
+
+.adviceBoxUpright {
+  background-color: rgba(105, 219, 124, 0.05);
+}
+
+.adviceBoxReversed {
+  background-color: rgba(255, 107, 107, 0.05);
+}
+
+.adviceLabelUpright { color: #69db7c; font-weight: 600; }
+.adviceLabelReversed { color: #ff6b6b; font-weight: 600; }
+
+.reversedSummary {
+  margin-bottom: 1rem;
+  font-style: italic;
+  color: #aaa;
+  font-size: 0.9rem;
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 768px) {
+  .grid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 1.2rem;
+  }
+
+  .modal {
+    flex-direction: column;
+    height: 95vh;
+    overflow-y: auto;
+  }
+
+  .modalImagePanel {
+    flex: none;
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid #1e1e1e;
+    padding: 1.5rem;
+  }
+
+  .modalImage {
+    max-width: 200px;
+  }
+
+  .modalTextPanel {
+    padding: 1.5rem;
+  }
+
+  .meaningsGrid {
+    grid-template-columns: 1fr;
+  }
+}

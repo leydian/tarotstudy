@@ -1,0 +1,361 @@
+.page {
+  max-width: 1100px;
+  margin: 0 auto;
+  height: calc(100vh - 140px);
+  display: flex;
+  flex-direction: column;
+  padding: 0 1rem;
+}
+
+/* ── SANCTUARY PANEL ── */
+.sanctuary {
+  flex: 1;
+  background-color: rgba(18, 18, 21, 0.65);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 32px 32px 0 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  border-bottom: none;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+}
+
+/* ── PANEL HEADER ── */
+.panelHeader {
+  padding: 1.5rem 2.5rem;
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.02);
+  z-index: 10;
+}
+
+.panelTitle {
+  margin: 0;
+  font-size: 1.2rem;
+  color: var(--text-primary);
+  letter-spacing: 2px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.panelTitle svg {
+  color: var(--accent-gold);
+}
+
+.headerActions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+/* ── STUDY MODE TOGGLE ── */
+.studyToggle {
+  font-size: 0.8rem;
+  padding: 8px 16px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  font-family: 'Pretendard', sans-serif;
+}
+
+.studyToggleOff {
+  background-color: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+  border: 1px solid var(--border-subtle);
+}
+
+.studyToggleOn {
+  background-color: var(--accent-gold);
+  color: #0a0a0c;
+  border: none;
+}
+
+/* ── MESSAGES AREA ── */
+.messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 2.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+  scrollbar-width: thin;
+  scrollbar-color: #333 transparent;
+}
+
+.messages::-webkit-scrollbar {
+  width: 6px;
+}
+
+.messages::-webkit-scrollbar-thumb {
+  background-color: #333;
+  border-radius: 10px;
+}
+
+/* ── CARD SPREAD CANVAS ── */
+.spreadCanvas {
+  padding: 2rem 0;
+  background: radial-gradient(circle, rgba(159, 130, 196, 0.04) 0%, transparent 70%);
+  border-radius: 24px;
+  border: 1px solid var(--border-gold);
+  position: relative;
+  min-height: 480px;
+  margin-top: 1rem;
+}
+
+.spreadCenter {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+}
+
+/* ── READING RESULT ── */
+.resultSection {
+  display: flex;
+  flex-direction: column;
+  gap: 3rem;
+  animation: fadeIn 1s ease;
+}
+
+.masterReport {
+  background-color: rgba(255, 255, 255, 0.02);
+  padding: 2.5rem;
+  border-radius: 28px;
+  border-left: 4px solid var(--accent-gold);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(10px);
+}
+
+.masterReportTitle {
+  color: var(--accent-gold);
+  margin-top: 0;
+  font-size: 1.5rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: 1rem;
+  font-family: 'Iropke Batang', serif;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.masterReportText {
+  line-height: 1.9;
+  white-space: pre-wrap;
+  font-size: 1.1rem;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.arcanaGuidance {
+  background-color: rgba(159, 130, 196, 0.05);
+  padding: 2.5rem;
+  border-radius: 28px;
+  border: 1px solid rgba(159, 130, 196, 0.2);
+}
+
+.arcanaTitle {
+  color: var(--accent-purple);
+  margin-top: 0;
+  font-size: 1.4rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid rgba(159, 130, 196, 0.2);
+  padding-bottom: 1rem;
+  font-family: 'Iropke Batang', serif;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.arcanaList {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.arcanaItem {
+  display: flex;
+  gap: 1.2rem;
+  align-items: flex-start;
+}
+
+.arcanaItemBullet {
+  color: var(--accent-purple);
+  font-size: 1.2rem;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.arcanaItemText {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1.05rem;
+  line-height: 1.7;
+}
+
+/* ── NEW QUESTION BUTTON ── */
+.newQuestionRow {
+  display: flex;
+  justify-content: center;
+  padding: 2rem 0;
+}
+
+.newQuestionBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 1.2rem 4rem;
+  background-color: var(--accent-gold);
+  color: #0a0a0c;
+  border: none;
+  border-radius: 60px;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 1.1rem;
+  font-family: 'Pretendard', sans-serif;
+  box-shadow: 0 10px 30px rgba(205, 186, 150, 0.2);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.newQuestionBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 36px rgba(205, 186, 150, 0.28);
+}
+
+/* ── INPUT FORM ── */
+.inputForm {
+  padding: 2rem 2.5rem;
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  gap: 1rem;
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 0 0 32px 32px;
+  align-items: center;
+}
+
+.inputField {
+  flex: 1;
+  background-color: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  padding: 1.1rem 1.3rem;
+  border-radius: 16px;
+  font-size: 1rem;
+  font-family: 'Pretendard', sans-serif;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.inputField:focus {
+  border-color: rgba(205, 186, 150, 0.3);
+}
+
+.inputField::placeholder {
+  color: var(--text-secondary);
+}
+
+.submitBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background-color: var(--accent-gold);
+  color: #0a0a0c;
+  border: none;
+  padding: 1.1rem 1.8rem;
+  border-radius: 16px;
+  cursor: pointer;
+  font-weight: 600;
+  font-family: 'Pretendard', sans-serif;
+  font-size: 0.95rem;
+  white-space: nowrap;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.submitBtn:hover:not(:disabled) {
+  background-color: var(--accent-gold-bright);
+  transform: scale(1.02);
+}
+
+.submitBtn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+/* ── TYPING DOTS ── */
+.typingWrapper {
+  align-self: flex-start;
+  max-width: 85%;
+}
+
+.typingBubble {
+  padding: 1rem 1.6rem;
+  border-radius: 24px;
+  background-color: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-subtle);
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+}
+
+.typingDots {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  height: 20px;
+}
+
+.typingDots span {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: var(--accent-gold);
+  opacity: 0;
+  animation: blink 1.4s infinite;
+}
+
+.typingDots span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.typingDots span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 768px) {
+  .page {
+    height: auto;
+    min-height: calc(100vh - 140px);
+  }
+
+  .panelHeader {
+    padding: 1.2rem 1.5rem;
+  }
+
+  .messages {
+    padding: 1.5rem;
+  }
+
+  .spreadCanvas {
+    min-height: 360px;
+    overflow-x: auto;
+  }
+
+  .inputForm {
+    padding: 1.2rem 1.5rem;
+  }
+
+  .masterReport,
+  .arcanaGuidance {
+    padding: 1.5rem;
+  }
+}

@@ -1,21 +1,23 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
+import { Search, X } from 'lucide-react';
+import styles from './Cards.module.css';
 
-type Card = { 
-  id: string; 
-  name: string; 
-  nameKo: string; 
-  keywords: string[]; 
-  summary: string; 
+type Card = {
+  id: string;
+  name: string;
+  nameKo: string;
+  keywords: string[];
+  summary: string;
   image: string;
   description: string;
-  symbolism?: string; // 상세 상징 분석
+  symbolism?: string;
   meanings: {
     love: string;
     career: string;
     finance: string;
     advice: string;
   };
-  reversed: { // 역방향 리딩
+  reversed: {
     summary: string;
     love: string;
     career: string;
@@ -24,9 +26,33 @@ type Card = {
   };
 };
 
+type FilterKey = 'all' | 'major' | 'wands' | 'cups' | 'swords' | 'pentacles';
+
+const FILTER_LABELS: { key: FilterKey; label: string }[] = [
+  { key: 'all', label: '전체' },
+  { key: 'major', label: '메이저 아르카나' },
+  { key: 'wands', label: '완드' },
+  { key: 'cups', label: '컵' },
+  { key: 'swords', label: '소드' },
+  { key: 'pentacles', label: '펜타클' },
+];
+
+function matchFilter(card: Card, filter: FilterKey): boolean {
+  if (filter === 'all') return true;
+  const id = card.id.toLowerCase();
+  if (filter === 'major') return /^(major|fool|magician|high|empress|emperor|hierophant|lovers|chariot|strength|hermit|wheel|justice|hanged|death|temperance|devil|tower|star|moon|sun|judgement|world)/.test(id) || id.startsWith('m');
+  if (filter === 'wands') return id.includes('wand');
+  if (filter === 'cups') return id.includes('cup');
+  if (filter === 'swords') return id.includes('sword');
+  if (filter === 'pentacles') return id.includes('pentacle') || id.includes('coin');
+  return true;
+}
+
 export function Cards() {
   const [cards, setCards] = useState<Card[]>([]);
   const [selectedCard, setSelectedCard] = useState<Card | null>(null);
+  const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState<FilterKey>('all');
 
   useEffect(() => {
     fetch('/api/cards')
@@ -34,180 +60,187 @@ export function Cards() {
       .then(data => setCards(data));
   }, []);
 
+  // ESC key to close modal
+  useEffect(() => {
+    if (!selectedCard) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setSelectedCard(null);
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [selectedCard]);
+
+  const filtered = cards.filter(card => {
+    const q = search.toLowerCase();
+    const matchSearch = !q ||
+      card.nameKo.toLowerCase().includes(q) ||
+      card.name.toLowerCase().includes(q) ||
+      card.keywords.some(k => k.toLowerCase().includes(q));
+    return matchSearch && matchFilter(card, filter);
+  });
+
+  const skeletonCount = 12;
+
   return (
-    <div className="cards-page">
-      <h2 style={{ textAlign: 'center', marginBottom: '1rem', fontSize: '2.5rem', color: 'var(--accent-gold)' }}>신비의 카드 도서관</h2>
-      <p style={{ textAlign: 'center', color: 'var(--text-secondary)', marginBottom: '3rem', fontSize: '1.1rem' }}>78장 타로 카드의 깊은 상징과 역방향의 지혜를 탐구하세요.</p>
-      
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '2.5rem' }}>
-        {cards.map(card => (
-          <div 
-            key={card.id} 
-            className="card-panel" 
-            onClick={() => setSelectedCard(card)}
-            style={{ 
-              display: 'flex', 
-              flexDirection: 'column', 
-              gap: '1rem',
-              cursor: 'pointer',
-              transition: 'all 0.3s ease',
-              padding: '1rem',
-              border: '1px solid rgba(212, 175, 55, 0.1)',
-              background: 'linear-gradient(145deg, #1e1e1e, #141414)'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-10px)';
-              e.currentTarget.style.borderColor = 'rgba(212, 175, 55, 0.4)';
-              e.currentTarget.style.boxShadow = '0 10px 30px rgba(0,0,0,0.5)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.borderColor = 'rgba(212, 175, 55, 0.1)';
-              e.currentTarget.style.boxShadow = 'none';
-            }}
+    <div className={styles.page}>
+      <h2 className={styles.pageTitle}>신비의 카드 도서관</h2>
+      <p className={styles.pageSubtitle}>78장 타로 카드의 깊은 상징과 역방향의 지혜를 탐구하세요.</p>
+
+      {/* 검색 */}
+      <div className={styles.searchBar}>
+        <div className={styles.searchInputWrapper}>
+          <Search size={16} className={styles.searchIcon} />
+          <input
+            type="text"
+            className={styles.searchInput}
+            placeholder="카드 이름, 키워드로 검색..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+        </div>
+      </div>
+
+      {/* 필터 탭 */}
+      <div className={styles.filterTabs}>
+        {FILTER_LABELS.map(({ key, label }) => (
+          <button
+            key={key}
+            className={`${styles.filterTab} ${filter === key ? styles.filterTabActive : ''}`}
+            onClick={() => setFilter(key)}
           >
-            <div style={{ 
-              width: '100%', 
-              aspectRatio: '2/3.5', 
-              overflow: 'hidden', 
-              borderRadius: '8px',
-              backgroundColor: '#000'
-            }}>
-              <img 
-                src={card.image} 
-                alt={card.nameKo} 
-                style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.9 }}
-                loading="lazy"
-              />
-            </div>
-            <div style={{ textAlign: 'center' }}>
-              <h3 style={{ margin: '0.5rem 0', color: 'var(--accent-gold)' }}>{card.nameKo}</h3>
-              <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: 0 }}>{card.keywords.slice(0, 3).join(' · ')}</p>
-            </div>
-          </div>
+            {label}
+          </button>
         ))}
       </div>
 
-      <div style={{ marginTop: '5rem', padding: '3rem', borderTop: '1px solid var(--border-gold)', textAlign: 'center', opacity: 0.8 }}>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-          <strong>이미지 라이선스 정보</strong><br/>
-          본 서비스에서 사용된 타로 카드 이미지는 1909년 아서 에드워드 웨이트와 파멜라 콜먼 스미스가 제작한 <strong>Rider-Waite-Smith Tarot</strong> 덱입니다.<br/>
-          이 이미지는 저작권 보호 기간이 만료된 <strong>퍼블릭 도메인(Public Domain)</strong> 저작물입니다.<br/>
-          이미지 출처: <a href="https://commons.wikimedia.org/wiki/Category:Rider-Waite_tarot" target="_blank" rel="noreferrer" style={{ color: 'var(--accent-gold)', textDecoration: 'underline' }}>Wikimedia Commons</a>
+      {/* 그리드 */}
+      <div className={styles.grid}>
+        {cards.length === 0
+          ? Array.from({ length: skeletonCount }).map((_, i) => (
+              <div key={i} className={styles.skeleton} />
+            ))
+          : filtered.length === 0
+          ? (
+            <div className={styles.emptyState}>
+              <p>검색 결과가 없습니다.</p>
+            </div>
+          )
+          : filtered.map(card => (
+            <div
+              key={card.id}
+              className={styles.cardItem}
+              onClick={() => setSelectedCard(card)}
+            >
+              <div className={styles.cardImageWrapper}>
+                <img
+                  src={card.image}
+                  alt={card.nameKo}
+                  className={styles.cardImage}
+                  loading="lazy"
+                />
+              </div>
+              <div className={styles.cardInfo}>
+                <h3 className={styles.cardNameKo}>{card.nameKo}</h3>
+                <p className={styles.cardKeywords}>{card.keywords.slice(0, 3).join(' · ')}</p>
+              </div>
+            </div>
+          ))
+        }
+      </div>
+
+      {/* 라이선스 */}
+      <div className={styles.licenseFooter}>
+        <p className={styles.licenseText}>
+          <strong>이미지 라이선스 정보</strong><br />
+          본 서비스에서 사용된 타로 카드 이미지는 1909년 아서 에드워드 웨이트와 파멜라 콜먼 스미스가 제작한{' '}
+          <strong>Rider-Waite-Smith Tarot</strong> 덱입니다.<br />
+          이 이미지는 저작권 보호 기간이 만료된 <strong>퍼블릭 도메인(Public Domain)</strong> 저작물입니다.<br />
+          이미지 출처:{' '}
+          <a href="https://commons.wikimedia.org/wiki/Category:Rider-Waite_tarot" target="_blank" rel="noreferrer">
+            Wikimedia Commons
+          </a>
         </p>
       </div>
 
-      {/* 상세 정보 모달 */}
+      {/* 모달 */}
       {selectedCard && (
-        <div 
-          style={{
-            position: 'fixed',
-            top: 0, left: 0, right: 0, bottom: 0,
-            backgroundColor: 'rgba(0,0,0,0.95)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000,
-          }}
-          onClick={() => setSelectedCard(null)}
-        >
-          <div 
-            style={{
-              backgroundColor: '#121212',
-              width: '95%',
-              maxWidth: '1200px',
-              height: '90vh',
-              borderRadius: '12px',
-              overflow: 'hidden',
-              display: 'flex',
-              flexDirection: 'row',
-              border: '1px solid #333',
-              boxShadow: '0 0 50px rgba(0,0,0,1)'
-            }}
-            onClick={e => e.stopPropagation()}
-          >
-            {/* 왼쪽: 이미지 섹션 */}
-            <div style={{ 
-              flex: '0 0 400px', 
-              backgroundColor: '#0a0a0a', 
-              padding: '2rem', 
-              display: 'flex', 
-              flexDirection: 'column', 
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderRight: '1px solid #222'
-            }}>
-              <img 
-                src={selectedCard.image} 
-                alt={selectedCard.nameKo} 
-                style={{ width: '100%', borderRadius: '8px', boxShadow: '0 10px 30px rgba(0,0,0,0.8)' }}
-              />
-              <div style={{ marginTop: '2rem', textAlign: 'center' }}>
-                <h1 style={{ color: 'var(--accent-gold)', margin: '0 0 0.5rem 0', fontSize: '2.2rem' }}>{selectedCard.nameKo}</h1>
-                <p style={{ color: 'var(--text-secondary)', letterSpacing: '2px', fontSize: '1.1rem' }}>{selectedCard.name.toUpperCase()}</p>
-                <div style={{ marginTop: '1rem', display: 'flex', flexWrap: 'wrap', gap: '0.5rem', justifyContent: 'center' }}>
+        <div className={styles.modalOverlay} onClick={() => setSelectedCard(null)}>
+          <div className={styles.modal} onClick={e => e.stopPropagation()}>
+
+            {/* 닫기 버튼 */}
+            <button className={styles.closeBtn} onClick={() => setSelectedCard(null)}>
+              <X size={16} />
+            </button>
+
+            {/* 왼쪽: 이미지 */}
+            <div className={styles.modalImagePanel}>
+              <img src={selectedCard.image} alt={selectedCard.nameKo} className={styles.modalImage} />
+              <div className={styles.modalCardMeta}>
+                <h1 className={styles.modalCardNameKo}>{selectedCard.nameKo}</h1>
+                <p className={styles.modalCardName}>{selectedCard.name.toUpperCase()}</p>
+                <div className={styles.modalKeywords}>
                   {selectedCard.keywords.map(k => (
-                    <span key={k} style={{ padding: '4px 12px', borderRadius: '20px', backgroundColor: 'rgba(212,175,55,0.1)', color: 'var(--accent-gold)', fontSize: '0.8rem' }}>
-                      #{k}
-                    </span>
+                    <span key={k} className={styles.modalKeywordTag}>#{k}</span>
                   ))}
                 </div>
               </div>
             </div>
 
-            {/* 오른쪽: 텍스트 섹션 (스크롤 가능) */}
-            <div style={{ 
-              flex: 1, 
-              padding: '3rem', 
-              overflowY: 'auto', 
-              lineHeight: '1.8', 
-              color: '#e0e0e0',
-              fontFamily: '"Noto Serif KR", serif'
-            }}>
-              <button 
-                onClick={() => setSelectedCard(null)}
-                style={{ position: 'absolute', top: '1.5rem', right: '1.5rem', background: 'none', border: 'none', color: '#666', fontSize: '2rem', cursor: 'pointer' }}
-              >✕</button>
-
-              <section style={{ marginBottom: '3rem' }}>
-                <h3 style={{ color: 'var(--accent-gold)', borderBottom: '2px solid var(--accent-gold)', display: 'inline-block', marginBottom: '1.5rem' }}>카드의 서사</h3>
-                <p style={{ whiteSpace: 'pre-wrap', fontSize: '1.05rem', textAlign: 'justify' }}>{selectedCard.description}</p>
+            {/* 오른쪽: 텍스트 */}
+            <div className={styles.modalTextPanel}>
+              <section className={styles.modalSection}>
+                <h3 className={styles.modalSectionTitle}>카드의 서사</h3>
+                <p className={styles.modalSectionText}>{selectedCard.description}</p>
               </section>
 
               {selectedCard.symbolism && (
-                <section style={{ marginBottom: '3rem', padding: '1.5rem', backgroundColor: 'rgba(255,255,255,0.02)', borderRadius: '8px' }}>
-                  <h3 style={{ color: 'var(--accent-gold)', marginBottom: '1rem' }}>주요 상징 분석</h3>
-                  <p style={{ whiteSpace: 'pre-wrap', fontSize: '0.95rem', color: '#ccc' }}>{selectedCard.symbolism}</p>
+                <section className={styles.modalSection}>
+                  <h3 className={styles.modalSectionTitle}>주요 상징 분석</h3>
+                  <p className={styles.symbolismBox}>{selectedCard.symbolism}</p>
                 </section>
               )}
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '3rem' }}>
-                {/* 정방향 섹션 */}
-                <div style={{ border: '1px solid rgba(105, 219, 124, 0.2)', padding: '1.5rem', borderRadius: '8px' }}>
-                  <h3 style={{ color: '#69db7c', marginBottom: '1.5rem', textAlign: 'center' }}>↑ 정방향 (Upright)</h3>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
-                    <div><strong style={{ color: '#ff6b6b' }}>[연애]</strong> <span style={{fontSize: '0.9rem'}}>{selectedCard.meanings.love}</span></div>
-                    <div><strong style={{ color: '#4dabf7' }}>[직업]</strong> <span style={{fontSize: '0.9rem'}}>{selectedCard.meanings.career}</span></div>
-                    <div><strong style={{ color: '#ffd43b' }}>[금전]</strong> <span style={{fontSize: '0.9rem'}}>{selectedCard.meanings.finance}</span></div>
-                    <div style={{ marginTop: '0.5rem', padding: '1rem', backgroundColor: 'rgba(105, 219, 124, 0.05)', borderRadius: '4px' }}>
-                      <strong style={{ color: '#69db7c' }}>💡 조언:</strong><br/>
-                      <span style={{fontSize: '0.95rem'}}>{selectedCard.meanings.advice}</span>
-                    </div>
+              <div className={styles.meaningsGrid}>
+                {/* 정방향 */}
+                <div className={styles.uprightBox}>
+                  <h3 className={styles.uprightTitle}>↑ 정방향 (Upright)</h3>
+                  <div className={styles.meaningRow}>
+                    <span className={`${styles.meaningLabel} ${styles.labelLove}`}>[연애]</span>{' '}
+                    {selectedCard.meanings.love}
+                  </div>
+                  <div className={styles.meaningRow}>
+                    <span className={`${styles.meaningLabel} ${styles.labelCareer}`}>[직업]</span>{' '}
+                    {selectedCard.meanings.career}
+                  </div>
+                  <div className={styles.meaningRow}>
+                    <span className={`${styles.meaningLabel} ${styles.labelFinance}`}>[금전]</span>{' '}
+                    {selectedCard.meanings.finance}
+                  </div>
+                  <div className={`${styles.adviceBox} ${styles.adviceBoxUpright}`}>
+                    <span className={styles.adviceLabelUpright}>💡 조언:</span><br />
+                    {selectedCard.meanings.advice}
                   </div>
                 </div>
 
-                {/* 역방향 섹션 */}
-                <div style={{ border: '1px solid rgba(255, 107, 107, 0.2)', padding: '1.5rem', borderRadius: '8px' }}>
-                  <h3 style={{ color: '#ff6b6b', marginBottom: '1.5rem', textAlign: 'center' }}>↓ 역방향 (Reversed)</h3>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
-                    <div style={{ marginBottom: '0.5rem', fontStyle: 'italic', color: '#aaa', fontSize: '0.9rem' }}>"{selectedCard.reversed.summary}"</div>
-                    <div><strong style={{ color: '#ff6b6b' }}>[연애]</strong> <span style={{fontSize: '0.9rem'}}>{selectedCard.reversed.love}</span></div>
-                    <div><strong style={{ color: '#4dabf7' }}>[직업]</strong> <span style={{fontSize: '0.9rem'}}>{selectedCard.reversed.career}</span></div>
-                    <div><strong style={{ color: '#ffd43b' }}>[금전]</strong> <span style={{fontSize: '0.9rem'}}>{selectedCard.reversed.finance}</span></div>
-                    <div style={{ marginTop: '0.5rem', padding: '1rem', backgroundColor: 'rgba(255, 107, 107, 0.05)', borderRadius: '4px' }}>
-                      <strong style={{ color: '#ff6b6b' }}>💡 조언:</strong><br/>
-                      <span style={{fontSize: '0.95rem'}}>{selectedCard.reversed.advice}</span>
-                    </div>
+                {/* 역방향 */}
+                <div className={styles.reversedBox}>
+                  <h3 className={styles.reversedTitle}>↓ 역방향 (Reversed)</h3>
+                  <p className={styles.reversedSummary}>"{selectedCard.reversed.summary}"</p>
+                  <div className={styles.meaningRow}>
+                    <span className={`${styles.meaningLabel} ${styles.labelLove}`}>[연애]</span>{' '}
+                    {selectedCard.reversed.love}
+                  </div>
+                  <div className={styles.meaningRow}>
+                    <span className={`${styles.meaningLabel} ${styles.labelCareer}`}>[직업]</span>{' '}
+                    {selectedCard.reversed.career}
+                  </div>
+                  <div className={styles.meaningRow}>
+                    <span className={`${styles.meaningLabel} ${styles.labelFinance}`}>[금전]</span>{' '}
+                    {selectedCard.reversed.finance}
+                  </div>
+                  <div className={`${styles.adviceBox} ${styles.adviceBoxReversed}`}>
+                    <span className={styles.adviceLabelReversed}>💡 조언:</span><br />
+                    {selectedCard.reversed.advice}
                   </div>
                 </div>
               </div>

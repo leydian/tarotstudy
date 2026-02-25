@@ -1,5 +1,6 @@
 import React from 'react';
 import { Card } from '../../types/tarot';
+import styles from './TarotCard.module.css';
 
 interface TarotCardProps {
   card: Card;
@@ -10,65 +11,40 @@ interface TarotCardProps {
   isStudyMode?: boolean;
 }
 
-export const TarotCard: React.FC<TarotCardProps> = ({ 
-  card, 
-  isRevealed, 
-  label, 
-  onClick, 
-  size = 'medium' 
+export const TarotCard: React.FC<TarotCardProps> = ({
+  card,
+  isRevealed,
+  label,
+  onClick,
+  size = 'medium',
 }) => {
-  const dimensions = {
-    small: { width: '80px', height: '140px' },
-    medium: { width: '100px', height: '180px' },
-    large: { width: '130px', height: '230px' }
+  const sizeClass = {
+    small: styles.cardSmall,
+    medium: styles.cardMedium,
+    large: styles.cardLarge,
   }[size];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.8rem' }}>
-      <div 
-        onClick={onClick} 
-        style={{ 
-          ...dimensions,
-          perspective: '1000px', 
-          cursor: isRevealed ? 'default' : 'pointer'
-        }}
+    <div className={styles.wrapper}>
+      <div
+        className={`${styles.flipContainer} ${sizeClass} ${isRevealed ? styles.revealed : ''}`}
+        onClick={onClick}
       >
-        <div style={{ 
-          position: 'relative', 
-          width: '100%', 
-          height: '100%', 
-          transition: 'transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275)', 
-          transformStyle: 'preserve-3d', 
-          transform: isRevealed ? 'rotateY(180deg)' : 'rotateY(0deg)' 
-        }}>
+        <div className={`${styles.flipInner} ${isRevealed ? styles.flipped : ''}`}>
           {/* 뒷면 */}
-          <div style={{ 
-            position: 'absolute', width: '100%', height: '100%', 
-            backfaceVisibility: 'hidden', 
-            backgroundColor: 'rgba(255,255,255,0.03)', 
-            borderRadius: '8px', 
-            border: '1px solid var(--border-gold)', 
-            display: 'flex', alignItems: 'center', justifyContent: 'center' 
-          }}>
-            <span style={{ fontSize: '1.8rem', opacity: 0.4, color: 'var(--accent-gold)' }}>?</span>
+          <div className={`${styles.cardFace} ${styles.cardBack}`}>
+            <span className={styles.cardBackIcon}>?</span>
           </div>
           {/* 앞면 */}
-          <div style={{ 
-            position: 'absolute', width: '100%', height: '100%', 
-            backfaceVisibility: 'hidden', 
-            transform: 'rotateY(180deg)', 
-            borderRadius: '8px', 
-            overflow: 'hidden', 
-            border: '1px solid var(--accent-gold)', 
-            boxShadow: '0 8px 24px rgba(0,0,0,0.4)' 
-          }}>
-            <img src={card.image} alt={card.nameKo} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          <div className={`${styles.cardFace} ${styles.cardFront}`}>
+            <img src={card.image} alt={card.nameKo} />
           </div>
         </div>
       </div>
-      <div style={{ textAlign: 'center' }}>
-        <div style={{ fontSize: '0.65rem', color: 'var(--accent-gold)', fontWeight: '500', letterSpacing: '1px' }}>{label}</div>
-        <div style={{ fontSize: '0.8rem', color: isRevealed ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
+
+      <div className={styles.labelArea}>
+        <div className={styles.posLabel}>{label}</div>
+        <div className={`${styles.cardName} ${isRevealed ? styles.revealed : ''}`}>
           {isRevealed ? card.nameKo : '미공개'}
         </div>
       </div>
