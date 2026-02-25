@@ -1,18 +1,24 @@
 {
   "version": 2,
-  "functions": {
-    "apps/api/src/index.js": {
-      "runtime": "vercel-node@latest"
+  "builds": [
+    {
+      "src": "apps/api/src/index.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": { "distDir": "apps/web/dist" }
     }
-  },
+  ],
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "/apps/api/src/index.js"
+      "destination": "apps/api/src/index.js"
     },
     {
       "source": "/(.*)",
-      "destination": "/apps/web/dist/$1"
+      "destination": "/$1"
     }
   ]
 }
