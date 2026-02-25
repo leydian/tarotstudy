@@ -4,6 +4,7 @@ import { Home } from './pages/Home';
 import { Cards } from './pages/Cards';
 import { Reading } from './pages/Reading';
 import { ChatReading } from './pages/ChatReading';
+import { StudyReading } from './pages/StudyReading';
 import './styles/theme.css';
 
 function App() {
@@ -18,6 +19,7 @@ function App() {
             <Link to="/cards">카드 도서관</Link>
             <Link to="/reading">운명 읽기</Link>
             <Link to="/chat-reading">챗봇 리딩</Link>
+            <Link to="/study-reading" style={{ color: 'var(--accent-gold)', fontWeight: 'bold' }}>운명 학습</Link>
           </nav>
         </header>
 
@@ -27,6 +29,7 @@ function App() {
             <Route path="/cards" element={<Cards />} />
             <Route path="/reading" element={<Reading />} />
             <Route path="/chat-reading" element={<ChatReading />} />
+            <Route path="/study-reading" element={<StudyReading />} />
           </Routes>
         </main>
 
