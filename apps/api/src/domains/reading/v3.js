@@ -164,19 +164,27 @@ export const generateReadingV3 = (cards, question, timeframe = 'daily', category
     return `[${posLabel}: ${card.nameKo}]\n\n◈ 시각적 형상:\n"${visualHint.split('.')[0]}."\n\n◈ 심층적 해석:\n${meaning}\n\n◈ 조언:\n${card.meanings.advice}`;
   });
 
+  // 조사를 적절히 선택하는 헬퍼 함수
+  const getJosa = (text, type) => {
+    const lastChar = text.charCodeAt(text.length - 1);
+    const hasBatchim = (lastChar - 0xac00) % 28 !== 0;
+    if (type === 'wa') return hasBatchim ? '과' : '와';
+    return '';
+  };
+
   // 8. 감성적 비유 조언
   let action = [];
   if (isMultiChoice) {
-    action = [`[영혼의 조율] 너무 많은 생각은 오히려 시야를 흐리게 합니다. 카드가 가리키는 방향을 참고하되, 결국 ${selectedMetaphor.intro}처럼 당신의 가장 깊은 곳에 있는 직관을 따르세요.`];
+    action = [`[영혼의 조율] 너무 많은 생각은 오히려 시야를 흐리게 합니다. 카드가 가리키는 방향을 참고하되, 결국 ${selectedMetaphor.intro}${getJosa(selectedMetaphor.intro, 'wa')} 같은 당신의 가장 깊은 곳에 있는 직관을 따르세요.`];
   } else if (isBinary && cardCount === 2) {
     action = [
-      `[선택 A의 길] "${cards[0].meanings.advice.replace(/\.$/, '')}" 하는 방향은 당신에게 ${selectedMetaphor.intro}와 같은 흐름을 가져다줄 것입니다.`,
-      `[선택 B의 길] "${cards[1].meanings.advice.replace(/\.$/, '')}" 하는 선택은 마치 ${selectedMetaphor.outro}처럼 당신을 평온하게 안내할 것입니다.`
+      `[선택 A의 길] "${cards[0].meanings.advice.replace(/\.$/, '')}" 하는 방향은 당신에게 ${selectedMetaphor.intro}${getJosa(selectedMetaphor.intro, 'wa')} 같은 흐름을 가져다줄 것입니다.`,
+      `[선택 B의 길] "${cards[1].meanings.advice.replace(/\.$/, '')}" 하는 선택은 마치 ${selectedMetaphor.outro}${getJosa(selectedMetaphor.outro, 'wa')} 같이 당신을 평온하게 안내할 것입니다.`
     ];
   } else {
     action = [
-      `[영혼의 조율] "${firstCard.meanings.advice.replace(/\.$/, '')}" 하는 태도는 마치 ${selectedMetaphor.intro}와 같습니다.`,
-      `[운명의 실천] ${isRelationship ? '그 사람에게는' : '세상을 향해'} "${lastCard.meanings.advice.replace(/\.$/, '')}" 하는 마음으로 다가가 보세요. ${selectedMetaphor.outro}처럼 당신에게 평온이 깃들 것입니다.`
+      `[영혼의 조율] "${firstCard.meanings.advice.replace(/\.$/, '')}" 하는 태도는 마치 ${selectedMetaphor.intro}${getJosa(selectedMetaphor.intro, 'wa')} 같습니다.`,
+      `[운명의 실천] ${isRelationship ? '그 사람에게는' : '세상을 향해'} "${lastCard.meanings.advice.replace(/\.$/, '')}" 하는 마음으로 다가가 보세요. ${selectedMetaphor.outro}${getJosa(selectedMetaphor.outro, 'wa')} 같이 당신에게 평온이 깃들 것입니다.`
     ];
   }
 
