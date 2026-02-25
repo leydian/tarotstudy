@@ -121,7 +121,8 @@ export const generateReadingV3 = (cards, question, timeframe = 'daily', category
     
     // 가벼운 질문일 경우 요약본만 사용
     const coreMeaning = isLight ? c.summary.split('.')[0] : c.summary;
-    return `◈ ${posLabel}: [${c.nameKo}] 카드가 나타났습니다. 이는 ${coreMeaning}.`;
+    const positionName = c.positionLabel || (isBinary ? (i === 0 ? "첫 번째 길" : "두 번째 길") : (cardCount === 1 ? "핵심" : `단계 ${i+1}`));
+    return `◈ ${positionName}: [${c.nameKo}] 카드가 나타났습니다. 이는 ${coreMeaning}.`;
   }).join('\n\n');
 
   conclusion = `${conclusion}\n\n[운명의 서사 분석]\n${narrative}\n\n[운명의 나침반] ${verdictKo}`;

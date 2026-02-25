@@ -92,9 +92,17 @@ export function TarotMastery() {
       setReading(data);
 
       setTimeout(() => {
-        setMessages(prev => [...prev, { role: 'bot', text: `질문에 맞춰 [${currentSpread.name}] 스프레드를 구성했습니다. 당신의 손길로 카드를 하나씩 뒤집어 운명을 확인해 보세요.` }]);
+        setMessages(prev => [...prev, { role: 'bot', text: `질문에 맞춰 [${currentSpread.name}] 스프레드를 구성했습니다. 운명의 지도가 펼쳐집니다...` }]);
         setStep('reading');
         setLoading(false);
+
+        // 카드 자동 뒤집기 로직 (0.8초 간격)
+        selectedCards.forEach((_, i) => {
+          setTimeout(() => {
+            // idx, readingData, currentSpread, cards 정보를 명시적으로 전달
+            internalReveal(i, data, currentSpread, selectedCards);
+          }, 1000 * (i + 1));
+        });
       }, 1000);
 
     } catch (err) {
@@ -103,29 +111,28 @@ export function TarotMastery() {
     }
   };
 
-  const revealCard = (idx: number) => {
-    if (!revealedIdx.includes(idx)) {
-      setRevealedIdx(prev => {
-        const next = [...prev, idx];
-        if (next.length === drawnCards.length) {
-          setTimeout(() => setStep('result'), 1000);
-        }
-        return next;
-      });
-      
-      const posLabel = spreadLayout?.positions[idx].label || '해석';
-      const interpretation = reading?.evidence[idx]?.split(']')[1] || '카드가 뒤집혔습니다.';
-      
-      if (isStudyMode) {
-        const info = getPositionInfo(idx);
-        const card = drawnCards[idx];
-        setMessages(prev => [...prev, { 
-          role: 'bot', 
-          text: `[학습: ${card.nameKo}]\n\n◈ 위치: ${info.posLabel}\n☞ ${info.posDesc}\n\n◈ 상징 분석: ${card.description || card.summary}\n\n◈ 키워드: ${card.keywords?.join(', ') || '정보 없음'}` 
-        }]);
-      } else {
-        setMessages(prev => [...prev, { role: 'bot', text: `[${posLabel}: ${drawnCards[idx].nameKo}]\n${interpretation}` }]);
+  const internalReveal = (idx: number, data: any, spread: any, cards: any[]) => {
+    setRevealedIdx(prev => {
+      if (prev.includes(idx)) return prev;
+      const next = [...prev, idx];
+      if (next.length === cards.length) {
+        setTimeout(() => setStep('result'), 1500);
       }
+      return next;
+    });
+    
+    const posLabel = spread?.positions[idx].label || '해석';
+    const interpretation = data?.evidence[idx]?.split(']')[1] || '카드가 뒤집혔습니다.';
+    
+    setMessages(prev => [...prev, { 
+      role: 'bot', 
+      text: `[${posLabel}: ${cards[idx].nameKo}]\n${interpretation.trim().replace(/\.\.$/, '.')}` 
+    }]);
+  };
+
+  const revealCard = (idx: number) => {
+    if (!revealedIdx.includes(idx) && reading && spreadLayout && drawnCards) {
+      internalReveal(idx, reading, spreadLayout, drawnCards);
     }
   };
 
