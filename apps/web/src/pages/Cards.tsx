@@ -40,11 +40,11 @@ const FILTER_LABELS: { key: FilterKey; label: string }[] = [
 function matchFilter(card: Card, filter: FilterKey): boolean {
   if (filter === 'all') return true;
   const id = card.id.toLowerCase();
-  if (filter === 'major') return /^(major|fool|magician|high|empress|emperor|hierophant|lovers|chariot|strength|hermit|wheel|justice|hanged|death|temperance|devil|tower|star|moon|sun|judgement|world)/.test(id) || id.startsWith('m');
-  if (filter === 'wands') return id.includes('wand');
-  if (filter === 'cups') return id.includes('cup');
-  if (filter === 'swords') return id.includes('sword');
-  if (filter === 'pentacles') return id.includes('pentacle') || id.includes('coin');
+  if (filter === 'major') return id.startsWith('m') || /^(major|fool|magician|high|empress|emperor|hierophant|lovers|chariot|strength|hermit|wheel|justice|hanged|death|temperance|devil|tower|star|moon|sun|judgement|world)/.test(id);
+  if (filter === 'wands') return id.startsWith('w') || id.includes('wand');
+  if (filter === 'cups') return id.startsWith('c') || id.includes('cup');
+  if (filter === 'swords') return id.startsWith('s') || id.includes('sword');
+  if (filter === 'pentacles') return id.startsWith('p') || id.includes('pentacle') || id.includes('coin');
   return true;
 }
 
