@@ -125,26 +125,12 @@ export const generateReadingV3 = (cards, question, timeframe = 'daily', category
   let narrativeFlow = [];
   cards.forEach((c, i) => {
     const positionName = c.positionLabel || (isBinary ? (i === 0 ? "첫 번째 길" : "두 번째 길") : (cardCount === 1 ? "핵심" : `운명의 ${i+1}단계`));
-    const coreSummary = c.summary.replace(/\.$/, '');
-    
-    // 위치 의미를 자연스럽게 문장에 녹임
-    let posIntro = "";
-    if (i === 0) posIntro = `가장 먼저 당신의 현재 상황과 여정의 출발점을 보여주는 자리에 **[${c.nameKo}]** 카드가 나타났습니다.`;
-    else if (i === cards.length - 1) posIntro = `그리고 이 모든 흐름이 귀결되는 마지막 결론의 자리에는 **[${c.nameKo}]** 카드가 기다리고 있네요.`;
-    else posIntro = `이어서 ${positionName}의 의미를 담은 자리에는 **[${c.nameKo}]** 카드가 놓여 있습니다.`;
+    // 문장 끝맺음을 자연스럽게 변환하는 헬퍼 함수 (내부용)
+    const smoothConnect = (text) => {
+      return text.replace(/입니다$/, '임을 보여주며').replace(/것입니다$/, '것을 의미하며').replace(/\.$/, '');
+    };
 
-    // 이전 카드와의 맥락 연결 (체인 생성)
-    let transition = "";
-    if (i > 0) {
-      const prevCard = cards[i - 1];
-      const prevScore = getYesNoScore(prevCard);
-      const currScore = getYesNoScore(c);
-      
-      if (prevScore > 0 && currScore < 0) transition = `앞서 보인 긍정적인 흐름에도 불구하고, 이 단계에서는 예상치 못한 난관이나 주의해야 할 함정이 숨어 있을 수 있습니다. `;
-      else if (prevScore < 0 && currScore > 0) transition = `앞선 과정에서 겪었던 어려움이나 답답함이 이 시점에서는 해소되며, 긍정적인 돌파구가 열리게 됩니다. `;
-      else if (prevScore > 0 && currScore > 0) transition = `앞서 확인한 긍정적인 에너지가 더욱 증폭되며, 당신의 발걸음에 힘을 실어주는 모양새입니다. `;
-      else if (prevScore < 0 && currScore < 0) transition = `상황이 녹록지 않게 흘러가고 있습니다. 앞선 고민들이 꼬리를 물고 이어지니 더욱 신중한 태도가 필요한 시점입니다. `;
-    }
+    const coreSummary = smoothConnect(c.summary);
 
     // 질문 맞춤형 맥락 문장
     let contextSentence = "";
@@ -153,7 +139,7 @@ export const generateReadingV3 = (cards, question, timeframe = 'daily', category
     else if (isFinance) contextSentence = `금전적인 흐름 또한 ${c.keywords[0]}의 원리에 따라 크게 좌우될 것입니다.`;
     else contextSentence = `지금 당신의 삶 전반에 ${c.keywords[0]}의 에너지가 깊게 스며들어 있습니다.`;
 
-    const paragraph = `${posIntro} ${transition}이 카드는 기본적으로 ${coreSummary}하는 상황을 상징하죠. ${contextSentence} 무엇보다 ${c.meanings.advice.replace(/\.$/, '')} 하시는 것이 운명을 밝히는 열쇠가 될 것입니다.`;
+    const paragraph = `${posIntro} ${transition}이 카드는 기본적으로 ${coreSummary}, 현재 당신의 상황에 비추어 볼 때 ${contextSentence} 무엇보다 ${c.meanings.advice.replace(/\.$/, '')} 하시는 것이 운명을 밝히는 열쇠가 될 것입니다.`;
     narrativeFlow.push(paragraph);
   });
 
