@@ -95,12 +95,22 @@ export const generateReadingV3 = (cards, question, timeframe = 'daily', category
     { intro: "무거운 짐을 내려놓는 휴식처", outro: "막혔던 물줄기가 시원하게 터지는 강물" },
     { intro: "오래된 지도가 가리키는 보물", outro: "단단한 껍질을 깨고 피어나는 새순" }
   ];
-  const selectedMetaphor = metaphors[Math.floor(Math.random() * metaphors.length)];
+  const getMetaphor = (card) => {
+    const suitMetaphors = {
+      'w': { intro: "거친 바다 위를 항해하는 나침반", outro: "긴 가뭄 뒤에 내리는 단비" },
+      'c': { intro: "무거운 짐을 내려놓는 휴식처", outro: "막혔던 물줄기가 시원하게 터지는 강물" },
+      's': { intro: "복잡한 미로 속에서 발견한 실타래", outro: "새벽 안개를 뚫고 솟아오르는 태양" },
+      'p': { intro: "오래된 지도가 가리키는 보물", outro: "단단한 껍질을 깨고 피어나는 새순" },
+      'm': { intro: "어두운 밤길을 비추는 등불", outro: "추운 겨울 끝에 찾아오는 따스한 봄볕" },
+    };
+    return suitMetaphors[card.id[0]] || metaphors[0];
+  };
 
   // 6. 유기적 서사 조립
   // 6. 유기적 서사 조립 (Master Report Narrative System)
   const firstCard = cards[0];
   const lastCard = cards[cards.length - 1];
+  const selectedMetaphor = getMetaphor(firstCard);
   
   let bridge = "";
   if (firstCard.id.startsWith('s') && lastCard.id.startsWith('c')) bridge = "현재 당신을 괴롭히는 차가운 이성의 고민과 날카로운 상황들을 지나, 결국 따스한 감정의 안식처에 도달하게 되는 치유의 흐름입니다.";
@@ -123,11 +133,19 @@ export const generateReadingV3 = (cards, question, timeframe = 'daily', category
     else if (i === cards.length - 1) connective = "마지막으로 모든 흐름이 귀결되는";
     else connective = "이어서 상황을 진전시키는";
 
-    return `◈ ${positionName}: ${connective} [${c.nameKo}] 카드는 ${coreMeaning}. 이는 현재 당신이 ${c.description.split('.')[0]}을(를) 경험하고 있음을 의미하며, 이 과정에서 "${c.meanings.advice.replace(/\.$/, '')}" 하는 태도가 다음 단계로 나아가는 중요한 열쇠가 될 것입니다.`;
+    const cleanMeaning = coreMeaning.replace(/\.$/, '');
+    return `◈ ${positionName}: ${connective} [${c.nameKo}] 카드는 ${cleanMeaning}. ${c.keywords.slice(0, 2).join('과 ')}의 에너지가 지금 당신의 여정에 깊이 관여하고 있습니다. ${c.meanings.advice}`;
   }).join('\n\n');
 
   // 결론 요약 문장 (질문 기반 맞춤형)
-  const finalSummary = `\n\n[종합 분석] 이번 리딩은 당신의 질문 "${question}"에 대해, ${firstCard.nameKo}의 초기 상황을 ${lastCard.nameKo}의 지혜로 해결해 나가야 함을 시사합니다. 전체적으로 ${verdictKo} 판정이 나온 만큼, 카드가 전하는 조언을 등불 삼아 한 걸음씩 나아가시길 바랍니다.`;
+  const getCardFraming = (card) => {
+    const score = getYesNoScore(card);
+    if (score > 0) return `${card.nameKo}이(가) 열어주는 긍정의 흐름으로`;
+    if (score < 0) return `${card.nameKo}이(가) 경고하는 함정을 직시하며`;
+    return `${card.nameKo}의 흐름 속에서`;
+  };
+
+  const finalSummary = `\n\n[종합 분석] 이번 리딩은 당신의 질문 "${question}"에 대해, ${firstCard.nameKo}에서 시작된 이 여정이 ${getCardFraming(lastCard)} 나아가야 함을 시사합니다. 전체적으로 ${verdictKo} 판정이 나온 만큼, 카드가 전하는 조언을 등불 삼아 한 걸음씩 나아가시길 바랍니다.`;
 
   const conclusion = `${introduction}\n\n[운명의 서사 분석]\n${narrative}${finalSummary}\n\n[운명의 나침반] ${verdictKo}`;
 
@@ -187,8 +205,8 @@ export const generateReadingV3 = (cards, question, timeframe = 'daily', category
     ];
   } else {
     action = [
-      `[영혼의 조율] "${firstCard.meanings.advice.replace(/\.$/, '')}" 하는 태도는 마치 ${selectedMetaphor.intro}${getJosa(selectedMetaphor.intro, 'wa')} 같습니다.`,
-      `[운명의 실천] ${isRelationship ? '그 사람에게는' : '세상을 향해'} "${lastCard.meanings.advice.replace(/\.$/, '')}" 하는 마음으로 다가가 보세요. ${selectedMetaphor.outro}${getJosa(selectedMetaphor.outro, 'wa')} 같이 당신에게 평온이 깃들 것입니다.`
+      `[영혼의 조율] ${firstCard.meanings.advice} 이 흐름이 마치 ${selectedMetaphor.intro}처럼 당신의 앞길을 밝혀줄 것입니다.`,
+      `[운명의 실천] ${isRelationship ? '그 사람과의 관계에서' : '지금 이 순간'} ${lastCard.meanings.advice} ${selectedMetaphor.outro}처럼 당신의 삶에 변화가 찾아올 것입니다.`
     ];
   }
 
