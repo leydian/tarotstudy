@@ -106,84 +106,102 @@ export const generateReadingV3 = (cards, question, timeframe = 'daily', category
     return suitMetaphors[card.id[0]] || metaphors[0];
   };
 
-  // 6. 유기적 서사 조립
-  // 6. 유기적 서사 조립 (Master Report Narrative System)
+  // 6. 유기적 서사 조립 (Master Report Narrative System - Storytelling 고도화)
   const firstCard = cards[0];
   const lastCard = cards[cards.length - 1];
   const selectedMetaphor = getMetaphor(firstCard);
   
   let bridge = "";
-  if (firstCard.id.startsWith('s') && lastCard.id.startsWith('c')) bridge = "현재 당신을 괴롭히는 차가운 이성의 고민과 날카로운 상황들을 지나, 결국 따스한 감정의 안식처에 도달하게 되는 치유의 흐름입니다.";
-  else if (firstCard.id.startsWith('w') && lastCard.id.startsWith('p')) bridge = "뜨거운 열정으로 시작한 도전이 마침내 손에 잡히는 구체적인 결실과 안정적인 물질적 보상으로 이어지는 성공의 여정입니다.";
-  else if (firstCard.id.startsWith('m') && lastCard.id.startsWith('m')) bridge = "운명의 거대한 수레바퀴가 돌며 당신의 삶을 근본적으로 뒤흔들고, 새로운 차원의 성숙으로 인도하는 강력한 변화의 시기입니다.";
-  else bridge = `${firstCard.nameKo}의 에너지가 ${lastCard.nameKo}의 최종적인 결과로 수렴되며, 당신의 운명이 하나의 완성된 원을 그려가는 과정에 있습니다.`;
+  if (firstCard.id.startsWith('s') && lastCard.id.startsWith('c')) bridge = "지금 당신을 괴롭히는 날카로운 이성의 고민들을 지나, 마침내 따스한 감정의 안식처에 도달하게 되는 치유의 흐름이 느껴집니다.";
+  else if (firstCard.id.startsWith('w') && lastCard.id.startsWith('p')) bridge = "뜨거운 열정으로 시작한 도전이 마침내 손에 잡히는 구체적인 결실과 안정적인 보상으로 이어지는 성공의 여정이 그려지는군요.";
+  else if (firstCard.id.startsWith('m') && lastCard.id.startsWith('m')) bridge = "운명의 거대한 수레바퀴가 돌며 당신의 삶을 근본적으로 뒤흔들고, 새로운 차원의 성숙으로 인도하는 강력한 변화의 한복판에 서 계십니다.";
+  else bridge = `${firstCard.nameKo}에서 시작된 이 흐름이 ${lastCard.nameKo}의 결과로 향하며, 당신의 운명이 하나의 아름다운 서사를 완성해가고 있습니다.`;
 
   let introduction = isLight 
-    ? `${timeGreeting} 가벼운 고민 속에 담긴 운명의 조각을 찾아보았습니다. 너무 심각하게 고민하기보다 카드가 전하는 가벼운 힌트에 귀를 기울여 보세요.` 
+    ? `${timeGreeting} 가벼운 고민 속에 담긴 운명의 조각을 찾아보았습니다. 너무 무겁게 생각하기보다 카드가 전하는 다정한 힌트에 귀를 기울여 보세요.` 
     : `${timeGreeting} ${personaIntro}\n\n${elementTheme} ${bridge}`;
 
-  // 운명의 서사 (Narrative Synthesis) - 심층적 연결 강화
-  const narrative = cards.map((c, i) => {
-    const positionName = c.positionLabel || (isBinary ? (i === 0 ? "첫 번째 길" : "두 번째 길") : (cardCount === 1 ? "핵심" : `단계 ${i+1}`));
-    const coreMeaning = isLight ? c.summary.split('.')[0] : c.summary;
+  // 운명의 서사 (Narrative Synthesis) - 이전 카드와의 인과관계 및 대화형 화법 적용
+  let narrativeFlow = [];
+  cards.forEach((c, i) => {
+    const positionName = c.positionLabel || (isBinary ? (i === 0 ? "첫 번째 길" : "두 번째 길") : (cardCount === 1 ? "핵심" : `운명의 ${i+1}단계`));
+    const coreSummary = c.summary.replace(/\.$/, '');
     
-    // 카드 간 연결 문구 생성
-    let connective = "";
-    if (i === 0) connective = "이번 여정의 시작점인";
-    else if (i === cards.length - 1) connective = "마지막으로 모든 흐름이 귀결되는";
-    else connective = "이어서 상황을 진전시키는";
+    // 위치 의미를 자연스럽게 문장에 녹임
+    let posIntro = "";
+    if (i === 0) posIntro = `가장 먼저 당신의 현재 상황과 여정의 출발점을 보여주는 자리에 **[${c.nameKo}]** 카드가 나타났습니다.`;
+    else if (i === cards.length - 1) posIntro = `그리고 이 모든 흐름이 귀결되는 마지막 결론의 자리에는 **[${c.nameKo}]** 카드가 기다리고 있네요.`;
+    else posIntro = `이어서 ${positionName}의 의미를 담은 자리에는 **[${c.nameKo}]** 카드가 놓여 있습니다.`;
 
-    const cleanMeaning = coreMeaning.replace(/\.$/, '');
-    return `◈ ${positionName}: ${connective} [${c.nameKo}] 카드는 ${cleanMeaning}. ${c.keywords.slice(0, 2).join('과 ')}의 에너지가 지금 당신의 여정에 깊이 관여하고 있습니다. ${c.meanings.advice}`;
-  }).join('\n\n');
+    // 이전 카드와의 맥락 연결 (체인 생성)
+    let transition = "";
+    if (i > 0) {
+      const prevCard = cards[i - 1];
+      const prevScore = getYesNoScore(prevCard);
+      const currScore = getYesNoScore(c);
+      
+      if (prevScore > 0 && currScore < 0) transition = `앞서 보인 긍정적인 흐름에도 불구하고, 이 단계에서는 예상치 못한 난관이나 주의해야 할 함정이 숨어 있을 수 있습니다. `;
+      else if (prevScore < 0 && currScore > 0) transition = `앞선 과정에서 겪었던 어려움이나 답답함이 이 시점에서는 해소되며, 긍정적인 돌파구가 열리게 됩니다. `;
+      else if (prevScore > 0 && currScore > 0) transition = `앞서 확인한 긍정적인 에너지가 더욱 증폭되며, 당신의 발걸음에 힘을 실어주는 모양새입니다. `;
+      else if (prevScore < 0 && currScore < 0) transition = `상황이 녹록지 않게 흘러가고 있습니다. 앞선 고민들이 꼬리를 물고 이어지니 더욱 신중한 태도가 필요한 시점입니다. `;
+    }
 
-  // 결론 요약 문장 (질문 기반 맞춤형)
+    // 질문 맞춤형 맥락 문장
+    let contextSentence = "";
+    if (isRelationship) contextSentence = `두 사람의 관계에서 ${c.keywords[0]}의 기운이 매우 중요한 변수로 작용합니다.`;
+    else if (isWorker) contextSentence = `당신의 커리어와 이직의 흐름에서 ${c.keywords[0]}의 태도를 잃지 않는 것이 핵심입니다.`;
+    else if (isFinance) contextSentence = `금전적인 흐름 또한 ${c.keywords[0]}의 원리에 따라 크게 좌우될 것입니다.`;
+    else contextSentence = `지금 당신의 삶 전반에 ${c.keywords[0]}의 에너지가 깊게 스며들어 있습니다.`;
+
+    const paragraph = `${posIntro} ${transition}이 카드는 기본적으로 ${coreSummary}하는 상황을 상징하죠. ${contextSentence} 무엇보다 ${c.meanings.advice.replace(/\.$/, '')} 하시는 것이 운명을 밝히는 열쇠가 될 것입니다.`;
+    narrativeFlow.push(paragraph);
+  });
+
+  const narrative = narrativeFlow.join('\n\n');
+
+  // 결론 요약 문장
   const getCardFraming = (card) => {
     const score = getYesNoScore(card);
-    if (score > 0) return `${card.nameKo}이(가) 열어주는 긍정의 흐름으로`;
-    if (score < 0) return `${card.nameKo}이(가) 경고하는 함정을 직시하며`;
-    return `${card.nameKo}의 흐름 속에서`;
+    if (score > 0) return `${card.nameKo}이(가) 열어주는 밝은 가능성을 믿고`;
+    if (score < 0) return `${card.nameKo}이(가) 일러주는 경고를 지혜롭게 살펴`;
+    return `${card.nameKo}의 흐름 속에서 균형을 잡으며`;
   };
 
-  const finalSummary = `\n\n[종합 분석] 이번 리딩은 당신의 질문 "${question}"에 대해, ${firstCard.nameKo}에서 시작된 이 여정이 ${getCardFraming(lastCard)} 나아가야 함을 시사합니다. 전체적으로 ${verdictKo} 판정이 나온 만큼, 카드가 전하는 조언을 등불 삼아 한 걸음씩 나아가시길 바랍니다.`;
+  const finalSummary = `\n\n[종합 분석] 사서인 제가 읽어낸 이번 리딩의 핵심은 이렇습니다. 당신의 질문 "${question}"에 대하여, ${firstCard.nameKo}에서 시작된 기운이 ${getCardFraming(lastCard)} 나아가야 한다는 것입니다. 전체적인 운의 흐름은 '${verdictKo}'를 가리키고 있으니, 카드가 전해준 조언들을 마음속 나침반 삼아 한 걸음씩 나아가시길 바랍니다.`;
 
-  const conclusion = `${introduction}\n\n[운명의 서사 분석]\n${narrative}${finalSummary}\n\n[운명의 나침반] ${verdictKo}`;
+  const conclusion = `${introduction}\n\n[운명의 서사 분석]\n${narrative}${finalSummary}`;
 
-  // 7. 시각적 카드 묘사 및 해설 (스마트 컨텍스트 변환 적용)
+  // 7. 시각적 카드 묘사 및 해설 (스마트 컨텍스트 변환 적용 - 대화형 포맷)
   const evidence = cards.map((card, i) => {
     let posLabel = "";
-    if (isMultiChoice) {
-      posLabel = `선택지 ${i + 1}`;
-    } else if (isBinary && cardCount === 2) {
-      posLabel = i === 0 ? "선택 A의 길" : "선택 B의 길";
-    } else {
+    if (isMultiChoice) posLabel = `선택지 ${i + 1}`;
+    else if (isBinary && cardCount === 2) posLabel = i === 0 ? "선택 A의 길" : "선택 B의 길";
+    else {
       posLabel = {
-        1: ["핵심 조언"],
-        2: ["현재 상황", "다가올 변화"],
-        3: ["과거의 풍경", "현재의 모습", "미래의 빛"],
-        5: ["지나온 길", "지금의 마음", "다가올 시간", "숨겨진 난관", "마지막 열쇠"],
-        7: ["당신의 초상", "그 사람의 속마음", "두 사람의 인연", "과거의 그림자", "뜻밖의 변수", "가까운 계절", "운명의 결론"],
-        10: ["현재 상황", "장애물", "의식의 목표", "무의식의 뿌리", "지나온 과거", "다가올 미래", "나의 태도", "주변 환경", "희망과 공포", "최종 결과"],
-        12: ["1월", "2월", "3월", "4월", "5월", "6월", "7월", "8월", "9월", "10월", "11월", "12월"]
+        1: ["당신을 위한 단 하나의 조언"],
+        2: ["지금의 당신", "다가올 내일"],
+        3: ["지나온 발자취", "현재 서 있는 곳", "나아가야 할 방향"],
+        5: ["이 질문의 뿌리", "당신의 속마음", "머지않아 마주할 일", "주의해야 할 장애물", "성공을 위한 열쇠"],
+        7: ["당신의 현재 모습", "그 사람의 속마음", "두 사람의 연결 고리", "과거의 그림자", "뜻밖의 변수", "가까운 미래", "운명의 결론"]
       }[cardCount]?.[i] || `여정의 ${i+1}단계`;
     }
 
-    const visualHint = card.description || card.summary;
+    const visualDesc = card.description ? card.description.split('\n\n')[0] : card.summary;
+    const enhancedVisual = visualDesc.length > 60 ? visualDesc.substring(0, 150) + "..." : visualDesc;
     
     let meaning = card.summary;
     if (isRelationship) meaning = card.meanings.love;
     else if (isFinance) meaning = card.meanings.finance;
     else if (isStudy) {
-      meaning = `[학업/시험] ` + (card.meanings.career 
+      meaning = (card.meanings.career 
         ? card.meanings.career.replace(/직장|업무|프로젝트|사업/g, '학업').replace(/동료|상사/g, '학우/교수님').replace(/취업/g, '합격').replace(/승진/g, '성적 향상')
         : card.summary);
-    } else if (isHealth) {
-      meaning = `[건강/심리] ` + card.summary + ` 이 시기에는 무리하지 말고 내면과 신체의 소리에 귀 기울이는 것이 좋습니다.`;
     } else if (isWorker || category === 'career') {
       meaning = card.meanings.career;
     }
 
-    return `[${posLabel}: ${card.nameKo}]\n\n◈ 시각적 형상:\n"${visualHint.split('.')[0]}."\n\n◈ 심층적 해석:\n${meaning}\n\n◈ 조언:\n${card.meanings.advice}`;
+    // 딱딱한 항목 나열을 부드러운 대화체 단락으로 변환
+    return `[${posLabel}: ${card.nameKo}]\n\n이 카드의 그림을 가만히 들여다보세요. "${enhancedVisual}"\n\n이러한 카드의 모습은 현재 당신의 상황에서 다음과 같은 의미를 갖습니다. ${meaning}\n\n사서로서 조언을 드리자면, ${card.meanings.advice}`;
   });
 
   // 조사를 적절히 선택하는 헬퍼 함수
