@@ -334,28 +334,87 @@
 @media (max-width: 768px) {
   .page {
     height: auto;
-    min-height: calc(100vh - 140px);
+    min-height: 0;
   }
 
   .panelHeader {
-    padding: 1.2rem 1.5rem;
+    padding: 0.85rem 1rem;
+  }
+
+  .panelTitle {
+    font-size: 1rem;
+    letter-spacing: 1px;
+  }
+
+  .studyToggle {
+    font-size: 0.72rem;
+    padding: 6px 10px;
   }
 
   .messages {
-    padding: 1.5rem;
+    gap: 1.2rem;
+    padding: 1rem;
   }
 
   .spreadCanvas {
-    min-height: 360px;
-    overflow-x: auto;
+    min-height: 380px;
+    overflow: visible;
+    margin: 0.5rem 0;
+  }
+
+  .spreadCenter {
+    transform: scale(0.65) translate(-50%, -50%);
+    transform-origin: top left;
   }
 
   .inputForm {
-    padding: 1.2rem 1.5rem;
+    padding: 0.9rem 1rem;
+    padding-bottom: calc(0.9rem + env(safe-area-inset-bottom));
+    gap: 0.5rem;
+  }
+
+  .submitBtn {
+    padding: 0.9rem 1rem;
+  }
+
+  .newQuestionBtn {
+    padding: 0.9rem 2rem;
+    font-size: 0.95rem;
   }
 
   .masterReport,
   .arcanaGuidance {
-    padding: 1.5rem;
+    padding: 1.25rem;
+  }
+
+  .masterReportTitle {
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+  }
+
+  .arcanaTitle {
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+  }
+
+  .masterReportText {
+    font-size: 0.95rem;
+    line-height: 1.75;
+  }
+
+  .arcanaItemText {
+    font-size: 0.95rem;
+  }
+
+  .resultSection {
+    gap: 2rem;
+  }
+}
+
+@supports (height: 100dvh) {
+  .page { height: calc(100dvh - 140px); }
+
+  @media (max-width: 768px) {
+    .page { height: calc(100dvh - 70px); }
   }
 }

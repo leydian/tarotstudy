@@ -100,3 +100,11 @@
 .cardName.revealed {
   color: var(--text-primary);
 }
+
+@media (max-width: 768px) {
+  .cardSmall  { width: 60px;  height: 105px; }
+  .cardMedium { width: 72px;  height: 130px; }
+  .cardLarge  { width: 100px; height: 175px; }
+  .posLabel   { font-size: 0.58rem; }
+  .cardName   { font-size: 0.72rem; }
+}

@@ -205,9 +205,27 @@
 
   .hamburger {
     display: flex;
+    width: 44px;
+    height: 44px;
+  }
+
+  .mobileNav {
+    padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
+  }
+
+  .mobileNavLink {
+    min-height: 48px;
   }
 
   .main {
+    padding: 1.25rem 1rem;
+  }
+
+  .footer {
     padding: 1.5rem 1rem;
+  }
+
+  .logo {
+    font-size: 1rem;
   }
 }

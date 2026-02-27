@@ -38,3 +38,8 @@
   font-style: italic;
   font-size: 0.95rem;
 }
+
+@media (max-width: 768px) {
+  .wrapper  { max-width: 92%; }
+  .bubble   { padding: 0.85rem 1.1rem; font-size: 0.93rem; line-height: 1.65; }
+}

@@ -141,16 +141,51 @@
 
 /* ── RESPONSIVE ── */
 @media (max-width: 768px) {
+  .hero {
+    margin-bottom: 2rem;
+  }
+
   .heroTitle {
-    font-size: 2.4rem;
+    font-size: 1.8rem;
+    letter-spacing: -0.5px;
+  }
+
+  .heroSub {
+    font-size: 0.95rem;
+  }
+
+  .ctaPrimary,
+  .ctaSecondary {
+    padding: 0.85rem 1.8rem;
+    font-size: 0.95rem;
   }
 
   .portalGrid {
     grid-template-columns: 1fr;
-    gap: 2rem;
+    gap: 1.25rem;
   }
 
   .portalCard {
-    padding: 3rem 1.5rem;
+    padding: 1.75rem 1.25rem;
+  }
+
+  .cardIcon {
+    margin-bottom: 1.25rem;
+  }
+
+  .cardTitle {
+    font-size: 1.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .cardDesc {
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+  }
+}
+
+@media (max-width: 380px) {
+  .heroTitle {
+    font-size: 1.5rem;
   }
 }

@@ -452,10 +452,48 @@
 }
 
 /* ── RESPONSIVE ── */
+@media (max-width: 380px) {
+  .grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  }
+
+  .pageTitle {
+    font-size: 1.5rem;
+  }
+}
+
 @media (max-width: 768px) {
+  .pageTitle {
+    font-size: 1.8rem;
+  }
+
+  .pageSubtitle {
+    font-size: 0.95rem;
+  }
+
+  .filterTabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    justify-content: flex-start;
+    padding-bottom: 0.5rem;
+    scrollbar-width: none;
+    gap: 0.4rem;
+    margin-left: -0.25rem;
+    padding-left: 0.25rem;
+  }
+
+  .filterTabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .filterTab {
+    flex-shrink: 0;
+  }
+
   .grid {
     grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    gap: 1.2rem;
+    gap: 1rem;
   }
 
   .modal {
@@ -469,18 +507,42 @@
     width: 100%;
     border-right: none;
     border-bottom: 1px solid #1e1e1e;
-    padding: 1.5rem;
+    padding: 1.25rem;
   }
 
   .modalImage {
-    max-width: 200px;
+    max-width: 180px;
   }
 
   .modalTextPanel {
-    padding: 1.5rem;
+    padding: 1.25rem;
   }
 
   .meaningsGrid {
     grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .modalCardNameKo {
+    font-size: 1.4rem;
+  }
+
+  .modalSection {
+    margin-bottom: 2rem;
+  }
+
+  .uprightBox,
+  .reversedBox {
+    padding: 1rem;
+  }
+
+  .closeBtn {
+    width: 44px;
+    height: 44px;
+  }
+
+  .licenseFooter {
+    padding: 2rem 1rem;
+    margin-top: 3rem;
   }
 }
