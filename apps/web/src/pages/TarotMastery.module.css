@@ -100,21 +100,25 @@
 
 /* ── CARD SPREAD CANVAS ── */
 .spreadCanvas {
-  padding: 2rem 0;
+  padding: 4rem 0;
   background: radial-gradient(circle, rgba(159, 130, 196, 0.04) 0%, transparent 70%);
   border-radius: 24px;
   border: 1px solid var(--border-gold);
   position: relative;
   min-height: 480px;
-  margin-top: 1rem;
+  margin-top: 1.5rem;
+  margin-bottom: 2rem;
+  overflow: visible;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .spreadCenter {
-  position: absolute;
-  top: 50%;
-  left: 50%;
+  position: relative;
   width: 0;
   height: 0;
+  margin-top: 50px; /* 상단 여백 확보 */
 }
 
 /* ── READING RESULT ── */
@@ -123,6 +127,7 @@
   flex-direction: column;
   gap: 3rem;
   animation: fadeIn 1s ease;
+  padding-top: 2rem;
 }
 
 .masterReport {
@@ -358,13 +363,13 @@
 
   .spreadCanvas {
     min-height: 380px;
-    overflow: visible;
+    padding: 3rem 0;
     margin: 0.5rem 0;
   }
 
   .spreadCenter {
-    transform: scale(0.65) translate(-50%, -50%);
-    transform-origin: top left;
+    transform: scale(0.55);
+    margin-top: 20px;
   }
 
   .inputForm {

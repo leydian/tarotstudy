@@ -206,16 +206,22 @@ export function TarotMastery() {
 
           {/* 카드 스프레드 */}
           {(step === 'reading' || step === 'result') && spreadLayout && (
-            <div className={styles.spreadCanvas}>
+            <div 
+              className={styles.spreadCanvas}
+              style={{ 
+                minHeight: Math.max(480, (Math.max(...spreadLayout.positions.map(p => Math.abs(p.y))) * 2 * 0.7) + 300) + 'px'
+              }}
+            >
               <div className={styles.spreadCenter}>
                 {spreadLayout.positions.map((pos, idx) => (
                   <div
                     key={pos.id}
                     style={{
                       position: 'absolute',
-                      left: `${pos.x * 0.8}px`,
-                      top: `${pos.y * 0.8}px`,
-                      transform: 'translate(-50%, -50%)'
+                      left: `${pos.x * 0.7}px`,
+                      top: `${pos.y * 0.7}px`,
+                      transform: 'translate(-50%, -50%)',
+                      transition: 'all 0.5s ease-out'
                     }}
                   >
                     <TarotCard
