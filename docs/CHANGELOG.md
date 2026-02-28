@@ -2,6 +2,35 @@
 
 ## [2026-02-28]
 
+### 좌측 패널 토글 전환: 카드 스프레드/아르카나 탐구 단일 뷰화 (v6.3.19)
+
+#### 변경 파일
+- `apps/web/src/pages/TarotMastery.tsx`
+- `apps/web/src/pages/TarotMastery.module.css`
+- `docs/CHANGELOG.md`
+- `docs/RELEASE_NOTES_v6.3.19.md`
+
+#### 변경 사항
+- 좌측 패널 표시 방식을 고정 2분할에서 탭 토글 방식으로 전환.
+  - 탭: `카드 스프레드` / `아르카나 탐구`
+  - 한 번에 하나의 뷰만 렌더링해 각 콘텐츠가 더 넓은 영역을 사용하도록 변경.
+- 좌측 레이아웃 구조 변경.
+  - `leftPane`을 상하 그리드에서 단일 뷰포트(`leftPaneViewport`) 중심 구조로 변경.
+  - 상단에 좌측 전용 탭 버튼(`leftPaneTabs`, `leftPaneTabBtn`) 추가.
+- 스프레드/탐구 전환 상태 관리 추가.
+  - `leftPaneTab` 상태(`spread | study`) 도입.
+  - 새 리딩 시작(`handleStartRitual`) 및 초기화(`handleReset`) 시 기본 탭을 `spread`로 자동 복귀.
+- 탐구 패널은 기존 탐구 카드 스타일을 유지하되, 토글 전환에 맞춰 전체 높이를 사용하도록 조정.
+
+#### 효과
+- 카드 이미지와 탐구 텍스트가 동시에 공간을 나눠 갖지 않아, 선택된 콘텐츠의 가시성이 개선됨.
+- 좌측 영역에서 사용자 의도(카드 보기 vs 탐구 읽기)에 맞게 집중 가능한 정보 밀도 제공.
+- 화면 폭이 넓을수록 토글 뷰의 체감 이점이 커져 탐색 효율이 향상됨.
+
+#### 검증
+- `npm run build --prefix apps/web` 통과.
+- 상세 변경 요약: `docs/RELEASE_NOTES_v6.3.19.md`
+
 ### 좌측 패널 아르카나 탐구 대체 + 성소 전반 폰트 스케일 상향 (v6.3.18)
 
 #### 변경 파일

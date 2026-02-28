@@ -66,9 +66,38 @@
 
 .leftPane {
   min-height: 0;
-  display: grid;
-  grid-template-rows: minmax(300px, 58%) minmax(220px, 42%);
+  display: flex;
+  flex-direction: column;
   gap: 1rem;
+}
+
+.leftPaneTabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.leftPaneTabBtn {
+  border: 1px solid var(--border-subtle);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-secondary);
+  border-radius: 12px;
+  padding: 0.75rem 0.9rem;
+  font-size: 1.02rem;
+  font-family: 'Pretendard', sans-serif;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.leftPaneTabBtnActive {
+  background: rgba(205, 186, 150, 0.2);
+  color: var(--accent-gold);
+  border-color: rgba(205, 186, 150, 0.45);
+}
+
+.leftPaneViewport {
+  flex: 1;
+  min-height: 0;
 }
 
 .rightPane {
@@ -92,7 +121,8 @@
 
 /* ── TOP SPREAD AREA (STICKY-LIKE) ── */
 .topSpreadArea {
-  flex-shrink: 0;
+  height: 100%;
+  min-height: 0;
   background: radial-gradient(circle at center, rgba(159, 130, 196, 0.08) 0%, transparent 80%);
   border: 1px solid var(--border-subtle);
   border-radius: 20px;
@@ -112,6 +142,7 @@
 }
 
 .cardBasicsPanel {
+  height: 100%;
   min-height: 0;
   border: 1px solid var(--border-subtle);
   border-radius: 20px;
@@ -120,6 +151,10 @@
   display: flex;
   flex-direction: column;
   gap: 0.8rem;
+}
+
+.leftStudyPanel {
+  padding-top: 1.2rem;
 }
 
 .cardBasicsTitle {
@@ -501,9 +536,8 @@
     grid-template-rows: auto auto;
     padding: 0.75rem;
   }
-  .leftPane {
-    grid-template-rows: minmax(220px, auto) minmax(180px, auto);
-  }
+  .leftPane { gap: 0.75rem; }
+  .leftPaneTabBtn { font-size: 0.92rem; padding: 0.6rem 0.7rem; }
   .rightPane {
     min-height: 50vh;
   }

@@ -10,6 +10,7 @@ import styles from './TarotMastery.module.css';
 export function TarotMastery() {
   const [step, setStep] = useState<'input' | 'reading' | 'result'>('input');
   const [resultTab, setResultTab] = useState<'report' | 'study'>('report');
+  const [leftPaneTab, setLeftPaneTab] = useState<'spread' | 'study'>('spread');
   const [messages, setMessages] = useState<Message[]>([
     { role: 'bot', text: "어서 오세요. 이곳은 운명과 지혜가 만나는 '아르카나 성소'입니다. 오늘 당신의 영혼이 찾고 있는 답은 무엇인가요? 질문을 들려주시면 운명의 지도를 그려드릴게요." }
   ]);
@@ -55,6 +56,7 @@ export function TarotMastery() {
 
     const userQuestion = input.trim();
     clearRevealTimers();
+    setLeftPaneTab('spread');
     setRevealedIdx([]);
     setDrawnCards([]);
     setSpreadLayout(null);
@@ -245,6 +247,7 @@ export function TarotMastery() {
       });
     }
     setStep('input');
+    setLeftPaneTab('spread');
     setReading(null);
     setResultTab('report');
     setMessages([{ role: 'bot', text: '새로운 의식을 시작할 준비가 되었습니다. 무엇이 궁금하신가요?' }]);
@@ -271,74 +274,89 @@ export function TarotMastery() {
         <div className={styles.mainContent}>
           <div className={styles.workspaceGrid}>
             <div className={styles.leftPane}>
-              {(step === 'reading' || step === 'result') && spreadLayout ? (
-                (() => {
-                  const renderConfig = getSpreadRenderConfig(spreadLayout);
-                  return (
-                    <div
-                      className={styles.topSpreadArea}
-                      style={{
-                        minHeight: `${renderConfig.areaHeight}px`,
-                        maxHeight: '56vh'
-                      }}
-                    >
-                      <div className={styles.spreadCenter}>
-                        {spreadLayout.positions.map((pos, idx) => (
-                          <div
-                            key={pos.id}
-                            className={styles.cardPosition}
-                            style={{
-                              position: 'absolute',
-                              left: `${pos.x * renderConfig.scale}px`,
-                              top: `${pos.y * renderConfig.scale}px`,
-                              transform: 'translate(-50%, -50%)',
-                              transition: 'all 0.5s ease-out'
-                            }}
-                          >
-                            <TarotCard
-                              card={drawnCards[idx]}
-                              isRevealed={revealedIdx.includes(idx)}
-                              label={pos.label}
-                              onClick={() => revealCard(idx)}
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })()
-              ) : (
-                <div className={styles.topSpreadArea}>
-                  <p className={styles.leftPanePlaceholder}>질문을 입력하면 이곳에 카드 스프레드가 펼쳐집니다.</p>
-                </div>
-              )}
+              <div className={styles.leftPaneTabs}>
+                <button
+                  type="button"
+                  onClick={() => setLeftPaneTab('spread')}
+                  className={`${styles.leftPaneTabBtn} ${leftPaneTab === 'spread' ? styles.leftPaneTabBtnActive : ''}`}
+                >
+                  카드 스프레드
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLeftPaneTab('study')}
+                  className={`${styles.leftPaneTabBtn} ${leftPaneTab === 'study' ? styles.leftPaneTabBtnActive : ''}`}
+                >
+                  아르카나 탐구
+                </button>
+              </div>
 
-              <div className={styles.cardBasicsPanel}>
-                <h4 className={styles.cardBasicsTitle}>아르카나 탐구</h4>
-                {drawnCards.length === 0 ? (
-                  <p className={styles.cardBasicsEmpty}>카드를 펼치면 포지션별 아르카나 탐구가 표시됩니다.</p>
-                ) : (
-                  <div className={styles.cardBasicsList}>
-                    {drawnCards.map((card, i) => {
-                      const info = getPositionInfo(i);
+              <div className={styles.leftPaneViewport}>
+                {leftPaneTab === 'spread' ? (
+                  (step === 'reading' || step === 'result') && spreadLayout ? (
+                    (() => {
+                      const renderConfig = getSpreadRenderConfig(spreadLayout);
                       return (
-                        <div key={card.id} className={styles.studyCard}>
-                          <div className={styles.studyCardHeader}>
-                            <span className={styles.studyCardPos}>{info.posLabel}</span>
-                            <h4 className={styles.studyCardName}>{card.nameKo}</h4>
+                        <div className={styles.topSpreadArea}>
+                          <div className={styles.spreadCenter}>
+                            {spreadLayout.positions.map((pos, idx) => (
+                              <div
+                                key={pos.id}
+                                className={styles.cardPosition}
+                                style={{
+                                  position: 'absolute',
+                                  left: `${pos.x * renderConfig.scale}px`,
+                                  top: `${pos.y * renderConfig.scale}px`,
+                                  transform: 'translate(-50%, -50%)',
+                                  transition: 'all 0.5s ease-out'
+                                }}
+                              >
+                                <TarotCard
+                                  card={drawnCards[idx]}
+                                  isRevealed={revealedIdx.includes(idx)}
+                                  label={pos.label}
+                                  onClick={() => revealCard(idx)}
+                                />
+                              </div>
+                            ))}
                           </div>
-                          <p className={styles.cardBasicsContext}>{info.posDesc}</p>
-                          <p className={styles.studyCardDesc}>{card.description || card.summary}</p>
-                          {card.keywords && card.keywords.length > 0 && (
-                            <div className={styles.studyKeywords}>
-                              {card.keywords.slice(0, 5).map((k) => (
-                                <span key={k} className={styles.studyTag}>#{k}</span>
-                              ))}
-                            </div>
-                          )}
                         </div>
                       );
-                    })}
+                    })()
+                  ) : (
+                    <div className={styles.topSpreadArea}>
+                      <p className={styles.leftPanePlaceholder}>질문을 입력하면 이곳에 카드 스프레드가 펼쳐집니다.</p>
+                    </div>
+                  )
+                ) : (
+                  <div className={`${styles.cardBasicsPanel} ${styles.leftStudyPanel}`}>
+                    <h4 className={styles.cardBasicsTitle}>아르카나 탐구</h4>
+                    {drawnCards.length === 0 ? (
+                      <p className={styles.cardBasicsEmpty}>카드를 펼치면 포지션별 아르카나 탐구가 표시됩니다.</p>
+                    ) : (
+                      <div className={styles.cardBasicsList}>
+                        {drawnCards.map((card, i) => {
+                          const info = getPositionInfo(i);
+                          return (
+                            <div key={card.id} className={styles.studyCard}>
+                              <div className={styles.studyCardHeader}>
+                                <span className={styles.studyCardPos}>{info.posLabel}</span>
+                                <h4 className={styles.studyCardName}>{card.nameKo}</h4>
+                              </div>
+                              <p className={styles.cardBasicsContext}>{info.posDesc}</p>
+                              <p className={styles.studyCardDesc}>{card.description || card.summary}</p>
+                              {card.keywords && card.keywords.length > 0 && (
+                                <div className={styles.studyKeywords}>
+                                  {card.keywords.slice(0, 5).map((k) => (
+                                    <span key={k} className={styles.studyTag}>#{k}</span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
