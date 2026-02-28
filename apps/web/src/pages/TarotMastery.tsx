@@ -142,6 +142,11 @@ export function TarotMastery() {
     return { posLabel, posDesc, card };
   };
 
+  const getCardBaseDescription = (card?: Card) => {
+    if (!card) return '';
+    return (card.summary || card.description || '').split('\n')[0].trim();
+  };
+
   const verdictLabelKo = (label?: 'YES' | 'NO' | 'MAYBE') => {
     if (label === 'YES') return '긍정';
     if (label === 'NO') return '신중';
@@ -263,192 +268,219 @@ export function TarotMastery() {
         </div>
 
         <div className={styles.mainContent}>
-          {/* 상단 고정 카드 스프레드 */}
-          {(step === 'reading' || step === 'result') && spreadLayout && (
-            (() => {
-              const renderConfig = getSpreadRenderConfig(spreadLayout);
-              return (
-            <div 
-              className={styles.topSpreadArea}
-              style={{ 
-                minHeight: `${renderConfig.areaHeight}px`,
-                maxHeight: '48vh'
-              }}
-            >
-              <div className={styles.spreadCenter}>
-                {spreadLayout.positions.map((pos, idx) => (
-                  <div
-                    key={pos.id}
-                    className={styles.cardPosition}
-                    style={{
-                      position: 'absolute',
-                      left: `${pos.x * renderConfig.scale}px`,
-                      top: `${pos.y * renderConfig.scale}px`,
-                      transform: 'translate(-50%, -50%)',
-                      transition: 'all 0.5s ease-out'
-                    }}
-                  >
-                    <TarotCard
-                      card={drawnCards[idx]}
-                      isRevealed={revealedIdx.includes(idx)}
-                      label={pos.label}
-                      onClick={() => revealCard(idx)}
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-              );
-            })()
-          )}
-
-          {/* 메시지 및 결과 영역 */}
-          <div className={styles.messagesContainer}>
-            <div className={styles.messages}>
-              {messages.map((msg, i) => <MessageBubble key={i} message={msg} />)}
-
-              {loading && (
-                <div className={styles.typingWrapper}>
-                  <div className={styles.typingBubble}>
-                    <div className={styles.typingDots}>
-                      <span /> <span /> <span />
+          <div className={styles.workspaceGrid}>
+            <div className={styles.leftPane}>
+              {(step === 'reading' || step === 'result') && spreadLayout ? (
+                (() => {
+                  const renderConfig = getSpreadRenderConfig(spreadLayout);
+                  return (
+                    <div
+                      className={styles.topSpreadArea}
+                      style={{
+                        minHeight: `${renderConfig.areaHeight}px`,
+                        maxHeight: '56vh'
+                      }}
+                    >
+                      <div className={styles.spreadCenter}>
+                        {spreadLayout.positions.map((pos, idx) => (
+                          <div
+                            key={pos.id}
+                            className={styles.cardPosition}
+                            style={{
+                              position: 'absolute',
+                              left: `${pos.x * renderConfig.scale}px`,
+                              top: `${pos.y * renderConfig.scale}px`,
+                              transform: 'translate(-50%, -50%)',
+                              transition: 'all 0.5s ease-out'
+                            }}
+                          >
+                            <TarotCard
+                              card={drawnCards[idx]}
+                              isRevealed={revealedIdx.includes(idx)}
+                              label={pos.label}
+                              onClick={() => revealCard(idx)}
+                            />
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  );
+                })()
+              ) : (
+                <div className={styles.topSpreadArea}>
+                  <p className={styles.leftPanePlaceholder}>질문을 입력하면 이곳에 카드 스프레드가 펼쳐집니다.</p>
                 </div>
               )}
 
-              {/* 결과 및 학습 탭 영역 */}
-              {step === 'result' && reading && (
-                <div className={styles.tabContainer}>
-                  {/* 탭 헤더 */}
-                  <div className={styles.tabHeader}>
-                    <button 
-                      onClick={() => handleTabSwitch('report')}
-                      className={`${styles.tabBtn} ${resultTab === 'report' ? styles.tabBtnActive : ''}`}
-                    >
-                      운명의 리포트
-                    </button>
-                    <button 
-                      onClick={() => handleTabSwitch('study')}
-                      className={`${styles.tabBtn} ${resultTab === 'study' ? styles.tabBtnActive : ''}`}
-                    >
-                      아르카나 탐구
-                    </button>
+              <div className={styles.cardBasicsPanel}>
+                <h4 className={styles.cardBasicsTitle}>기본 카드 설명</h4>
+                {drawnCards.length === 0 ? (
+                  <p className={styles.cardBasicsEmpty}>카드를 펼치면 포지션별 기본 해석이 표시됩니다.</p>
+                ) : (
+                  <div className={styles.cardBasicsList}>
+                    {drawnCards.map((card, i) => {
+                      const info = getPositionInfo(i);
+                      return (
+                        <div key={card.id} className={styles.cardBasicsItem}>
+                          <div className={styles.cardBasicsHead}>
+                            <span className={styles.cardBasicsPos}>{info.posLabel}</span>
+                            <strong className={styles.cardBasicsName}>{card.nameKo}</strong>
+                          </div>
+                          <p className={styles.cardBasicsDesc}>{getCardBaseDescription(card)}</p>
+                        </div>
+                      );
+                    })}
                   </div>
+                )}
+              </div>
+            </div>
 
-                  {/* 탭 본문 */}
-                  <div className={styles.tabBody}>
-                    {resultTab === 'report' ? (
-                      <div className={styles.resultSection}>
-                        <div className={styles.diagnosticBox}>
-                          <span className={styles.diagnosticPill}>
-                            apiUsed: {apiUsedLabel(reading.apiUsed)}
-                          </span>
-                          <span className={styles.diagnosticPill}>
-                            fallbackUsed: {reading.fallbackUsed ? 'true' : 'false'}
-                          </span>
-                          <span className={styles.diagnosticPill}>
-                            fallbackReason: {reading.meta?.fallbackReason ?? reading.fallbackReason ?? 'unavailable'}
-                          </span>
-                          <span className={styles.diagnosticPill}>
-                            responseMode: {responseModeLabel(reading.meta?.responseMode)}
-                          </span>
-                          <span className={styles.diagnosticPill}>
-                            path: {reading.meta?.path || 'unknown'}
-                          </span>
-                          <span className={styles.diagnosticPill}>
-                            totalMs: {reading.meta?.timings?.totalMs ?? 'unknown'}
-                          </span>
-                          <span className={styles.diagnosticPill}>
-                            serverRevision: {reading.meta?.serverRevision || 'unknown'}
-                          </span>
-                          <span className={styles.diagnosticPill}>
-                            requestId: {reading.meta?.requestId || 'unknown'}
-                          </span>
+            <div className={styles.rightPane}>
+              <div className={styles.messagesContainer}>
+                <div className={styles.messages}>
+                  {messages.map((msg, i) => <MessageBubble key={i} message={msg} />)}
+
+                  {loading && (
+                    <div className={styles.typingWrapper}>
+                      <div className={styles.typingBubble}>
+                        <div className={styles.typingDots}>
+                          <span /> <span /> <span />
                         </div>
+                      </div>
+                    </div>
+                  )}
 
-                        <div className={styles.masterReport}>
-                          <h3 className={styles.masterReportTitle}>운명의 마스터 리포트</h3>
-                          <div className={styles.masterReportText}>
-                            {reading.conclusion.split('\n\n').map((para, i) => (
-                              <p key={i} style={{ marginBottom: '1rem' }}>{para}</p>
-                            ))}
-                          </div>
-                          
-                          {reading.report && (
-                            <div className={styles.reportSummaryBox}>
-                              {(() => {
-                                const distinctCopy = getDistinctReportCopy(reading);
-                                return (
-                                  <>
-                              <p className={styles.reportSummaryText}>
-                                <strong>사서의 통찰:</strong> {distinctCopy.insightText}
-                              </p>
-                              <div className={styles.verdictBadge}>
-                                <Sparkles size={14} />
-                                <span>{verdictLabelKo(reading.report.verdict.label)}의 기운: {distinctCopy.energyText}</span>
-                              </div>
-                                  </>
-                                );
-                              })()}
+                  {step === 'result' && reading && (
+                    <div className={styles.tabContainer}>
+                      <div className={styles.tabHeader}>
+                        <button
+                          onClick={() => handleTabSwitch('report')}
+                          className={`${styles.tabBtn} ${resultTab === 'report' ? styles.tabBtnActive : ''}`}
+                        >
+                          운명의 리포트
+                        </button>
+                        <button
+                          onClick={() => handleTabSwitch('study')}
+                          className={`${styles.tabBtn} ${resultTab === 'study' ? styles.tabBtnActive : ''}`}
+                        >
+                          아르카나 탐구
+                        </button>
+                      </div>
+
+                      <div className={styles.tabBody}>
+                        {resultTab === 'report' ? (
+                          <div className={styles.resultSection}>
+                            <div className={styles.diagnosticBox}>
+                              <span className={styles.diagnosticPill}>
+                                apiUsed: {apiUsedLabel(reading.apiUsed)}
+                              </span>
+                              <span className={styles.diagnosticPill}>
+                                fallbackUsed: {reading.fallbackUsed ? 'true' : 'false'}
+                              </span>
+                              <span className={styles.diagnosticPill}>
+                                fallbackReason: {reading.meta?.fallbackReason ?? reading.fallbackReason ?? 'unavailable'}
+                              </span>
+                              <span className={styles.diagnosticPill}>
+                                responseMode: {responseModeLabel(reading.meta?.responseMode)}
+                              </span>
+                              <span className={styles.diagnosticPill}>
+                                path: {reading.meta?.path || 'unknown'}
+                              </span>
+                              <span className={styles.diagnosticPill}>
+                                totalMs: {reading.meta?.timings?.totalMs ?? 'unknown'}
+                              </span>
+                              <span className={styles.diagnosticPill}>
+                                serverRevision: {reading.meta?.serverRevision || 'unknown'}
+                              </span>
+                              <span className={styles.diagnosticPill}>
+                                requestId: {reading.meta?.requestId || 'unknown'}
+                              </span>
                             </div>
-                          )}
-                        </div>
 
-                        <div className={styles.arcanaGuidance}>
-                          <h4 className={styles.arcanaTitle}>운명의 지침</h4>
-                          <div className={styles.arcanaList}>
-                            {reading.action.map((act, i) => (
-                              <div key={i} className={styles.arcanaItem}>
-                                <span className={styles.arcanaItemBullet}>●</span>
-                                <p className={styles.arcanaItemText}>{act}</p>
+                            <div className={styles.masterReport}>
+                              <h3 className={styles.masterReportTitle}>운명의 마스터 리포트</h3>
+                              <div className={styles.masterReportText}>
+                                {reading.conclusion.split('\n\n').map((para, i) => (
+                                  <p key={i} style={{ marginBottom: '1rem' }}>{para}</p>
+                                ))}
                               </div>
-                            ))}
-                          </div>
-                        </div>
 
-                        {reading.report && reading.report.counterpoints.length > 0 && (
-                          <div className={styles.counterpointBox}>
-                            <h4 className={styles.counterpointTitle}>함께 고려할 변수</h4>
-                            <ul className={styles.counterpointList}>
-                              {reading.report.counterpoints.map((cp, i) => (
-                                <li key={i}>{cp}</li>
-                              ))}
-                            </ul>
+                              {reading.report && (
+                                <div className={styles.reportSummaryBox}>
+                                  {(() => {
+                                    const distinctCopy = getDistinctReportCopy(reading);
+                                    return (
+                                      <>
+                                        <p className={styles.reportSummaryText}>
+                                          <strong>사서의 통찰:</strong> {distinctCopy.insightText}
+                                        </p>
+                                        <div className={styles.verdictBadge}>
+                                          <Sparkles size={14} />
+                                          <span>{verdictLabelKo(reading.report.verdict.label)}의 기운: {distinctCopy.energyText}</span>
+                                        </div>
+                                      </>
+                                    );
+                                  })()}
+                                </div>
+                              )}
+                            </div>
+
+                            <div className={styles.arcanaGuidance}>
+                              <h4 className={styles.arcanaTitle}>운명의 지침</h4>
+                              <div className={styles.arcanaList}>
+                                {reading.action.map((act, i) => (
+                                  <div key={i} className={styles.arcanaItem}>
+                                    <span className={styles.arcanaItemBullet}>●</span>
+                                    <p className={styles.arcanaItemText}>{act}</p>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+
+                            {reading.report && reading.report.counterpoints.length > 0 && (
+                              <div className={styles.counterpointBox}>
+                                <h4 className={styles.counterpointTitle}>함께 고려할 변수</h4>
+                                <ul className={styles.counterpointList}>
+                                  {reading.report.counterpoints.map((cp, i) => (
+                                    <li key={i}>{cp}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className={styles.studySection}>
+                            <div className={styles.studyGrid}>
+                              {drawnCards.map((card, i) => {
+                                const info = getPositionInfo(i);
+                                return (
+                                  <div key={i} className={styles.studyCard}>
+                                    <div className={styles.studyCardHeader}>
+                                      <span className={styles.studyCardPos}>{info.posLabel}</span>
+                                      <h4 className={styles.studyCardName}>{card.nameKo}</h4>
+                                    </div>
+                                    <p className={styles.studyCardDesc}>{card.description || card.summary}</p>
+                                    <div className={styles.studyKeywords}>
+                                      {card.keywords?.map(k => <span key={k} className={styles.studyTag}>#{k}</span>)}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
                           </div>
                         )}
                       </div>
-                    ) : (
-                      <div className={styles.studySection}>
-                        <div className={styles.studyGrid}>
-                          {drawnCards.map((card, i) => {
-                            const info = getPositionInfo(i);
-                            return (
-                              <div key={i} className={styles.studyCard}>
-                                <div className={styles.studyCardHeader}>
-                                  <span className={styles.studyCardPos}>{info.posLabel}</span>
-                                  <h4 className={styles.studyCardName}>{card.nameKo}</h4>
-                                </div>
-                                <p className={styles.studyCardDesc}>{card.description || card.summary}</p>
-                                <div className={styles.studyKeywords}>
-                                  {card.keywords?.map(k => <span key={k} className={styles.studyTag}>#{k}</span>)}
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-                  </div>
 
-                  <div className={styles.newQuestionRow}>
-                    <button onClick={handleReset} className={styles.newQuestionBtn}>
-                      <RefreshCw size={18} /> 새로운 질문하기
-                    </button>
-                  </div>
+                      <div className={styles.newQuestionRow}>
+                        <button onClick={handleReset} className={styles.newQuestionBtn}>
+                          <RefreshCw size={18} /> 새로운 질문하기
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  <div ref={messagesEndRef} />
                 </div>
-              )}
-              <div ref={messagesEndRef} />
+              </div>
             </div>
           </div>
         </div>

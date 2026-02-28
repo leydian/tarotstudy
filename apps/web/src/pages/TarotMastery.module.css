@@ -1,10 +1,10 @@
 .page {
-  max-width: 1100px;
+  max-width: 1520px;
   margin: 0 auto;
   height: calc(100vh - 140px);
   display: flex;
   flex-direction: column;
-  padding: 0 1rem;
+  padding: 0 1.25rem;
 }
 
 /* ── SANCTUARY PANEL ── */
@@ -51,17 +51,40 @@
 /* ── MAIN CONTENT STRUCTURE ── */
 .mainContent {
   flex: 1;
-  display: flex;
-  flex-direction: column;
+  display: block;
   overflow: hidden;
   position: relative;
+}
+
+.workspaceGrid {
+  height: 100%;
+  display: grid;
+  grid-template-columns: minmax(420px, 46%) minmax(520px, 54%);
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.leftPane {
+  min-height: 0;
+  display: grid;
+  grid-template-rows: minmax(300px, 58%) minmax(220px, 42%);
+  gap: 1rem;
+}
+
+.rightPane {
+  min-height: 0;
+  border: 1px solid var(--border-subtle);
+  border-radius: 20px;
+  background: rgba(0, 0, 0, 0.14);
+  overflow: hidden;
 }
 
 /* ── TOP SPREAD AREA (STICKY-LIKE) ── */
 .topSpreadArea {
   flex-shrink: 0;
   background: radial-gradient(circle at center, rgba(159, 130, 196, 0.08) 0%, transparent 80%);
-  border-bottom: 1px solid var(--border-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: 20px;
   position: relative;
   overflow: hidden;
   display: flex;
@@ -71,8 +94,79 @@
   z-index: 5;
 }
 
+.leftPanePlaceholder {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 1rem;
+}
+
+.cardBasicsPanel {
+  min-height: 0;
+  border: 1px solid var(--border-subtle);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.02);
+  padding: 1rem 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.cardBasicsTitle {
+  margin: 0;
+  color: var(--accent-gold);
+  font-size: 1.08rem;
+}
+
+.cardBasicsEmpty {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
+.cardBasicsList {
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding-right: 0.25rem;
+}
+
+.cardBasicsItem {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 0.65rem 0.75rem;
+  background: rgba(255, 255, 255, 0.01);
+}
+
+.cardBasicsHead {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-bottom: 0.35rem;
+}
+
+.cardBasicsPos {
+  color: var(--accent-gold);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.cardBasicsName {
+  color: var(--text-primary);
+  font-size: 0.95rem;
+}
+
+.cardBasicsDesc {
+  margin: 0;
+  color: var(--text-secondary);
+  line-height: 1.45;
+  font-size: 0.92rem;
+}
+
 .messagesContainer {
   flex: 1;
+  min-height: 0;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -362,6 +456,17 @@
 
 /* ── RESPONSIVE ── */
 @media (max-width: 768px) {
+  .workspaceGrid {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
+    padding: 0.75rem;
+  }
+  .leftPane {
+    grid-template-rows: minmax(220px, auto) minmax(180px, auto);
+  }
+  .rightPane {
+    min-height: 50vh;
+  }
   .topSpreadArea { min-height: 180px !important; }
   .spreadCenter { transform: scale(0.4); }
   .messages { padding: 1.5rem; }
