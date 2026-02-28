@@ -2,6 +2,30 @@
 
 ## [2026-02-28]
 
+### 하이브리드 리딩 품질 복원 패치 (v6.0.1)
+
+#### 변경 사항
+- **기본 리딩 품질 복원 (`apps/api/src/domains/reading/hybrid.js`)**:
+    - 하이브리드 응답에서도 `conclusion/evidence/action`은 기존 `generateReadingV3` 결과를 기본으로 사용하도록 변경.
+    - API 키 미설정/모델 미사용 환경에서도 기존 서사형 리딩 품질을 유지.
+    - 구조화 리포트(`report`)는 본문 대체가 아닌 근거 보강 계층으로 유지.
+
+- **문장 품질 보정 (`apps/api/src/domains/reading/hybrid.js`)**:
+    - deterministic 근거 문장에서 `"입니다.의 흐름"` 같은 비문이 발생하지 않도록 `claim` 생성 로직을 정리.
+    - 카드 요약문 말미 마침표를 정규화해 자연스러운 문장 출력 보장.
+
+- **리포트 탭 렌더링 우선순위 조정 (`apps/web/src/pages/TarotMastery.tsx`)**:
+    - 마스터 리포트 본문은 다시 `reading.conclusion`(기존 고품질 서사)을 우선 출력.
+    - `reading.report.summary`는 `근거 요약`으로 분리해 보조 정보로 제시.
+    - 실행 지침은 구조화 보조 액션 대신 기존 `reading.action`을 기본 출력하도록 복원.
+
+#### 검증
+- `vite build` 성공.
+- `POST /api/reading` 응답 검증:
+    - 레거시 서사 본문(`conclusion`) 유지 확인
+    - 구조화 리포트(`report/quality`) 동시 제공 확인
+    - fallback 환경에서도 품질 저하 없이 동작 확인
+
 ### 하이브리드 리딩 엔진 도입 (Reading Hybrid v6.0)
 
 #### 변경 사항

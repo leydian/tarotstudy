@@ -231,10 +231,13 @@ export function TarotMastery() {
                         <div className={styles.masterReport}>
                           <h3 className={styles.masterReportTitle}>운명의 마스터 리포트</h3>
                           <p className={styles.masterReportText}>
-                            {reading.report?.summary || reading.conclusion}
+                            {reading.conclusion}
                           </p>
                           {reading.report && (
                             <div style={{ marginTop: '1rem', display: 'grid', gap: '0.6rem' }}>
+                              <p className={styles.masterReportText} style={{ margin: 0 }}>
+                                <strong>근거 요약:</strong> {reading.report.summary}
+                              </p>
                               <p className={styles.masterReportText} style={{ margin: 0 }}>
                                 <strong>판정:</strong> {reading.report.verdict.label} / {reading.report.verdict.rationale}
                               </p>
@@ -273,7 +276,7 @@ export function TarotMastery() {
                         <div className={styles.arcanaGuidance}>
                           <h4 className={styles.arcanaTitle}>아르카나의 지침</h4>
                           <div className={styles.arcanaList}>
-                            {(reading.report?.actions?.length ? reading.report.actions : reading.action).map((act, i) => (
+                            {reading.action.map((act, i) => (
                               <div key={i} className={styles.arcanaItem}>
                                 <span className={styles.arcanaItemBullet}>●</span>
                                 <p className={styles.arcanaItemText}>{act}</p>

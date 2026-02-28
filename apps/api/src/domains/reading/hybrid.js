@@ -84,13 +84,16 @@ const computeVerdict = (facts, binaryEntities) => {
 const buildDeterministicReport = ({ question, facts, category, binaryEntities }) => {
   const verdict = computeVerdict(facts, binaryEntities);
 
-  const evidence = facts.map((fact, idx) => ({
+  const evidence = facts.map((fact) => {
+    const coreMeaning = sanitizeText(fact.coreMeaning || fact.summary).replace(/\.$/, '');
+    return {
     cardId: fact.cardId,
     positionLabel: fact.positionLabel,
-    claim: `${fact.cardNameKo} 카드는 ${sanitizeText(fact.coreMeaning)}의 흐름을 시사합니다.`,
+    claim: `${fact.cardNameKo}: ${coreMeaning}`,
     rationale: `핵심 키워드: ${fact.keywords.join(', ') || '일반 흐름'}`,
     caution: sanitizeText(fact.advice) || '급한 결정보다 우선순위 정리가 필요합니다.'
-  }));
+    };
+  });
 
   const counterpoints = [
     '질문 문맥이 넓으면 카드 해석의 초점이 분산될 수 있습니다.',
@@ -356,10 +359,14 @@ export const generateReadingHybrid = async ({
     qualityIssues = quality.issues;
   }
 
-  const legacy = toLegacyResponse({ report: normalized, question: safeQuestion, facts });
+  const legacyFromV3 = generateReadingV3(cards, safeQuestion, timeframe, category);
+  const legacy = legacyFromV3 || toLegacyResponse({ report: normalized, question: safeQuestion, facts });
 
   const result = {
-    ...legacy,
+    conclusion: legacy.conclusion,
+    evidence: legacy.evidence,
+    action: legacy.action,
+    yesNoVerdict: legacy.yesNoVerdict || normalizeVerdictLabel(normalized.verdict.label),
     report: normalized,
     quality: {
       consistencyScore: quality.consistencyScore,
