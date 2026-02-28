@@ -1,4 +1,4 @@
-import { normalizeVerdictLabel } from './report-builder.js';
+import { normalizeVerdictLabel } from './report/verdict-policy.js';
 
 const toLegacyResponse = ({ report, question, facts }) => {
   const evidenceStrings = report.evidence.map((item) => (

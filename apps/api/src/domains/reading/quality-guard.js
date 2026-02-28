@@ -1,14 +1,18 @@
 import {
   sanitizeText,
+  isHighOverlap
+} from './report/text-utils.js';
+import {
   normalizeVerdictLabel,
-  isValidVerdictLabel,
+  isValidVerdictLabel
+} from './report/verdict-policy.js';
+import {
   stripListPrefix,
-  containsContamination,
-  normalizeFortune,
-  isHighOverlap,
-  withCategorizedFlags,
-  applyHealthGuardrail
-} from './report-builder.js';
+  containsContamination
+} from './report/contamination-policy.js';
+import { normalizeFortune } from './report/fortune-policy.js';
+import { withCategorizedFlags } from './report/fact-builder.js';
+import { applyHealthGuardrail } from './report/health-guardrail.js';
 
 const verifyReport = (report, facts) => {
   const issues = [];

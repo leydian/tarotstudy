@@ -1,12 +1,14 @@
 import { inferQuestionProfile } from './questionType.js';
 import {
-  sanitizeText,
-  normalizeVerdictLabel,
+  sanitizeText
+} from './report/text-utils.js';
+import { normalizeVerdictLabel } from './report/verdict-policy.js';
+import {
   withCategorizedFlags,
   postProcessReport,
-  buildCardFacts,
-  buildDeterministicReport
-} from './report-builder.js';
+  buildCardFacts
+} from './report/fact-builder.js';
+import { buildDeterministicReport } from './report/deterministic.js';
 import {
   detectResponseMode,
   getAnthropicConfig,

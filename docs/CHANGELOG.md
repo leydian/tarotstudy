@@ -2,6 +2,40 @@
 
 ## [2026-02-28]
 
+### 1차 공격적 분할: report/shared 8+ 모듈 분해 + direct import 전환 (v6.3.55)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/orchestrator.js`
+- `apps/api/src/domains/reading/quality-guard.js`
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/domains/reading/report/deterministic.js`
+- `apps/api/src/domains/reading/report/shared.js`
+- `apps/api/src/domains/reading/report/text-utils.js` (신규)
+- `apps/api/src/domains/reading/report/contamination-policy.js` (신규)
+- `apps/api/src/domains/reading/report/verdict-policy.js` (신규)
+- `apps/api/src/domains/reading/report/evidence-templates.js` (신규)
+- `apps/api/src/domains/reading/report/domain-policy.js` (신규)
+- `apps/api/src/domains/reading/report/fortune-policy.js` (신규)
+- `apps/api/src/domains/reading/report/health-guardrail.js` (신규)
+- `apps/api/src/domains/reading/report/fact-builder.js` (신규)
+- `docs/RELEASE_NOTES_v6.3.55.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- `report/shared.js` 949줄 단일 파일을 역할별 모듈로 공격적으로 분해.
+- `orchestrator`, `quality-guard`, `renderer`, `deterministic`가 필요한 정책 모듈을 직접 import하도록 전환.
+- `report/shared.js`는 호환용 집약 재수출 레이어(57줄)로 축소.
+- `verdict`, `contamination`, `fortune`, `evidence`, `fact-builder`, `health` 정책 경계를 파일 단위로 분리해 회귀 추적 범위를 축소.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:persona --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `node apps/api/tests/fallback-minimization.js` 통과
+- `node apps/api/tests/question-profile-v2.js` 통과
+- `node apps/api/tests/reading-v2-contract.js` 통과
+- `npm run build --prefix apps/web` 통과
+
 ### 2단계 분할 마무리: report-builder 서브모듈 분해 완료 (v6.3.54)
 
 #### 변경 파일

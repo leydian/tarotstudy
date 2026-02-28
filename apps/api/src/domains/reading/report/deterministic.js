@@ -1,27 +1,32 @@
 import {
-  sanitizeText,
-  getSuitType,
-  getEvidenceToneScore,
-  resolveEvidenceToneBucket,
   EVIDENCE_RATIONALE_TEMPLATES,
   EVIDENCE_CLAIM_TEMPLATES,
   CARD_STYLE_HINTS,
   selectTemplateWithDiversity,
-  buildEvidenceClaim,
-  buildCounterpointsByContext,
-  buildDomainActions,
-  joinSentencesKorean,
-  buildConclusionStatement,
-  buildConclusionBuffer,
+  resolveEvidenceToneBucket,
+  buildEvidenceClaim
+} from './evidence-templates.js';
+import {
+  sanitizeText,
+  joinSentencesKorean
+} from './text-utils.js';
+import {
+  getSuitType,
+  getEvidenceToneScore,
   verdictTone,
   computeVerdict,
-  toTrendLabel,
-  buildFortuneSummary,
+  toTrendLabel
+} from './verdict-policy.js';
+import {
+  buildCounterpointsByContext,
+  buildDomainActions,
+  buildConclusionStatement,
+  buildConclusionBuffer,
   pickDominantFact,
   periodLabelKo,
-  ensureFortuneDensity,
-  withTopicParticle
-} from './shared.js';
+  buildFortuneSummary
+} from './domain-policy.js';
+import { ensureFortuneDensity } from './fortune-policy.js';
 
 const buildDeterministicReport = ({
   question,
