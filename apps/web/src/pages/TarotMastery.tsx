@@ -104,7 +104,7 @@ export function TarotMastery() {
   const scrollToBottom = () => {
     const isMobile = typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches;
     const behavior: ScrollBehavior = isMobile ? 'auto' : 'smooth';
-    if (rightPaneRef.current) {
+    if (rightPaneRef.current && typeof rightPaneRef.current.scrollTo === 'function') {
       rightPaneRef.current.scrollTo({ top: rightPaneRef.current.scrollHeight, behavior });
       return;
     }
