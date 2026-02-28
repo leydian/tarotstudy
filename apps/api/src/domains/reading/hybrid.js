@@ -338,11 +338,18 @@ const buildDeterministicReport = ({
   const resolvedFortunePeriod = fortunePeriod || 'week';
 
   const evidence = facts.map((fact) => {
-    const coreMeaning = sanitizeText(fact.coreMeaning || fact.summary).replace(/\.$/, '');
+    const coreMeaning = sanitizeText(fact.coreMeaning || fact.summary)
+      .replace(/\.$/, '')
+      .replace(/[을를이가]?\s*상징합니다\.?$/, '');
     const keywordsStr = fact.keywords.slice(0, 2).join('·') || '균형';
-    const orientationRationale = fact.orientation === 'reversed'
-      ? `${keywordsStr} 에너지가 안쪽으로 향하고 있어, 속도를 낮추고 조건을 재점검할 때입니다.`
-      : `${keywordsStr} 에너지가 활성화되어, 이 흐름에 맞춰 나아가기 좋은 시점입니다.`;
+    const polarityScore = getYesNoScore(fact.cardId, fact.orientation);
+    const orientationRationale = polarityScore > 0
+      ? `${keywordsStr} 에너지가 활성화되어, 이 흐름에 맞춰 나아가기 좋은 시점입니다.`
+      : polarityScore < 0
+        ? `${keywordsStr} 에너지가 경고 신호를 보내고 있어, 이 영역을 직시하고 대비하세요.`
+        : fact.orientation === 'reversed'
+          ? `${keywordsStr} 에너지가 안쪽으로 향하고 있어, 속도를 낮추고 조건을 재점검할 때입니다.`
+          : `${keywordsStr} 에너지가 활성화되어, 이 흐름에 맞춰 나아가기 좋은 시점입니다.`;
     return {
       cardId: fact.cardId,
       positionLabel: fact.positionLabel,
@@ -460,13 +467,13 @@ const buildDeterministicReport = ({
       ? `${energyFact.cardNameKo}(${energyFact.orientationLabel})의 흐름이 ${periodText} 전체 리듬의 기준점으로 작동합니다.`
       : `${periodText}의 에너지는 안정적으로 흐르고 있습니다.`;
     const workClaim = workFact
-      ? `${claimCardLabel(workFact, energyFact)} 신호를 보면 ${workFrame}`
+      ? `${claimCardLabel(workFact, energyFact)} 관점에서, ${workFrame}`
       : workFrame;
     const loveClaim = loveFact
       ? `${claimCardLabel(loveFact, energyFact)} 흐름상 ${loveFrame}`
       : loveFrame;
     const mindClaim = mindFact
-      ? `${claimCardLabel(mindFact, energyFact)} 경향을 고려하면 ${mindFrame}`
+      ? `${claimCardLabel(mindFact, energyFact)} 경향에서, ${mindFrame}`
       : mindFrame;
     const fortune = {
       period: resolvedFortunePeriod,
