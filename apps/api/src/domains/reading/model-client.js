@@ -1,28 +1,9 @@
+import { extractJsonObject } from './json-extractor.js';
+
 const DEFAULT_ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL || 'claude-haiku-4-5-20251001';
 const ANTHROPIC_TIMEOUT_MS = Number(process.env.ANTHROPIC_TIMEOUT_MS || 12000);
 const ANTHROPIC_RETRY_TIMEOUT_MS = Number(process.env.ANTHROPIC_RETRY_TIMEOUT_MS || 7000);
 const ANTHROPIC_REPAIR_TIMEOUT_MS = Number(process.env.ANTHROPIC_REPAIR_TIMEOUT_MS || 5000);
-const extractJsonObject = (text) => {
-  const trimmed = String(text || '').trim();
-  if (!trimmed) return null;
-  const withoutFence = trimmed
-    .replace(/^```(?:json)?\s*/i, '')
-    .replace(/\s*```$/i, '')
-    .trim();
-
-  try {
-    return JSON.parse(withoutFence);
-  } catch {
-    const start = withoutFence.indexOf('{');
-    const end = withoutFence.lastIndexOf('}');
-    if (start === -1 || end === -1 || end <= start) return null;
-    try {
-      return JSON.parse(withoutFence.slice(start, end + 1));
-    } catch {
-      return null;
-    }
-  }
-};
 
 const mapAnthropicReason = (status) => {
   if (status === 404) return 'model_not_found';
@@ -94,7 +75,6 @@ const callAnthropic = async (prompt, options = {}) => {
     return { report: null, reason, status: null };
   }
 };
-
 
 export {
   ANTHROPIC_REPAIR_TIMEOUT_MS,

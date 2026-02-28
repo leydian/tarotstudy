@@ -2,6 +2,49 @@
 
 ## [2026-02-28]
 
+### 2단계 분할: 오케스트레이터 직접 모듈 참조 + profile 세분화 + 정책 강화 (v6.3.53)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/orchestrator.js`
+- `apps/api/src/domains/reading/prompt-builder.js`
+- `apps/api/src/domains/reading/model-client.js`
+- `apps/api/src/domains/reading/json-extractor.js`
+- `apps/api/src/domains/reading/quality-guard.js`
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/domains/reading/report-builder.js`
+- `apps/api/src/domains/reading/profile/keywords.js`
+- `apps/api/src/domains/reading/profile/intent-scoring.js`
+- `apps/api/src/domains/reading/profile/core.js`
+- `apps/api/src/domains/reading/profile/decision-policy.js`
+- `apps/api/src/domains/reading/profile/question-type.js`
+- `apps/api/src/domains/reading/questionType.js`
+- `apps/api/src/domains/reading/engine-helpers.js` (삭제)
+- `docs/RELEASE_NOTES_v6.3.53.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 엔진 의존 경계 정리
+  - `orchestrator`가 `engine-helpers`를 거치지 않고 `report/prompt/model/quality/renderer`를 직접 참조하도록 재배선.
+  - `engine-helpers.js` 제거.
+- 모듈 세분화
+  - `json-extractor`, `quality-guard`, `renderer` 신규 분리.
+  - `profile` 로직을 `keywords/intent-scoring/core/decision-policy`로 세분화.
+  - `questionType.js`는 호환 re-export 경로 유지.
+- 공격적 정책 개선
+  - light/binary 계열 액션을 2개 고정해 경량 질문의 과도한 안내 문장을 축소.
+  - `summary`/`verdict` 중복 판정 임계 강화(더 짧은 문장도 중복으로 감지).
+  - 역방향 비중이 높은 경우 verdict 임계치를 상향해 보수적 판정 유도.
+  - `normalizeReport`에서 역방향 낙관 문구 보정 패턴 강화.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:persona --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `node apps/api/tests/fallback-minimization.js` 통과
+- `node apps/api/tests/question-profile-v2.js` 통과
+- `node apps/api/tests/reading-v2-contract.js` 통과
+- `npm run build --prefix apps/web` 통과
+
 ### 풀 리팩터: reading 모듈 세분화 + profile 경로 분리 (v6.3.52)
 
 #### 변경 파일

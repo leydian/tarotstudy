@@ -130,7 +130,7 @@ const isHighOverlap = (a, b) => {
   const right = normalizeCompareText(b);
   if (!left || !right) return false;
   if (left === right) return true;
-  if (left.length >= 14 && right.length >= 14 && (left.includes(right) || right.includes(left))) return true;
+  if (left.length >= 10 && right.length >= 10 && (left.includes(right) || right.includes(left))) return true;
   return false;
 };
 
@@ -566,6 +566,7 @@ const postProcessReport = (report) => {
 
   next.counterpoints = sanitizeListItems(next.counterpoints, 'counterpoints');
   next.actions = sanitizeListItems(next.actions, 'actions');
+  next.actions = next.actions.filter((item) => !next.counterpoints.some((cp) => isHighOverlap(cp, item)));
 
   if (next.fortune) {
     const before = JSON.stringify(next.fortune);
@@ -746,14 +747,10 @@ const buildConclusionBuffer = ({ verdictLabel, questionType, domainTag = 'genera
 const buildDomainActions = ({ questionType, domainTag = 'general', verdictLabel, question = '' }) => {
   const isLightLikeQuestion = questionType === 'light' || (questionType === 'binary' && String(question).length <= 20);
   if (isLightLikeQuestion || domainTag === 'lifestyle') {
-    const base = [
+    return [
       '지금 선택을 10~20분 단위의 작은 실험으로 먼저 실행해 체감 결과를 확인해 보세요.',
       '결정 뒤 만족도(기분·효율)를 짧게 기록해 다음 선택 기준으로 재사용하세요.'
     ];
-    if (verdictLabel !== 'YES') {
-      return [...base, '결론이 애매하면 즉시 확정하지 말고 물 한 컵/짧은 휴식 뒤 다시 선택하세요.'];
-    }
-    return base;
   }
 
   if (domainTag === 'career' || questionType === 'career') {
@@ -861,7 +858,10 @@ const computeVerdict = (facts, binaryEntities) => {
   }
 
   const score = facts.reduce((acc, fact) => acc + getYesNoScore(fact.cardId, fact.orientation), 0);
-  const threshold = Math.max(0.8, facts.length * 0.2);
+  const reversedRatio = facts.length > 0
+    ? facts.filter((fact) => fact.orientation === 'reversed').length / facts.length
+    : 0;
+  const threshold = Math.max(1.0, facts.length * 0.25) + (reversedRatio >= 0.5 ? 0.35 : 0);
   if (score > threshold) return { label: 'YES', rationale: '카드의 전반적인 흐름이 상승 구간에 가까워 기회 포착에 유리합니다.' };
   if (score < -threshold) return { label: 'NO', rationale: '역방향·경고 신호가 섞여 있어 속도 조절과 리스크 관리가 우선입니다.' };
   return { label: 'MAYBE', rationale: '상반된 기운이 섞여 있어, 단정 짓기보다 상황의 변화를 조금 더 지켜볼 필요가 있습니다.' };
