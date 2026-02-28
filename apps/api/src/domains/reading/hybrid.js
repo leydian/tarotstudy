@@ -47,6 +47,12 @@ const buildCardFacts = (cards, category) => cards.map((card, idx) => ({
   advice: card.meanings?.advice || ''
 }));
 
+const verdictTone = (label, rationale) => {
+  if (label === 'YES') return `운명의 흐름이 매우 맑고 긍정적입니다. ${rationale} 망설임 없이 나아가셔도 좋을 것 같아요.`;
+  if (label === 'NO') return `지금은 잠시 멈추어 서서 주변을 살필 때입니다. ${rationale} 무리한 전진보다는 안정을 선택하는 지혜가 필요합니다.`;
+  return `안개 속에 가려진 것처럼 상황이 조금 더 무르익기를 기다려야 할 것 같네요. ${rationale} 조금 더 시간을 두고 지켜보는 것은 어떨까요?`;
+};
+
 const computeVerdict = (facts, binaryEntities) => {
   if (binaryEntities && facts.length === 2) {
     const scoreA = getYesNoScore(facts[0].cardId);
@@ -56,7 +62,7 @@ const computeVerdict = (facts, binaryEntities) => {
       return {
         label: 'YES',
         recommendedOption: 'A',
-        rationale: `${binaryEntities[0]} 선택지가 상대적으로 더 안정적인 흐름을 보입니다.`
+        rationale: `[${binaryEntities[0]}] 쪽의 기운이 상대적으로 더 안정적이고 조화로운 흐름을 보여주고 있습니다.`
       };
     }
 
@@ -64,21 +70,21 @@ const computeVerdict = (facts, binaryEntities) => {
       return {
         label: 'YES',
         recommendedOption: 'B',
-        rationale: `${binaryEntities[1]} 선택지가 상대적으로 더 편안한 결과를 보입니다.`
+        rationale: `[${binaryEntities[1]}] 쪽의 길이 당신에게 더 편안한 결실과 긍정적인 변화를 가져다줄 것으로 보입니다.`
       };
     }
 
     return {
       label: 'MAYBE',
       recommendedOption: 'EITHER',
-      rationale: '두 선택지의 기운이 유사해 개인 컨디션과 우선순위가 결정 요인이 됩니다.'
+      rationale: '두 가지 선택지 모두 비슷한 무게의 기운을 담고 있어, 당신의 마음이 조금 더 깊게 끌리는 곳을 믿고 따라가도 좋을 것 같습니다.'
     };
   }
 
   const score = facts.reduce((acc, fact) => acc + getYesNoScore(fact.cardId), 0);
-  if (score > 0) return { label: 'YES', rationale: '긍정 카드 비중이 높아 실행 가능성이 큽니다.' };
-  if (score < 0) return { label: 'NO', rationale: '주의 카드 비중이 높아 보수적 접근이 필요합니다.' };
-  return { label: 'MAYBE', rationale: '상반된 신호가 섞여 있어 추가 정보 확인이 필요합니다.' };
+  if (score > 0) return { label: 'YES', rationale: '카드의 전반적인 기운이 당신의 질문에 대해 긍정적인 응답을 보내고 있습니다.' };
+  if (score < 0) return { label: 'NO', rationale: '지금은 상황을 조금 더 신중하게 살피고 보수적으로 접근하는 것이 안전해 보입니다.' };
+  return { label: 'MAYBE', rationale: '상반된 기운이 섞여 있어, 단정 짓기보다 상황의 변화를 조금 더 지켜볼 필요가 있습니다.' };
 };
 
 const buildDeterministicReport = ({ question, facts, category, binaryEntities }) => {
@@ -89,25 +95,25 @@ const buildDeterministicReport = ({ question, facts, category, binaryEntities })
     return {
     cardId: fact.cardId,
     positionLabel: fact.positionLabel,
-    claim: `${fact.cardNameKo}: ${coreMeaning}`,
-    rationale: `핵심 키워드: ${fact.keywords.join(', ') || '일반 흐름'}`,
-    caution: sanitizeText(fact.advice) || '급한 결정보다 우선순위 정리가 필요합니다.'
+    claim: `${fact.cardNameKo}의 상징인 '${coreMeaning}'`,
+    rationale: `핵심 키워드인 ${fact.keywords.join(', ') || '조화로운 기운'}을(를) 통해 이번 질문의 실마리를 찾을 수 있습니다.`,
+    caution: sanitizeText(fact.advice) || '급한 결정보다는 마음의 우선순위를 먼저 정리해 보세요.'
     };
   });
 
   const counterpoints = [
-    '질문 문맥이 넓으면 카드 해석의 초점이 분산될 수 있습니다.',
-    '현재 컨디션이나 외부 일정 변수에 따라 체감 결과가 달라질 수 있습니다.'
+    '질문의 범위가 넓을 경우 카드가 가리키는 방향이 분산될 수 있으니 유의하세요.',
+    '운명은 고정된 것이 아니므로 당신의 컨디션과 주변 환경에 따라 흐름은 언제든 바뀔 수 있습니다.'
   ];
 
   const actions = [
-    '결정 전에 오늘의 제약(시간, 체력, 비용)을 먼저 체크하세요.',
-    '한 가지 선택을 10분 안에 실행 가능한 단위로 나눠 바로 시작하세요.'
+    '지금 당신의 직관이 들려주는 목소리에 조금 더 귀를 기울여 보세요.',
+    '결정하기 전, 10분 정도 차분히 명상을 하며 마음의 소리를 들어보시는 건 어떨까요?'
   ];
 
   const summary = category === 'general'
-    ? `질문 "${question}"에 대해 카드 근거를 종합하면 ${verdict.rationale}`
-    : `질문 "${question}"의 ${category} 맥락에서 카드 근거를 종합하면 ${verdict.rationale}`;
+    ? `질문 "${question}"에 대한 운명의 지도를 펼쳐보니, ${verdictTone(verdict.label, verdict.rationale)}`
+    : `"${question}"의 ${category}적인 맥락에서 카드를 읽어보니, ${verdictTone(verdict.label, verdict.rationale)}`;
 
   return { summary, verdict, evidence, counterpoints, actions };
 };
@@ -123,12 +129,12 @@ const buildPrompt = ({ question, facts, category, timeframe, binaryEntities, ses
   };
 
   return [
-    '당신은 타로 리딩 품질 검증이 가능한 분석가입니다.',
-    '반드시 JSON만 출력하고, 카드 팩트에 없는 주장을 만들지 마세요.',
+    '당신은 아르카나 도서관의 지혜로운 사서이자 타로 전문가입니다.',
+    '반드시 JSON만 출력하고, 카드의 상징에 기반한 따뜻하고 통찰력 있는 분석을 제공하세요.',
     '출력 스키마:',
     '{"summary":string,"verdict":{"label":"YES|NO|MAYBE","rationale":string,"recommendedOption":"A|B|EITHER|NONE"},"evidence":[{"cardId":string,"positionLabel":string,"claim":string,"rationale":string,"caution":string}],"counterpoints":[string],"actions":[string]}',
-    'evidence 길이는 facts 길이와 동일해야 하며, 각 evidence.cardId는 facts.cardId 중 하나여야 함.',
-    '한국어로 작성하고 과장된 확신형 문장은 피하세요.',
+    'evidence.claim은 카드의 상징과 현재 상황을 연결하는 문장으로 작성하세요.',
+    '한국어로 작성하고 사서의 우아한 말투를 유지하세요.',
     `입력 데이터: ${JSON.stringify(context)}`
   ].join('\n');
 };
@@ -151,7 +157,7 @@ const extractJsonObject = (text) => {
   }
 };
 
-const callModel = async ({ prompt, temperature = 0.35 }) => {
+const callModel = async ({ prompt, temperature = 0.4 }) => {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return null;
 
@@ -167,7 +173,7 @@ const callModel = async ({ prompt, temperature = 0.35 }) => {
       messages: [
         {
           role: 'system',
-          content: '카드 팩트 기반으로만 답하고 JSON만 반환하세요.'
+          content: '아르카나 도서관의 사서로서 따뜻하고 신비로운 분위기를 유지하며 JSON만 반환하세요.'
         },
         {
           role: 'user',
@@ -261,19 +267,18 @@ const normalizeReport = (report, facts, fallback) => {
 const toLegacyResponse = ({ report, question, facts }) => {
   const evidenceStrings = report.evidence.map((item) => (
     `[${item.positionLabel}: ${facts.find((f) => f.cardId === item.cardId)?.cardNameKo || item.cardId}]\n\n` +
-    `이 카드 근거의 핵심은 "${item.claim}" 입니다.\n\n` +
-    `근거 설명: ${item.rationale}\n\n` +
-    `주의점: ${item.caution}`
+    `사서로서 이 카드의 의미를 읽어보니, "${item.claim}" 임을 알 수 있습니다.\n\n` +
+    `깊은 통찰: ${item.rationale}\n\n` +
+    `사서의 조언: ${item.caution}`
   ));
 
-  const action = report.actions.map((item, idx) => `[실천 ${idx + 1}] ${item}`);
+  const action = report.actions.map((item, idx) => `[운명의 지침 ${idx + 1}] ${item}`);
 
   const conclusion = [
-    `[핵심 결론] ${report.summary}`,
+    `사서인 제가 읽어낸 이번 리딩의 결론입니다.`,
+    `질문하신 "${question}"에 대하여, ${report.summary}`,
     '',
-    `[판정] ${report.verdict.label} - ${report.verdict.rationale}`,
-    '',
-    `[질문] ${question}`
+    `[운명의 판정] ${report.verdict.label} - ${report.verdict.rationale}`,
   ].join('\n');
 
   return {

@@ -129,6 +129,12 @@ export function TarotMastery() {
     return { posLabel, posDesc, card };
   };
 
+  const verdictLabelKo = (label?: 'YES' | 'NO' | 'MAYBE') => {
+    if (label === 'YES') return '긍정';
+    if (label === 'NO') return '신중';
+    return '유보';
+  };
+
   const handleReset = () => {
     setStep('input');
     setReading(null);
@@ -230,51 +236,27 @@ export function TarotMastery() {
                       <div className={styles.resultSection}>
                         <div className={styles.masterReport}>
                           <h3 className={styles.masterReportTitle}>운명의 마스터 리포트</h3>
-                          <p className={styles.masterReportText}>
-                            {reading.conclusion}
-                          </p>
+                          <div className={styles.masterReportText}>
+                            {reading.conclusion.split('\n\n').map((para, i) => (
+                              <p key={i} style={{ marginBottom: '1rem' }}>{para}</p>
+                            ))}
+                          </div>
+                          
                           {reading.report && (
-                            <div style={{ marginTop: '1rem', display: 'grid', gap: '0.6rem' }}>
-                              <p className={styles.masterReportText} style={{ margin: 0 }}>
-                                <strong>근거 요약:</strong> {reading.report.summary}
+                            <div className={styles.reportSummaryBox}>
+                              <p className={styles.reportSummaryText}>
+                                <strong>사서의 통찰:</strong> {reading.report.summary}
                               </p>
-                              <p className={styles.masterReportText} style={{ margin: 0 }}>
-                                <strong>판정:</strong> {reading.report.verdict.label} / {reading.report.verdict.rationale}
-                              </p>
-                              {reading.report.counterpoints.length > 0 && (
-                                <p className={styles.masterReportText} style={{ margin: 0 }}>
-                                  <strong>반례/주의:</strong> {reading.report.counterpoints.join(' / ')}
-                                </p>
-                              )}
-                              {reading.quality && (
-                                <p className={styles.masterReportText} style={{ margin: 0, opacity: 0.9 }}>
-                                  <strong>품질 지표:</strong> 신뢰도 {reading.quality.consistencyScore}점 ·
-                                  근거 이탈 {reading.quality.unsupportedClaimCount}건 ·
-                                  재생성 {reading.quality.regenerationCount}회
-                                </p>
-                              )}
+                              <div className={styles.verdictBadge}>
+                                <Sparkles size={14} />
+                                <span>{verdictLabelKo(reading.report.verdict.label)}의 기운: {reading.report.verdict.rationale}</span>
+                              </div>
                             </div>
                           )}
                         </div>
 
-                        {reading.report?.evidence && reading.report.evidence.length > 0 && (
-                          <div className={styles.arcanaGuidance}>
-                            <h4 className={styles.arcanaTitle}>카드별 근거</h4>
-                            <div className={styles.arcanaList}>
-                              {reading.report.evidence.map((ev, i) => (
-                                <div key={i} className={styles.arcanaItem}>
-                                  <span className={styles.arcanaItemBullet}>●</span>
-                                  <p className={styles.arcanaItemText}>
-                                    <strong>[{ev.positionLabel}]</strong> {ev.claim} (근거: {ev.rationale}) / 주의: {ev.caution}
-                                  </p>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
                         <div className={styles.arcanaGuidance}>
-                          <h4 className={styles.arcanaTitle}>아르카나의 지침</h4>
+                          <h4 className={styles.arcanaTitle}>운명의 지침</h4>
                           <div className={styles.arcanaList}>
                             {reading.action.map((act, i) => (
                               <div key={i} className={styles.arcanaItem}>
@@ -284,6 +266,17 @@ export function TarotMastery() {
                             ))}
                           </div>
                         </div>
+
+                        {reading.report && reading.report.counterpoints.length > 0 && (
+                          <div className={styles.counterpointBox}>
+                            <h4 className={styles.counterpointTitle}>함께 고려할 변수</h4>
+                            <ul className={styles.counterpointList}>
+                              {reading.report.counterpoints.map((cp, i) => (
+                                <li key={i}>{cp}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
                       </div>
                     ) : (
                       <div className={styles.studySection}>
