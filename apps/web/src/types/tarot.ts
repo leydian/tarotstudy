@@ -85,7 +85,32 @@ export interface ReadingResponse {
       totalMs: number;
       anthropicPrimaryMs?: number | null;
       anthropicRetryMs?: number | null;
+      anthropicRepairMs?: number | null;
     };
+    attempts?: {
+      primary: {
+        attempted: boolean;
+        success: boolean;
+        reason?: string | null;
+        status?: number | null;
+        durationMs?: number | null;
+      };
+      retry: {
+        attempted: boolean;
+        success: boolean;
+        reason?: string | null;
+        status?: number | null;
+        durationMs?: number | null;
+      };
+      repair: {
+        attempted: boolean;
+        success: boolean;
+        reason?: string | null;
+        status?: number | null;
+        durationMs?: number | null;
+      };
+    };
+    failureStage?: 'network' | 'parse' | 'http' | 'model_unavailable' | 'engine' | 'validation' | 'unknown' | null;
     fallbackReason?: string | null;
   };
 }

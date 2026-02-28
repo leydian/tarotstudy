@@ -28,7 +28,9 @@
 - 네트워크/외부 API 관련 변경 시 추가 검증:
   - 응답의 `apiUsed`, `fallbackUsed`, `meta.fallbackReason` 확인
   - 응답의 `meta.requestId`, `meta.serverRevision` 확인
+  - 응답의 `meta.failureStage`, `meta.attempts`, `meta.timings.anthropicRepairMs` 확인
   - 실패 로그에서 `status`, `cause`, `timed_out` 확인
+  - 질문 분류 변경 시 `POST /api/question-profile` 결과와 UI 동작 일치 확인
 
 ## 4. 문서 동기화 규칙 (Docs Freshness)
 - 코드 계약/운영 동작을 변경하면 같은 작업에서 문서를 함께 갱신합니다.
@@ -50,10 +52,12 @@
 
 ## 7. 웹 앱 전용 체크포인트
 - 질문 의도와 스프레드 선택이 일치하는지 확인합니다.
-  - 예: 일상 양자택일 질문에서 커리어형 문맥이 노출되지 않아야 함
+  - 예: 일상 양자택일 질문에서 2카드 선택 스프레드가 우선되어야 함
 - 결과 화면에서 사용자 체감 품질을 확인합니다.
   - 결론/지침의 톤이 질문 무게와 일치하는지
   - fallback 시에도 응답 중단 없이 결과가 노출되는지
+  - 일반 사용자 모드에서 디버그 정보가 과다 노출되지 않는지
+  - 카드 공개 동작이 키보드 포커스에서도 동일하게 작동하는지
 
 ## 8. 완료 정의 (Definition of Done)
 아래를 모두 만족하면 완료로 간주합니다.

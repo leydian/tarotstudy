@@ -28,18 +28,25 @@ export const TarotCard: React.FC<TarotCardProps> = ({
     <div className={styles.wrapper}>
       <div
         className={`${styles.flipContainer} ${sizeClass} ${isRevealed ? styles.revealed : ''}`}
-        onClick={onClick}
       >
-        <div className={`${styles.flipInner} ${isRevealed ? styles.flipped : ''}`}>
-          {/* 뒷면 */}
-          <div className={`${styles.cardFace} ${styles.cardBack}`}>
-            <span className={styles.cardBackIcon}>?</span>
+        <button
+          type="button"
+          className={styles.cardButton}
+          onClick={onClick}
+          disabled={isRevealed || !onClick}
+          aria-label={isRevealed ? `${label} ${card.nameKo}` : `${label} 카드 공개`}
+        >
+          <div className={`${styles.flipInner} ${isRevealed ? styles.flipped : ''}`}>
+            {/* 뒷면 */}
+            <div className={`${styles.cardFace} ${styles.cardBack}`}>
+              <span className={styles.cardBackIcon}>?</span>
+            </div>
+            {/* 앞면 */}
+            <div className={`${styles.cardFace} ${styles.cardFront}`}>
+              <img src={card.image} alt={card.nameKo} />
+            </div>
           </div>
-          {/* 앞면 */}
-          <div className={`${styles.cardFace} ${styles.cardFront}`}>
-            <img src={card.image} alt={card.nameKo} />
-          </div>
-        </div>
+        </button>
       </div>
 
       <div className={styles.labelArea}>

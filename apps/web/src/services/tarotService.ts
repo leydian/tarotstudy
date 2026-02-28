@@ -17,6 +17,19 @@ export const tarotApi = {
     return res.json();
   },
 
+  async getQuestionProfile(question: string, category: string = 'general'): Promise<{
+    questionType: 'binary' | 'relationship' | 'career' | 'emotional' | 'light' | 'deep';
+    targetCardCount: number;
+  }> {
+    const res = await fetch(`${API_BASE}/question-profile`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question, category })
+    });
+    if (!res.ok) throw new Error('Failed to infer question profile');
+    return res.json();
+  },
+
   // AI 리딩 요청
   async getReading(
     cardIds: string[],

@@ -14,6 +14,9 @@
   - `meta.questionType`
   - `meta.requestId`
   - `meta.serverRevision`
+  - `meta.attempts` (선택)
+  - `meta.failureStage` (선택)
+  - `meta.timings.anthropicRepairMs` (선택)
   - `meta.fallbackReason` (fallback 시)
 
 ## 2. Fallback 안정성
@@ -22,7 +25,8 @@
 - 운영 로그와 응답을 `meta.requestId`로 매칭할 수 있어야 합니다.
 
 ## 3. 질문 유형 일관성
-- binary 질문은 2카드 스프레드 기준으로 해석되어야 합니다.
+- 질문 유형/카드 수 결정은 `POST /api/question-profile` 기준과 일치해야 합니다.
+- binary 질문은 2카드(짧은 질문) 또는 5카드(비교형 질문) 기준으로 해석되어야 합니다.
 - `report.verdict.recommendedOption`은 `A|B|EITHER|NONE` 중 하나여야 합니다.
 - 질문 유형(`meta.questionType`)은 입력 질문 의도와 일치해야 합니다.
 
@@ -30,6 +34,8 @@
 - 결과 화면에서 결론/지침이 정상 노출되어야 합니다.
 - 탭 전환(report/study) 시 정보 손실이 없어야 합니다.
 - 새 질문 시작 시 상태가 정상 초기화되어야 합니다.
+- 기본 사용자 화면에서 진단 배지(`requestId`, `fallbackReason` 등)가 과다 노출되지 않아야 합니다.
+- 카드 인터랙션은 키보드 포커스로 동작 가능해야 합니다.
 
 ## 5. 검증 절차
 1. `npm run test:persona --prefix apps/api`
@@ -38,6 +44,7 @@
    - binary 질문
    - 감정 취약 질문
    - API 키 없는 환경 질문
+   - `?debug=1`에서 진단 배지 노출 확인 / 일반 모드 비노출 확인
 
 ## 6. 실패 처리
 - 품질 게이트 실패 시 릴리스를 보류하고 원인 카테고리를 기록합니다.

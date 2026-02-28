@@ -1,4 +1,5 @@
 import { generateReadingV3 } from './v3.js';
+import { detectQuestionType } from './questionType.js';
 
 const POSITIVE_IDS = new Set([
   'm01', 'm03', 'm06', 'm07', 'm10', 'm11', 'm14', 'm17', 'm19', 'm21',
@@ -430,20 +431,6 @@ const extractBinaryEntities = (question, cardCount) => {
   }
 
   return null;
-};
-
-const detectQuestionType = ({ question, category, cardCount, binaryEntities }) => {
-  if (binaryEntities && (cardCount === 2 || cardCount === 5)) return 'binary';
-  const relationshipKeywords = ['속마음', '그 사람', '연애', '사랑', '재회', '커플', '썸', '이별'];
-  const careerKeywords = ['이직', '회사', '상사', '퇴사', '연봉', '업무', '커리어', '취업', '면접', '직장', '프로젝트'];
-  const emotionalKeywords = ['힘들', '우울', '슬퍼', '지쳐', '죽겠', '눈물', '불안', '무서', '막막', '상처', '포기'];
-  const lightKeywords = ['커피', '메뉴', '점심', '저녁', '야식', '걷기', '버스', '지하철', '옷', '신발', '살까', '말까', '먹을까', '마실까'];
-
-  if (category === 'love' || relationshipKeywords.some((k) => question.includes(k))) return 'relationship';
-  if (category === 'career' || careerKeywords.some((k) => question.includes(k))) return 'career';
-  if (emotionalKeywords.some((k) => question.includes(k))) return 'emotional';
-  if (question.length < 15 && lightKeywords.some((k) => question.includes(k))) return 'light';
-  return 'deep';
 };
 
 const mapFailureStage = ({ fallbackReason, qualityValid, modelReport }) => {

@@ -1,5 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Sparkles, Send, RefreshCw } from 'lucide-react';
 import { Card, Spread, Message, ReadingResponse } from '../types/tarot';
 import { tarotApi } from '../services/tarotService';
@@ -22,10 +21,29 @@ export function TarotMastery() {
   const [reading, setReading] = useState<ReadingResponse | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const navigate = useNavigate();
+  const revealTimersRef = useRef<number[]>([]);
+  const debugMode = useMemo(() => {
+    if (typeof window === 'undefined') return false;
+    return new URLSearchParams(window.location.search).get('debug') === '1';
+  }, []);
+  const showDiagnostics = debugMode || import.meta.env.DEV;
 
   const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   useEffect(scrollToBottom, [messages, step, resultTab]);
+  useEffect(() => () => {
+    revealTimersRef.current.forEach((timerId) => window.clearTimeout(timerId));
+    revealTimersRef.current = [];
+  }, []);
+
+  const queueTimer = (cb: () => void, ms: number) => {
+    const timerId = window.setTimeout(cb, ms);
+    revealTimersRef.current.push(timerId);
+  };
+
+  const clearRevealTimers = () => {
+    revealTimersRef.current.forEach((timerId) => window.clearTimeout(timerId));
+    revealTimersRef.current = [];
+  };
 
   const positionDefinitions: { [key: string]: string } = {
     // ... 기존 정의 ...
@@ -36,25 +54,20 @@ export function TarotMastery() {
     if (!input.trim() || loading) return;
 
     const userQuestion = input.trim();
-    const inferredQuestionType = inferQuestionType(userQuestion);
+    clearRevealTimers();
+    setRevealedIdx([]);
+    setDrawnCards([]);
+    setSpreadLayout(null);
+    setReading(null);
     setMessages(prev => [...prev, { role: 'user', text: userQuestion }]);
-    trackEvent('question_submitted', { questionType: inferredQuestionType, mode: 'hybrid' });
     setLoading(true);
     setInput('');
 
     try {
-      const relationshipKeywords = ['속마음', '그 사람', '연애', '사랑', '재회', '커플', '썸'];
-      const careerKeywords = ['이직', '회사', '상사', '퇴사', '연봉', '업무', '커리어', '취업', '면접', '직장', '프로젝트'];
-      const binaryKeywords = ['할까', '갈까', '탈까', '먹을까', '마실까', '살까', '아니면', 'vs', '또는', '혹은'];
-      
-      let targetCardCount = 3;
-      if (binaryKeywords.some(k => userQuestion.includes(k)) || userQuestion.includes(' 아니면 ')) {
-        // Keep short daily binary questions concise.
-        targetCardCount = userQuestion.length <= 20 ? 2 : 5;
-      }
-      else if (relationshipKeywords.some(k => userQuestion.includes(k))) targetCardCount = 7;
-      else if (careerKeywords.some(k => userQuestion.includes(k))) targetCardCount = 5;
-      else if (userQuestion.length > 30) targetCardCount = 10;
+      const profile = await tarotApi.getQuestionProfile(userQuestion);
+      const targetCardCount = profile.targetCardCount;
+      const trackedQuestionType = profile.questionType;
+      trackEvent('question_submitted', { questionType: trackedQuestionType, mode: 'hybrid' });
 
       const [allSpreads, allCards] = await Promise.all([
         tarotApi.getSpreads(),
@@ -82,29 +95,31 @@ export function TarotMastery() {
         mode: 'hybrid',
         structure: 'evidence_report',
         spreadId: currentSpread.id,
-        sessionContext: { recentQuestions }
+        sessionContext: { recentQuestions },
+        debug: showDiagnostics
       });
       setReading(readingData);
       trackEvent('reading_result_shown', {
-        questionType: readingData.meta?.questionType || inferredQuestionType,
+        questionType: readingData.meta?.questionType || trackedQuestionType,
         mode: readingData.mode || 'hybrid',
         fallbackUsed: !!readingData.fallbackUsed,
         spreadId: currentSpread.id
       });
 
-      setTimeout(() => {
+      queueTimer(() => {
         setMessages(prev => [...prev, { role: 'bot', text: `질문에 맞춰 [${currentSpread.name}] 스프레드를 구성했습니다. 운명의 지도가 펼쳐집니다...` }]);
         setStep('reading');
         setLoading(false);
 
         selectedCards.forEach((_, i) => {
-          setTimeout(() => {
+          queueTimer(() => {
             internalReveal(i, readingData, currentSpread, selectedCards);
           }, 1000 * (i + 1));
         });
       }, 1000);
 
     } catch (err) {
+      trackEvent('reading_result_shown', { mode: 'hybrid', fallbackUsed: true, errorCode: 'ritual_start_failed' });
       setMessages(prev => [...prev, { role: 'bot', text: '운명의 실타래가 엉켰습니다. 잠시 후 다시 시도해 주세요.' }]);
       setLoading(false);
     }
@@ -115,17 +130,22 @@ export function TarotMastery() {
       if (prev.includes(idx)) return prev;
       const next = [...prev, idx];
       if (next.length === cards.length) {
-        setTimeout(() => setStep('result'), 1500);
+        queueTimer(() => setStep('result'), 1500);
       }
       return next;
     });
 
     const posLabel = spread.positions[idx].label;
-    const interpretation = data.evidence[idx]?.split(']')[1] || '';
+    const reportEvidence = data.report?.evidence?.[idx];
+    const reportInterpretation = reportEvidence
+      ? [reportEvidence.claim, reportEvidence.rationale].filter(Boolean).join('\n')
+      : '';
+    const fallbackInterpretation = (data.evidence[idx] || '').split(']').slice(1).join(']').trim();
+    const interpretation = reportInterpretation || fallbackInterpretation;
 
     setMessages(prev => [...prev, {
       role: 'bot',
-      text: `[${posLabel}: ${cards[idx].nameKo}]\n${interpretation.trim().replace(/\.\.$/, '.')}`
+      text: `[${posLabel}: ${cards[idx].nameKo}]\n${interpretation.trim().replace(/\.\.$/, '.') || '카드의 상징을 차분히 읽어보세요.'}`
     }]);
   };
 
@@ -223,21 +243,6 @@ export function TarotMastery() {
     return { scale, areaHeight };
   };
 
-  const inferQuestionType = (question: string) => {
-    const relationshipKeywords = ['속마음', '그 사람', '연애', '사랑', '재회', '커플', '썸', '이별'];
-    const careerKeywords = ['이직', '회사', '상사', '퇴사', '연봉', '업무', '커리어', '취업', '면접', '직장', '프로젝트'];
-    const emotionalKeywords = ['힘들', '우울', '슬퍼', '지쳐', '죽겠', '눈물', '불안', '무서', '막막', '상처', '포기'];
-    const lightKeywords = ['커피', '메뉴', '점심', '저녁', '야식', '걷기', '버스', '지하철', '옷', '신발', '살까', '말까', '먹을까', '마실까'];
-    const binaryKeywords = ['할까', '갈까', '탈까', '먹을까', '마실까', '살까', '아니면', 'vs', '또는', '혹은'];
-
-    if (binaryKeywords.some((k) => question.includes(k))) return 'binary';
-    if (relationshipKeywords.some((k) => question.includes(k))) return 'relationship';
-    if (careerKeywords.some((k) => question.includes(k))) return 'career';
-    if (emotionalKeywords.some((k) => question.includes(k))) return 'emotional';
-    if (question.length < 15 && lightKeywords.some((k) => question.includes(k))) return 'light';
-    return 'deep';
-  };
-
   const handleTabSwitch = (tab: 'report' | 'study') => {
     setResultTab(tab);
     if (!reading) return;
@@ -251,6 +256,7 @@ export function TarotMastery() {
   };
 
   const handleReset = () => {
+    clearRevealTimers();
     if (reading) {
       trackEvent('new_question_clicked', {
         questionType: reading.meta?.questionType,
@@ -363,6 +369,9 @@ export function TarotMastery() {
               <div className={styles.messagesContainer}>
                 <div className={styles.messages}>
                   {messages.map((msg, i) => <MessageBubble key={i} message={msg} />)}
+                  <div className={styles.srOnly} aria-live="polite" aria-atomic="true">
+                    {loading ? '리딩을 준비하고 있습니다.' : step === 'result' ? '리딩 결과가 준비되었습니다.' : '질문을 기다리는 중입니다.'}
+                  </div>
 
                   {loading && (
                     <div className={styles.typingWrapper}>
@@ -395,6 +404,8 @@ export function TarotMastery() {
                         {resultTab === 'report' ? (
                           <div className={styles.resultSection}>
                             <div className={styles.diagnosticBox}>
+                              {showDiagnostics && (
+                                <>
                               <span className={styles.diagnosticPill}>
                                 apiUsed: {apiUsedLabel(reading.apiUsed)}
                               </span>
@@ -419,6 +430,8 @@ export function TarotMastery() {
                               <span className={styles.diagnosticPill}>
                                 requestId: {reading.meta?.requestId || 'unknown'}
                               </span>
+                                </>
+                              )}
                             </div>
 
                             <div className={styles.masterReport}>

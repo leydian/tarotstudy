@@ -24,11 +24,24 @@
 /* ── FLIP CONTAINER ── */
 .flipContainer {
   perspective: 1000px;
-  cursor: pointer;
 }
 
-.flipContainer.revealed {
+.cardButton {
+  all: unset;
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+  border-radius: 8px;
+}
+
+.cardButton:disabled {
   cursor: default;
+}
+
+.cardButton:focus-visible {
+  outline: 2px solid var(--accent-gold);
+  outline-offset: 3px;
 }
 
 .flipInner {

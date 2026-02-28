@@ -5,6 +5,7 @@ import { cards, getCardById } from './data/cards.js';
 import { spreads, getSpreadById } from './data/spreads.js';
 import { generateReadingV3 } from './domains/reading/v3.js';
 import { generateReadingHybrid } from './domains/reading/hybrid.js';
+import { detectQuestionType, inferTargetCardCount } from './domains/reading/questionType.js';
 
 dotenv.config();
 
@@ -16,22 +17,6 @@ app.use(cors());
 app.use(express.json());
 
 const makeRequestId = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
-
-const detectQuestionType = ({ question = '', category = 'general', cardCount = 0 }) => {
-  const safeQuestion = String(question || '');
-  const relationshipKeywords = ['속마음', '그 사람', '연애', '사랑', '재회', '커플', '썸', '이별'];
-  const careerKeywords = ['이직', '회사', '상사', '퇴사', '연봉', '업무', '커리어', '취업', '면접', '직장', '프로젝트'];
-  const emotionalKeywords = ['힘들', '우울', '슬퍼', '지쳐', '죽겠', '눈물', '불안', '무서', '막막', '상처', '포기'];
-  const lightKeywords = ['커피', '메뉴', '점심', '저녁', '야식', '걷기', '버스', '지하철', '옷', '신발', '살까', '말까', '먹을까', '마실까'];
-  const binaryKeywords = ['할까', '갈까', '탈까', '먹을까', '마실까', '살까', '아니면', 'vs', '또는', '혹은'];
-
-  if ((cardCount === 2 || cardCount === 5) && binaryKeywords.some((k) => safeQuestion.includes(k))) return 'binary';
-  if (category === 'love' || relationshipKeywords.some((k) => safeQuestion.includes(k))) return 'relationship';
-  if (category === 'career' || careerKeywords.some((k) => safeQuestion.includes(k))) return 'career';
-  if (emotionalKeywords.some((k) => safeQuestion.includes(k))) return 'emotional';
-  if (safeQuestion.length < 15 && lightKeywords.some((k) => safeQuestion.includes(k))) return 'light';
-  return 'deep';
-};
 
 // 타로 카드 목록 조회
 app.get('/api/cards', (req, res) => {
@@ -51,6 +36,17 @@ app.get('/api/cards/:id', (req, res) => {
 // 스프레드 목록 조회
 app.get('/api/spreads', (req, res) => {
   res.json(spreads);
+});
+
+app.post('/api/question-profile', (req, res) => {
+  const { question = '', category = 'general' } = req.body || {};
+  const targetCardCount = inferTargetCardCount(question);
+  const questionType = detectQuestionType({
+    question,
+    category,
+    cardCount: targetCardCount
+  });
+  return res.json({ questionType, targetCardCount });
 });
 
 // AI 리딩 생성 (V3 모델)
@@ -151,6 +147,19 @@ app.post('/api/reading', async (req, res) => {
       }
     });
   }
+});
+
+app.post('/api/analytics', (req, res) => {
+  const { eventName, sessionId, timestamp, context } = req.body || {};
+  if (!eventName || !sessionId) {
+    return res.status(400).json({ error: 'eventName and sessionId are required' });
+  }
+
+  // Keep analytics lightweight: no PII, structured logs for external collector ingestion.
+  console.log(
+    `[Analytics] event=${eventName} session=${sessionId} ts=${timestamp || new Date().toISOString()} context=${JSON.stringify(context || {})}`
+  );
+  return res.status(202).json({ ok: true });
 });
 
 // 헬스 체크

@@ -2,6 +2,55 @@
 
 ## [2026-02-28]
 
+### 질문 프로파일 단일화 + 운영 계측 API + 성소 UX 신뢰성 강화 (v6.3.17)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/questionType.js` (신규)
+- `apps/api/src/domains/reading/hybrid.js`
+- `apps/api/src/index.js`
+- `apps/web/src/services/tarotService.ts`
+- `apps/web/src/services/analytics.ts`
+- `apps/web/src/types/tarot.ts`
+- `apps/web/src/pages/TarotMastery.tsx`
+- `apps/web/src/pages/TarotMastery.module.css`
+- `apps/web/src/components/common/TarotCard.tsx`
+- `apps/web/src/components/common/TarotCard.module.css`
+- `docs/CHANGELOG.md`
+- `docs/RELEASE_NOTES_v6.3.17.md`
+
+#### 변경 사항
+- 질문 분류 규칙 단일화
+  - `questionType` 및 `targetCardCount` 추론 로직을 API 공용 유틸(`questionType.js`)로 통합.
+  - `hybrid.js`와 `index.js`가 동일 규칙을 사용하도록 변경.
+  - 신규 API `POST /api/question-profile` 추가, 프론트가 서버 기준 분류/카드 수를 사용하도록 전환.
+- 운영 계측 실연결
+  - 신규 API `POST /api/analytics` 추가.
+  - 프론트 `trackEvent()`가 `sendBeacon` 우선 + `fetch(keepalive)` 폴백으로 이벤트를 전송하도록 개선.
+  - 세션 단위 추적을 위해 `sessionStorage` 기반 `sessionId` 도입.
+- 리딩 메타 타입 정합성 회복
+  - 웹 `ReadingResponse.meta`에 `attempts`, `failureStage`, `timings.anthropicRepairMs` 반영.
+- 성소 화면 신뢰성/접근성 강화
+  - 리딩 단계 타이머를 ref 큐로 관리하고 reset/unmount 시 clear하여 경쟁 상태 제거.
+  - 카드 공개 메시지를 문자열 split 중심에서 `report.evidence` 우선 조합으로 변경해 파싱 취약성 완화.
+  - 진단 배지는 기본 사용자 화면에서 숨기고, `?debug=1` 또는 개발 환경에서만 노출.
+  - 카드 뒤집기 인터랙션을 `button` 시맨틱으로 교체하고 `focus-visible` 스타일/ARIA 라벨 제공.
+  - `aria-live` 안내 영역을 추가해 로딩/결과 상태를 보조기기에 전달.
+
+#### 효과
+- 질문 유형 드리프트(FE/BE 불일치) 위험을 구조적으로 축소.
+- 사용자 행동 지표를 수집할 기반 확보(완독/탭전환/재질문 등 후속 지표 분석 가능).
+- 리딩 중 reset/재시작 시 간헐적 UI 경합 및 메시지 꼬임 가능성 감소.
+- 기본 사용자 경험에서 기술 진단 정보 노출을 줄여 몰입도 개선.
+- 키보드 사용자 접근성과 상태 인지성이 개선.
+
+#### 검증
+- `npm run build --prefix apps/web` 통과.
+- `npm run test:persona --prefix apps/api` 통과.
+- `npm run test:hybrid --prefix apps/api` 통과.
+- 상세 변경 요약: `docs/RELEASE_NOTES_v6.3.17.md`
+
+## [2026-02-28]
+
 ### 아르카나 성소 와이드 확장 + 우측 스크롤바 노출 강화 + 기본 카드 설명 심화 (v6.3.16)
 
 #### 변경 파일
