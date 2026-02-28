@@ -16,6 +16,20 @@ import {
 import { isHighOverlap } from './text-utils.js';
 
 const getOrientationLabel = (orientation = 'upright') => (orientation === 'reversed' ? '역방향' : '정방향');
+const LANGUAGE_FIXUPS = [
+  [/명성의 실실/g, '명성의 실추'],
+  [/도달했음\b/g, '도달했습니다'],
+  [/은\(는\)/g, '는'],
+  [/이\(가\)/g, '가']
+];
+
+const polishKorean = (value) => {
+  let next = sanitizeText(value);
+  for (const [pattern, replacement] of LANGUAGE_FIXUPS) {
+    next = next.replace(pattern, replacement);
+  }
+  return next;
+};
 
 const pickMeaningByCategory = (card, category) => {
   const isReversed = card.orientation === 'reversed';
@@ -129,6 +143,26 @@ const postProcessReport = (report) => {
     ...report,
     verdict: { ...report.verdict }
   };
+  next.summary = polishKorean(next.summary);
+  next.verdict.rationale = polishKorean(next.verdict.rationale);
+  next.evidence = (Array.isArray(next.evidence) ? next.evidence : []).map((item) => ({
+    ...item,
+    claim: polishKorean(item?.claim || ''),
+    rationale: polishKorean(item?.rationale || ''),
+    caution: polishKorean(item?.caution || '')
+  }));
+  next.actions = (Array.isArray(next.actions) ? next.actions : []).map((item) => polishKorean(item));
+  next.counterpoints = (Array.isArray(next.counterpoints) ? next.counterpoints : []).map((item) => polishKorean(item));
+  if (next.fortune) {
+    next.fortune = {
+      ...next.fortune,
+      energy: polishKorean(next.fortune.energy),
+      workFinance: polishKorean(next.fortune.workFinance),
+      love: polishKorean(next.fortune.love),
+      healthMind: polishKorean(next.fortune.healthMind),
+      message: polishKorean(next.fortune.message)
+    };
+  }
 
   if (containsContamination(next.summary)) {
     qualityFlags.push('summary_contamination_detected');

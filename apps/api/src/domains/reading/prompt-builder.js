@@ -78,6 +78,8 @@ const buildPrompt = ({
         '- overall_fortune에서는 verdict를 단정형 YES/NO로 몰아가지 말고 균형 있게 작성하세요.',
         '- energy/workFinance/love/healthMind/message는 각각 1~2문장으로 작성하세요.',
         '- fortune 섹션 문장은 필드명 접두 반복("전체 에너지 흐름을 보면", "일·재물운은" 등)을 붙이지 마세요.',
+        '- overall_fortune에서는 시적 비유를 남발하지 말고 분석적·차분한 어조를 유지하세요.',
+        '- 마스터 리포트와 fortune 필드 문장이 의미적으로 겹치지 않도록 관점(원인/실천)을 분리하세요.',
         '- evidence.rationale은 카드마다 같은 문장 패턴을 반복하지 마세요.',
         '- 역방향 카드 근거는 과속/확정 어조보다 점검/완충 어조를 우선하세요.'
       ].join('\n')

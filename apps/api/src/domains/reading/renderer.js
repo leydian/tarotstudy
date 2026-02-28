@@ -1,20 +1,65 @@
 import { normalizeVerdictLabel } from './report/verdict-policy.js';
 
 const lineText = (value) => String(value || '').replace(/\s+/g, ' ').trim();
+const normalizeCompare = (value) => lineText(value).toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, '').replace(/\s+/g, '');
+
+const LANGUAGE_FIXUPS = [
+  [/명성의 실실/g, '명성의 실추'],
+  [/도달했음\b/g, '도달했습니다'],
+  [/최실/g, '손실'],
+  [/실실/g, '실추'],
+  [/은\(는\)/g, '는'],
+  [/이\(가\)/g, '가']
+];
+
+const polishKorean = (value) => {
+  let next = lineText(value);
+  for (const [pattern, replacement] of LANGUAGE_FIXUPS) {
+    next = next.replace(pattern, replacement);
+  }
+  return next;
+};
+
+const shortenClaimForNarrative = (claim) => {
+  const cleaned = polishKorean(claim)
+    .replace(/^[^\-—:]+[\-—:]\s*/, '')
+    .replace(/\s+(한 박자 늦춘 호흡처럼|잔잔한 새벽빛처럼|이른 아침의 고요한 공기처럼|열린 창으로 바람이 드는 장면처럼|밝아지는 수평선처럼|거울이 비추는 방향이 뒤집힌 듯해).*$/u, '')
+    .trim();
+  const firstSentence = cleaned.split(/(?<=[.!?])\s+/u)[0] || cleaned;
+  return firstSentence.length > 120 ? `${firstSentence.slice(0, 119).trimEnd()}…` : firstSentence;
+};
+
+const dedupeLines = (lines) => {
+  const used = new Set();
+  const deduped = [];
+  for (const line of lines) {
+    const normalized = normalizeCompare(line);
+    if (!normalized || used.has(normalized)) continue;
+    used.add(normalized);
+    deduped.push(line);
+  }
+  return deduped;
+};
 
 const buildMasterReportConclusion = ({ report, question, facts, readingKind = 'general_reading' }) => {
   const lines = ['사서인 제가 읽어낸 이번 리딩의 결론입니다.'];
-  const narrative = String(report?.fullNarrative || '').trim();
+  const narrative = polishKorean(report?.fullNarrative || '');
+  const summary = polishKorean(report?.summary || '');
+  const verdictLabel = report?.verdict?.label || 'MAYBE';
+  const verdictRationale = polishKorean(report?.verdict?.rationale || '');
 
   if (narrative) {
     lines.push(narrative);
   } else {
-    lines.push(`질문 "${question}"에 대한 흐름을 정리하면, ${lineText(report?.summary)}`);
+    lines.push(`질문 "${question}"에 대한 흐름을 정리하면, ${summary}`);
     const evidenceBridge = (Array.isArray(report?.evidence) ? report.evidence : [])
-      .slice(0, 2)
+      .slice(0, 3)
       .map((item) => {
         const cardName = facts.find((f) => f.cardId === item.cardId)?.cardNameKo || item.cardId;
-        return `${item.positionLabel}의 ${cardName}은(는) ${lineText(item.claim)}`;
+        const claim = shortenClaimForNarrative(item?.claim || '');
+        const cue = polishKorean(item?.rationale || '');
+        const cueLine = cue ? ` 이 흐름은 ${cue}` : '';
+        return `${item.positionLabel}의 ${cardName} 카드는 ${claim}을 보여줍니다.${cueLine}`;
       });
     if (evidenceBridge.length > 0) {
       lines.push(`[운명의 서사 분석]\n${evidenceBridge.join('\n')}`);
@@ -22,20 +67,21 @@ const buildMasterReportConclusion = ({ report, question, facts, readingKind = 'g
   }
 
   if (readingKind === 'overall_fortune' && report?.fortune) {
+    const focusLines = dedupeLines([
+      `이번 기간의 핵심 리듬은 ${summary.split('\n')[0] || '우선순위 재정렬'}입니다.`,
+      `실천 우선순위는 ${polishKorean(report?.actions?.[0] || '').replace(/^\[운명의 지침 \d+\]\s*/, '') || '중간 점검 루틴 고정'}에 두는 편이 안정적입니다.`,
+      `변수 관리는 ${polishKorean(report?.counterpoints?.[0] || '') || '주차별 편차를 누적 신호로 확인'} 방식이 유리합니다.`
+    ]);
     lines.push(
       [
-        '[운세 세부 흐름]',
-        `전체 에너지: ${lineText(report.fortune.energy)}`,
-        `일·재물운: ${lineText(report.fortune.workFinance)}`,
-        `애정운: ${lineText(report.fortune.love)}`,
-        `건강·마음: ${lineText(report.fortune.healthMind)}`,
-        `메시지: ${lineText(report.fortune.message)}`
+        '[이번 기간 핵심 맥락]',
+        ...focusLines
       ].join('\n')
     );
   }
 
-  lines.push(`[운명의 판정] ${report?.verdict?.label || 'MAYBE'} - ${lineText(report?.verdict?.rationale)}`);
-  return lines.filter(Boolean).join('\n\n');
+  lines.push(`[운명의 판정] ${verdictLabel} - ${verdictRationale}`);
+  return dedupeLines(lines).filter(Boolean).join('\n\n');
 };
 
 const toLegacyResponse = ({ report, question, facts }) => {

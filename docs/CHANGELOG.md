@@ -2,6 +2,40 @@
 
 ## [2026-02-28]
 
+### 리딩 품질 정밀 보정: 반복 축소·문장 자연화·톤 일관화 (v6.3.67)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/domains/reading/report/domain-policy.js`
+- `apps/api/src/domains/reading/report/deterministic.js`
+- `apps/api/src/domains/reading/report/fact-builder.js`
+- `apps/api/src/domains/reading/prompt-builder.js`
+- `apps/web/src/pages/TarotMastery.tsx`
+- `docs/RELEASE_NOTES_v6.3.67.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 한국어 품질 보정 규칙 추가
+  - 오타/비문(`실실` 등) 치환, 템플릿 조사(`은(는)`, `이(가)`) 제거.
+- 마스터 리포트 서사 문장 개선
+  - 카드 브리지 문장을 자연어형으로 재작성하고 claim 축약으로 복붙 체감 완화.
+- 섹션 중복 축소
+  - overall_fortune 결론 블록을 원인/실천/변수 관점으로 재구성해 종합운세 섹션과 역할 분리.
+  - 프런트에서 summary/energyText 중복 시 대체 분기 적용.
+- 건강·마음 카드 매핑 명확화
+  - 내면/건강 포지션 우선 사용, 대체 카드 선택 시 선정 이유 설명 추가.
+- 톤 일관성 강화
+  - overall_fortune 프롬프트에 분석적 어조 유지 및 마스터/fortune 문장 관점 분리 규칙 추가.
+- 결론 조사 결합 개선
+  - `"질문"은(는)` 템플릿을 조사 자동 결합 방식으로 교체.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run test:metrics --prefix apps/api` 통과
+- `npm run test:unit --prefix apps/web` 통과
+- `npm run build --prefix apps/web` 통과
+
 ### 운명의 마스터 리포트 상세화: 본문 우선 결론 조립기 도입 (v6.3.66)
 
 #### 변경 파일

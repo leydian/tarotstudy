@@ -435,15 +435,18 @@ export function TarotMastery() {
       const summary = data.report.summary || data.report.fortune.energy || '';
       const verdictRationale = data.report.verdict?.rationale || '';
       const fortuneMessage = data.report.fortune.message || '';
+      const energyFallback = data.report.fortune.workFinance || data.report.fortune.healthMind || '';
       const energyText =
-        verdictRationale
-        || fortuneMessage
-        || data.report.fortune.workFinance
+        fortuneMessage
+        || energyFallback
         || data.report.fortune.love
-        || data.report.fortune.healthMind
+        || verdictRationale
         || '지금은 속도보다 리듬을 안정적으로 유지하는 접근이 유리합니다.';
+      const safeInsight = isTextOverlapHigh(summary, energyText)
+        ? (data.report.fortune.energy || summary)
+        : summary;
       return {
-        insightText: summary || '현재 흐름의 기준점을 먼저 정하고 우선순위를 재정렬해 보세요.',
+        insightText: safeInsight || '현재 흐름의 기준점을 먼저 정하고 우선순위를 재정렬해 보세요.',
         energyText
       };
     }

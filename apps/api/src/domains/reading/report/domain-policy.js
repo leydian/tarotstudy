@@ -22,15 +22,16 @@ const pickDominantFact = (facts, predicate, fallbackIndex = 0) => {
 };
 
 const buildConclusionStatement = ({ question, verdict, binaryEntities = null }) => {
+  const questionWithTopic = withTopicParticle(`"${question}"`);
   if (Array.isArray(binaryEntities) && binaryEntities.length >= 2) {
     const entityA = sanitizeText(binaryEntities[0]) || '선택 A';
     const entityB = sanitizeText(binaryEntities[1]) || '선택 B';
     if (verdict.recommendedOption === 'A') return `결론: "${question}"에서는 ${entityA} 쪽이 현재 흐름과 더 잘 맞습니다.`;
     if (verdict.recommendedOption === 'B') return `결론: "${question}"에서는 ${entityB} 쪽이 현재 흐름과 더 잘 맞습니다.`;
   }
-  if (verdict.label === 'YES') return `결론: "${question}"은(는) 지금 추진해 볼 가치가 있는 흐름입니다.`;
-  if (verdict.label === 'NO') return `결론: "${question}"은(는) 지금 속도를 낮추고 보완하는 편이 안전합니다.`;
-  return `결론: "${question}"은(는) 아직 확정하기보다 조건 정리가 먼저입니다.`;
+  if (verdict.label === 'YES') return `결론: ${questionWithTopic} 지금 추진해 볼 가치가 있는 흐름입니다.`;
+  if (verdict.label === 'NO') return `결론: ${questionWithTopic} 지금 속도를 낮추고 보완하는 편이 안전합니다.`;
+  return `결론: ${questionWithTopic} 아직 확정하기보다 조건 정리가 먼저입니다.`;
 };
 
 const buildConclusionBuffer = ({ verdictLabel, questionType, domainTag = 'general' }) => {

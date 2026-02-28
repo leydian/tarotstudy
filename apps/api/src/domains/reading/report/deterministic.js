@@ -218,7 +218,8 @@ const buildDeterministicReport = ({
       (fact) => getSuitType(fact.cardId) === 'cups' || ['m06', 'm02', 'm03', 'm17'].includes(fact.cardId),
       2
     );
-    const mindFact = pickDominantFact(
+    const explicitMindFact = facts.find((fact) => /내면의 빛|건강|마음/.test(String(fact.positionLabel || '')));
+    const mindFact = explicitMindFact || pickDominantFact(
       facts,
       (fact) => getSuitType(fact.cardId) === 'swords' || ['m09', 'm12', 'm14'].includes(fact.cardId),
       facts.length - 1
@@ -314,7 +315,13 @@ const buildDeterministicReport = ({
       ? joinSentencesKorean(`${claimCardLabel(loveFact, energyFact)} 흐름상 ${loveFrame}`, '감정 반응보다 대화의 타이밍을 조율하면 관계 피로를 줄일 수 있습니다.')
       : joinSentencesKorean(loveFrame, '감정 반응보다 대화의 타이밍을 조율하면 관계 피로를 줄일 수 있습니다.');
     const mindClaim = mindFact
-      ? joinSentencesKorean(`${claimCardLabel(mindFact, energyFact)} 경향에서, ${mindFrame}`, '회복 루틴을 일정에 먼저 고정하면 변동 구간에서도 집중력을 지키기 쉽습니다.')
+      ? joinSentencesKorean(
+        `${claimCardLabel(mindFact, energyFact)} 경향에서, ${mindFrame}`,
+        explicitMindFact
+          ? '내면 포지션 신호를 기준으로 회복 루틴을 점검하면 체감 피로를 더 빠르게 줄일 수 있습니다.'
+          : `이번 리딩에서는 ${mindFact.positionLabel} 카드가 컨디션 변동 신호를 가장 강하게 보여 해당 카드를 기준으로 건강·마음을 읽었습니다.`,
+        '회복 루틴을 일정에 먼저 고정하면 변동 구간에서도 집중력을 지키기 쉽습니다.'
+      )
       : joinSentencesKorean(mindFrame, '회복 루틴을 일정에 먼저 고정하면 변동 구간에서도 집중력을 지키기 쉽습니다.');
     const fortune = {
       period: resolvedFortunePeriod,
