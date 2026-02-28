@@ -447,6 +447,75 @@ const testDeterministicEvidenceClaimVariation = async () => {
   process.env.ANTHROPIC_API_KEY = originalKey;
 };
 
+const testDeterministicEvidenceRationaleVariation = async () => {
+  const cards = buildCards(['p08', 'p09', 'p10', 'p11', 'p14']);
+  process.env.ANTHROPIC_API_KEY = '';
+
+  await withFetchSequence([], async () => {
+    const result = await generateReadingHybrid({
+      cards,
+      question: '이번 달 종합 운세는?',
+      timeframe: 'monthly',
+      category: 'general'
+    });
+
+    assert.equal(result.fallbackUsed, true);
+    const rationales = (result.report?.evidence || []).map((item) => String(item.rationale || '').trim()).filter(Boolean);
+    const uniqueRationales = new Set(rationales.map((item) => item.replace(/\s+/g, ' ').replace(/[^\p{L}\p{N}\s]/gu, '').trim()));
+    assert.ok(uniqueRationales.size >= 3, 'evidence rationale should contain at least 3 distinct patterns');
+  });
+
+  process.env.ANTHROPIC_API_KEY = originalKey;
+};
+
+const testTowerToneModeration = async () => {
+  const cards = buildCards(['m16', 's07', 's01']).map((card, idx) => ({
+    ...card,
+    orientation: idx === 0 ? 'upright' : card.orientation
+  }));
+  process.env.ANTHROPIC_API_KEY = '';
+
+  await withFetchSequence([], async () => {
+    const result = await generateReadingHybrid({
+      cards,
+      question: '이번 주 종합 운세는?',
+      timeframe: 'weekly',
+      category: 'general'
+    });
+
+    assert.equal(result.fallbackUsed, true);
+    const towerEvidence = (result.report?.evidence || []).find((item) => item.cardId === 'm16');
+    assert.ok(towerEvidence, 'tower evidence should exist');
+    assert.equal(
+      /(리스크 점검|안전장치|변동 관리)/.test(String(towerEvidence.claim || '')),
+      true,
+      'tower claim should include moderation/management guidance'
+    );
+  });
+
+  process.env.ANTHROPIC_API_KEY = originalKey;
+};
+
+const testEvidenceClaimLengthCap = async () => {
+  const cards = buildCards(['m16', 'm15', 'm13', 's10', 's03']);
+  process.env.ANTHROPIC_API_KEY = '';
+
+  await withFetchSequence([], async () => {
+    const result = await generateReadingHybrid({
+      cards,
+      question: '올해 종합 운세는?',
+      timeframe: 'yearly',
+      category: 'general'
+    });
+
+    assert.equal(result.fallbackUsed, true);
+    const tooLong = (result.report?.evidence || []).some((item) => String(item.claim || '').length > 150);
+    assert.equal(tooLong, false, 'evidence claim should respect max length cap');
+  });
+
+  process.env.ANTHROPIC_API_KEY = originalKey;
+};
+
 const testFallbackPostProcessIsMinimal = async () => {
   const cards = buildCards(['m01', 'c09', 'w02']).map((card, idx) => ({
     ...card,
@@ -518,6 +587,9 @@ try {
   await testDeterministicSwordAceUprightTone();
   await testDeterministicPentaclesKingUprightTone();
   await testDeterministicEvidenceClaimVariation();
+  await testDeterministicEvidenceRationaleVariation();
+  await testTowerToneModeration();
+  await testEvidenceClaimLengthCap();
   await testFallbackPostProcessIsMinimal();
   await testFallbackQualityMatchesFinalReport();
   console.log('Hybrid resilience tests passed.');

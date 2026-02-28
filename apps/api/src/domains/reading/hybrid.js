@@ -272,21 +272,29 @@ const EVIDENCE_RATIONALE_TEMPLATES = {
   positive: [
     '%s 에너지가 전개되어, 이 포지션에서는 실행의 탄력이 붙기 쉽습니다.',
     '%s 신호가 살아 있어, 지금 단계에서 기회를 붙잡기 유리합니다.',
-    '%s 흐름이 받쳐주므로, 작은 실행을 누적하면 성과로 연결되기 쉽습니다.'
+    '%s 흐름이 받쳐주므로, 작은 실행을 누적하면 성과로 연결되기 쉽습니다.',
+    '%s 축이 안정되어, 우선순위 과제를 밀도 있게 추진하기 좋습니다.',
+    '%s 기반이 단단해져, 리듬을 유지하면 결과가 자연스럽게 따라옵니다.'
   ],
   caution: [
     '%s 신호가 경계등처럼 켜져 있어, 이 영역은 속도보다 점검이 우선입니다.',
     '%s 흐름이 흔들리는 구간이므로, 성급한 확정보다 리스크 확인이 필요합니다.',
-    '%s 기운이 제동을 걸고 있어, 조건을 정리한 뒤 움직이는 편이 안전합니다.'
+    '%s 기운이 제동을 걸고 있어, 조건을 정리한 뒤 움직이는 편이 안전합니다.',
+    '%s 변동성이 커질 수 있어, 계획을 작게 나눠 검증하며 진행하세요.',
+    '%s 신호가 예민하니, 결론보다 준비 상태를 먼저 정돈해 두는 편이 좋습니다.'
   ],
   reversed: [
     '%s 에너지가 안쪽으로 말려 있어, 당장 확장보다 재정비가 우선입니다.',
     '%s 흐름이 뒤집혀 보이므로, 속도를 낮추고 핵심 조건부터 다시 맞추세요.',
-    '%s 신호가 지연을 알리니, 지금은 수정·보완 단계로 접근하는 편이 안정적입니다.'
+    '%s 신호가 지연을 알리니, 지금은 수정·보완 단계로 접근하는 편이 안정적입니다.',
+    '%s 결이 엇갈려 보여, 실행 강도를 한 단계 낮추고 점검 루틴을 확보하세요.',
+    '%s 흐름이 예민하니, 완충 시간을 두고 우선순위를 재배치하는 접근이 유리합니다.'
   ],
   neutral: [
     '%s 기운이 혼재되어 있어, 우선순위를 좁혀 단계적으로 판단하세요.',
-    '%s 흐름은 중립에 가깝기 때문에, 추가 근거를 확인한 뒤 결정이 유리합니다.'
+    '%s 흐름은 중립에 가깝기 때문에, 추가 근거를 확인한 뒤 결정이 유리합니다.',
+    '%s 신호가 교차하므로, 비교 기준을 먼저 세우면 판단 정확도가 올라갑니다.',
+    '%s 변수가 동시에 움직여, 성급한 단정 대신 관찰-조정 순서가 적합합니다.'
   ]
 };
 
@@ -392,6 +400,61 @@ const pickTemplateBySeed = (templates, seedSource) => {
   if (!Array.isArray(templates) || templates.length === 0) return '';
   const index = hashString(seedSource) % templates.length;
   return templates[index];
+};
+
+const selectTemplateWithDiversity = ({ templates, seedSource, usedIndices = new Set() }) => {
+  if (!Array.isArray(templates) || templates.length === 0) return '';
+  const start = hashString(seedSource) % templates.length;
+  for (let offset = 0; offset < templates.length; offset += 1) {
+    const idx = (start + offset) % templates.length;
+    if (!usedIndices.has(idx)) {
+      usedIndices.add(idx);
+      return templates[idx];
+    }
+  }
+  const idx = start;
+  usedIndices.add(idx);
+  return templates[idx];
+};
+
+const CARD_INTENSITY_LEVELS = {
+  high: new Set(['m16', 'm15', 'm13', 's10', 's03']),
+  medium: new Set(['s07', 'm12', 'w10'])
+};
+
+const getCardIntensity = (cardId = '') => {
+  if (CARD_INTENSITY_LEVELS.high.has(cardId)) return 'high';
+  if (CARD_INTENSITY_LEVELS.medium.has(cardId)) return 'medium';
+  return 'normal';
+};
+
+const clampEvidenceClaim = (claim, toneBucket) => {
+  const normalized = sanitizeText(claim);
+  if (normalized.length <= 150) return normalized;
+  const firstSentence = `${normalized.split('. ')[0].replace(/\.$/, '')}.`;
+  const suffix = toneBucket === 'reversed'
+    ? ' 속도를 낮추고 점검 리듬을 먼저 확보하세요.'
+    : toneBucket === 'caution'
+      ? ' 무리한 확장보다 리스크 점검이 우선입니다.'
+      : toneBucket === 'positive'
+        ? ' 핵심 과제부터 차분히 실행해 보세요.'
+        : ' 추가 근거를 확인한 뒤 결정하세요.';
+  return sanitizeText(`${firstSentence} ${suffix}`);
+};
+
+const ensureFortuneDensity = (text, key, period = 'week') => {
+  const safe = sanitizeText(text);
+  if (safe.length >= 34) return safe;
+  const suffixByKey = {
+    energy: period === 'year'
+      ? '분기마다 방향을 재정렬하면 상승 리듬을 안정적으로 유지할 수 있습니다.'
+      : '리듬을 유지하며 주기적으로 상태를 점검하면 안정성이 높아집니다.',
+    workFinance: '실행 단위를 작게 나눠 점검하면 변동 대응력이 좋아집니다.',
+    love: '대화의 빈도와 타이밍을 조율하면 관계 흐름이 더 부드러워집니다.',
+    healthMind: '수면·휴식 루틴을 고정하면 회복 탄력이 꾸준히 유지됩니다.',
+    message: '지금은 속도보다 리듬을 지키는 운영이 결과를 안정시킵니다.'
+  };
+  return sanitizeText(`${safe} ${suffixByKey[key] || suffixByKey.message}`);
 };
 
 const buildDistinctRationale = (report) => {
@@ -643,15 +706,22 @@ const withTopicParticle = (label = '') => {
   return `${safe}${hasBatchim ? '은' : '는'}`;
 };
 
-const buildEvidenceClaim = (fact, coreMeaning, toneBucket) => {
+const buildEvidenceClaim = (fact, coreMeaning, toneBucket, selectedTemplate) => {
   const suit = getSuitType(fact.cardId);
-  const template = pickTemplateBySeed(
+  const template = selectedTemplate || pickTemplateBySeed(
     EVIDENCE_CLAIM_TEMPLATES[toneBucket]?.[suit] || EVIDENCE_CLAIM_TEMPLATES[toneBucket]?.major || [],
     `${fact.cardId}:${fact.positionLabel}:${toneBucket}`
   );
   const label = `${fact.cardNameKo}(${fact.orientationLabel})`;
-  if (!template) return `${label} — ${coreMeaning}.`;
-  return template.replace('%s', label).replace('%s', coreMeaning);
+  if (!template) return clampEvidenceClaim(`${label} — ${coreMeaning}.`, toneBucket);
+  const intensity = getCardIntensity(fact.cardId);
+  let filled = template.replace('%s', label).replace('%s', coreMeaning);
+  if (intensity === 'high' && (toneBucket === 'caution' || toneBucket === 'reversed')) {
+    filled = `${filled.replace(/\.$/, '')} 결론을 서두르지 말고 변동 관리 중심으로 접근하세요.`;
+  } else if (intensity === 'medium' && toneBucket === 'caution') {
+    filled = `${filled.replace(/\.$/, '')} 실행 강도를 한 단계 낮추면 안정성이 올라갑니다.`;
+  }
+  return clampEvidenceClaim(filled, toneBucket);
 };
 
 const computeVerdict = (facts, binaryEntities) => {
@@ -721,24 +791,49 @@ const buildDeterministicReport = ({
   const isHealthQuestion = domainTag === 'health';
   const isOverallFortune = readingKind === 'overall_fortune';
   const resolvedFortunePeriod = fortunePeriod || 'week';
+  const usedRationaleIndices = {
+    positive: new Set(),
+    caution: new Set(),
+    neutral: new Set(),
+    reversed: new Set()
+  };
+  const usedClaimIndicesByGroup = new Map();
+  let prevSuit = null;
 
-  const evidence = facts.map((fact) => {
+  const evidence = facts.map((fact, factIdx) => {
     const coreMeaning = sanitizeText(fact.coreMeaning || fact.summary)
       .replace(/\.$/, '')
       .replace(/[을를이가]?\s*상징합니다\.?$/, '');
     const keywordsStr = fact.keywords.slice(0, 2).join('·') || '균형';
+    const suit = getSuitType(fact.cardId);
+    const sameSuitAsPrev = prevSuit === suit;
     const toneScore = getEvidenceToneScore(fact.cardId, fact.orientation);
     const toneBucket = resolveEvidenceToneBucket(toneScore, fact.orientation);
-    const templateGroup = EVIDENCE_RATIONALE_TEMPLATES[toneBucket] || EVIDENCE_RATIONALE_TEMPLATES.neutral;
-    const pickedTemplate = pickTemplateBySeed(
-      templateGroup,
-      `${fact.cardId}:${fact.positionLabel}:${toneBucket}:rationale`
-    ) || templateGroup[0];
+    const baseTemplateGroup = EVIDENCE_RATIONALE_TEMPLATES[toneBucket] || EVIDENCE_RATIONALE_TEMPLATES.neutral;
+    const rationaleTemplates = sameSuitAsPrev && baseTemplateGroup.length > 1
+      ? [...baseTemplateGroup.slice(1), baseTemplateGroup[0]]
+      : baseTemplateGroup;
+    const pickedTemplate = selectTemplateWithDiversity({
+      templates: rationaleTemplates,
+      seedSource: `${fact.cardId}:${fact.positionLabel}:${toneBucket}:rationale:${factIdx}`,
+      usedIndices: usedRationaleIndices[toneBucket] || new Set()
+    }) || rationaleTemplates[0];
     const orientationRationale = pickedTemplate.replace('%s', keywordsStr);
+    const claimTemplates = EVIDENCE_CLAIM_TEMPLATES[toneBucket]?.[suit]
+      || EVIDENCE_CLAIM_TEMPLATES[toneBucket]?.major
+      || [];
+    const claimKey = `${toneBucket}:${suit}`;
+    if (!usedClaimIndicesByGroup.has(claimKey)) usedClaimIndicesByGroup.set(claimKey, new Set());
+    const selectedClaimTemplate = selectTemplateWithDiversity({
+      templates: claimTemplates,
+      seedSource: `${fact.cardId}:${fact.positionLabel}:${toneBucket}:claim:${factIdx}`,
+      usedIndices: usedClaimIndicesByGroup.get(claimKey)
+    });
+    prevSuit = suit;
     return {
       cardId: fact.cardId,
       positionLabel: fact.positionLabel,
-      claim: buildEvidenceClaim(fact, coreMeaning, toneBucket),
+      claim: buildEvidenceClaim(fact, coreMeaning, toneBucket, selectedClaimTemplate),
       rationale: orientationRationale,
       caution: sanitizeText(fact.advice) || '급한 결정보다는 마음의 우선순위를 먼저 정리해 보세요.'
     };
@@ -863,16 +958,17 @@ const buildDeterministicReport = ({
     const fortune = {
       period: resolvedFortunePeriod,
       trendLabel,
-      energy: energyClaim,
-      workFinance: workClaim,
-      love: loveClaim,
-      healthMind: mindClaim,
+      energy: ensureFortuneDensity(energyClaim, 'energy', resolvedFortunePeriod),
+      workFinance: ensureFortuneDensity(workClaim, 'workFinance', resolvedFortunePeriod),
+      love: ensureFortuneDensity(loveClaim, 'love', resolvedFortunePeriod),
+      healthMind: ensureFortuneDensity(mindClaim, 'healthMind', resolvedFortunePeriod),
       message: trendLabel === 'UP'
         ? '지금의 상승 흐름을 믿되, 속도보다 리듬을 지키세요.'
         : trendLabel === 'CAUTION'
           ? '서두르지 말고 정리와 점검에 집중하면 흐름이 다시 열립니다.'
           : '균형의 시간을 활용해 우선순위를 재정렬하세요.'
     };
+    fortune.message = ensureFortuneDensity(fortune.message, 'message', resolvedFortunePeriod);
     return {
       ...baseReport,
       summary: buildFortuneSummary(fortune.period, trendLabel),

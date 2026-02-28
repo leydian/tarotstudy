@@ -2,6 +2,39 @@
 
 ## [2026-02-28]
 
+### 반복감·강도·밀도 동시 보정 (v6.3.41)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/hybrid.js`
+- `apps/api/tests/hybrid-resilience.js`
+- `apps/api/tests/overall-fortune-regression.js`
+- `docs/RELEASE_NOTES_v6.3.41.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- evidence 반복감 완화
+  - rationale 템플릿 확장(버킷별 문장 수 증가).
+  - `selectTemplateWithDiversity()` 도입으로 리딩 내부 중복 템플릿 재사용 억제.
+  - 같은 suit 연속 카드 구간에서 rationale 선택군 회전 적용.
+- 강한 카드 어조 완충
+  - `CARD_INTENSITY_LEVELS`/`getCardIntensity()` 도입.
+  - `m16`(탑) 등 고강도 카드의 caution/reversed claim에서 경고는 유지하되, 과장 대신 변동 관리/점검 중심 문장으로 완충.
+- 섹션 밀도 균형화
+  - `clampEvidenceClaim()`로 claim 길이 상한(150자) 적용.
+  - `ensureFortuneDensity()`로 fortune 필드 최소 밀도 보강.
+  - evidence 영역과 종합운세 영역의 텍스트 밀도 편차 완화.
+- 회귀 테스트 보강
+  - evidence rationale 다양성(고유 패턴 3개 이상) 검증 추가.
+  - 탑 어조 완충 검증 추가.
+  - evidence claim 길이 상한 검증 추가.
+  - fortune 필드 최소 길이 검증 추가.
+
+#### 검증
+- `node apps/api/tests/hybrid-resilience.js` 통과
+- `node apps/api/tests/overall-fortune-regression.js` 통과
+
+## [2026-02-28]
+
 ### evidence 톤 분리·카드별 어조 정합성 보정 (v6.3.40)
 
 #### 변경 파일

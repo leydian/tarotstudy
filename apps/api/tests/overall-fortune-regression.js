@@ -135,6 +135,14 @@ for (const sample of cases) {
     const uniqueSegments = new Set(fortuneSegments);
     assert.ok(uniqueSegments.size >= 2, 'fortune sections should not all collapse into identical copy');
 
+    const shortFortuneField = [
+      response.report?.fortune?.energy,
+      response.report?.fortune?.workFinance,
+      response.report?.fortune?.love,
+      response.report?.fortune?.healthMind
+    ].some((value) => String(value || '').trim().length < 34);
+    assert.equal(shortFortuneField, false, 'fortune section fields should keep minimum narrative density');
+
     const redundantFortunePrefixDetected = [
       response.report?.fortune?.energy,
       response.report?.fortune?.workFinance,
