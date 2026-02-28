@@ -9,7 +9,6 @@ import styles from './TarotMastery.module.css';
 
 export function TarotMastery() {
   const [step, setStep] = useState<'input' | 'reading' | 'result'>('input');
-  const [resultTab, setResultTab] = useState<'report' | 'study'>('report');
   const [leftPaneTab, setLeftPaneTab] = useState<'spread' | 'study'>('spread');
   const [messages, setMessages] = useState<Message[]>([
     { role: 'bot', text: "어서 오세요. 이곳은 운명과 지혜가 만나는 '아르카나 성소'입니다. 오늘 당신의 영혼이 찾고 있는 답은 무엇인가요? 질문을 들려주시면 운명의 지도를 그려드릴게요." }
@@ -30,7 +29,7 @@ export function TarotMastery() {
   const showDiagnostics = debugMode || import.meta.env.DEV;
 
   const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  useEffect(scrollToBottom, [messages, step, resultTab]);
+  useEffect(scrollToBottom, [messages, step]);
   useEffect(() => () => {
     revealTimersRef.current.forEach((timerId) => window.clearTimeout(timerId));
     revealTimersRef.current = [];
@@ -139,8 +138,13 @@ export function TarotMastery() {
 
     const posLabel = spread.positions[idx].label;
     const reportEvidence = data.report?.evidence?.[idx];
+    const isCompactBinary = data.meta?.questionType === 'binary' && data.meta?.responseMode === 'concise';
     const reportInterpretation = reportEvidence
-      ? [reportEvidence.claim, reportEvidence.rationale].filter(Boolean).join('\n')
+      ? (
+          isCompactBinary
+            ? reportEvidence.claim
+            : [reportEvidence.claim, reportEvidence.rationale].filter(Boolean).join('\n')
+        )
       : '';
     const fallbackInterpretation = (data.evidence[idx] || '').split(']').slice(1).join(']').trim();
     const interpretation = reportInterpretation || fallbackInterpretation;
@@ -196,16 +200,17 @@ export function TarotMastery() {
     const summaryDup = summary && conclusionNorm.includes(normalizeForCompare(summary));
     const rationaleDup = rationale && conclusionNorm.includes(normalizeForCompare(rationale));
 
-    const firstEvidence = data.evidence?.[0]?.split('\n').pop()?.trim() || '';
+    const isCompactBinary = data.meta?.questionType === 'binary' && data.meta?.responseMode === 'concise';
+    const firstEvidence = data.report?.evidence?.[0]?.claim || data.evidence?.[0]?.split('\n').pop()?.trim() || '';
     const firstAction = (data.action?.[0] || '').replace(/^\[운명의 지침 \d+\]\s*/, '').trim();
 
-    const insightText = summaryDup
-      ? (firstEvidence ? `핵심 카드 흐름으로 보면, ${firstEvidence}` : summary)
-      : summary;
+    const insightText = isCompactBinary
+      ? (summaryDup ? (firstEvidence || summary) : summary)
+      : (summaryDup ? (firstEvidence ? `핵심 카드 흐름으로 보면, ${firstEvidence}` : summary) : summary);
 
-    const energyText = rationaleDup
-      ? (firstAction ? `실천 에너지는 "${firstAction}" 쪽에 맞춰 두시면 좋습니다.` : rationale)
-      : rationale;
+    const energyText = isCompactBinary
+      ? (rationaleDup ? (firstAction || rationale) : rationale)
+      : (rationaleDup ? (firstAction ? `실천 에너지는 "${firstAction}" 쪽에 맞춰 두시면 좋습니다.` : rationale) : rationale);
 
     return {
       insightText: insightText || summary,
@@ -224,18 +229,6 @@ export function TarotMastery() {
     return { scale, areaHeight };
   };
 
-  const handleTabSwitch = (tab: 'report' | 'study') => {
-    setResultTab(tab);
-    if (!reading) return;
-    trackEvent('result_tab_switched', {
-      tab,
-      questionType: reading.meta?.questionType,
-      mode: reading.mode || 'hybrid',
-      fallbackUsed: !!reading.fallbackUsed,
-      spreadId: spreadLayout?.id
-    });
-  };
-
   const handleReset = () => {
     clearRevealTimers();
     if (reading) {
@@ -249,12 +242,13 @@ export function TarotMastery() {
     setStep('input');
     setLeftPaneTab('spread');
     setReading(null);
-    setResultTab('report');
     setMessages([{ role: 'bot', text: '새로운 의식을 시작할 준비가 되었습니다. 무엇이 궁금하신가요?' }]);
     setRevealedIdx([]);
     setDrawnCards([]);
     setSpreadLayout(null);
   };
+
+  const isCompactBinaryReading = reading?.meta?.questionType === 'binary' && reading?.meta?.responseMode === 'concise';
 
   return (
     <div className={styles.page}>
@@ -382,24 +376,8 @@ export function TarotMastery() {
 
                   {step === 'result' && reading && (
                     <div className={styles.tabContainer}>
-                      <div className={styles.tabHeader}>
-                        <button
-                          onClick={() => handleTabSwitch('report')}
-                          className={`${styles.tabBtn} ${resultTab === 'report' ? styles.tabBtnActive : ''}`}
-                        >
-                          운명의 리포트
-                        </button>
-                        <button
-                          onClick={() => handleTabSwitch('study')}
-                          className={`${styles.tabBtn} ${resultTab === 'study' ? styles.tabBtnActive : ''}`}
-                        >
-                          아르카나 탐구
-                        </button>
-                      </div>
-
                       <div className={styles.tabBody}>
-                        {resultTab === 'report' ? (
-                          <div className={styles.resultSection}>
+                        <div className={styles.resultSection}>
                             <div className={styles.diagnosticBox}>
                               {showDiagnostics && (
                                 <>
@@ -465,13 +443,15 @@ export function TarotMastery() {
                                 {reading.action.map((act, i) => (
                                   <div key={i} className={styles.arcanaItem}>
                                     <span className={styles.arcanaItemBullet}>●</span>
-                                    <p className={styles.arcanaItemText}>{act}</p>
+                                    <p className={styles.arcanaItemText}>
+                                      {showDiagnostics ? act : act.replace(/^\[운명의 지침 \d+\]\s*/, '')}
+                                    </p>
                                   </div>
                                 ))}
                               </div>
                             </div>
 
-                            {reading.report && reading.report.counterpoints.length > 0 && (
+                            {reading.report && reading.report.counterpoints.length > 0 && (!isCompactBinaryReading || !!reading.fallbackUsed) && (
                               <div className={styles.counterpointBox}>
                                 <h4 className={styles.counterpointTitle}>함께 고려할 변수</h4>
                                 <ul className={styles.counterpointList}>
@@ -481,28 +461,7 @@ export function TarotMastery() {
                                 </ul>
                               </div>
                             )}
-                          </div>
-                        ) : (
-                          <div className={styles.studySection}>
-                            <div className={styles.studyGrid}>
-                              {drawnCards.map((card, i) => {
-                                const info = getPositionInfo(i);
-                                return (
-                                  <div key={i} className={styles.studyCard}>
-                                    <div className={styles.studyCardHeader}>
-                                      <span className={styles.studyCardPos}>{info.posLabel}</span>
-                                      <h4 className={styles.studyCardName}>{card.nameKo}</h4>
-                                    </div>
-                                    <p className={styles.studyCardDesc}>{card.description || card.summary}</p>
-                                    <div className={styles.studyKeywords}>
-                                      {card.keywords?.map(k => <span key={k} className={styles.studyTag}>#{k}</span>)}
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        )}
+                        </div>
                       </div>
 
                       <div className={styles.newQuestionRow}>
