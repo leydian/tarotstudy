@@ -132,10 +132,11 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Vercel 서버리스 환경 대응을 위해 app을 내보냅니다.
+export default app;
+
 if (process.env.NODE_ENV !== 'production') {
   app.listen(port, () => {
     console.log(`[Tarot API] Server is running on http://localhost:${port}`);
   });
 }
-
-export default app;

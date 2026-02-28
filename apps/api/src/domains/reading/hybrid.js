@@ -95,11 +95,11 @@ const buildDeterministicReport = ({ question, facts, category, binaryEntities })
   const evidence = facts.map((fact) => {
     const coreMeaning = sanitizeText(fact.coreMeaning || fact.summary).replace(/\.$/, '');
     return {
-    cardId: fact.cardId,
-    positionLabel: fact.positionLabel,
-    claim: `${fact.cardNameKo}의 상징인 '${coreMeaning}'`,
-    rationale: `핵심 키워드인 ${fact.keywords.join(', ') || '조화로운 기운'}을(를) 통해 이번 질문의 실마리를 찾을 수 있습니다.`,
-    caution: sanitizeText(fact.advice) || '급한 결정보다는 마음의 우선순위를 먼저 정리해 보세요.'
+      cardId: fact.cardId,
+      positionLabel: fact.positionLabel,
+      claim: `${fact.cardNameKo}의 상징인 '${coreMeaning}'`,
+      rationale: `핵심 키워드인 ${fact.keywords.join(', ') || '조화로운 기운'}을(를) 통해 이번 질문의 실마리를 찾을 수 있습니다.`,
+      caution: sanitizeText(fact.advice) || '급한 결정보다는 마음의 우선순위를 먼저 정리해 보세요.'
     };
   });
 
@@ -165,15 +165,14 @@ const extractJsonObject = (text) => {
 
 const callAnthropic = async (prompt) => {
   const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) return null;
-
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 8000); // Vercel 10s 제한 내 graceful 폴백
+  if (!apiKey) {
+    console.warn('[Anthropic API] API Key missing in env.');
+    return null;
+  }
 
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      signal: controller.signal,
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': apiKey,
@@ -182,32 +181,22 @@ const callAnthropic = async (prompt) => {
       body: JSON.stringify({
         model: DEFAULT_ANTHROPIC_MODEL,
         max_tokens: 2000,
-        messages: [
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        system: '아르카나 도서관의 사서로서 따뜻하고 신비로운 분위기를 유지하며 반드시 JSON만 반환하세요. JSON 외의 텍스트는 일절 금지합니다.'
+        messages: [{ role: 'user', content: prompt }],
+        system: '아르카나 도서관의 사서로서 따뜻하고 신비로운 분위기를 유지하며 JSON만 반환하세요.'
       })
     });
 
     if (!response.ok) {
-      console.error('[Anthropic API] HTTP error:', response.status, response.statusText);
+      const errorText = await response.text();
+      console.error(`[Anthropic API] Error ${response.status}:`, errorText);
       return null;
     }
+
     const data = await response.json();
-    const text = data?.content?.[0]?.text;
-    return extractJsonObject(text);
+    return extractJsonObject(data?.content?.[0]?.text);
   } catch (error) {
-    if (error.name === 'AbortError') {
-      console.error('[Anthropic API] Timeout (8s exceeded)');
-    } else {
-      console.error('[Anthropic API] Error:', error);
-    }
+    console.error('[Anthropic API] Fetch Error:', error.message);
     return null;
-  } finally {
-    clearTimeout(timeout);
   }
 };
 
@@ -215,13 +204,9 @@ const callOpenAI = async (prompt) => {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return null;
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 8000);
-
   try {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
-      signal: controller.signal,
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${apiKey}`
@@ -243,21 +228,15 @@ const callOpenAI = async (prompt) => {
     });
 
     if (!response.ok) {
-      console.error('[OpenAI API] HTTP error:', response.status, response.statusText);
+      console.error(`[OpenAI API] HTTP Error ${response.status}`);
       return null;
     }
     const data = await response.json();
     const text = data?.choices?.[0]?.message?.content;
     return extractJsonObject(text);
   } catch (error) {
-    if (error.name === 'AbortError') {
-      console.error('[OpenAI API] Timeout (8s exceeded)');
-    } else {
-      console.error('[OpenAI API] Error:', error);
-    }
+    console.error('[OpenAI API] Error:', error.message);
     return null;
-  } finally {
-    clearTimeout(timeout);
   }
 };
 
@@ -398,42 +377,37 @@ export const generateReadingHybrid = async ({
     sessionContext
   });
 
-  let regenerationCount = 0;
-  let fallbackUsed = false;
   let apiUsed = 'none';
+  let modelReport = null;
 
-  // 1. Anthropic 시도 (우선순위 1)
-  let modelReport = await callAnthropic(prompt);
-  if (modelReport) apiUsed = 'anthropic';
+  try {
+    // 1. Anthropic 시도
+    modelReport = await callAnthropic(prompt);
+    if (modelReport) apiUsed = 'anthropic';
 
-  // 2. OpenAI 시도 (Anthropic 실패 시)
-  if (!modelReport) {
-    modelReport = await callOpenAI(prompt);
-    if (modelReport) apiUsed = 'openai';
+    // 2. OpenAI 시도 (Anthropic 실패 시)
+    if (!modelReport) {
+      modelReport = await callOpenAI(prompt);
+      if (modelReport) apiUsed = 'openai';
+    }
+  } catch (err) {
+    console.error('[Hybrid Engine] Engine fatal error:', err.message);
   }
 
-  if (!modelReport) fallbackUsed = true;
   let normalized = normalizeReport(modelReport, facts, deterministic);
   let quality = verifyReport(normalized, facts, binaryEntities);
 
-  if (!quality.valid && apiUsed !== 'none') {
-    regenerationCount += 1;
-    const retryPrompt = `${prompt}\n검증 실패 원인: ${quality.issues.join(', ')}`;
-    modelReport = (apiUsed === 'anthropic') ? await callAnthropic(retryPrompt) : await callOpenAI(retryPrompt);
-    normalized = normalizeReport(modelReport, facts, deterministic);
-    quality = verifyReport(normalized, facts, binaryEntities);
-  }
-
-  if (!quality.valid) {
-    fallbackUsed = true;
+  // 최종 폴백: API가 아예 실패했거나 검증에 실패한 경우
+  const fallbackUsed = !modelReport || !quality.valid;
+  if (fallbackUsed) {
     normalized = deterministic;
+    apiUsed = 'fallback';
   }
 
-  // legacyFromV3는 API가 성공했을 때도 결합하여 풍성하게 만들거나, API 실패 시 전적으로 사용
   const legacyFromV3 = generateReadingV3(cards, safeQuestion, timeframe, category);
   const legacy = toLegacyResponse({ report: normalized, question: safeQuestion, facts });
 
-  // API가 fullNarrative를 성공적으로 생성했다면 그것을 사용, 아니면 v3의 서사를 사용
+  // API 성공 시 fullNarrative 사용, 실패 시 v3의 conclusion 사용
   const finalConclusion = normalized.fullNarrative || legacyFromV3?.conclusion || legacy.conclusion;
 
   return {
@@ -445,7 +419,7 @@ export const generateReadingHybrid = async ({
     quality: {
       consistencyScore: quality.consistencyScore,
       unsupportedClaimCount: quality.unsupportedClaimCount,
-      regenerationCount
+      regenerationCount: 0
     },
     fallbackUsed,
     apiUsed,
