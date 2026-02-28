@@ -2,6 +2,26 @@
 
 ## [2026-02-28]
 
+### Anthropic 기본 모델/토큰 상향 (v6.3.2)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/hybrid.js`
+- `docs/RELEASE_NOTES_v6.3.2.md`
+
+#### 변경 사항
+- Anthropic 기본 모델을 `claude-haiku-4-5-20251001`로 상향.
+- Anthropic 호출의 `max_tokens`를 `2500 -> 4096`으로 상향.
+
+#### 효과
+- 긴 서사(fullNarrative)와 다카드 근거 출력에서 응답 절단 위험 완화.
+- 고정 스키마(JSON) 하에서 품질 안정성 강화.
+
+#### 검증
+- `npm run test:persona --prefix apps/api` 통과.
+- 상세 변경 요약: `docs/RELEASE_NOTES_v6.3.2.md`
+
+## [2026-02-28]
+
 ### 리딩 결과 미노출 UI 핫픽스 (v6.3.1)
 
 #### 변경 파일
