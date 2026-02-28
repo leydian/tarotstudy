@@ -2,6 +2,26 @@
 
 ## [2026-02-28]
 
+### 데스크탑/태블릿(<=1024) 성소 내부 스크롤 복구 (v6.3.62)
+
+#### 변경 파일
+- `apps/web/src/pages/TarotMastery.module.css`
+- `docs/RELEASE_NOTES_v6.3.62.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 1024px 구간 높이 체인 복구
+  - `@media (max-width: 1024px)`에서 `workspaceGrid`가 `height: auto`로 풀려 내부 스크롤 컨테이너가 무력화되던 문제를 수정.
+  - `workspaceGrid`를 `height: 100%`로 복구하고 `min-height: 0`를 추가해 grid/flex 자식의 오버플로우 제약을 명확화.
+  - `leftPane`, `rightPane`에도 `min-height: 0`를 추가해 내부 스크롤 조건을 안정화.
+- 모바일(<=768) 규칙과 충돌 방지
+  - 모바일 구간은 기존 의도대로 `workspaceGrid: height auto`를 유지하되 `min-height`를 명시해 상위 규칙 상속 충돌을 차단.
+- 결과
+  - 데스크탑/태블릿에서 긴 리딩이 페이지 전체 확장 대신 `rightPane` 내부 스크롤로 동작하도록 복구.
+
+#### 검증
+- `npm run build --prefix apps/web` 통과
+
 ### 리딩 중복 억제 강화 + 모바일 성소 내부 스크롤 복원 (v6.3.61)
 
 #### 변경 파일

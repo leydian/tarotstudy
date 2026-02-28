@@ -265,10 +265,16 @@
 
   .workspaceGrid {
     grid-template-columns: 1fr;
-    height: auto;
+    height: 100%;
+    min-height: 0;
+  }
+
+  .leftPane {
+    min-height: 0;
   }
 
   .rightPane {
+    min-height: 0;
     overflow-y: auto;
     scrollbar-width: thin;
     scrollbar-color: var(--scroll-thumb-end) var(--scroll-track);
@@ -659,6 +665,7 @@
     grid-template-columns: 1fr;
     gap: 0.85rem;
     padding: 0.65rem;
+    min-height: auto;
   }
 
   .leftPane {
