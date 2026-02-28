@@ -224,6 +224,34 @@ const buildDistinctRationale = (report) => {
   return '판단을 서두르기보다 추가 신호를 확인한 뒤 결정을 내리는 편이 좋습니다.';
 };
 
+const classifyQualityFlag = (flag) => {
+  if (!flag) return null;
+  const safetyFlags = new Set([
+    'summary_contamination_detected',
+    'verdict_contamination_detected',
+    'counterpoint_contamination_detected',
+    'health_guardrail_applied',
+    'evidence_quality_rewritten'
+  ]);
+  const styleFlags = new Set([
+    'summary_verdict_overlap_high',
+    'auto_rewritten',
+    'fortune_section_rewritten'
+  ]);
+  if (safetyFlags.has(flag)) return `safety_${flag}`;
+  if (styleFlags.has(flag)) return `style_${flag}`;
+  return `contract_${flag}`;
+};
+
+const withCategorizedFlags = (flags = []) => {
+  const next = [...flags];
+  for (const flag of flags) {
+    const categorized = classifyQualityFlag(flag);
+    if (categorized) next.push(categorized);
+  }
+  return [...new Set(next)];
+};
+
 const normalizeEvidenceItem = (item, idx) => {
   const positionLabel = sanitizeText(item?.positionLabel || `단계 ${idx + 1}`);
   const claim = sanitizeText(item?.claim || '');
@@ -257,15 +285,7 @@ const normalizeEvidenceItem = (item, idx) => {
 };
 
 const enforceEvidenceQuality = (evidence) => {
-  const normalized = (Array.isArray(evidence) ? evidence : []).map((item, idx) => normalizeEvidenceItem(item, idx));
-  const rationaleKeys = normalized.map((item) => normalizeCompareText(item.rationale)).filter(Boolean);
-  const allRationaleSame = rationaleKeys.length > 1 && new Set(rationaleKeys).size === 1;
-  if (!allRationaleSame) return normalized;
-
-  return normalized.map((item, idx) => ({
-    ...item,
-    rationale: `${item.rationale} (${item.positionLabel} 포지션 관점으로 보면 ${idx + 1}번째 신호의 우선순위를 함께 점검해 보세요.)`
-  }));
+  return (Array.isArray(evidence) ? evidence : []).map((item, idx) => normalizeEvidenceItem(item, idx));
 };
 
 const postProcessReport = (report) => {
@@ -286,8 +306,12 @@ const postProcessReport = (report) => {
 
   if (isHighOverlap(next.summary, next.verdict.rationale)) {
     qualityFlags.push('summary_verdict_overlap_high');
-    next.verdict.rationale = buildDistinctRationale(next);
-    qualityFlags.push('auto_rewritten');
+    const sameText = normalizeCompareText(next.summary) === normalizeCompareText(next.verdict.rationale);
+    const rationaleMissing = !sanitizeText(next.verdict.rationale);
+    if (sameText || rationaleMissing) {
+      next.verdict.rationale = buildDistinctRationale(next);
+      qualityFlags.push('auto_rewritten');
+    }
   }
 
   next.counterpoints = sanitizeListItems(next.counterpoints, 'counterpoints');
@@ -714,7 +738,8 @@ const buildPrompt = ({
         '- overall_fortune에서는 verdict를 단정형 YES/NO로 몰아가지 말고 균형 있게 작성하세요.',
         '- energy/workFinance/love/healthMind/message는 각각 1~2문장으로 작성하세요.',
         '- fortune 섹션 문장은 필드명 접두 반복("전체 에너지 흐름을 보면", "일·재물운은" 등)을 붙이지 마세요.',
-        '- evidence.rationale은 카드마다 같은 문장 패턴을 반복하지 마세요.'
+        '- evidence.rationale은 카드마다 같은 문장 패턴을 반복하지 마세요.',
+        '- 역방향 카드 근거는 과속/확정 어조보다 점검/완충 어조를 우선하세요.'
       ].join('\n')
     : domainTag === 'health'
     ? [
@@ -734,7 +759,8 @@ const buildPrompt = ({
         '- summary와 verdict.rationale은 같은 의미로 반복하지 마세요.',
         '- counterpoints에는 다른 섹션 문장을 복사하지 마세요.',
         '- actions는 즉시 실행 가능한 문장 2개만 작성하세요.',
-        '- evidence는 카드별 핵심 주장(claim) 중심으로 간결하게 작성하세요.'
+        '- evidence는 카드별 핵심 주장(claim) 중심으로 간결하게 작성하세요.',
+        '- 역방향 카드에서는 확정형 낙관 문장을 피하고 점검형 문장으로 작성하세요.'
       ].join('\n')
     : responseMode === 'concise'
       ? [
@@ -1070,7 +1096,7 @@ const finalizeOutputReport = ({
   return {
     report: finalReport,
     quality: finalQuality,
-    qualityFlags: [...new Set(flags)]
+    qualityFlags: withCategorizedFlags([...new Set(flags)])
   };
 };
 
@@ -1227,7 +1253,7 @@ export const generateReadingHybrid = async ({
   const processed = postProcessReport(normalized);
   normalized = processed.report;
   const modelQuality = verifyReport(normalized, facts, binaryEntities);
-  const modelQualityFlags = [...new Set([...processed.qualityFlags, ...modelQuality.issues])];
+  const modelQualityFlags = withCategorizedFlags([...new Set([...processed.qualityFlags, ...modelQuality.issues])]);
 
   // 최종 폴백: API가 아예 실패했거나 검증에 실패한 경우
   const fallbackUsed = !modelReport || !modelQuality.valid;

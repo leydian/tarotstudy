@@ -2,6 +2,38 @@
 
 ## [2026-02-28]
 
+### 후처리 3차 경량화·분류형 qualityFlags 확장 (v6.3.38)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/hybrid.js`
+- `apps/api/tests/hybrid-resilience.js`
+- `docs/RELEASE_NOTES_v6.3.38.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 스타일 과교정 축소
+  - evidence 동일문장 장문 확장 로직 제거.
+  - summary/verdict 중복 시 조건부 최소 재작성으로 축소(동일/빈 값일 때만).
+  - safety 성 보정(오염 제거, 역방향-낙관 충돌 보정)은 유지.
+- qualityFlags 분류형 확장
+  - 기존 플래그 + `safety_*`, `style_*`, `contract_*` 분류 플래그 병행 기록.
+  - debug 모드의 `modelQualityFlags`도 분류형으로 확장.
+- 프롬프트 유도 강화
+  - overall_fortune/concise-binary에 역방향 카드 어조 지시 추가.
+- 회귀 테스트 보강
+  - 분류형 플래그 동작 및 fallback 최종 플래그 오염 방지 검증 추가.
+
+#### 검증
+- `node apps/api/tests/hybrid-resilience.js` 통과
+- `node apps/api/tests/overall-fortune-regression.js` 통과
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `node apps/web/tests/validate-ui-contract.js` 통과
+- `node apps/web/tests/validate-reading-flow-contract.js` 통과
+- `npm run build --prefix apps/web` 통과
+
+## [2026-02-28]
+
 ### 최종 품질 기준 정렬·qualityFlags 분리·health finalize 통일 (v6.3.37)
 
 #### 변경 파일

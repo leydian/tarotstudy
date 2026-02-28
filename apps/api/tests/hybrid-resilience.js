@@ -330,6 +330,7 @@ const testEvidenceQualityRewrite = async () => {
       'evidence caution 오염 prefix는 제거되어야 합니다.'
     );
     assert.ok((result.meta?.qualityFlags || []).includes('evidence_quality_rewritten'));
+    assert.ok((result.meta?.qualityFlags || []).includes('safety_evidence_quality_rewritten'));
   });
 };
 
@@ -408,6 +409,11 @@ const testFallbackQualityMatchesFinalReport = async () => {
       (result.meta?.qualityFlags || []).includes('report_missing'),
       false,
       'final quality flags should reflect final fallback report instead of model-stage missing report issue'
+    );
+    assert.equal(
+      (result.meta?.qualityFlags || []).includes('contract_report_missing'),
+      false,
+      'categorized final quality flags should also reflect final fallback report'
     );
     assert.ok(result.quality?.consistencyScore >= 60, 'final quality should be recomputed from fallback report');
     assert.ok(result.report?.summary, 'final fallback report should include non-empty summary');
