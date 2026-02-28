@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
 import { BrowserRouter, Routes, Route, NavLink, Link } from 'react-router-dom';
-import { LayoutDashboard, BookOpen, Sparkles, Moon, Menu, X, Activity } from 'lucide-react';
+import { LayoutDashboard, BookOpen, Sparkles, Moon, Menu, X } from 'lucide-react';
 import { Home } from './pages/Home';
 import { Cards } from './pages/Cards';
 import { TarotMastery } from './pages/TarotMastery';
-import { OpsDashboard } from './pages/OpsDashboard';
 import './styles/theme.css';
 import styles from './App.module.css';
 
@@ -51,15 +50,6 @@ function AppLayout() {
             <Sparkles size={16} />
             아르카나 성소
           </NavLink>
-          <NavLink
-            to="/ops"
-            className={({ isActive }) =>
-              isActive ? `${styles.navLink} ${styles.active}` : styles.navLink
-            }
-          >
-            <Activity size={16} />
-            운영 지표
-          </NavLink>
         </nav>
 
         {/* 햄버거 버튼 */}
@@ -105,16 +95,6 @@ function AppLayout() {
           <Sparkles size={16} />
           아르카나 성소
         </NavLink>
-        <NavLink
-          to="/ops"
-          className={({ isActive }) =>
-            isActive ? `${styles.mobileNavLink} ${styles.active}` : styles.mobileNavLink
-          }
-          onClick={() => setMobileOpen(false)}
-        >
-          <Activity size={16} />
-          운영 지표
-        </NavLink>
       </nav>
 
       <main className={styles.main}>
@@ -122,7 +102,6 @@ function AppLayout() {
           <Route path="/" element={<Home />} />
           <Route path="/cards" element={<Cards />} />
           <Route path="/mastery" element={<TarotMastery />} />
-          <Route path="/ops" element={<OpsDashboard />} />
         </Routes>
       </main>
 

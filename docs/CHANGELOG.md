@@ -2,6 +2,34 @@
 
 ## [2026-02-28]
 
+### 웹 운영 지표 페이지(/ops) 제거 (v6.3.42)
+
+#### 변경 파일
+- `apps/web/src/App.tsx`
+- `apps/web/src/pages/OpsDashboard.tsx` (삭제)
+- `apps/web/src/pages/OpsDashboard.module.css` (삭제)
+- `apps/web/tests/OpsDashboard.test.tsx` (삭제)
+- `apps/web/tests/validate-ui-contract.js`
+- `docs/RELEASE_NOTES_v6.3.42.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- `/ops` 라우트 제거
+  - 앱 라우터에서 운영 지표 페이지 엔트리를 삭제.
+- 네비게이션 링크 제거
+  - 데스크톱/모바일 메뉴의 `운영 지표` 항목 제거.
+- 운영 지표 UI 소스 정리
+  - `OpsDashboard.tsx` 및 관련 CSS 파일 삭제.
+- 테스트 기준 갱신
+  - UI 계약 테스트에서 `/ops` 링크/라우트의 "존재" 검증을 "미존재" 검증으로 전환.
+  - `OpsDashboard` 컴포넌트 단위 테스트 파일 삭제.
+
+#### 검증
+- `npm run test:ui-contract --prefix apps/web` 통과
+- `npm run build --prefix apps/web` 통과
+
+## [2026-02-28]
+
 ### 반복감·강도·밀도 동시 보정 (v6.3.41)
 
 #### 변경 파일

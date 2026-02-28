@@ -31,8 +31,8 @@ assert.ok(
 
 assert.ok(cardsPage.includes('aria-label="카드 검색"'), 'Cards search input aria-label is missing');
 assert.ok(cardsPage.includes('aria-pressed={filter === key}'), 'Cards filter button aria-pressed is missing');
-assert.ok(appSource.includes('to="/ops"'), 'Ops dashboard route link is missing');
-assert.ok(appSource.includes('path="/ops"'), 'Ops dashboard route is missing');
+assert.equal(appSource.includes('to="/ops"'), false, 'Ops dashboard route link should be removed');
+assert.equal(appSource.includes('path="/ops"'), false, 'Ops dashboard route should be removed');
 
 assert.ok(
   tarotMastery.includes("const handleQuickFortune = async (question: string) =>"),
