@@ -1,4 +1,3 @@
-import { generateReadingV3 } from './v3.js';
 import { inferQuestionProfile } from './questionType.js';
 
 const POSITIVE_IDS = new Set([
@@ -768,6 +767,37 @@ const buildFortuneSummary = (fortunePeriod, trendLabel) => {
   return `${periodWithTopic} 균형 구간입니다. 조급한 결정보다 우선순위를 정리하는 접근이 안정적입니다.`;
 };
 
+const buildCounterpointsByContext = ({ questionType, readingKind = 'general_reading', domainTag = 'general' }) => {
+  if (readingKind === 'overall_fortune') {
+    return [
+      '주간/월간 운세는 중간 점검 시점의 선택에 따라 체감 흐름이 달라질 수 있습니다.',
+      '초반 신호가 후반까지 그대로 이어지지 않을 수 있으니 일정 완충 구간을 남겨두세요.'
+    ];
+  }
+  if (domainTag === 'health') {
+    return [
+      '건강 관련 판단은 타로 해석보다 현재 증상 관찰과 의료 기준을 우선하세요.',
+      '증상이 지속·악화되면 대기하지 말고 의료진 상담으로 확인하는 편이 안전합니다.'
+    ];
+  }
+  if (questionType === 'binary' || questionType === 'light') {
+    return [
+      '가벼운 선택이라도 컨디션·일정 변수에 따라 결과 체감이 달라질 수 있습니다.',
+      '오늘 결정을 내렸다면 짧은 사후 점검으로 선택의 만족도를 확인해 보세요.'
+    ];
+  }
+  if (questionType === 'career') {
+    return [
+      '커리어 질문은 시장 일정과 채용 타이밍 변수의 영향이 크므로 중간 점검이 필요합니다.',
+      '서류·면접·협상 단계별로 조건이 달라질 수 있으니 단계별 전략을 분리해 준비하세요.'
+    ];
+  }
+  return [
+    '질문의 범위가 넓을수록 카드가 가리키는 방향이 분산될 수 있어 조건을 좁히는 과정이 중요합니다.',
+    '운명은 고정값이 아니므로 컨디션과 환경 변화에 맞춰 실행 계획을 유연하게 조정하세요.'
+  ];
+};
+
 const buildDeterministicReport = ({
   question,
   facts,
@@ -827,7 +857,7 @@ const buildDeterministicReport = ({
       usedIndices: usedRationaleIndices[toneBucket] || new Set(),
       usedNormalized: usedRationaleNormalized[toneBucket] || new Set()
     }) || rationaleTemplates[0];
-    const orientationRationale = pickedTemplate.replace('%s', keywordsStr);
+    const orientationRationale = pickedTemplate.replace('%s', `'${keywordsStr}'`);
     const claimTemplates = EVIDENCE_CLAIM_TEMPLATES[toneBucket]?.[suit]
       || EVIDENCE_CLAIM_TEMPLATES[toneBucket]?.major
       || [];
@@ -850,19 +880,21 @@ const buildDeterministicReport = ({
     };
   });
 
-  const counterpoints = [
-    '질문의 범위가 넓을 경우 카드가 가리키는 방향이 분산될 수 있으니 유의하세요.',
-    '운명은 고정된 것이 아니므로 당신의 컨디션과 주변 환경에 따라 흐름은 언제든 바뀔 수 있습니다.'
-  ];
+  const isLightLikeQuestion = questionType === 'light' || isCompactBinaryQuestion;
+  const counterpoints = buildCounterpointsByContext({
+    questionType,
+    readingKind,
+    domainTag
+  });
 
-  const actions = isCompactBinaryQuestion
+  const actions = isLightLikeQuestion
     ? [
         '한 잔을 마신다면 양을 평소보다 조금 줄여서 가볍게 시작해 보세요.',
         '지금 컨디션이 애매하면 물 한 컵 먼저 마신 뒤 15분 후에 다시 결정해 보세요.'
       ]
     : [
-        '지금 당신의 직관이 들려주는 목소리에 조금 더 귀를 기울여 보세요.',
-        '결정하기 전, 10분 정도 차분히 명상을 하며 마음의 소리를 들어보시는 건 어떨까요?'
+        '이번 주 핵심 우선순위 1~2개를 고정하고, 나머지는 보류해 실행 밀도를 높이세요.',
+        '중간 점검 시점(예: 수/목)을 미리 정해 진행률과 변수 변화를 한 번에 확인하세요.'
       ];
 
   const summary = isCompactBinaryQuestion
@@ -1368,7 +1400,7 @@ const toLegacyResponse = ({ report, question, facts }) => {
 
   const action = report.actions.map((item, idx) => `[운명의 지침 ${idx + 1}] ${item}`);
 
-  const conclusion = report.fullNarrative || [
+  const conclusion = [
     `사서인 제가 읽어낸 이번 리딩의 결론입니다.`,
     `질문하신 "${question}"에 대하여, ${report.summary}`,
     '',
@@ -1673,14 +1705,13 @@ export const generateReadingHybrid = async ({
       }
     : null;
 
-  const legacyFromV3 = generateReadingV3(cards, safeQuestion, timeframe, category);
   const legacy = toLegacyResponse({ report: finalized.report, question: safeQuestion, facts });
 
   const isOverallFortune = resolvedProfile.readingKind === 'overall_fortune';
   const isCompactQuestion = isOverallFortune || questionType === 'light' || (questionType === 'binary' && safeQuestion.length <= 20);
   const finalConclusion = isCompactQuestion
     ? finalized.report.summary
-    : (finalized.report.fullNarrative || legacyFromV3?.conclusion || legacy.conclusion);
+    : legacy.conclusion;
 
   const compactEvidence = finalized.report.evidence.map((item) => {
     const cardName = facts.find((f) => f.cardId === item.cardId)?.cardNameKo || item.cardId;
@@ -1694,8 +1725,8 @@ export const generateReadingHybrid = async ({
 
   return {
     conclusion: finalConclusion,
-    evidence: isCompactQuestion ? compactEvidence : (legacyFromV3?.evidence || legacy.evidence),
-    action: isCompactQuestion ? compactActions : (legacyFromV3?.action || legacy.action),
+    evidence: isCompactQuestion ? compactEvidence : legacy.evidence,
+    action: isCompactQuestion ? compactActions : legacy.action,
     yesNoVerdict: normalizeVerdictLabel(finalized.report.verdict.label),
     report: finalized.report,
     quality: {

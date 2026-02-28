@@ -2,6 +2,36 @@
 
 ## [2026-02-28]
 
+### 리딩 출력 중복/톤 충돌 완화 및 경량 질문 응답 개선 (v6.3.48)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/hybrid.js`
+- `docs/RELEASE_NOTES_v6.3.48.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 일반(비 compact) 출력에서 v3 레거시 텍스트 혼입 제거
+  - `generateReadingV3` import/사용을 제거하고, non-compact 결과(`conclusion/evidence/action`)를 `toLegacyResponse` 기반 단일 경로로 정리.
+  - 서사 톤/문장 스타일이 서로 섞이는 문제를 완화.
+- 결론 문단 중복 원인 차단
+  - `toLegacyResponse()`의 `conclusion` 생성 시 `report.fullNarrative` 우선 사용을 제거하고, `summary + verdict` 기반 조합으로 고정.
+  - 장문 내 반복 구문과 섹션 충돌을 줄임.
+- 맥락형 반론(함께 고려할 변수) 도입
+  - `buildCounterpointsByContext()` 추가.
+  - `readingKind/domainTag/questionType`에 따라 반론 문구를 분기하여 동일 문장 반복을 완화.
+  - `overall_fortune`, `health`, `career`, `light/binary`, 일반 케이스별 차등 문구 적용.
+- 경량 질문(light) 액션 가이드 정합성 보강
+  - `questionType === 'light'`를 compact-like 처리에 포함.
+  - 가벼운 질문에 과도하게 무거운 실행 지침이 출력되지 않도록 액션 세트를 분리.
+- 문장 표현 보정
+  - 카드 키워드 인용부에 작은따옴표를 적용해 근거 문장 가독성을 개선.
+  - 일반 질문 액션 문구를 실무형 점검 문장으로 치환.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:persona --prefix apps/api` 통과
+- `npm run build --prefix apps/web` 통과
+
 ### fallback 최소화 + 리딩 지연 단축 (v6.3.47)
 
 #### 변경 파일
