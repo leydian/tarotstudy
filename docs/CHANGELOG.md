@@ -2,6 +2,36 @@
 
 ## [2026-02-28]
 
+### 2단계 분할 마무리: report-builder 서브모듈 분해 완료 (v6.3.54)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/report-builder.js`
+- `apps/api/src/domains/reading/report/shared.js`
+- `apps/api/src/domains/reading/report/deterministic.js`
+- `docs/RELEASE_NOTES_v6.3.54.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- report 계층 2단계 분할 완료
+  - 대형 `report-builder.js`를 엔트리 재수출 레이어로 축소.
+  - 공통 상수/유틸/정규화/품질 보정 로직을 `report/shared.js`로 이동.
+  - 결정형 리포트 합성(`buildDeterministicReport`)을 `report/deterministic.js`로 분리.
+- 모듈 경계 안정화
+  - `report-builder.js`는 기존 호출 경로를 유지하면서 내부 구현만 서브모듈로 위임.
+  - 분할 중 발생했던 `deterministic` export 꼬임을 정리해 import/export 계약을 복구.
+- 유지보수성 개선
+  - 공통 로직과 리포트 합성 로직의 책임을 분리해 추후 정책/문구 보정 시 영향 범위를 축소.
+  - 파일 단위 탐색성과 회귀 분석 난이도를 낮춤.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:persona --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `node apps/api/tests/fallback-minimization.js` 통과
+- `node apps/api/tests/question-profile-v2.js` 통과
+- `node apps/api/tests/reading-v2-contract.js` 통과
+- `npm run build --prefix apps/web` 통과
+
 ### 2단계 분할: 오케스트레이터 직접 모듈 참조 + profile 세분화 + 정책 강화 (v6.3.53)
 
 #### 변경 파일
