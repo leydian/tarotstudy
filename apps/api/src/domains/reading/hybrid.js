@@ -13,7 +13,8 @@ const NEGATIVE_IDS = new Set([
   'w09', 'w10', 'c05', 'c08', 'p05'
 ]);
 
-const DEFAULT_MODEL = process.env.READING_MODEL || 'gpt-4.1-mini';
+const DEFAULT_OPENAI_MODEL = process.env.READING_MODEL || 'gpt-4o-mini';
+const DEFAULT_ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL || 'claude-3-5-haiku-20241022';
 
 const getYesNoScore = (cardId) => {
   if (POSITIVE_IDS.has(cardId)) return 1;
@@ -44,7 +45,8 @@ const buildCardFacts = (cards, category) => cards.map((card, idx) => ({
   summary: card.summary,
   coreMeaning: pickMeaningByCategory(card, category),
   keywords: Array.isArray(card.keywords) ? card.keywords.slice(0, 5) : [],
-  advice: card.meanings?.advice || ''
+  advice: card.meanings?.advice || '',
+  description: card.description || ''
 }));
 
 const verdictTone = (label, rationale) => {
@@ -115,7 +117,7 @@ const buildDeterministicReport = ({ question, facts, category, binaryEntities })
     ? `질문 "${question}"에 대한 운명의 지도를 펼쳐보니, ${verdictTone(verdict.label, verdict.rationale)}`
     : `"${question}"의 ${category}적인 맥락에서 카드를 읽어보니, ${verdictTone(verdict.label, verdict.rationale)}`;
 
-  return { summary, verdict, evidence, counterpoints, actions };
+  return { summary, verdict, evidence, counterpoints, actions, fullNarrative: null };
 };
 
 const buildPrompt = ({ question, facts, category, timeframe, binaryEntities, sessionContext }) => {
@@ -128,12 +130,16 @@ const buildPrompt = ({ question, facts, category, timeframe, binaryEntities, ses
     facts
   };
 
+  const isLight = question.length < 15 && ['커피', '메뉴', '점심', '저녁', '야식', '걷기', '버스', '지하철', '옷', '신발', '살까', '말까', '먹을까', '마실까'].some(k => question.includes(k));
+
   return [
     '당신은 아르카나 도서관의 지혜로운 사서이자 타로 전문가입니다.',
     '반드시 JSON만 출력하고, 카드의 상징에 기반한 따뜻하고 통찰력 있는 분석을 제공하세요.',
+    `이 질문은 ${isLight ? '일상적이고 가벼운' : '진중하고 깊이 있는'} 고민입니다. 그에 맞춰 어휘의 무게를 조절하세요.`,
     '출력 스키마:',
-    '{"summary":string,"verdict":{"label":"YES|NO|MAYBE","rationale":string,"recommendedOption":"A|B|EITHER|NONE"},"evidence":[{"cardId":string,"positionLabel":string,"claim":string,"rationale":string,"caution":string}],"counterpoints":[string],"actions":[string]}',
-    'evidence.claim은 카드의 상징과 현재 상황을 연결하는 문장으로 작성하세요.',
+    '{"fullNarrative":string, "summary":string,"verdict":{"label":"YES|NO|MAYBE","rationale":string,"recommendedOption":"A|B|EITHER|NONE"},"evidence":[{"cardId":string,"positionLabel":string,"claim":string,"rationale":string,"caution":string}],"counterpoints":[string],"actions":[string]}',
+    '- fullNarrative: 사서의 말투로 작성된 3~4문단의 전체 리딩 서사. 카드 개별 해석과 종합 결론을 자연스럽게 연결하세요. 문법과 조사를 완벽하게 처리하세요.',
+    '- evidence.claim: 카드의 상징과 현재 상황을 연결하는 문장.',
     '한국어로 작성하고 사서의 우아한 말투를 유지하세요.',
     `입력 데이터: ${JSON.stringify(context)}`
   ].join('\n');
@@ -157,36 +163,76 @@ const extractJsonObject = (text) => {
   }
 };
 
-const callModel = async ({ prompt, temperature = 0.4 }) => {
+const callAnthropic = async (prompt) => {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) return null;
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: DEFAULT_ANTHROPIC_MODEL,
+        max_tokens: 2000,
+        messages: [
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        system: '아르카나 도서관의 사서로서 따뜻하고 신비로운 분위기를 유지하며 반드시 JSON만 반환하세요. JSON 외의 텍스트는 일절 금지합니다.'
+      })
+    });
+
+    if (!response.ok) return null;
+    const data = await response.json();
+    const text = data?.content?.[0]?.text;
+    return extractJsonObject(text);
+  } catch (error) {
+    console.error('[Anthropic API] Error:', error);
+    return null;
+  }
+};
+
+const callOpenAI = async (prompt) => {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return null;
 
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`
-    },
-    body: JSON.stringify({
-      model: DEFAULT_MODEL,
-      temperature,
-      messages: [
-        {
-          role: 'system',
-          content: '아르카나 도서관의 사서로서 따뜻하고 신비로운 분위기를 유지하며 JSON만 반환하세요.'
-        },
-        {
-          role: 'user',
-          content: prompt
-        }
-      ]
-    })
-  });
+  try {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: DEFAULT_OPENAI_MODEL,
+        temperature: 0.4,
+        messages: [
+          {
+            role: 'system',
+            content: '아르카나 도서관의 사서로서 따뜻하고 신비로운 분위기를 유지하며 JSON만 반환하세요.'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ]
+      })
+    });
 
-  if (!response.ok) return null;
-  const data = await response.json();
-  const text = data?.choices?.[0]?.message?.content;
-  return extractJsonObject(text);
+    if (!response.ok) return null;
+    const data = await response.json();
+    const text = data?.choices?.[0]?.message?.content;
+    return extractJsonObject(text);
+  } catch (error) {
+    console.error('[OpenAI API] Error:', error);
+    return null;
+  }
 };
 
 const verifyReport = (report, facts, binaryEntities) => {
@@ -208,19 +254,7 @@ const verifyReport = (report, facts, binaryEntities) => {
         unsupportedClaimCount += 1;
         issues.push('unknown_card_claim');
       }
-      if (!sanitizeText(item?.claim) || !sanitizeText(item?.rationale)) {
-        issues.push('empty_claim_or_rationale');
-      }
     }
-  }
-
-  if (!report.verdict || !['YES', 'NO', 'MAYBE'].includes(report.verdict.label)) {
-    issues.push('invalid_verdict');
-  }
-
-  const option = report?.verdict?.recommendedOption;
-  if (binaryEntities && !['A', 'B', 'EITHER', 'NONE', undefined].includes(option)) {
-    issues.push('invalid_recommended_option');
   }
 
   const issuePenalty = Math.min(issues.length * 8, 60);
@@ -236,7 +270,6 @@ const verifyReport = (report, facts, binaryEntities) => {
 };
 
 const normalizeReport = (report, facts, fallback) => {
-
   const normalizedEvidence = (Array.isArray(report?.evidence) ? report.evidence : fallback.evidence).map((item, idx) => ({
     cardId: facts[idx]?.cardId || item?.cardId || '',
     positionLabel: sanitizeText(item?.positionLabel || facts[idx]?.positionLabel || `단계 ${idx + 1}`),
@@ -246,6 +279,7 @@ const normalizeReport = (report, facts, fallback) => {
   }));
 
   return {
+    fullNarrative: report?.fullNarrative || null,
     summary: sanitizeText(report?.summary || fallback.summary),
     verdict: {
       label: normalizeVerdictLabel(report?.verdict?.label || fallback.verdict.label),
@@ -274,7 +308,7 @@ const toLegacyResponse = ({ report, question, facts }) => {
 
   const action = report.actions.map((item, idx) => `[운명의 지침 ${idx + 1}] ${item}`);
 
-  const conclusion = [
+  const conclusion = report.fullNarrative || [
     `사서인 제가 읽어낸 이번 리딩의 결론입니다.`,
     `질문하신 "${question}"에 대하여, ${report.summary}`,
     '',
@@ -296,7 +330,7 @@ const extractBinaryEntities = (question, cardCount) => {
   const splitMatch = question.match(splitRegex);
   if (splitMatch) return [splitMatch[1].trim(), splitMatch[2].trim()];
 
-  const verbs = ['할까', '갈까', '탈까', '먹을까', '마실까', '살까', '될까'];
+  const verbs = ['할까', '갈까', '탈까', '먹을까', '마실까', '살까', '될까', '말까'];
   const verbPattern = verbs.join('|');
   const binaryRegex = new RegExp(`(.+?)\\s*(?:${verbPattern})\\s*(.+?)(?:${verbPattern})(?:\\?|$)`);
   const match = question.match(binaryRegex);
@@ -340,38 +374,47 @@ export const generateReadingHybrid = async ({
 
   let regenerationCount = 0;
   let fallbackUsed = false;
-  let qualityIssues = [];
+  let apiUsed = 'none';
 
-  let modelReport = await callModel({ prompt, temperature: 0.35 });
+  // 1. Anthropic 시도 (우선순위 1)
+  let modelReport = await callAnthropic(prompt);
+  if (modelReport) apiUsed = 'anthropic';
+
+  // 2. OpenAI 시도 (Anthropic 실패 시)
+  if (!modelReport) {
+    modelReport = await callOpenAI(prompt);
+    if (modelReport) apiUsed = 'openai';
+  }
+
   if (!modelReport) fallbackUsed = true;
   let normalized = normalizeReport(modelReport, facts, deterministic);
   let quality = verifyReport(normalized, facts, binaryEntities);
-  qualityIssues = quality.issues;
 
-  if (!quality.valid) {
+  if (!quality.valid && apiUsed !== 'none') {
     regenerationCount += 1;
-    modelReport = await callModel({ prompt: `${prompt}\n검증 실패 원인: ${quality.issues.join(', ') || 'unknown'}`, temperature: 0.2 });
-    if (!modelReport) fallbackUsed = true;
+    const retryPrompt = `${prompt}\n검증 실패 원인: ${quality.issues.join(', ')}`;
+    modelReport = (apiUsed === 'anthropic') ? await callAnthropic(retryPrompt) : await callOpenAI(retryPrompt);
     normalized = normalizeReport(modelReport, facts, deterministic);
     quality = verifyReport(normalized, facts, binaryEntities);
-    qualityIssues = quality.issues;
   }
 
   if (!quality.valid) {
     fallbackUsed = true;
     normalized = deterministic;
-    quality = verifyReport(normalized, facts, binaryEntities);
-    qualityIssues = quality.issues;
   }
 
+  // legacyFromV3는 API가 성공했을 때도 결합하여 풍성하게 만들거나, API 실패 시 전적으로 사용
   const legacyFromV3 = generateReadingV3(cards, safeQuestion, timeframe, category);
-  const legacy = legacyFromV3 || toLegacyResponse({ report: normalized, question: safeQuestion, facts });
+  const legacy = toLegacyResponse({ report: normalized, question: safeQuestion, facts });
 
-  const result = {
-    conclusion: legacy.conclusion,
-    evidence: legacy.evidence,
-    action: legacy.action,
-    yesNoVerdict: legacy.yesNoVerdict || normalizeVerdictLabel(normalized.verdict.label),
+  // API가 fullNarrative를 성공적으로 생성했다면 그것을 사용, 아니면 v3의 서사를 사용
+  const finalConclusion = normalized.fullNarrative || legacyFromV3?.conclusion || legacy.conclusion;
+
+  return {
+    conclusion: finalConclusion,
+    evidence: legacyFromV3?.evidence || legacy.evidence,
+    action: legacyFromV3?.action || legacy.action,
+    yesNoVerdict: legacy.yesNoVerdict,
     report: normalized,
     quality: {
       consistencyScore: quality.consistencyScore,
@@ -379,36 +422,8 @@ export const generateReadingHybrid = async ({
       regenerationCount
     },
     fallbackUsed,
+    apiUsed,
     mode: 'hybrid',
     structure
-  };
-
-  if (debug) {
-    result.debug = {
-      issues: qualityIssues,
-      binaryEntities,
-      cardFactsCount: facts.length
-    };
-  }
-
-  return result;
-};
-
-export const generateReadingAB = async ({ cards, question, timeframe, category, sessionContext }) => {
-  const legacy = generateReadingV3(cards, question, timeframe, category);
-  const hybrid = await generateReadingHybrid({
-    cards,
-    question,
-    timeframe,
-    category,
-    sessionContext
-  });
-
-  return {
-    question,
-    timeframe,
-    category,
-    legacy,
-    hybrid
   };
 };
