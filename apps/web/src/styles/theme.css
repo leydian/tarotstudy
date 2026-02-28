@@ -11,6 +11,9 @@
   --glass-bg: rgba(18, 18, 21, 0.7);
   --shadow-soft: 0 10px 40px rgba(0, 0, 0, 0.4);
   --shadow-gold: 0 8px 30px rgba(205, 186, 150, 0.1);
+  --border-gold-faint: rgba(205, 186, 150, 0.1);
+  --glass-subtle: rgba(255, 255, 255, 0.03);
+  --radius-pill: 999px;
   --screen-mobile: 768px;
   --screen-tablet: 1024px;
 }

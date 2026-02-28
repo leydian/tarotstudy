@@ -6,7 +6,7 @@ interface MessageBubbleProps {
   message: Message;
 }
 
-export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
+export const MessageBubble = React.memo<MessageBubbleProps>(({ message }) => {
   const isUser = message.role === 'user';
   const isAction = message.isAction === true;
 
@@ -25,4 +25,4 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
       <div className={bubbleClass}>{message.text}</div>
     </div>
   );
-};
+});

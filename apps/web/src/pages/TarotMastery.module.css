@@ -79,7 +79,7 @@
 
 .leftPaneTabBtn {
   border: 1px solid var(--border-subtle);
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--glass-subtle);
   color: var(--text-secondary);
   border-radius: 12px;
   padding: 0.75rem 0.9rem;
@@ -229,7 +229,7 @@
   color: var(--accent-purple);
   background: rgba(159, 130, 196, 0.12);
   border: 1px solid rgba(159, 130, 196, 0.25);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   padding: 3px 8px;
 }
 
@@ -274,7 +274,7 @@
 
 .tabHeader {
   display: flex;
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--glass-subtle);
   padding: 6px;
   border-radius: 16px;
   border: 1px solid var(--border-subtle);
@@ -319,7 +319,7 @@
 }
 
 .studyCard {
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--glass-subtle);
   border: 1px solid var(--border-subtle);
   border-radius: 20px;
   padding: 1.5rem;
@@ -392,7 +392,7 @@
   color: var(--text-secondary);
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid var(--border-subtle);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
 }
 
 .masterReport {
@@ -420,9 +420,9 @@
 .reportSummaryBox {
   margin-top: 2rem;
   padding: 1.5rem;
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--glass-subtle);
   border-radius: 16px;
-  border: 1px solid rgba(205, 186, 150, 0.1);
+  border: 1px solid var(--border-gold-faint);
   display: flex;
   flex-direction: column;
   gap: 1rem;
@@ -441,9 +441,9 @@
   align-items: center;
   gap: 0.5rem;
   padding: 6px 14px;
-  background: rgba(205, 186, 150, 0.1);
+  background: var(--border-gold-faint);
   color: var(--accent-gold);
-  border-radius: 30px;
+  border-radius: var(--radius-pill);
   font-size: 1.06rem;
   font-weight: 500;
   border: 1px solid rgba(205, 186, 150, 0.2);
@@ -545,7 +545,7 @@
 }
 
 .inputField {
-  flex: 1; background-color: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-subtle);
+  flex: 1; background-color: var(--glass-subtle); border: 1px solid var(--border-subtle);
   color: var(--text-primary); padding: 1rem; border-radius: 12px; font-size: 1.08rem;
 }
 

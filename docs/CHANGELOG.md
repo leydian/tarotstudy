@@ -2,6 +2,53 @@
 
 ## [2026-02-28]
 
+### UI 최적화: 안정성/성능/CSS토큰/A11y 정비 (v6.3.28)
+
+#### 변경 파일
+- `apps/web/src/types/tarot.ts`
+- `apps/web/src/pages/TarotMastery.tsx`
+- `apps/web/src/components/reading/MessageBubble.tsx`
+- `apps/web/src/styles/theme.css`
+- `apps/web/src/pages/Cards.module.css`
+- `apps/web/src/pages/TarotMastery.module.css`
+- `apps/web/src/pages/Cards.tsx`
+- `docs/CHANGELOG.md`
+- `docs/RELEASE_NOTES_v6.3.28.md`
+
+#### 변경 사항
+- 버그/안정성
+  - `Message` 타입에 `id` 추가, `messages.map`의 key를 index에서 `msg.id`로 교체.
+  - TarotMastery 메시지 생성 로직을 `makeMsg()`로 통일하여 안정적인 key 보장.
+  - `allSpreads` 비어있는 경우 가드 추가 후 사용자 안내 메시지 출력.
+  - 탐구 패널에서 카드 접근 전 null 가드 추가(`info.card` 확인)로 런타임 crash 경로 차단.
+- 렌더링 성능
+  - `MessageBubble`에 `React.memo` 적용.
+  - `hashString`, `createSeededRandom`, `shuffleWithRandom`, `normalizeForCompare` 등 순수 유틸을 컴포넌트 외부로 이동.
+  - `ResizeObserver`와 중복되던 `window.resize` 리스너 제거.
+- CSS 토큰 정규화
+  - `theme.css`에 반복 토큰 3개 추가:
+    - `--border-gold-faint`
+    - `--glass-subtle`
+    - `--radius-pill`
+  - `Cards.module.css`, `TarotMastery.module.css`의 반복 하드코딩 값을 새 토큰 참조로 교체.
+- 접근성(A11y)
+  - Cards 검색 input에 `aria-label="카드 검색"` 추가.
+  - Cards 필터 버튼에 `aria-pressed` 추가.
+  - TarotMastery 탭에 `role="tablist"/role="tab"` + `aria-selected/aria-controls` 추가.
+  - 탭 패널에 `role="tabpanel"` + `aria-labelledby` 연결.
+
+#### 효과
+- 메시지 추가/리셋 시 key 불안정으로 인한 UI 재사용 오류 가능성 감소.
+- 대화 메시지 렌더 비용을 줄여 체감 스크롤/입력 반응성 개선.
+- 스타일 하드코딩 반복 감소로 유지보수성 향상.
+- 키보드/보조기기 사용 시 탐색 가능성과 상태 인지성 개선.
+
+#### 검증
+- `npm run build --prefix apps/web` 통과.
+- 상세 변경 요약: `docs/RELEASE_NOTES_v6.3.28.md`
+
+## [2026-02-28]
+
 ### overall_fortune 출력 어색함 5가지 수정 (v6.3.27)
 
 #### 변경 파일

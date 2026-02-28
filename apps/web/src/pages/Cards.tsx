@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Search, X } from 'lucide-react';
 import styles from './Cards.module.css';
 
@@ -94,6 +94,7 @@ export function Cards() {
             type="text"
             className={styles.searchInput}
             placeholder="카드 이름, 키워드로 검색..."
+            aria-label="카드 검색"
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
@@ -107,6 +108,7 @@ export function Cards() {
             key={key}
             className={`${styles.filterTab} ${filter === key ? styles.filterTabActive : ''}`}
             onClick={() => setFilter(key)}
+            aria-pressed={filter === key}
           >
             {label}
           </button>

@@ -7,6 +7,63 @@ import { TarotCard } from '../components/common/TarotCard';
 import { MessageBubble } from '../components/reading/MessageBubble';
 import styles from './TarotMastery.module.css';
 
+const makeMsg = (role: 'user' | 'bot', text: string, isAction?: boolean): Message => ({
+  id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+  role, text, isAction
+});
+
+const hashString = (value: string): number => {
+  let hash = 2166136261;
+  for (let i = 0; i < value.length; i += 1) {
+    hash ^= value.charCodeAt(i);
+    hash += (hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24);
+  }
+  return hash >>> 0;
+};
+
+const createSeededRandom = (seed: number) => {
+  let t = seed >>> 0;
+  return () => {
+    t += 0x6D2B79F5;
+    let next = t;
+    next = Math.imul(next ^ (next >>> 15), next | 1);
+    next ^= next + Math.imul(next ^ (next >>> 7), next | 61);
+    return ((next ^ (next >>> 14)) >>> 0) / 4294967296;
+  };
+};
+
+const shuffleWithRandom = <T,>(items: T[], randomFn: () => number): T[] => {
+  const clone = [...items];
+  for (let i = clone.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(randomFn() * (i + 1));
+    [clone[i], clone[j]] = [clone[j], clone[i]];
+  }
+  return clone;
+};
+
+const shouldUseSeededDraw = (readingKind?: string) => readingKind === 'overall_fortune';
+
+const getLocalDateKey = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const orientationLabel = (orientation?: 'upright' | 'reversed') =>
+  orientation === 'reversed' ? '역방향' : '정방향';
+
+const RE_VERDICT_STRIP = /\[운명의 판정\][\s\S]*$/g;
+const RE_NON_WORD = /[^\p{L}\p{N}\s]/gu;
+const RE_WHITESPACE = /\s+/g;
+const normalizeForCompare = (text?: string) =>
+  String(text || '')
+    .replace(RE_VERDICT_STRIP, '')
+    .replace(RE_NON_WORD, '')
+    .replace(RE_WHITESPACE, '')
+    .toLowerCase();
+
 export function TarotMastery() {
   const quickFortuneQuestions = [
     { id: 'today', label: '오늘', question: '오늘의 종합 운세는?' },
@@ -17,7 +74,7 @@ export function TarotMastery() {
   const [step, setStep] = useState<'input' | 'reading' | 'result'>('input');
   const [leftPaneTab, setLeftPaneTab] = useState<'spread' | 'study'>('spread');
   const [messages, setMessages] = useState<Message[]>([
-    { role: 'bot', text: "어서 오세요. 이곳은 운명과 지혜가 만나는 '아르카나 성소'입니다. 오늘 당신의 영혼이 찾고 있는 답은 무엇인가요? 질문을 들려주시면 운명의 지도를 그려드릴게요." }
+    makeMsg('bot', "어서 오세요. 이곳은 운명과 지혜가 만나는 '아르카나 성소'입니다. 오늘 당신의 영혼이 찾고 있는 답은 무엇인가요? 질문을 들려주시면 운명의 지도를 그려드릴게요.")
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -57,11 +114,9 @@ export function TarotMastery() {
     updateSize();
     const observer = new ResizeObserver(updateSize);
     observer.observe(node);
-    window.addEventListener('resize', updateSize);
 
     return () => {
       observer.disconnect();
-      window.removeEventListener('resize', updateSize);
     };
   }, [leftPaneTab, step]);
 
@@ -129,45 +184,6 @@ export function TarotMastery() {
     '12월': '한 해 흐름을 결산하고 다음 사이클의 방향을 확정하는 시기입니다.'
   };
 
-  const hashString = (value: string) => {
-    let hash = 2166136261;
-    for (let i = 0; i < value.length; i += 1) {
-      hash ^= value.charCodeAt(i);
-      hash += (hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24);
-    }
-    return hash >>> 0;
-  };
-
-  const createSeededRandom = (seed: number) => {
-    let t = seed >>> 0;
-    return () => {
-      t += 0x6D2B79F5;
-      let next = t;
-      next = Math.imul(next ^ (next >>> 15), next | 1);
-      next ^= next + Math.imul(next ^ (next >>> 7), next | 61);
-      return ((next ^ (next >>> 14)) >>> 0) / 4294967296;
-    };
-  };
-
-  const shuffleWithRandom = (items: Card[], randomFn: () => number) => {
-    const clone = [...items];
-    for (let i = clone.length - 1; i > 0; i -= 1) {
-      const j = Math.floor(randomFn() * (i + 1));
-      [clone[i], clone[j]] = [clone[j], clone[i]];
-    }
-    return clone;
-  };
-
-  const shouldUseSeededDraw = (readingKind?: string) => readingKind === 'overall_fortune';
-  const getLocalDateKey = () => {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
-  const orientationLabel = (orientation?: 'upright' | 'reversed') => (orientation === 'reversed' ? '역방향' : '정방향');
-
   const startRitual = async (questionText: string) => {
     const userQuestion = questionText.trim();
     if (!userQuestion || loading) return;
@@ -178,7 +194,7 @@ export function TarotMastery() {
     setDrawnCards([]);
     setSpreadLayout(null);
     setReading(null);
-    setMessages(prev => [...prev, { role: 'user', text: userQuestion }]);
+    setMessages(prev => [...prev, makeMsg('user', userQuestion)]);
     setLoading(true);
     setInput('');
 
@@ -203,6 +219,12 @@ export function TarotMastery() {
       const currentSpread = allSpreads.find((s) => s.id === profile.recommendedSpreadId)
         || allSpreads.find((s) => s.positions.length === targetCardCount)
         || allSpreads[0];
+
+      if (!currentSpread) {
+        setMessages(prev => [...prev, makeMsg('bot', '스프레드를 불러올 수 없습니다. 다시 시도해 주세요.')]);
+        setLoading(false);
+        return;
+      }
 
       setSpreadLayout(currentSpread);
 
@@ -267,7 +289,7 @@ export function TarotMastery() {
       });
 
       queueTimer(() => {
-        setMessages(prev => [...prev, { role: 'bot', text: `질문에 맞춰 [${currentSpread.name}] 스프레드를 구성했습니다. 운명의 지도가 펼쳐집니다...` }]);
+        setMessages(prev => [...prev, makeMsg('bot', `질문에 맞춰 [${currentSpread.name}] 스프레드를 구성했습니다. 운명의 지도가 펼쳐집니다...`)]);
         setStep('reading');
         setLoading(false);
 
@@ -280,7 +302,7 @@ export function TarotMastery() {
 
     } catch (err) {
       trackEvent('reading_result_shown', { mode: 'hybrid', fallbackUsed: true, errorCode: 'ritual_start_failed' });
-      setMessages(prev => [...prev, { role: 'bot', text: '운명의 실타래가 엉켰습니다. 잠시 후 다시 시도해 주세요.' }]);
+      setMessages(prev => [...prev, makeMsg('bot', '운명의 실타래가 엉켰습니다. 잠시 후 다시 시도해 주세요.')]);
       setLoading(false);
     }
   };
@@ -320,10 +342,9 @@ export function TarotMastery() {
     const interpretation = reportInterpretation || fallbackInterpretation;
     const cardOrientation = orientationLabel(cards[idx].orientation);
 
-    setMessages(prev => [...prev, {
-      role: 'bot',
-      text: `[${posLabel}: ${cards[idx].nameKo} (${cardOrientation})]\n${interpretation.trim().replace(/\.\.$/, '.') || '카드의 상징을 차분히 읽어보세요.'}`
-    }]);
+    setMessages(prev => [...prev, makeMsg('bot',
+      `[${posLabel}: ${cards[idx].nameKo} (${cardOrientation})]\n${interpretation.trim().replace(/\.\.$/, '.') || '카드의 상징을 차분히 읽어보세요.'}`
+    )]);
   };
 
   const revealCard = (idx: number) => {
@@ -335,7 +356,7 @@ export function TarotMastery() {
   const getPositionInfo = (idx: number) => {
     const posLabel = spreadLayout?.positions[idx].label || "";
     const posDesc = positionDefinitions[posLabel] || `${posLabel || '이 포지션'}에서 읽히는 핵심 흐름입니다.`;
-    const card = drawnCards[idx];
+    const card = drawnCards[idx] ?? null;
     return { posLabel, posDesc, card };
   };
 
@@ -358,12 +379,6 @@ export function TarotMastery() {
     if (mode === 'balanced') return 'Balanced';
     return 'Unknown';
   };
-
-  const normalizeForCompare = (text?: string) => String(text || '')
-    .replace(/\[운명의 판정\][\s\S]*$/g, '')
-    .replace(/[^\p{L}\p{N}\s]/gu, '')
-    .replace(/\s+/g, '')
-    .toLowerCase();
 
   const isTextOverlapHigh = (a?: string, b?: string) => {
     const left = normalizeForCompare(a);
@@ -475,7 +490,7 @@ export function TarotMastery() {
     setStep('input');
     setLeftPaneTab('spread');
     setReading(null);
-    setMessages([{ role: 'bot', text: '새로운 의식을 시작할 준비가 되었습니다. 무엇이 궁금하신가요?' }]);
+    setMessages([makeMsg('bot', '새로운 의식을 시작할 준비가 되었습니다. 무엇이 궁금하신가요?')]);
     setRevealedIdx([]);
     setDrawnCards([]);
     setSpreadLayout(null);
@@ -515,9 +530,13 @@ export function TarotMastery() {
         <div className={styles.mainContent}>
           <div className={styles.workspaceGrid}>
             <div className={styles.leftPane}>
-              <div className={styles.leftPaneTabs}>
+              <div className={styles.leftPaneTabs} role="tablist" aria-label="리딩 보기 선택">
                 <button
                   type="button"
+                  id="tab-spread"
+                  role="tab"
+                  aria-selected={leftPaneTab === 'spread'}
+                  aria-controls="panel-spread"
                   onClick={() => setLeftPaneTab('spread')}
                   className={`${styles.leftPaneTabBtn} ${leftPaneTab === 'spread' ? styles.leftPaneTabBtnActive : ''}`}
                 >
@@ -525,6 +544,10 @@ export function TarotMastery() {
                 </button>
                 <button
                   type="button"
+                  id="tab-study"
+                  role="tab"
+                  aria-selected={leftPaneTab === 'study'}
+                  aria-controls="panel-study"
                   onClick={() => setLeftPaneTab('study')}
                   className={`${styles.leftPaneTabBtn} ${leftPaneTab === 'study' ? styles.leftPaneTabBtnActive : ''}`}
                 >
@@ -532,7 +555,12 @@ export function TarotMastery() {
                 </button>
               </div>
 
-              <div className={styles.leftPaneViewport}>
+              <div
+                className={styles.leftPaneViewport}
+                id={leftPaneTab === 'spread' ? 'panel-spread' : 'panel-study'}
+                role="tabpanel"
+                aria-labelledby={leftPaneTab === 'spread' ? 'tab-spread' : 'tab-study'}
+              >
                 {leftPaneTab === 'spread' ? (
                   (step === 'reading' || step === 'result') && spreadLayout ? (
                     (() => {
@@ -582,17 +610,18 @@ export function TarotMastery() {
                       <div className={styles.cardBasicsList}>
                         {drawnCards.map((card, i) => {
                           const info = getPositionInfo(i);
+                          if (!info.card) return null;
                           return (
-                            <div key={card.id} className={styles.studyCard}>
+                            <div key={info.card.id} className={styles.studyCard}>
                               <div className={styles.studyCardHeader}>
                                 <span className={styles.studyCardPos}>{info.posLabel}</span>
-                                <h4 className={styles.studyCardName}>{card.nameKo}</h4>
+                                <h4 className={styles.studyCardName}>{info.card.nameKo}</h4>
                               </div>
                               <p className={styles.cardBasicsContext}>{info.posDesc}</p>
-                              <p className={styles.studyCardDesc}>{card.description || card.summary}</p>
-                              {card.keywords && card.keywords.length > 0 && (
+                              <p className={styles.studyCardDesc}>{info.card.description || info.card.summary}</p>
+                              {info.card.keywords && info.card.keywords.length > 0 && (
                                 <div className={styles.studyKeywords}>
-                                  {card.keywords.slice(0, 5).map((k) => (
+                                  {info.card.keywords.slice(0, 5).map((k) => (
                                     <span key={k} className={styles.studyTag}>#{k}</span>
                                   ))}
                                 </div>
@@ -610,7 +639,7 @@ export function TarotMastery() {
             <div className={styles.rightPane}>
               <div className={styles.messagesContainer}>
                 <div className={styles.messages}>
-                  {messages.map((msg, i) => <MessageBubble key={i} message={msg} />)}
+                  {messages.map((msg) => <MessageBubble key={msg.id} message={msg} />)}
                   <div className={styles.srOnly} aria-live="polite" aria-atomic="true">
                     {loading ? '리딩을 준비하고 있습니다.' : step === 'result' ? '리딩 결과가 준비되었습니다.' : '질문을 기다리는 중입니다.'}
                   </div>
