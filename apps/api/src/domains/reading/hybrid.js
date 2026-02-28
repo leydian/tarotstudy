@@ -14,7 +14,8 @@ const NEGATIVE_IDS = new Set([
 ]);
 
 const DEFAULT_OPENAI_MODEL = process.env.READING_MODEL || 'gpt-4o-mini';
-const DEFAULT_ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL || 'claude-3-5-haiku-20241022';
+const DEFAULT_ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL || 'claude-haiku-4-5-20251001';
+const ANTHROPIC_TIMEOUT_MS = Number(process.env.ANTHROPIC_TIMEOUT_MS || 60000);
 
 const getYesNoScore = (cardId) => {
   if (POSITIVE_IDS.has(cardId)) return 1;
@@ -163,54 +164,68 @@ const extractJsonObject = (text) => {
   }
 };
 
-const mapErrorReason = (status, errorType) => {
-  if (status === 401) return 'auth_failed';
+const mapAnthropicReason = (status) => {
   if (status === 404) return 'model_not_found';
-  if (status === 429) return 'quota_exceeded';
-  if (status >= 500) return 'server_error';
-  if (errorType === 'dns') return 'dns_error';
-  return 'unknown_api_error';
+  if (status >= 500) return 'anthropic_http_error';
+  return 'anthropic_http_error';
+};
+
+const mapOpenAIReason = (status) => {
+  if (status >= 500) return 'openai_http_error';
+  return 'openai_http_error';
 };
 
 const callAnthropic = async (prompt) => {
   const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) return { report: null, reason: 'auth_failed' };
+  if (!apiKey) return { report: null, reason: 'model_unavailable' };
 
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: DEFAULT_ANTHROPIC_MODEL,
-        max_tokens: 2000,
-        messages: [{ role: 'user', content: prompt }],
-        system: '아르카나 도서관의 사서로서 따뜻하고 신비로운 분위기를 유지하며 JSON만 반환하세요.'
-      })
-    });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), ANTHROPIC_TIMEOUT_MS);
+    try {
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01'
+        },
+        body: JSON.stringify({
+          model: DEFAULT_ANTHROPIC_MODEL,
+          max_tokens: 4096,
+          messages: [{ role: 'user', content: prompt }],
+          system: '아르카나 도서관의 사서로서 따뜻하고 신비로운 분위기를 유지하며 JSON만 반환하세요.'
+        }),
+        signal: controller.signal
+      });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`[Anthropic API] Error ${response.status}:`, errorText);
-      return { report: null, reason: mapErrorReason(response.status) };
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(
+          `[Anthropic API] Error status=${response.status} model=${DEFAULT_ANTHROPIC_MODEL} body=${errorText}`
+        );
+        return { report: null, reason: mapAnthropicReason(response.status) };
+      }
+
+      const data = await response.json();
+      const report = extractJsonObject(data?.content?.[0]?.text);
+      return { report, reason: report ? null : 'model_unavailable' };
+    } finally {
+      clearTimeout(timeout);
     }
-
-    const data = await response.json();
-    const report = extractJsonObject(data?.content?.[0]?.text);
-    return { report, reason: report ? null : 'parsing_failed' };
   } catch (error) {
-    console.error('[Anthropic API] Fetch Error:', error.message);
-    const reason = error.message.includes('EAI_AGAIN') || error.message.includes('DNS') ? 'dns_error' : 'network_error';
+    const isTimeout = error?.name === 'AbortError' || error?.message?.includes('aborted');
+    console.error(
+      `[Anthropic API] Fetch Error model=${DEFAULT_ANTHROPIC_MODEL} timeout_ms=${ANTHROPIC_TIMEOUT_MS} timed_out=${isTimeout} message=${error?.message || 'unknown'} cause=${error?.cause?.code || error?.cause?.message || 'none'}`
+    );
+    const reason = isTimeout ? 'anthropic_timeout' : 'anthropic_fetch_error';
     return { report: null, reason };
   }
 };
 
 const callOpenAI = async (prompt) => {
   const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) return { report: null, reason: 'auth_failed' };
+  if (!apiKey) return { report: null, reason: 'model_unavailable' };
 
   try {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -237,15 +252,15 @@ const callOpenAI = async (prompt) => {
 
     if (!response.ok) {
       console.error(`[OpenAI API] HTTP Error ${response.status}`);
-      return { report: null, reason: mapErrorReason(response.status) };
+      return { report: null, reason: mapOpenAIReason(response.status) };
     }
     const data = await response.json();
     const text = data?.choices?.[0]?.message?.content;
     const report = extractJsonObject(text);
-    return { report, reason: report ? null : 'parsing_failed' };
+    return { report, reason: report ? null : 'model_unavailable' };
   } catch (error) {
     console.error('[OpenAI API] Error:', error.message);
-    const reason = error.message.includes('EAI_AGAIN') || error.message.includes('DNS') ? 'dns_error' : 'network_error';
+    const reason = 'openai_http_error';
     return { report: null, reason };
   }
 };
@@ -339,7 +354,7 @@ const toLegacyResponse = ({ report, question, facts }) => {
 };
 
 const extractBinaryEntities = (question, cardCount) => {
-  if (cardCount !== 2) return null;
+  if (cardCount !== 2 && cardCount !== 5) return null;
 
   const splitRegex = /(.+?)\s*(?:아니면|vs|또는|혹은)\s*(.+?)(?:\?|$)/;
   const splitMatch = question.match(splitRegex);
@@ -358,6 +373,20 @@ const extractBinaryEntities = (question, cardCount) => {
   return null;
 };
 
+const detectQuestionType = ({ question, category, cardCount, binaryEntities }) => {
+  if (binaryEntities && (cardCount === 2 || cardCount === 5)) return 'binary';
+  const relationshipKeywords = ['속마음', '그 사람', '연애', '사랑', '재회', '커플', '썸', '이별'];
+  const careerKeywords = ['이직', '회사', '상사', '퇴사', '연봉', '업무', '커리어', '취업', '면접', '직장', '프로젝트'];
+  const emotionalKeywords = ['힘들', '우울', '슬퍼', '지쳐', '죽겠', '눈물', '불안', '무서', '막막', '상처', '포기'];
+  const lightKeywords = ['커피', '메뉴', '점심', '저녁', '야식', '걷기', '버스', '지하철', '옷', '신발', '살까', '말까', '먹을까', '마실까'];
+
+  if (category === 'love' || relationshipKeywords.some((k) => question.includes(k))) return 'relationship';
+  if (category === 'career' || careerKeywords.some((k) => question.includes(k))) return 'career';
+  if (emotionalKeywords.some((k) => question.includes(k))) return 'emotional';
+  if (question.length < 15 && lightKeywords.some((k) => question.includes(k))) return 'light';
+  return 'deep';
+};
+
 export const generateReadingHybrid = async ({
   cards,
   question,
@@ -365,10 +394,18 @@ export const generateReadingHybrid = async ({
   category = 'general',
   sessionContext = null,
   structure = 'evidence_report',
-  debug = false
+  debug = false,
+  requestId = null,
+  serverRevision = 'local'
 }) => {
   const safeQuestion = sanitizeText(question || '나의 현재 상황은?');
   const binaryEntities = extractBinaryEntities(safeQuestion, cards.length);
+  const questionType = detectQuestionType({
+    question: safeQuestion,
+    category,
+    cardCount: cards.length,
+    binaryEntities
+  });
   const facts = buildCardFacts(cards, category);
 
   const deterministic = buildDeterministicReport({
@@ -449,6 +486,13 @@ export const generateReadingHybrid = async ({
     fallbackReason,
     apiUsed,
     mode: 'hybrid',
-    structure
+    structure,
+    meta: {
+      requestId,
+      serverRevision,
+      serverTimestamp: new Date().toISOString(),
+      questionType,
+      fallbackReason: fallbackReason || null
+    }
   };
 };

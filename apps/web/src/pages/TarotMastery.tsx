@@ -308,7 +308,13 @@ export function TarotMastery() {
                             fallbackUsed: {reading.fallbackUsed ? 'true' : 'false'}
                           </span>
                           <span className={styles.diagnosticPill}>
-                            fallbackReason: {reading.meta?.fallbackReason || 'none'}
+                            fallbackReason: {reading.meta?.fallbackReason ?? reading.fallbackReason ?? 'unavailable'}
+                          </span>
+                          <span className={styles.diagnosticPill}>
+                            serverRevision: {reading.meta?.serverRevision || 'unknown'}
+                          </span>
+                          <span className={styles.diagnosticPill}>
+                            requestId: {reading.meta?.requestId || 'unknown'}
                           </span>
                         </div>
 

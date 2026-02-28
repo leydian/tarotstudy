@@ -12,11 +12,14 @@
   - `report`
   - `quality`
   - `meta.questionType`
+  - `meta.requestId`
+  - `meta.serverRevision`
   - `meta.fallbackReason` (fallback 시)
 
 ## 2. Fallback 안정성
 - 외부 LLM API 실패 또는 키 미설정 시에도 리딩 응답이 중단되지 않아야 합니다.
 - fallback 발생 시 `fallbackUsed=true`와 `meta.fallbackReason`이 기록되어야 합니다.
+- 운영 로그와 응답을 `meta.requestId`로 매칭할 수 있어야 합니다.
 
 ## 3. 질문 유형 일관성
 - binary 질문은 2카드 스프레드 기준으로 해석되어야 합니다.

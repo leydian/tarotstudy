@@ -10,9 +10,12 @@ dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 8787;
+const serverRevision = process.env.VERCEL_GIT_COMMIT_SHA || process.env.GIT_COMMIT_SHA || 'local';
 
 app.use(cors());
 app.use(express.json());
+
+const makeRequestId = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 
 const detectQuestionType = ({ question = '', category = 'general', cardCount = 0 }) => {
   const safeQuestion = String(question || '');
@@ -22,7 +25,7 @@ const detectQuestionType = ({ question = '', category = 'general', cardCount = 0
   const lightKeywords = ['커피', '메뉴', '점심', '저녁', '야식', '걷기', '버스', '지하철', '옷', '신발', '살까', '말까', '먹을까', '마실까'];
   const binaryKeywords = ['할까', '갈까', '탈까', '먹을까', '마실까', '살까', '아니면', 'vs', '또는', '혹은'];
 
-  if (cardCount === 2 && binaryKeywords.some((k) => safeQuestion.includes(k))) return 'binary';
+  if ((cardCount === 2 || cardCount === 5) && binaryKeywords.some((k) => safeQuestion.includes(k))) return 'binary';
   if (category === 'love' || relationshipKeywords.some((k) => safeQuestion.includes(k))) return 'relationship';
   if (category === 'career' || careerKeywords.some((k) => safeQuestion.includes(k))) return 'career';
   if (emotionalKeywords.some((k) => safeQuestion.includes(k))) return 'emotional';
@@ -52,6 +55,7 @@ app.get('/api/spreads', (req, res) => {
 
 // AI 리딩 생성 (V3 모델)
 app.post('/api/reading', async (req, res) => {
+  const requestId = makeRequestId();
   const {
     cardIds,
     question,
@@ -89,7 +93,13 @@ app.post('/api/reading', async (req, res) => {
       return res.json({
         ...reading,
         mode: 'legacy',
+        fallbackUsed: false,
+        apiUsed: 'none',
+        fallbackReason: null,
         meta: {
+          requestId,
+          serverRevision,
+          serverTimestamp: new Date().toISOString(),
           questionType: detectQuestionType({
             question,
             category,
@@ -107,18 +117,31 @@ app.post('/api/reading', async (req, res) => {
       category,
       sessionContext,
       structure,
-      debug
+      debug,
+      requestId,
+      serverRevision
     });
 
+    console.log(
+      `[Tarot API] requestId=${requestId} mode=${reading.mode} apiUsed=${reading.apiUsed} fallbackUsed=${reading.fallbackUsed} fallbackReason=${reading.meta?.fallbackReason || reading.fallbackReason || 'none'}`
+    );
     return res.json(reading);
   } catch (error) {
-    console.error('[Tarot API] Hybrid reading failed, fallback to legacy:', error?.message || error);
+    console.error(
+      `[Tarot API] requestId=${requestId} Hybrid reading failed, fallback to legacy:`,
+      error?.message || error
+    );
     const reading = generateReadingV3(cardsWithPosition, question || '나의 현재 상황은?', timeframe, category);
     return res.json({
       ...reading,
       mode: 'legacy',
       fallbackUsed: true,
+      apiUsed: 'fallback',
+      fallbackReason: 'server_error',
       meta: {
+        requestId,
+        serverRevision,
+        serverTimestamp: new Date().toISOString(),
         questionType: detectQuestionType({
           question,
           category,

@@ -27,6 +27,7 @@
   - `npm run build --prefix apps/web`
 - 네트워크/외부 API 관련 변경 시 추가 검증:
   - 응답의 `apiUsed`, `fallbackUsed`, `meta.fallbackReason` 확인
+  - 응답의 `meta.requestId`, `meta.serverRevision` 확인
   - 실패 로그에서 `status`, `cause`, `timed_out` 확인
 
 ## 4. 문서 동기화 규칙 (Docs Freshness)

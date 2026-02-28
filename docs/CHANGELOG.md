@@ -2,6 +2,34 @@
 
 ## [2026-02-28]
 
+### API 진단 메타 표준화 및 fallback 이유 일관화 (v6.3.7)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/hybrid.js`
+- `apps/api/src/index.js`
+- `apps/web/src/types/tarot.ts`
+- `apps/web/src/pages/TarotMastery.tsx`
+- `docs/DEVELOPMENT_WORKFLOW.md`
+- `docs/QUALITY_GATE.md`
+- `docs/RELEASE_NOTES_v6.3.7.md`
+
+#### 변경 사항
+- `/api/reading` 응답에 `requestId/serverRevision/serverTimestamp` 메타 추가.
+- fallback 이유 코드를 정규화하고, 모든 응답 경로에서 `meta.fallbackReason` 일관 제공.
+- UI 진단 배지에서 `fallbackReason` fallback 체인(`meta -> top-level -> unavailable`) 적용.
+- 결과 화면에 `serverRevision`/`requestId` 표시 추가.
+
+#### 효과
+- "fallback인데 reason이 none" 같은 진단 불일치 해소.
+- 배포 버전 혼선/구버전 API 응답 혼입을 요청 단위로 추적 가능.
+
+#### 검증
+- `npm run test:persona --prefix apps/api` 통과.
+- `npm run build --prefix apps/web` 통과.
+- 상세 변경 요약: `docs/RELEASE_NOTES_v6.3.7.md`
+
+## [2026-02-28]
+
 ### 리딩 결과 API 사용 상태 가시화 (v6.3.6)
 
 #### 변경 파일

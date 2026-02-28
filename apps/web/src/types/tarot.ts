@@ -51,6 +51,7 @@ export interface ReadingResponse {
   mode?: 'legacy' | 'hybrid';
   apiUsed?: 'anthropic' | 'openai' | 'fallback' | 'none';
   fallbackUsed?: boolean;
+  fallbackReason?: string | null;
   report?: {
     summary: string;
     verdict: {
@@ -74,7 +75,10 @@ export interface ReadingResponse {
     regenerationCount: number;
   };
   meta?: {
+    requestId?: string;
+    serverRevision?: string;
+    serverTimestamp?: string;
     questionType?: string;
-    fallbackReason?: string;
+    fallbackReason?: string | null;
   };
 }
