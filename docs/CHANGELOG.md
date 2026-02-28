@@ -2,6 +2,43 @@
 
 ## [2026-02-28]
 
+### 결정문 2단 구조 + 도메인별 실행지침 + 이미지감 문장 도입 (v6.3.49)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/hybrid.js`
+- `apps/api/tests/hybrid-resilience.js`
+- `docs/RELEASE_NOTES_v6.3.49.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- evidence claim 표현력 보강(2번)
+  - `EVIDENCE_IMAGERY_SENTENCE_TEMPLATES` 추가.
+  - `buildEvidenceClaim()`에 `responseMode`를 전달해 `balanced/creative` 모드에서만 이미지감 문장 1개를 추가.
+  - `concise` 모드에서는 이미지 문장을 붙이지 않도록 분리해 과장도를 제어.
+- 결론 2단 구조 적용(3번)
+  - `buildConclusionStatement()` + `buildConclusionBuffer()` 추가.
+  - `buildDeterministicReport()`의 summary 생성을 선언문(`결론:`) + 완충문(`참고:`) 구조로 전환(균형/창의 모드).
+  - compact binary는 기존 간결 포맷 유지.
+- 도메인별 액션 세분화(4번)
+  - `buildDomainActions()` 추가.
+  - 도메인(`lifestyle/career/relationship/finance/general`)과 판정 상태를 반영해 기본 2개 액션 + 조건부 3번째 액션을 생성.
+  - 경량 질문은 과도한 액션 확장을 피하고, 복합 커리어/주의 구간은 보완 액션을 자동 추가.
+- deterministic 경로 파라미터 정합화
+  - `generateReadingHybrid()`에서 `responseMode`를 deterministic 리포트 생성기로 전달.
+  - 동일 질문이라도 모드별 톤/길이 정책이 deterministic 경로에도 일관되게 반영되도록 정렬.
+- 회귀 테스트 확장
+  - `hybrid-resilience`에 3개 테스트 추가:
+    - 모드별 이미지 문장 포함/미포함 검증
+    - 2단 결론(summary의 `결론:` + `참고:`) 검증
+    - 액션 개수 규칙(기본 2, 조건부 3) 검증
+
+#### 검증
+- `node apps/api/tests/hybrid-resilience.js` 통과
+- `node apps/api/tests/overall-fortune-regression.js` 통과
+- `node apps/api/tests/fallback-minimization.js` 통과
+- `node apps/api/tests/question-profile-v2.js` 통과
+- `node apps/api/tests/reading-v2-contract.js` 통과
+
 ### 리딩 출력 중복/톤 충돌 완화 및 경량 질문 응답 개선 (v6.3.48)
 
 #### 변경 파일

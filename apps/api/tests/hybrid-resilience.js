@@ -612,6 +612,98 @@ const testFallbackQualityMatchesFinalReport = async () => {
   process.env.ANTHROPIC_API_KEY = originalKey;
 };
 
+const testImageryLineByResponseMode = async () => {
+  const imageryRegex = /(새벽빛|바람이 드는 장면|안개|파도|호흡|시계바늘|갈림길|잔물결)/;
+  process.env.ANTHROPIC_API_KEY = '';
+
+  const balancedCards = buildCards(['p03', 'c02', 'w01']);
+  await withFetchSequence([], async () => {
+    const result = await generateReadingHybrid({
+      cards: balancedCards,
+      question: '이번 주 종합 운세는?',
+      timeframe: 'weekly',
+      category: 'general'
+    });
+    assert.equal(result.fallbackUsed, true);
+    const claims = (result.report?.evidence || []).map((item) => String(item.claim || ''));
+    assert.equal(
+      claims.some((claim) => imageryRegex.test(claim)),
+      true,
+      'balanced/creative 모드 claim에는 이미지감 문장이 최소 1개 포함되어야 합니다.'
+    );
+  });
+
+  const conciseCards = buildCards(['m14']);
+  await withFetchSequence([], async () => {
+    const result = await generateReadingHybrid({
+      cards: conciseCards,
+      question: '오늘의 종합 운세는?',
+      timeframe: 'daily',
+      category: 'general'
+    });
+    assert.equal(result.fallbackUsed, true);
+    const claims = (result.report?.evidence || []).map((item) => String(item.claim || ''));
+    assert.equal(
+      claims.some((claim) => imageryRegex.test(claim)),
+      false,
+      'concise 모드 claim에는 이미지감 문장을 넣지 않아야 합니다.'
+    );
+  });
+
+  process.env.ANTHROPIC_API_KEY = originalKey;
+};
+
+const testTwoStageConclusionSummary = async () => {
+  const cards = buildCards(['m01', 'c09', 'w02']);
+  process.env.ANTHROPIC_API_KEY = '';
+
+  await withFetchSequence([], async () => {
+    const result = await generateReadingHybrid({
+      cards,
+      question: '이번 선택을 진행해도 괜찮을지 구체적으로 알고 싶어',
+      timeframe: 'weekly',
+      category: 'general'
+    });
+
+    assert.equal(result.fallbackUsed, true);
+    const summary = String(result.report?.summary || '');
+    assert.match(summary, /^결론:/, 'balanced/creative 요약은 선언문으로 시작해야 합니다.');
+    assert.match(summary, /참고:/, 'balanced/creative 요약에는 버퍼 문장이 포함되어야 합니다.');
+  });
+
+  process.env.ANTHROPIC_API_KEY = originalKey;
+};
+
+const testDomainActionCountRules = async () => {
+  process.env.ANTHROPIC_API_KEY = '';
+
+  const lightCards = buildCards(['m19', 'm15']);
+  await withFetchSequence([], async () => {
+    const result = await generateReadingHybrid({
+      cards: lightCards,
+      question: '커피를 마실까 말까?',
+      timeframe: 'daily',
+      category: 'general'
+    });
+    assert.equal(result.fallbackUsed, true);
+    assert.equal((result.report?.actions || []).length, 2, '라이트 질문은 기본 2개 액션을 유지해야 합니다.');
+  });
+
+  const careerCards = buildCards(['s01', 'p08', 'm01']);
+  await withFetchSequence([], async () => {
+    const result = await generateReadingHybrid({
+      cards: careerCards,
+      question: '이번 분기 이직 준비를 본격적으로 시작해도 괜찮을까요?',
+      timeframe: 'monthly',
+      category: 'career'
+    });
+    assert.equal(result.fallbackUsed, true);
+    assert.equal((result.report?.actions || []).length, 3, '복합 커리어 질문은 조건부 3번째 액션이 추가되어야 합니다.');
+  });
+
+  process.env.ANTHROPIC_API_KEY = originalKey;
+};
+
 try {
   await testParseRepairPath();
   await testEvidenceNormalization();
@@ -631,6 +723,9 @@ try {
   await testEvidenceClaimLengthCap();
   await testFallbackPostProcessIsMinimal();
   await testFallbackQualityMatchesFinalReport();
+  await testImageryLineByResponseMode();
+  await testTwoStageConclusionSummary();
+  await testDomainActionCountRules();
   console.log('Hybrid resilience tests passed.');
 } finally {
   global.fetch = originalFetch;
