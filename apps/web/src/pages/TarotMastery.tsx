@@ -162,27 +162,6 @@ export function TarotMastery() {
     return { posLabel, posDesc, card };
   };
 
-  const getCardBaseDescription = (card?: Card) => {
-    if (!card) return '';
-
-    const fullText = (card.description || card.summary || '')
-      .replace(/\s+/g, ' ')
-      .trim();
-    const summaryText = (card.summary || '')
-      .replace(/\s+/g, ' ')
-      .trim();
-
-    const sentences = fullText.split(/(?<=[.!?])\s+/).filter(Boolean);
-    let detailed = sentences.slice(0, 3).join(' ').trim();
-
-    if (detailed.length < 90 && summaryText && !detailed.includes(summaryText)) {
-      detailed = `${detailed} ${summaryText}`.trim();
-    }
-    if (!detailed) detailed = fullText || summaryText;
-
-    return detailed;
-  };
-
   const verdictLabelKo = (label?: 'YES' | 'NO' | 'MAYBE') => {
     if (label === 'YES') return '긍정';
     if (label === 'NO') return '신중';
@@ -335,25 +314,25 @@ export function TarotMastery() {
               )}
 
               <div className={styles.cardBasicsPanel}>
-                <h4 className={styles.cardBasicsTitle}>기본 카드 설명</h4>
+                <h4 className={styles.cardBasicsTitle}>아르카나 탐구</h4>
                 {drawnCards.length === 0 ? (
-                  <p className={styles.cardBasicsEmpty}>카드를 펼치면 포지션별 기본 해석이 표시됩니다.</p>
+                  <p className={styles.cardBasicsEmpty}>카드를 펼치면 포지션별 아르카나 탐구가 표시됩니다.</p>
                 ) : (
                   <div className={styles.cardBasicsList}>
                     {drawnCards.map((card, i) => {
                       const info = getPositionInfo(i);
                       return (
-                        <div key={card.id} className={styles.cardBasicsItem}>
-                          <div className={styles.cardBasicsHead}>
-                            <span className={styles.cardBasicsPos}>{info.posLabel}</span>
-                            <strong className={styles.cardBasicsName}>{card.nameKo}</strong>
+                        <div key={card.id} className={styles.studyCard}>
+                          <div className={styles.studyCardHeader}>
+                            <span className={styles.studyCardPos}>{info.posLabel}</span>
+                            <h4 className={styles.studyCardName}>{card.nameKo}</h4>
                           </div>
                           <p className={styles.cardBasicsContext}>{info.posDesc}</p>
-                          <p className={styles.cardBasicsDesc}>{getCardBaseDescription(card)}</p>
+                          <p className={styles.studyCardDesc}>{card.description || card.summary}</p>
                           {card.keywords && card.keywords.length > 0 && (
-                            <div className={styles.cardBasicsKeywords}>
+                            <div className={styles.studyKeywords}>
                               {card.keywords.slice(0, 5).map((k) => (
-                                <span key={k} className={styles.cardBasicsKeyword}>#{k}</span>
+                                <span key={k} className={styles.studyTag}>#{k}</span>
                               ))}
                             </div>
                           )}
