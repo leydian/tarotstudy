@@ -2,6 +2,45 @@
 
 ## [2026-02-28]
 
+### 리딩 문장 결합/중복/상세도 보정 (v6.3.43)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/hybrid.js`
+- `apps/api/tests/hybrid-resilience.js`
+- `apps/api/tests/overall-fortune-regression.js`
+- `apps/web/src/pages/TarotMastery.tsx`
+- `docs/RELEASE_NOTES_v6.3.43.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 문장 결합 오류 수정
+  - `ensureTerminalPunctuation()`, `joinSentencesKorean()` 도입.
+  - claim 후행 문장 추가 시 마침표/띄어쓰기 결합을 강제해 런온 문장 제거.
+- 마스터 리포트 중복 완화
+  - overall_fortune에서 summary와 badge 텍스트가 겹칠 때 fallback 경로를 강화.
+  - `fortune.message` 단독 재사용 대신 `verdict/workFinance` 기반 대체 우선.
+- evidence 반복감 추가 완화
+  - 템플릿 다양도 선택기(`selectTemplateWithDiversity`)에 normalized 중복 회피 추가.
+  - claim/rationale 중복 추적 집합을 분리 운영.
+- 카드 의미-어조 미세 정합 보정
+  - `m14(절제)` tone score 조정(`0.40 -> 0.32`).
+  - 카드 스타일 힌트(`CARD_STYLE_HINTS`) 추가로 절제/탑 계열 문체 보정.
+- 종합운세 상세화
+  - `energy/workFinance/love/healthMind`를 2문장 구조로 확장.
+  - 기간별 실행 힌트 문장을 추가해 설명 밀도 강화.
+  - `ensureFortuneDensity()`를 길이+문장수 기준으로 확장.
+- 회귀 테스트 보강
+  - 탑 claim 런온 문장 미발생 검증 추가.
+  - 절제 카드 균형 어휘 포함 검증 추가.
+  - fortune 필드 최소 2문장 및 summary-message 중복 방지 검증 추가.
+
+#### 검증
+- `node apps/api/tests/hybrid-resilience.js` 통과
+- `node apps/api/tests/overall-fortune-regression.js` 통과
+- `npm run test:ui-flow --prefix apps/web` 통과
+
+## [2026-02-28]
+
 ### 웹 운영 지표 페이지(/ops) 제거 (v6.3.42)
 
 #### 변경 파일

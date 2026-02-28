@@ -491,6 +491,36 @@ const testTowerToneModeration = async () => {
       true,
       'tower claim should include moderation/management guidance'
     );
+    assert.equal(
+      /우선입니다 결론/.test(String(towerEvidence.claim || '')),
+      false,
+      'tower claim should not contain run-on sentence joining errors'
+    );
+  });
+
+  process.env.ANTHROPIC_API_KEY = originalKey;
+};
+
+const testTemperanceBalancedTone = async () => {
+  const cards = buildCards(['m14', 'c10', 'p08']);
+  process.env.ANTHROPIC_API_KEY = '';
+
+  await withFetchSequence([], async () => {
+    const result = await generateReadingHybrid({
+      cards,
+      question: '오늘의 종합 운세는?',
+      timeframe: 'daily',
+      category: 'general'
+    });
+
+    assert.equal(result.fallbackUsed, true);
+    const temperanceEvidence = (result.report?.evidence || []).find((item) => item.cardId === 'm14');
+    assert.ok(temperanceEvidence, 'temperance evidence should exist');
+    assert.equal(
+      /(완급|균형|조율)/.test(String(temperanceEvidence.claim || '')),
+      true,
+      'temperance claim should include balance-oriented wording'
+    );
   });
 
   process.env.ANTHROPIC_API_KEY = originalKey;
@@ -589,6 +619,7 @@ try {
   await testDeterministicEvidenceClaimVariation();
   await testDeterministicEvidenceRationaleVariation();
   await testTowerToneModeration();
+  await testTemperanceBalancedTone();
   await testEvidenceClaimLengthCap();
   await testFallbackPostProcessIsMinimal();
   await testFallbackQualityMatchesFinalReport();

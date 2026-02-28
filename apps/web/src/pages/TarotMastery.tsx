@@ -412,9 +412,19 @@ export function TarotMastery() {
 
   const getDistinctReportCopy = (data: ReadingResponse, isHealthContext: boolean, isOverallFortune: boolean) => {
     if (isOverallFortune && data.report?.fortune) {
+      const summary = data.report.summary || data.report.fortune.energy || '';
+      const verdictRationale = data.report.verdict?.rationale || '';
+      const fortuneMessage = data.report.fortune.message || '';
+      let energyText = verdictRationale || fortuneMessage || data.report.fortune.workFinance || '';
+      if (isTextOverlapHigh(summary, energyText)) {
+        energyText = data.report.fortune.workFinance || verdictRationale || fortuneMessage || '';
+      }
+      if (isTextOverlapHigh(summary, energyText)) {
+        energyText = '이번 구간은 속도보다 리듬과 점검 주기를 먼저 고정하는 접근이 안정적입니다.';
+      }
       return {
-        insightText: data.report.summary || data.report.fortune.energy || '',
-        energyText: data.report.fortune.message || data.report.verdict?.rationale || ''
+        insightText: summary,
+        energyText
       };
     }
     const summary = data.report?.summary || '';

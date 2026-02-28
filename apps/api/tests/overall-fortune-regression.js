@@ -59,6 +59,11 @@ const normalizeCompare = (text) => String(text || '')
   .replace(/[^\p{L}\p{N}\s]/gu, '')
   .replace(/\s+/g, ' ')
   .trim();
+const sentenceCount = (text) => String(text || '')
+  .split(/[.!?]+/)
+  .map((item) => item.trim())
+  .filter(Boolean)
+  .length;
 
 for (const sample of cases) {
   try {
@@ -142,6 +147,19 @@ for (const sample of cases) {
       response.report?.fortune?.healthMind
     ].some((value) => String(value || '').trim().length < 34);
     assert.equal(shortFortuneField, false, 'fortune section fields should keep minimum narrative density');
+    const sparseFortuneField = [
+      response.report?.fortune?.energy,
+      response.report?.fortune?.workFinance,
+      response.report?.fortune?.love,
+      response.report?.fortune?.healthMind
+    ].some((value) => sentenceCount(value) < 2);
+    assert.equal(sparseFortuneField, false, 'fortune section fields should include at least 2 sentences');
+
+    assert.equal(
+      normalizeCompare(response.report?.summary) === normalizeCompare(response.report?.fortune?.message),
+      false,
+      'fortune message should not duplicate summary'
+    );
 
     const redundantFortunePrefixDetected = [
       response.report?.fortune?.energy,
