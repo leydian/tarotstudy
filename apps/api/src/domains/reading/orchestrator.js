@@ -277,6 +277,17 @@ export const generateReadingHybrid = async ({
     .slice(0, 2)
     .map((item, idx) => `[운명의 지침 ${idx + 1}] ${item}`);
   const totalMs = Date.now() - startedAt;
+  const qualityScore = Math.max(
+    0,
+    Math.min(
+      100,
+      Math.round(
+        finalized.quality.consistencyScore
+        - (finalized.quality.unsupportedClaimCount * 5)
+        - (fallbackUsed ? 10 : 0)
+      )
+    )
+  );
 
   return {
     conclusion: finalConclusion,
@@ -285,6 +296,7 @@ export const generateReadingHybrid = async ({
     yesNoVerdict: normalizeVerdictLabel(finalized.report.verdict.label),
     report: finalized.report,
     quality: {
+      qualityScore,
       consistencyScore: finalized.quality.consistencyScore,
       unsupportedClaimCount: finalized.quality.unsupportedClaimCount,
       regenerationCount: 0
@@ -318,6 +330,7 @@ export const generateReadingHybrid = async ({
       fallbackReason: fallbackReason || null,
       analysis: finalAnalysis,
       qualityFlags: finalized.qualityFlags,
+      qualityScore,
       ...(debug ? { modelQualityFlags } : {})
     }
   };

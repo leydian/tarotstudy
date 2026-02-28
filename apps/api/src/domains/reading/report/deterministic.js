@@ -28,6 +28,60 @@ import {
 } from './domain-policy.js';
 import { ensureFortuneDensity } from './fortune-policy.js';
 
+const QUESTION_STOPWORDS = new Set([
+  '이번',
+  '오늘',
+  '내일',
+  '정말',
+  '혹시',
+  '지금',
+  '저',
+  '나',
+  '우리',
+  '할까',
+  '말까',
+  '가능',
+  '운세'
+]);
+
+const extractQuestionKeywords = (question = '') => {
+  const tokens = sanitizeText(question)
+    .split(/[^\p{L}\p{N}]+/u)
+    .map((token) => token.trim())
+    .filter(Boolean)
+    .filter((token) => token.length >= 2)
+    .filter((token) => !QUESTION_STOPWORDS.has(token))
+    .slice(0, 3);
+  return [...new Set(tokens)];
+};
+
+const buildQuestionFocusSentence = (question = '') => {
+  const keywords = extractQuestionKeywords(question);
+  if (keywords.length === 0) return '';
+  const focus = keywords.slice(0, 2).join('·');
+  return `질문 핵심어(${focus})를 중심으로, 선택 기준을 좁히면 해석 정확도가 높아집니다.`;
+};
+
+const compressForConciseMode = (report) => {
+  const compactEvidence = (Array.isArray(report?.evidence) ? report.evidence : []).map((item) => {
+    const claim = sanitizeText(item?.claim || '');
+    const rationale = sanitizeText(item?.rationale || '');
+    const preserveClaim = /균형|조율/.test(claim);
+    return {
+      ...item,
+      claim: preserveClaim ? claim : (claim.length > 90 ? `${claim.slice(0, 89).trimEnd()}…` : claim),
+      rationale: rationale.length > 85 ? `${rationale.slice(0, 84).trimEnd()}…` : rationale,
+      caution: sanitizeText(item?.caution || '').slice(0, 70).trimEnd()
+    };
+  });
+  return {
+    ...report,
+    evidence: compactEvidence,
+    actions: (Array.isArray(report?.actions) ? report.actions : []).slice(0, 2),
+    counterpoints: (Array.isArray(report?.counterpoints) ? report.counterpoints : []).slice(0, 2)
+  };
+};
+
 const buildDeterministicReport = ({
   question,
   facts,
@@ -124,18 +178,30 @@ const buildDeterministicReport = ({
     question
   });
 
+  const focusSentence = buildQuestionFocusSentence(question);
   const summary = isCompactBinaryQuestion
     ? `질문 "${question}"에 대해 보면, ${verdict.rationale} 오늘은 너무 무겁게 고민하지 않고 결정해도 괜찮습니다.`
     : (responseMode === 'balanced' || responseMode === 'creative')
       ? joinSentencesKorean(
         buildConclusionStatement({ question, verdict, binaryEntities }),
-        buildConclusionBuffer({ verdictLabel: verdict.label, questionType, domainTag })
+        buildConclusionBuffer({ verdictLabel: verdict.label, questionType, domainTag }),
+        responseMode === 'creative' ? focusSentence : ''
       )
     : category === 'general'
       ? `질문 "${question}"에 대한 운명의 지도를 펼쳐보니, ${verdictTone(verdict.label, verdict.rationale)}`
       : `"${question}"의 ${category}적인 맥락에서 카드를 읽어보니, ${verdictTone(verdict.label, verdict.rationale)}`;
 
-  const baseReport = { summary, verdict, evidence, counterpoints, actions, fullNarrative: null };
+  const baseReport = {
+    summary,
+    verdict,
+    evidence,
+    counterpoints,
+    actions,
+    fullNarrative: null
+  };
+  const modeAdjustedReport = responseMode === 'concise'
+    ? compressForConciseMode(baseReport)
+    : baseReport;
   if (isOverallFortune) {
     const trendLabel = toTrendLabel(verdict.label);
     const energyFact = pickDominantFact(facts, () => true, 0);
@@ -262,7 +328,7 @@ const buildDeterministicReport = ({
     };
     fortune.message = ensureFortuneDensity(fortune.message, 'message', resolvedFortunePeriod);
     return {
-      ...baseReport,
+      ...modeAdjustedReport,
       summary: buildFortuneSummary(fortune.period, trendLabel),
       verdict: {
         label: 'MAYBE',
@@ -275,9 +341,9 @@ const buildDeterministicReport = ({
     };
   }
   if (isHealthQuestion) {
-    return baseReport;
+    return modeAdjustedReport;
   }
-  return baseReport;
+  return modeAdjustedReport;
 };
 
 export { buildDeterministicReport };

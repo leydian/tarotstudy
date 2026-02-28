@@ -117,5 +117,21 @@ export const tarotApi = {
     });
     if (!v1.ok) throw new Error('Failed to get reading');
     return v1.json();
+  },
+
+  async sendReadingFeedback(payload: {
+    requestId?: string | null;
+    rating: 'up' | 'down';
+    reason?: string;
+    questionType?: string;
+    responseMode?: 'concise' | 'balanced' | 'creative' | string;
+  }): Promise<{ ok: boolean }> {
+    const res = await fetch(`${API_BASE}/reading/feedback`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) throw new Error('Failed to send reading feedback');
+    return res.json();
   }
 };

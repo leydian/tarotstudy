@@ -81,6 +81,7 @@ export interface ReadingResponse {
     actions: string[];
   };
   quality?: {
+    qualityScore?: number;
     consistencyScore: number;
     unsupportedClaimCount: number;
     regenerationCount: number;
@@ -155,5 +156,6 @@ export interface ReadingResponse {
     contextUsed?: boolean;
     analysis?: ReadingResponse['analysis'];
     qualityFlags?: string[];
+    qualityScore?: number;
   };
 }

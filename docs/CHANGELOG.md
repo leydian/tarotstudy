@@ -2,6 +2,44 @@
 
 ## [2026-02-28]
 
+### 품질 체감 강화: 반복 억제 + 질문 맞춤 문장 + qualityScore/feedback API (v6.3.56)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/report/deterministic.js`
+- `apps/api/src/domains/reading/report/fact-builder.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `apps/api/src/index.js`
+- `apps/web/src/types/tarot.ts`
+- `apps/web/src/services/tarotService.ts`
+- `docs/RELEASE_NOTES_v6.3.56.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 리딩 체감 품질 정책 강화
+  - concise 모드에서 evidence/counterpoints/actions를 더 짧게 압축해 경량 질문 응답의 과도한 장문을 축소.
+  - creative 모드에서 질문 핵심어 기반 포커스 문장을 summary에 결합해 질문 맞춤도를 강화.
+  - evidence 중복 억제 및 summary/verdict/actions/counterpoints 간 교차 중복 필터를 강화.
+- 품질 점수 지표 추가
+  - `quality.qualityScore` 필드 추가(일관성 점수 + unsupported claim + fallback 여부를 반영한 0~100 점수).
+  - `meta.qualityScore`에도 동일 값 노출.
+  - 메트릭 로그(`reading_metric`)에 `qualityScore` 포함.
+- 사용자 피드백 API 추가
+  - `POST /api/reading/feedback` 신규 추가.
+  - `rating(up/down)` 필수 검증, `reason/questionType/responseMode/requestId` 수집.
+  - 서버 로그 및 metric log에 `feedback_metric` 이벤트 기록.
+- 프론트 서비스/타입 확장
+  - `ReadingResponse.quality.qualityScore`, `meta.qualityScore` 타입 반영.
+  - `tarotApi.sendReadingFeedback(...)` 서비스 메서드 추가.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:persona --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `node apps/api/tests/fallback-minimization.js` 통과
+- `node apps/api/tests/question-profile-v2.js` 통과
+- `node apps/api/tests/reading-v2-contract.js` 통과
+- `npm run build --prefix apps/web` 통과
+
 ### 1차 공격적 분할: report/shared 8+ 모듈 분해 + direct import 전환 (v6.3.55)
 
 #### 변경 파일

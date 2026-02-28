@@ -49,7 +49,8 @@ const logReadingMetrics = (requestId, reading) => {
     lowConfidence: !!reading?.meta?.lowConfidence,
     contextUsed: !!reading?.meta?.contextUsed,
     downgraded: !!reading?.analysis?.safety?.downgraded,
-    intentTop1: reading?.analysis?.intentBreakdown?.[0]?.intent || null
+    intentTop1: reading?.analysis?.intentBreakdown?.[0]?.intent || null,
+    qualityScore: reading?.quality?.qualityScore ?? reading?.meta?.qualityScore ?? null
   };
   console.log(`[Tarot Metric] ${JSON.stringify(metric)}`);
   if (metricLogPath) {
@@ -57,6 +58,26 @@ const logReadingMetrics = (requestId, reading) => {
       appendMetricLine(path.resolve(metricLogPath), metric);
     } catch (error) {
       console.error('[Tarot Metric] Failed to append metric log:', error?.message || error);
+    }
+  }
+};
+
+const logFeedbackMetric = (payload) => {
+  const metric = {
+    type: 'feedback_metric',
+    timestamp: new Date().toISOString(),
+    requestId: payload?.requestId || null,
+    rating: payload?.rating || 'unknown',
+    reason: payload?.reason || null,
+    questionType: payload?.questionType || null,
+    responseMode: payload?.responseMode || null
+  };
+  console.log(`[Tarot Feedback] ${JSON.stringify(metric)}`);
+  if (metricLogPath) {
+    try {
+      appendMetricLine(path.resolve(metricLogPath), metric);
+    } catch (error) {
+      console.error('[Tarot Feedback] Failed to append feedback log:', error?.message || error);
     }
   }
 };
@@ -296,6 +317,31 @@ app.post('/api/analytics', (req, res) => {
   console.log(
     `[Analytics] event=${eventName} session=${sessionId} ts=${timestamp || new Date().toISOString()} context=${JSON.stringify(context || {})}`
   );
+  return res.status(202).json({ ok: true });
+});
+
+app.post('/api/reading/feedback', (req, res) => {
+  const {
+    requestId = null,
+    rating,
+    reason = '',
+    questionType = null,
+    responseMode = null
+  } = req.body || {};
+
+  if (!rating || !['up', 'down'].includes(String(rating))) {
+    return res.status(400).json({ error: 'rating must be one of: up, down' });
+  }
+
+  const normalizedReason = String(reason || '').trim().slice(0, 300);
+  logFeedbackMetric({
+    requestId: requestId ? String(requestId).trim() : null,
+    rating: String(rating),
+    reason: normalizedReason || null,
+    questionType: questionType ? String(questionType) : null,
+    responseMode: responseMode ? String(responseMode) : null
+  });
+
   return res.status(202).json({ ok: true });
 });
 

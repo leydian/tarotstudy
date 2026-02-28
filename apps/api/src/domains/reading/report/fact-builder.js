@@ -87,6 +87,25 @@ const withCategorizedFlags = (flags = []) => {
   return [...new Set(next)];
 };
 
+const reduceEvidenceRepetition = (evidence = []) => {
+  const seenClaims = [];
+  return evidence.map((item, idx) => {
+    const claim = sanitizeText(item?.claim || '');
+    const overlapCount = seenClaims.filter((picked) => isHighOverlap(picked, claim)).length;
+    const overlapped = claim.length >= 42 && overlapCount >= 2;
+    if (!overlapped) {
+      seenClaims.push(claim);
+      return item;
+    }
+    const fallbackClaim = sanitizeText(`${item?.positionLabel || `단계 ${idx + 1}`} 해석은 이전 카드와 결을 공유하므로, 실행 순서를 분리해 점검하세요.`);
+    seenClaims.push(fallbackClaim);
+    return {
+      ...item,
+      claim: fallbackClaim
+    };
+  });
+};
+
 const postProcessReport = (report) => {
   const qualityFlags = [];
   const next = {
@@ -112,9 +131,16 @@ const postProcessReport = (report) => {
     }
   }
 
+  next.evidence = reduceEvidenceRepetition(next.evidence);
+  if ((next.evidence || []).some((item, idx, arr) => idx > 0 && isHighOverlap(arr[idx - 1]?.claim, item?.claim))) {
+    qualityFlags.push('evidence_quality_rewritten');
+  }
+
   next.counterpoints = sanitizeListItems(next.counterpoints, 'counterpoints');
   next.actions = sanitizeListItems(next.actions, 'actions');
   next.actions = next.actions.filter((item) => !next.counterpoints.some((cp) => isHighOverlap(cp, item)));
+  next.actions = next.actions.filter((item) => !isHighOverlap(item, next.summary));
+  next.counterpoints = next.counterpoints.filter((item) => !isHighOverlap(item, next.verdict.rationale));
 
   if (next.fortune) {
     const before = JSON.stringify(next.fortune);
