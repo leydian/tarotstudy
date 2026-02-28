@@ -2,6 +2,16 @@
 
 ## [2026-02-28]
 
+### Vercel 배포 실패 해결: Web 앱 설정 파일 복구
+
+#### 변경 사항
+- **Vite 및 TypeScript 설정 파일 생성 (`apps/web/`)**:
+    - **`vite.config.ts`**: `@vitejs/plugin-react`를 추가하여 JSX/TSX 문법 해석을 활성화하고 API 프록시 설정을 구성함.
+    - **`tsconfig.json`**: React-Vite 환경에 최적화된 TypeScript 컴파일 옵션을 설정하여 타입 체크 및 빌드 안정성 확보.
+    - **`tsconfig.node.json`**: Node.js 기반의 설정 파일(`vite.config.ts` 등)에 대한 별도의 TS 환경 분리.
+- **빌드 파이프라인 정상화**:
+    - `vite build` 실행 시 발생하던 파싱 에러(Unexpected token)를 해결하여 Vercel 배포가 가능하도록 조치함.
+
 ### 양자택일(Binary Choice) 인지 및 정밀도 고도화
 
 #### 변경 사항
