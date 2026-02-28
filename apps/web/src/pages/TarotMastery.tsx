@@ -144,6 +144,13 @@ export function TarotMastery() {
     return '유보';
   };
 
+  const apiUsedLabel = (apiUsed?: 'anthropic' | 'openai' | 'fallback' | 'none') => {
+    if (apiUsed === 'anthropic') return 'Anthropic';
+    if (apiUsed === 'openai') return 'OpenAI';
+    if (apiUsed === 'fallback') return 'Fallback(v3)';
+    return 'Unknown';
+  };
+
   const getSpreadRenderConfig = (spread: Spread) => {
     const maxAbsX = Math.max(...spread.positions.map((p) => Math.abs(p.x)), 1);
     const maxAbsY = Math.max(...spread.positions.map((p) => Math.abs(p.y)), 1);
@@ -293,6 +300,18 @@ export function TarotMastery() {
                   <div className={styles.tabBody}>
                     {resultTab === 'report' ? (
                       <div className={styles.resultSection}>
+                        <div className={styles.diagnosticBox}>
+                          <span className={styles.diagnosticPill}>
+                            apiUsed: {apiUsedLabel(reading.apiUsed)}
+                          </span>
+                          <span className={styles.diagnosticPill}>
+                            fallbackUsed: {reading.fallbackUsed ? 'true' : 'false'}
+                          </span>
+                          <span className={styles.diagnosticPill}>
+                            fallbackReason: {reading.meta?.fallbackReason || 'none'}
+                          </span>
+                        </div>
+
                         <div className={styles.masterReport}>
                           <h3 className={styles.masterReportTitle}>운명의 마스터 리포트</h3>
                           <div className={styles.masterReportText}>

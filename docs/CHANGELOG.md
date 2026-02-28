@@ -2,6 +2,29 @@
 
 ## [2026-02-28]
 
+### 리딩 결과 API 사용 상태 가시화 (v6.3.6)
+
+#### 변경 파일
+- `apps/web/src/pages/TarotMastery.tsx`
+- `apps/web/src/pages/TarotMastery.module.css`
+- `apps/web/src/types/tarot.ts`
+- `docs/RELEASE_NOTES_v6.3.6.md`
+
+#### 변경 사항
+- 결과 화면 상단에 `apiUsed`, `fallbackUsed`, `fallbackReason` 진단 배지 추가.
+- `ReadingResponse` 타입에 `apiUsed` 필드 추가.
+- 진단 배지 전용 스타일 추가.
+
+#### 효과
+- API 성공/폴백 여부를 사용자 화면에서 즉시 확인 가능.
+- 서버 로그 의존도를 낮추고 운영 디버깅 속도 향상.
+
+#### 검증
+- `npm run build --prefix apps/web` 통과.
+- 상세 변경 요약: `docs/RELEASE_NOTES_v6.3.6.md`
+
+## [2026-02-28]
+
 ### 개발 방식 표준화 문서 도입 (v6.3.5)
 
 #### 변경 파일

@@ -49,6 +49,7 @@ export interface ReadingResponse {
   action: string[];
   yesNoVerdict: 'YES' | 'NO' | 'MAYBE';
   mode?: 'legacy' | 'hybrid';
+  apiUsed?: 'anthropic' | 'openai' | 'fallback' | 'none';
   fallbackUsed?: boolean;
   report?: {
     summary: string;
