@@ -2,6 +2,47 @@
 
 ## [2026-02-28]
 
+### 메트릭 필터링/ops 고도화/릴리스 생성 자동화 (v6.3.33)
+
+#### 변경 파일
+- `apps/api/src/ops/metrics.js`
+- `apps/api/src/index.js`
+- `apps/api/tests/metrics-aggregation.js`
+- `apps/web/src/pages/OpsDashboard.tsx`
+- `apps/web/src/pages/OpsDashboard.module.css`
+- `apps/web/tests/OpsDashboard.test.tsx`
+- `scripts/generate-release-note.js`
+- `package.json`
+- `docs/OPERATIONS_METRICS.md`
+- `docs/RELEASE_NOTES_v6.3.33.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 메트릭 저장/집계 표준화
+  - 메트릭 append를 공통 유틸로 통합하고 파일 크기 회전(`TAROT_METRIC_MAX_BYTES`) 추가.
+  - 집계에 `byDomainTag` 추가, zero-safe 계산 적용.
+- admin metrics API 확장
+  - `/api/admin/metrics`에 `window`, `limit` 쿼리 추가.
+  - 동일 길이 이전 구간 비교 요약(`previous`) 반환.
+- 운영 대시보드 개선
+  - `/ops`에서 기간/건수 필터, Top fallback reason, DomainTag 분포, 이전 구간 비교 표시.
+- 테스트/자동화
+  - 메트릭 필터 함수(window/range) 테스트 추가.
+  - OpsDashboard 단위 테스트를 확장 payload 기준으로 보강.
+  - 릴리스 노트 생성 스크립트(`release:note`) 추가.
+
+#### 검증
+- `npm run test:persona --prefix apps/api` 통과
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run test:metrics --prefix apps/api` 통과
+- `npm run test:ui-contract --prefix apps/web` 통과
+- `npm run test:ui-flow --prefix apps/web` 통과
+- `npm run test:unit --prefix apps/web` 통과
+- `npm run build --prefix apps/web` 통과
+
+## [2026-02-28]
+
 ### 운영 보안/단위테스트/야간 모니터링 고도화 (v6.3.32)
 
 #### 변경 파일

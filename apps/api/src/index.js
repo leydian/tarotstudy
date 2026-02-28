@@ -1,7 +1,6 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import fs from 'node:fs';
 import path from 'node:path';
 import { cards, getCardById } from './data/cards.js';
 import { spreads, getSpreadById } from './data/spreads.js';
@@ -9,8 +8,11 @@ import { generateReadingV3 } from './domains/reading/v3.js';
 import { generateReadingHybrid } from './domains/reading/hybrid.js';
 import { inferQuestionProfile } from './domains/reading/questionType.js';
 import {
+  appendMetricLine,
   resolveMetricLogPath,
   readMetricsFromFile,
+  filterMetrics,
+  filterMetricsByRange,
   aggregateMetrics,
   evaluateThresholds
 } from './ops/metrics.js';
@@ -44,14 +46,19 @@ const logReadingMetrics = (requestId, reading) => {
   };
   console.log(`[Tarot Metric] ${JSON.stringify(metric)}`);
   if (metricLogPath) {
-    const safePath = path.resolve(metricLogPath);
     try {
-      fs.mkdirSync(path.dirname(safePath), { recursive: true });
-      fs.appendFileSync(safePath, `${JSON.stringify(metric)}\n`, 'utf8');
+      appendMetricLine(path.resolve(metricLogPath), metric);
     } catch (error) {
       console.error('[Tarot Metric] Failed to append metric log:', error?.message || error);
     }
   }
+};
+
+const parseWindowMs = (windowParam) => {
+  if (windowParam === '1h') return 60 * 60 * 1000;
+  if (windowParam === '24h') return 24 * 60 * 60 * 1000;
+  if (windowParam === '7d') return 7 * 24 * 60 * 60 * 1000;
+  return 0;
 };
 
 // 타로 카드 목록 조회
@@ -231,15 +238,40 @@ app.get('/api/admin/metrics', (req, res) => {
   }
 
   try {
+    const windowParam = String(req.query.window || '').trim();
+    const limit = Math.min(5000, Math.max(1, Number(req.query.limit || 300)));
+    const windowMs = parseWindowMs(windowParam);
+    const nowMs = Date.now();
     const inputPath = resolveMetricLogPath(process.env.TAROT_METRIC_LOG_PATH);
     const metrics = readMetricsFromFile(inputPath);
-    const report = aggregateMetrics(metrics, inputPath);
+    const filteredMetrics = filterMetrics(metrics, { windowMs, limit, nowMs });
+    const report = aggregateMetrics(filteredMetrics, inputPath);
     const status = evaluateThresholds(report);
+
+    let previous = null;
+    if (windowMs > 0) {
+      const prevFrom = nowMs - (windowMs * 2);
+      const prevTo = nowMs - windowMs;
+      const previousMetrics = filterMetricsByRange(metrics, prevFrom, prevTo);
+      const previousReport = aggregateMetrics(previousMetrics, inputPath);
+      previous = {
+        window: windowParam,
+        totalReadings: previousReport.totalReadings,
+        fallbackRatePct: previousReport.fallbackRatePct,
+        latencyP95: previousReport.latency.p95
+      };
+    }
+
     return res.json({
       ok: true,
       generatedAt: new Date().toISOString(),
+      filters: {
+        window: windowParam || 'all',
+        limit
+      },
       report,
-      status
+      status,
+      previous
     });
   } catch (error) {
     return res.status(400).json({

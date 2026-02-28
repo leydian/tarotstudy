@@ -13,6 +13,16 @@ type MetricsPayload = {
   ok: boolean;
   generatedAt?: string;
   error?: string;
+  filters?: {
+    window: string;
+    limit: number;
+  };
+  previous?: {
+    window: string;
+    totalReadings: number;
+    fallbackRatePct: number;
+    latencyP95: number | null;
+  } | null;
   report?: {
     inputPath: string;
     totalReadings: number;
@@ -25,6 +35,7 @@ type MetricsPayload = {
     byFailureStage: Record<string, number>;
     byFallbackReason: Record<string, number>;
     byQuestionType: Record<string, number>;
+    byDomainTag: Record<string, number>;
     byReadingKind: Record<string, number>;
     byFortunePeriod: Record<string, number>;
   };
@@ -58,11 +69,16 @@ const KeyValueList: React.FC<{ data: Record<string, number> }> = ({ data }) => {
 export function OpsDashboard() {
   const [payload, setPayload] = useState<MetricsPayload | null>(null);
   const [loading, setLoading] = useState(true);
+  const [windowFilter, setWindowFilter] = useState<'1h' | '24h' | '7d' | 'all'>('24h');
+  const [limit, setLimit] = useState<number>(300);
 
   useEffect(() => {
     const run = async () => {
       try {
-        const res = await fetch('/api/admin/metrics');
+        const params = new URLSearchParams();
+        if (windowFilter !== 'all') params.set('window', windowFilter);
+        params.set('limit', String(limit));
+        const res = await fetch(`/api/admin/metrics?${params.toString()}`);
         const data = await res.json();
         setPayload(data);
       } catch (error) {
@@ -72,7 +88,7 @@ export function OpsDashboard() {
       }
     };
     run();
-  }, []);
+  }, [windowFilter, limit]);
 
   if (loading) return <div className={styles.page}>운영 지표를 불러오는 중입니다...</div>;
   if (!payload?.ok || !payload.report || !payload.status) {
@@ -88,12 +104,41 @@ export function OpsDashboard() {
 
   const { report, status } = payload;
   const criticalCount = status.issues.filter((it) => it.level === 'critical').length;
+  const topReasons = Object.entries(report.byFallbackReason)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3);
+  const sortedIssues = [...status.issues].sort((a, b) => {
+    if (a.level === b.level) return b.value - a.value;
+    return a.level === 'critical' ? -1 : 1;
+  });
 
   return (
     <div className={styles.page}>
       <div className={styles.header}>
         <h2><Activity size={18} /> 운영 지표 대시보드</h2>
         <p>생성 시각: {payload.generatedAt ? new Date(payload.generatedAt).toLocaleString() : 'unknown'}</p>
+        <div className={styles.filters}>
+          <label>
+            기간
+            <select value={windowFilter} onChange={(e) => setWindowFilter(e.target.value as '1h' | '24h' | '7d' | 'all')}>
+              <option value="1h">최근 1시간</option>
+              <option value="24h">최근 24시간</option>
+              <option value="7d">최근 7일</option>
+              <option value="all">전체</option>
+            </select>
+          </label>
+          <label>
+            최대 건수
+            <input
+              type="number"
+              min={50}
+              max={5000}
+              step={50}
+              value={limit}
+              onChange={(e) => setLimit(Math.min(5000, Math.max(50, Number(e.target.value || 300))))}
+            />
+          </label>
+        </div>
       </div>
 
       <div className={styles.kpis}>
@@ -117,20 +162,37 @@ export function OpsDashboard() {
 
       <div className={styles.statusBox}>
         <h3>{status.ok ? <><CheckCircle2 size={16} /> 상태 정상</> : <><Clock3 size={16} /> 임계치 경고</>}</h3>
-        {status.issues.length === 0 ? (
+        {sortedIssues.length === 0 ? (
           <p>현재 임계치 초과 항목이 없습니다.</p>
         ) : (
           <ul className={styles.issueList}>
-            {status.issues.map((issue, idx) => (
+            {sortedIssues.map((issue, idx) => (
               <li key={`${issue.metric}-${idx}`}>
                 [{issue.level}] {issue.metric}: {issue.value} (threshold {issue.threshold})
               </li>
             ))}
           </ul>
         )}
+        {payload.previous && (
+          <p className={styles.compareText}>
+            이전 동일 구간({payload.previous.window}) 대비:
+            fallback {payload.previous.fallbackRatePct}% / p95 {payload.previous.latencyP95 ?? 'N/A'}ms
+          </p>
+        )}
       </div>
 
       <div className={styles.grid}>
+        <section className={styles.panel}>
+          <h4>Top Fallback Reasons</h4>
+          <ul className={styles.list}>
+            {topReasons.map(([reason, count]) => (
+              <li key={reason} className={styles.listItem}>
+                <span>{reason}</span>
+                <strong>{count}</strong>
+              </li>
+            ))}
+          </ul>
+        </section>
         <section className={styles.panel}>
           <h4>Failure Stage</h4>
           <KeyValueList data={report.byFailureStage} />
@@ -142,6 +204,10 @@ export function OpsDashboard() {
         <section className={styles.panel}>
           <h4>Question Type</h4>
           <KeyValueList data={report.byQuestionType} />
+        </section>
+        <section className={styles.panel}>
+          <h4>Domain Tag</h4>
+          <KeyValueList data={report.byDomainTag} />
         </section>
         <section className={styles.panel}>
           <h4>Reading Kind</h4>

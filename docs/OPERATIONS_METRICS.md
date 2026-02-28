@@ -8,7 +8,10 @@ API 서버에 아래 환경변수를 지정하면 `/api/reading` 호출마다 JS
 
 ```bash
 TAROT_METRIC_LOG_PATH=apps/api/tmp/metrics.log
+TAROT_METRIC_MAX_BYTES=5242880
 ```
+
+- `TAROT_METRIC_MAX_BYTES`를 넘기면 `metrics.log.1`로 자동 회전(rotating)됩니다.
 
 기록 필드:
 - `requestId`
@@ -54,9 +57,12 @@ npm run metrics:check --prefix apps/api
 ## 4) 내부 대시보드
 
 - API: `GET /api/admin/metrics`
+- 필터 파라미터:
+  - `window=1h|24h|7d`
+  - `limit=50..5000`
 - 운영(`NODE_ENV=production`)에서는 `ADMIN_METRICS_KEY` 미설정 시 endpoint가 503으로 비활성화됩니다.
 - `ADMIN_METRICS_KEY` 설정 시 `x-admin-key` 헤더가 필요합니다.
-- 웹: `/ops` 페이지에서 KPI/임계치 상태/분포를 확인
+- 웹: `/ops` 페이지에서 기간/건수 필터, KPI, 임계치 상태, Top fallback reason, 분포를 확인
 
 ## 5) 운영 기준(권장)
 
