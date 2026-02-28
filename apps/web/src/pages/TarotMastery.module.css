@@ -1,10 +1,10 @@
 .page {
   max-width: 1720px;
   margin: 0 auto;
-  height: calc(100vh - 140px);
   display: flex;
   flex-direction: column;
-  padding: 0 1.25rem;
+  padding: 0 1.25rem 1rem;
+  min-height: 0;
 }
 
 /* ── SANCTUARY PANEL ── */
@@ -20,6 +20,7 @@
   border: 1px solid var(--border-subtle);
   border-bottom: none;
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+  min-height: min(960px, calc(100dvh - 150px));
 }
 
 /* ── PANEL HEADER ── */
@@ -54,6 +55,7 @@
   display: block;
   overflow: hidden;
   position: relative;
+  min-height: 0;
 }
 
 .workspaceGrid {
@@ -250,6 +252,30 @@
   display: flex;
   flex-direction: column;
   gap: 2rem;
+}
+
+@media (max-width: 1024px) {
+  .page {
+    padding: 0 0.75rem 0.75rem;
+  }
+
+  .sanctuary {
+    min-height: min(860px, calc(100dvh - 120px));
+  }
+
+  .workspaceGrid {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+
+  .rightPane {
+    overflow: visible;
+    scrollbar-width: none;
+  }
+
+  .rightPane::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 .srOnly {
@@ -579,6 +605,7 @@
 .submitBtn {
   display: flex; align-items: center; gap: 0.5rem; background-color: var(--accent-gold);
   color: var(--text-on-accent); border: none; padding: 1rem 1.5rem; border-radius: 12px; cursor: pointer; font-size: 1.04rem;
+  min-width: 112px;
 }
 
 .typingWrapper { align-self: flex-start; }
@@ -591,17 +618,18 @@
   .page {
     height: auto;
     min-height: calc(100vh - 70px);
-    padding: 0;
+    padding: 0 0 0.25rem;
   }
 
   .sanctuary {
-    border-radius: 18px 18px 0 0;
-    overflow: visible;
+    border-radius: 16px;
+    overflow: hidden;
     min-height: 0;
+    border-bottom: 1px solid var(--border-subtle);
   }
 
   .panelHeader {
-    padding: 0.95rem 1rem;
+    padding: 0.85rem 0.9rem;
   }
 
   .panelTitle {
@@ -617,9 +645,8 @@
   .workspaceGrid {
     height: auto;
     grid-template-columns: 1fr;
-    grid-template-rows: auto;
     gap: 0.85rem;
-    padding: 0.75rem 0.75rem 0.5rem;
+    padding: 0.65rem;
   }
 
   .leftPane {
@@ -629,7 +656,7 @@
 
   .leftPaneTabs {
     position: sticky;
-    top: 0;
+    top: 0.35rem;
     z-index: 20;
     background: var(--mobile-tab-bg);
     backdrop-filter: blur(10px);
@@ -663,12 +690,12 @@
     min-height: 240px !important;
     height: auto;
     border-radius: 16px;
-    padding: 1.35rem 0.6rem 0.95rem;
+    padding: 1rem 0.5rem 0.85rem;
   }
 
   .messages {
     min-height: 0;
-    padding: 1rem 0.95rem calc(6.4rem + env(safe-area-inset-bottom));
+    padding: 0.9rem 0.85rem calc(6.8rem + env(safe-area-inset-bottom));
     gap: 1.1rem;
   }
 
@@ -735,7 +762,8 @@
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border-top: 1px solid var(--input-sticky-border);
-    padding-bottom: calc(0.8rem + env(safe-area-inset-bottom));
+    padding-bottom: calc(0.95rem + env(safe-area-inset-bottom));
+    isolation: isolate;
   }
 
   .quickFortuneRow {
@@ -765,8 +793,63 @@
   }
 }
 
+@media (max-width: 480px) {
+  .panelTitle {
+    font-size: 1rem;
+  }
+
+  .workspaceGrid {
+    gap: 0.7rem;
+    padding: 0.55rem;
+  }
+
+  .leftPaneTabBtn {
+    font-size: 0.9rem;
+    padding: 0.62rem 0.58rem;
+  }
+
+  .topSpreadArea {
+    min-height: 210px !important;
+  }
+
+  .messages {
+    padding: 0.8rem 0.72rem calc(6.8rem + env(safe-area-inset-bottom));
+  }
+
+  .quickFortuneRow {
+    grid-template-columns: 1fr;
+  }
+
+  .submitBtn {
+    min-width: 96px;
+  }
+}
+
+@media (max-width: 900px) and (orientation: landscape) {
+  .workspaceGrid {
+    grid-template-columns: 1fr;
+    gap: 0.65rem;
+  }
+
+  .panelHeader {
+    padding: 0.7rem 0.9rem;
+  }
+
+  .messages {
+    padding-bottom: calc(5.9rem + env(safe-area-inset-bottom));
+  }
+
+  .topSpreadArea {
+    min-height: 180px !important;
+  }
+
+  .quickFortuneRow {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @supports (height: 100dvh) {
-  .page { height: calc(100dvh - 140px); }
+  .page { min-height: calc(100dvh - 88px); }
   @media (max-width: 768px) {
     .page {
       height: auto;

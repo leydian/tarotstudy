@@ -1,5 +1,5 @@
 .page {
-  padding-bottom: 4rem;
+  padding-bottom: calc(3rem + env(safe-area-inset-bottom));
 }
 
 .pageTitle {
@@ -28,6 +28,7 @@
   -webkit-backdrop-filter: blur(12px);
   background: var(--surface-elevated);
   margin-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .searchInputWrapper {
@@ -78,7 +79,7 @@
 .filterTab {
   padding: 0.45rem 1.1rem;
   border-radius: 20px;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   font-family: 'Pretendard', sans-serif;
   font-weight: 500;
   cursor: pointer;
@@ -103,7 +104,7 @@
 /* ── SKELETON GRID ── */
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
   gap: 2rem;
 }
 
@@ -322,8 +323,8 @@
   position: absolute;
   top: 1.2rem;
   right: 1.2rem;
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -463,6 +464,16 @@
 }
 
 @media (max-width: 768px) {
+  .page {
+    padding-bottom: calc(2rem + env(safe-area-inset-bottom));
+  }
+
+  .searchBar {
+    top: 64px;
+    top: calc(64px + env(safe-area-inset-top));
+    padding: 0.6rem 0 0.55rem;
+  }
+
   .pageTitle {
     font-size: 1.8rem;
   }
@@ -489,17 +500,22 @@
 
   .filterTab {
     flex-shrink: 0;
+    min-height: 44px;
+    padding: 0.5rem 0.95rem;
   }
 
   .grid {
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    gap: 1rem;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 0.9rem;
   }
 
   .modal {
     flex-direction: column;
-    height: 95vh;
+    width: calc(100% - 0.8rem);
+    height: calc(100dvh - 0.8rem);
+    max-height: calc(100dvh - 0.8rem);
     overflow-y: auto;
+    border-radius: 14px;
   }
 
   .modalImagePanel {
@@ -507,15 +523,17 @@
     width: 100%;
     border-right: none;
     border-bottom: 1px solid var(--surface-modal-divider);
-    padding: 1.25rem;
+    padding: 1rem 1rem 0.85rem;
   }
 
   .modalImage {
     max-width: 180px;
+    max-height: 34vh;
+    object-fit: contain;
   }
 
   .modalTextPanel {
-    padding: 1.25rem;
+    padding: 1rem;
   }
 
   .meaningsGrid {
@@ -539,10 +557,27 @@
   .closeBtn {
     width: 44px;
     height: 44px;
+    top: 0.65rem;
+    right: 0.65rem;
   }
 
   .licenseFooter {
     padding: 2rem 1rem;
     margin-top: 3rem;
+  }
+}
+
+@media (max-width: 900px) and (orientation: landscape) {
+  .modal {
+    width: calc(100% - 1.2rem);
+    height: calc(100dvh - 0.6rem);
+  }
+
+  .modalImagePanel {
+    padding: 0.8rem;
+  }
+
+  .modalTextPanel {
+    padding: 0.85rem 1rem 1.05rem;
   }
 }

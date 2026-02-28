@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { BrowserRouter, Routes, Route, NavLink, Link } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, NavLink, Link, useLocation } from 'react-router-dom';
 import { LayoutDashboard, BookOpen, Sparkles, Moon, Sun, Menu, X } from 'lucide-react';
 import { Home } from './pages/Home';
 import { Cards } from './pages/Cards';
@@ -10,6 +10,7 @@ import styles from './App.module.css';
 function AppLayout() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+  const location = useLocation();
 
   useEffect(() => {
     const stored = window.localStorage.getItem('theme');
@@ -19,6 +20,17 @@ function AppLayout() {
     document.documentElement.setAttribute('data-theme', initialTheme);
     setTheme(initialTheme);
   }, []);
+
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    document.body.style.overflow = mobileOpen ? 'hidden' : '';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [mobileOpen]);
 
   const toggleTheme = () => {
     const nextTheme = theme === 'dark' ? 'light' : 'dark';
@@ -82,9 +94,10 @@ function AppLayout() {
 
           {/* 햄버거 버튼 */}
           <button
+            type="button"
             className={styles.hamburger}
             onClick={() => setMobileOpen(v => !v)}
-            aria-label="메뉴 열기"
+            aria-label={mobileOpen ? '메뉴 닫기' : '메뉴 열기'}
           >
             {mobileOpen ? <X size={20} /> : <Menu size={20} />}
           </button>

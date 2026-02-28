@@ -2,6 +2,40 @@
 
 ## [2026-02-28]
 
+### 모바일 대응 2차 마무리: safe-area/landscape/입력 안정성 보강 (v6.3.60)
+
+#### 변경 파일
+- `apps/web/src/App.tsx`
+- `apps/web/src/App.module.css`
+- `apps/web/src/styles/theme.css`
+- `apps/web/src/pages/Home.module.css`
+- `apps/web/src/pages/Cards.module.css`
+- `apps/web/src/pages/TarotMastery.module.css`
+- `docs/RELEASE_NOTES_v6.3.60.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 모바일 네비/스크롤 안정화
+  - 라우트 전환 시 모바일 메뉴 자동 닫힘 처리.
+  - 메뉴 오픈 시 `body` 스크롤 잠금 적용.
+  - 모바일 헤더/네비 위치 계산에 `safe-area-inset-top` 반영.
+- 전역 모바일 안전장치 보강
+  - `html`, `body` 가로 오버플로우 차단으로 의도치 않은 가로 스크롤 제거.
+  - `text-size-adjust` 고정으로 브라우저 자동 폰트 확대 편차 최소화.
+  - `prefers-reduced-motion` 지원으로 모바일 저성능/접근성 환경 대응.
+- TarotMastery 실사용 보정
+  - 1024px 이하부터 단일 흐름 우선 레이아웃 안정화.
+  - 입력 sticky 영역 `safe-area`/레이어 충돌 보정.
+  - 480px 이하 및 모바일 landscape(<=900px) 전용 밀도/간격 보정.
+- Cards/Home 모바일 마무리
+  - Cards 검색바 sticky safe-area 보정, 모달 높이/패딩/이미지 제약 강화.
+  - Home 카드 최소 높이/landscape 간격 조정, CTA 터치 영역 유지.
+
+#### 검증
+- `npm run test:ui-contract --prefix apps/web` 통과
+- `npm run test:ui-flow --prefix apps/web` 통과
+- `npm run build --prefix apps/web` 통과
+
 ### 라이트 테마 WCAG 1차 감사 자동화 + 대비 토큰 보정 (v6.3.59)
 
 #### 변경 파일
