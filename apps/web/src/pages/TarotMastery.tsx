@@ -162,6 +162,35 @@ export function TarotMastery() {
     return 'Unknown';
   };
 
+  const normalizeForCompare = (text?: string) => String(text || '')
+    .replace(/\[운명의 판정\][\s\S]*$/g, '')
+    .replace(/\s+/g, '')
+    .toLowerCase();
+
+  const getDistinctReportCopy = (data: ReadingResponse) => {
+    const summary = data.report?.summary || '';
+    const rationale = data.report?.verdict?.rationale || '';
+    const conclusionNorm = normalizeForCompare(data.conclusion);
+    const summaryDup = summary && conclusionNorm.includes(normalizeForCompare(summary));
+    const rationaleDup = rationale && conclusionNorm.includes(normalizeForCompare(rationale));
+
+    const firstEvidence = data.evidence?.[0]?.split('\n').pop()?.trim() || '';
+    const firstAction = (data.action?.[0] || '').replace(/^\[운명의 지침 \d+\]\s*/, '').trim();
+
+    const insightText = summaryDup
+      ? (firstEvidence ? `핵심 카드 흐름으로 보면, ${firstEvidence}` : summary)
+      : summary;
+
+    const energyText = rationaleDup
+      ? (firstAction ? `실천 에너지는 "${firstAction}" 쪽에 맞춰 두시면 좋습니다.` : rationale)
+      : rationale;
+
+    return {
+      insightText: insightText || summary,
+      energyText: energyText || rationale
+    };
+  };
+
   const getSpreadRenderConfig = (spread: Spread) => {
     const maxAbsX = Math.max(...spread.positions.map((p) => Math.abs(p.x)), 1);
     const maxAbsY = Math.max(...spread.positions.map((p) => Math.abs(p.y)), 1);
@@ -348,13 +377,20 @@ export function TarotMastery() {
                           
                           {reading.report && (
                             <div className={styles.reportSummaryBox}>
+                              {(() => {
+                                const distinctCopy = getDistinctReportCopy(reading);
+                                return (
+                                  <>
                               <p className={styles.reportSummaryText}>
-                                <strong>사서의 통찰:</strong> {reading.report.summary}
+                                <strong>사서의 통찰:</strong> {distinctCopy.insightText}
                               </p>
                               <div className={styles.verdictBadge}>
                                 <Sparkles size={14} />
-                                <span>{verdictLabelKo(reading.report.verdict.label)}의 기운: {reading.report.verdict.rationale}</span>
+                                <span>{verdictLabelKo(reading.report.verdict.label)}의 기운: {distinctCopy.energyText}</span>
                               </div>
+                                  </>
+                                );
+                              })()}
                             </div>
                           )}
                         </div>
