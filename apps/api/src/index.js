@@ -4,9 +4,11 @@ import dotenv from 'dotenv';
 import path from 'node:path';
 import { cards, getCardById } from './data/cards.js';
 import { spreads, getSpreadById } from './data/spreads.js';
-import { generateReadingV3 } from './domains/reading/v3.js';
-import { generateReadingHybrid } from './domains/reading/hybrid.js';
-import { inferQuestionProfile, inferQuestionProfileV2 } from './domains/reading/questionType.js';
+import {
+  generateReadingHybrid,
+  inferQuestionProfile,
+  inferQuestionProfileV2
+} from './domains/reading/index.js';
 import {
   appendMetricLine,
   resolveMetricLogPath,
@@ -98,7 +100,7 @@ app.post('/api/v2/question-profile', (req, res) => {
   return res.json(profile);
 });
 
-// AI 리딩 생성 (V3 모델)
+// AI 리딩 생성
 app.post('/api/reading', async (req, res) => {
   const requestId = makeRequestId();
   const {
@@ -150,31 +152,14 @@ app.post('/api/reading', async (req, res) => {
     question: question || '나의 현재 상황은?',
     category
   });
+  if (mode === 'legacy') {
+    return res.status(400).json({
+      error: 'mode=legacy is no longer supported. Use mode=hybrid.',
+      code: 'legacy_mode_removed'
+    });
+  }
 
   try {
-    if (mode === 'legacy') {
-      const reading = generateReadingV3(cardsWithPosition, question || '나의 현재 상황은?', timeframe, category);
-      return res.json({
-        ...reading,
-        mode: 'legacy',
-        fallbackUsed: false,
-        apiUsed: 'none',
-        fallbackReason: null,
-        meta: {
-          requestId,
-          serverRevision,
-          serverTimestamp: new Date().toISOString(),
-          questionType: questionProfile.questionType,
-          domainTag: questionProfile.domainTag,
-          riskLevel: questionProfile.riskLevel,
-          readingKind: questionProfile.readingKind,
-          fortunePeriod: questionProfile.fortunePeriod || null,
-          recommendedSpreadId: questionProfile.recommendedSpreadId,
-          fallbackReason: null
-        }
-      });
-    }
-
     const reading = await generateReadingHybrid({
       cards: cardsWithPosition,
       question: question || '나의 현재 상황은?',
@@ -195,29 +180,13 @@ app.post('/api/reading', async (req, res) => {
     return res.json(reading);
   } catch (error) {
     console.error(
-      `[Tarot API] requestId=${requestId} Hybrid reading failed, fallback to legacy:`,
+      `[Tarot API] requestId=${requestId} Hybrid reading failed:`,
       error?.message || error
     );
-    const reading = generateReadingV3(cardsWithPosition, question || '나의 현재 상황은?', timeframe, category);
-    return res.json({
-      ...reading,
-      mode: 'legacy',
-      fallbackUsed: true,
-      apiUsed: 'fallback',
-      fallbackReason: 'server_error',
-        meta: {
-          requestId,
-          serverRevision,
-          serverTimestamp: new Date().toISOString(),
-          questionType: questionProfile.questionType,
-          domainTag: questionProfile.domainTag,
-          riskLevel: questionProfile.riskLevel,
-          readingKind: questionProfile.readingKind,
-          fortunePeriod: questionProfile.fortunePeriod || null,
-          recommendedSpreadId: questionProfile.recommendedSpreadId,
-          fallbackReason: 'server_error'
-        }
-      });
+    return res.status(500).json({
+      error: 'hybrid_reading_failed',
+      requestId
+    });
   }
 });
 
@@ -274,35 +243,14 @@ app.post('/api/v2/reading', async (req, res) => {
     category,
     context: sessionContext || null
   });
+  if (mode === 'legacy') {
+    return res.status(400).json({
+      error: 'mode=legacy is no longer supported. Use mode=hybrid.',
+      code: 'legacy_mode_removed'
+    });
+  }
 
   try {
-    if (mode === 'legacy') {
-      const reading = generateReadingV3(cardsWithPosition, question || '나의 현재 상황은?', timeframe, category);
-      return res.json({
-        ...reading,
-        mode: 'legacy',
-        fallbackUsed: false,
-        apiUsed: 'none',
-        fallbackReason: null,
-        analysis: questionProfile.analysis,
-        meta: {
-          requestId,
-          serverRevision,
-          serverTimestamp: new Date().toISOString(),
-          questionType: questionProfile.questionType,
-          domainTag: questionProfile.domainTag,
-          riskLevel: questionProfile.riskLevel,
-          readingKind: questionProfile.readingKind,
-          fortunePeriod: questionProfile.fortunePeriod || null,
-          recommendedSpreadId: questionProfile.recommendedSpreadId,
-          confidence: questionProfile.confidence,
-          lowConfidence: questionProfile.lowConfidence,
-          contextUsed: questionProfile.contextUsed,
-          fallbackReason: null
-        }
-      });
-    }
-
     const reading = await generateReadingHybrid({
       cards: cardsWithPosition,
       question: question || '나의 현재 상황은?',
@@ -328,32 +276,12 @@ app.post('/api/v2/reading', async (req, res) => {
     });
   } catch (error) {
     console.error(
-      `[Tarot API] requestId=${requestId} Hybrid reading failed, fallback to legacy(v2):`,
+      `[Tarot API] requestId=${requestId} Hybrid reading failed(v2):`,
       error?.message || error
     );
-    const reading = generateReadingV3(cardsWithPosition, question || '나의 현재 상황은?', timeframe, category);
-    return res.json({
-      ...reading,
-      mode: 'legacy',
-      fallbackUsed: true,
-      apiUsed: 'fallback',
-      fallbackReason: 'server_error',
-      analysis: questionProfile.analysis,
-      meta: {
-        requestId,
-        serverRevision,
-        serverTimestamp: new Date().toISOString(),
-        questionType: questionProfile.questionType,
-        domainTag: questionProfile.domainTag,
-        riskLevel: questionProfile.riskLevel,
-        readingKind: questionProfile.readingKind,
-        fortunePeriod: questionProfile.fortunePeriod || null,
-        recommendedSpreadId: questionProfile.recommendedSpreadId,
-        confidence: questionProfile.confidence,
-        lowConfidence: questionProfile.lowConfidence,
-        contextUsed: questionProfile.contextUsed,
-        fallbackReason: 'server_error'
-      }
+    return res.status(500).json({
+      error: 'hybrid_reading_failed',
+      requestId
     });
   }
 });

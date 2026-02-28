@@ -2,6 +2,37 @@
 
 ## [2026-02-28]
 
+### 리딩 오케스트레이터 분리 + legacy 모드 제거 (v6.3.50)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/orchestrator.js`
+- `apps/api/src/domains/reading/hybrid.js`
+- `apps/api/src/domains/reading/index.js`
+- `apps/api/src/index.js`
+- `docs/RELEASE_NOTES_v6.3.50.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 리딩 도메인 진입점 분리
+  - 기존 대형 `hybrid.js`를 `orchestrator.js`로 이동.
+  - `hybrid.js`는 엔트리 재수출 파일로 축소.
+  - `domains/reading/index.js`를 추가해 reading 관련 export를 단일 경로로 집약.
+- API의 legacy 경로 동시 정리
+  - `/api/reading`, `/api/v2/reading`에서 `mode=legacy` 요청을 `400` + `legacy_mode_removed`로 명시 거부.
+  - 서버 라우트에서 `generateReadingV3` import/폴백 호출 제거.
+  - 내부 예외 시 레거시 대체 응답 대신 `500` 에러를 반환해 경로를 명확히 단일화.
+- 엔진 fallback 메타 정리
+  - fallback 발생 시 `apiUsed`를 `deterministic`로 표준화.
+  - 응답 `mode`를 `hybrid | deterministic_fallback`으로 구분.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:persona --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `node apps/api/tests/question-profile-v2.js` 통과
+- `node apps/api/tests/reading-v2-contract.js` 통과
+- `npm run build --prefix apps/web` 통과
+
 ### 결정문 2단 구조 + 도메인별 실행지침 + 이미지감 문장 도입 (v6.3.49)
 
 #### 변경 파일
