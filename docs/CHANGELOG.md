@@ -2,6 +2,45 @@
 
 ## [2026-02-28]
 
+### 라이트 양자택일 리딩 어색함 개선: 중복 제거 + 자연어 톤 보정 (v6.3.21)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/hybrid.js`
+- `apps/web/src/pages/TarotMastery.tsx`
+- `docs/CHANGELOG.md`
+- `docs/RELEASE_NOTES_v6.3.21.md`
+
+#### 변경 사항
+- 라이트 양자택일(짧은 binary) 전용 표현 보정
+  - verdict rationale에서 `"[선택지] 쪽"` 형태의 어색한 대괄호/조사 표현 제거.
+  - 자연어 선택 문장(`~선택이 더 안정적`)으로 정규화.
+- concise binary 전용 생성 가이드 강화
+  - 짧은 질문에서 과장 수사/장문 서사를 억제하는 스타일 가이드 추가.
+  - 결론을 2~3문장 중심으로 간결화.
+- deterministic 액션 문구 개선
+  - light+binary에서 과도한 내면/명상형 지침 대신 즉시 실행형 2개 지침 사용.
+- compact 결론 중복 제거
+  - compact 모드 결론에서 `[운명의 판정]` 라인을 제거해 본문-판정 중복 완화.
+- UI 렌더링 보정
+  - 카드 공개 메시지에서 concise binary는 claim 중심으로 간결 표시.
+  - `사서의 통찰/기운` 보조 문구를 concise binary에 맞게 단문으로 정리.
+  - 사용자 모드에서 `[운명의 지침 n]` 접두를 숨기고 실제 행동 문장만 표시.
+  - concise binary + 정상 응답에서는 `함께 고려할 변수` 섹션을 숨기고,
+    fallback 시에만 노출.
+
+#### 효과
+- "커피를 마실까 말까?" 같은 라이트 질문에서 문장 어색함과 반복 피로가 줄어듦.
+- 결과 리포트가 더 짧고 명확해져 핵심 결론 파악 속도가 개선됨.
+- 기술/서사 과잉 없이 일상 의사결정 맥락에 맞는 지침이 제공됨.
+
+#### 검증
+- `npm run build --prefix apps/web` 통과.
+- `npm run test:persona --prefix apps/api` 통과.
+- `npm run test:hybrid --prefix apps/api` 통과.
+- 상세 변경 요약: `docs/RELEASE_NOTES_v6.3.21.md`
+
+## [2026-02-28]
+
 ### 우측 패널 토글 제거: 운명의 리포트 단일 흐름화 (v6.3.20)
 
 #### 변경 파일

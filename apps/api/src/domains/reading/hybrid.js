@@ -80,12 +80,14 @@ const computeVerdict = (facts, binaryEntities) => {
   if (binaryEntities && facts.length === 2) {
     const scoreA = getYesNoScore(facts[0].cardId);
     const scoreB = getYesNoScore(facts[1].cardId);
+    const entityA = sanitizeText(binaryEntities[0]) || '선택 A';
+    const entityB = sanitizeText(binaryEntities[1]) || '선택 B';
 
     if (scoreA > scoreB) {
       return {
         label: 'YES',
         recommendedOption: 'A',
-        rationale: `[${binaryEntities[0]}] 쪽의 기운이 상대적으로 더 안정적이고 조화로운 흐름을 보여주고 있습니다.`
+        rationale: `${entityA} 선택이 상대적으로 더 안정적이고 조화로운 흐름을 보여줍니다.`
       };
     }
 
@@ -93,14 +95,14 @@ const computeVerdict = (facts, binaryEntities) => {
       return {
         label: 'YES',
         recommendedOption: 'B',
-        rationale: `[${binaryEntities[1]}] 쪽의 길이 당신에게 더 편안한 결실과 긍정적인 변화를 가져다줄 것으로 보입니다.`
+        rationale: `${entityB} 선택이 지금의 흐름에 더 편안하고 긍정적인 방향으로 보입니다.`
       };
     }
 
     return {
       label: 'MAYBE',
       recommendedOption: 'EITHER',
-      rationale: '두 가지 선택지 모두 비슷한 무게의 기운을 담고 있어, 당신의 마음이 조금 더 깊게 끌리는 곳을 믿고 따라가도 좋을 것 같습니다.'
+      rationale: '두 선택의 기운이 비슷합니다. 오늘 컨디션과 우선순위를 기준으로 가볍게 정해도 괜찮습니다.'
     };
   }
 
@@ -110,8 +112,9 @@ const computeVerdict = (facts, binaryEntities) => {
   return { label: 'MAYBE', rationale: '상반된 기운이 섞여 있어, 단정 짓기보다 상황의 변화를 조금 더 지켜볼 필요가 있습니다.' };
 };
 
-const buildDeterministicReport = ({ question, facts, category, binaryEntities }) => {
+const buildDeterministicReport = ({ question, facts, category, binaryEntities, questionType }) => {
   const verdict = computeVerdict(facts, binaryEntities);
+  const isCompactBinaryQuestion = questionType === 'binary' && String(question || '').length <= 20;
 
   const evidence = facts.map((fact) => {
     const coreMeaning = sanitizeText(fact.coreMeaning || fact.summary).replace(/\.$/, '');
@@ -129,19 +132,26 @@ const buildDeterministicReport = ({ question, facts, category, binaryEntities })
     '운명은 고정된 것이 아니므로 당신의 컨디션과 주변 환경에 따라 흐름은 언제든 바뀔 수 있습니다.'
   ];
 
-  const actions = [
-    '지금 당신의 직관이 들려주는 목소리에 조금 더 귀를 기울여 보세요.',
-    '결정하기 전, 10분 정도 차분히 명상을 하며 마음의 소리를 들어보시는 건 어떨까요?'
-  ];
+  const actions = isCompactBinaryQuestion
+    ? [
+        '한 잔을 마신다면 양을 평소보다 조금 줄여서 가볍게 시작해 보세요.',
+        '지금 컨디션이 애매하면 물 한 컵 먼저 마신 뒤 15분 후에 다시 결정해 보세요.'
+      ]
+    : [
+        '지금 당신의 직관이 들려주는 목소리에 조금 더 귀를 기울여 보세요.',
+        '결정하기 전, 10분 정도 차분히 명상을 하며 마음의 소리를 들어보시는 건 어떨까요?'
+      ];
 
-  const summary = category === 'general'
-    ? `질문 "${question}"에 대한 운명의 지도를 펼쳐보니, ${verdictTone(verdict.label, verdict.rationale)}`
-    : `"${question}"의 ${category}적인 맥락에서 카드를 읽어보니, ${verdictTone(verdict.label, verdict.rationale)}`;
+  const summary = isCompactBinaryQuestion
+    ? `질문 "${question}"에 대해 보면, ${verdict.rationale} 오늘은 너무 무겁게 고민하지 않고 결정해도 괜찮습니다.`
+    : category === 'general'
+      ? `질문 "${question}"에 대한 운명의 지도를 펼쳐보니, ${verdictTone(verdict.label, verdict.rationale)}`
+      : `"${question}"의 ${category}적인 맥락에서 카드를 읽어보니, ${verdictTone(verdict.label, verdict.rationale)}`;
 
   return { summary, verdict, evidence, counterpoints, actions, fullNarrative: null };
 };
 
-const buildPrompt = ({ question, facts, category, timeframe, binaryEntities, sessionContext, responseMode }) => {
+const buildPrompt = ({ question, facts, category, timeframe, binaryEntities, sessionContext, responseMode, questionType }) => {
   const context = {
     question,
     category,
@@ -151,17 +161,27 @@ const buildPrompt = ({ question, facts, category, timeframe, binaryEntities, ses
     facts
   };
 
-  const styleGuide = responseMode === 'concise'
+  const isCompactBinaryQuestion = questionType === 'binary' && String(question || '').length <= 20;
+  const styleGuide = isCompactBinaryQuestion
     ? [
-        '응답 모드: concise',
-        '길이 제한:',
-        '- fullNarrative는 2문단 이내, 문단당 2문장 이내.',
-        '- evidence는 핵심 주장만 간결하게 작성.',
-        '- actions는 짧고 실행 가능한 문장으로 작성.',
-        '- 과장된 비유/장황한 세계관 설명 금지.',
-        '- 질문에 대한 직접 결론 1문장을 반드시 포함.',
+        '응답 모드: concise-binary-light',
+        '- 결론은 2~3문장으로 짧고 명확하게 작성하세요.',
+        '- 과장된 수사(운명/신비/장대한 은유) 사용 금지.',
+        '- verdict.rationale은 자연스러운 일상어로 작성하세요.',
+        '- actions는 즉시 실행 가능한 문장 2개만 작성하세요.',
+        '- evidence는 카드별 핵심 주장(claim) 중심으로 간결하게 작성하세요.'
       ].join('\n')
-    : responseMode === 'creative'
+    : responseMode === 'concise'
+      ? [
+          '응답 모드: concise',
+          '길이 제한:',
+          '- fullNarrative는 2문단 이내, 문단당 2문장 이내.',
+          '- evidence는 핵심 주장만 간결하게 작성.',
+          '- actions는 짧고 실행 가능한 문장으로 작성.',
+          '- 과장된 비유/장황한 세계관 설명 금지.',
+          '- 질문에 대한 직접 결론 1문장을 반드시 포함.',
+        ].join('\n')
+      : responseMode === 'creative'
       ? [
           '응답 모드: creative',
           '- 이미지감 있는 표현과 어휘 변주를 사용하세요.',
@@ -476,7 +496,8 @@ export const generateReadingHybrid = async ({
     question: safeQuestion,
     facts,
     category,
-    binaryEntities
+    binaryEntities,
+    questionType
   });
 
   const prompt = buildPrompt({
@@ -486,7 +507,8 @@ export const generateReadingHybrid = async ({
     timeframe,
     binaryEntities,
     sessionContext,
-    responseMode
+    responseMode,
+    questionType
   });
 
   let apiUsed = 'none';
@@ -602,7 +624,7 @@ export const generateReadingHybrid = async ({
 
   const isCompactQuestion = questionType === 'light' || (questionType === 'binary' && safeQuestion.length <= 20);
   const finalConclusion = isCompactQuestion
-    ? `${normalized.summary}\n\n[운명의 판정] ${normalized.verdict.label} - ${normalized.verdict.rationale}`
+    ? normalized.summary
     : (normalized.fullNarrative || legacyFromV3?.conclusion || legacy.conclusion);
 
   const compactEvidence = normalized.evidence.map((item) => {
