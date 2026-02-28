@@ -353,7 +353,7 @@ const testDeterministicReversedRationale = async () => {
     const firstEvidence = result.report?.evidence?.[0];
     assert.ok(firstEvidence, 'first evidence should exist');
     assert.match(firstEvidence.claim, /\(역방향\)/, 'reversed card should keep orientation label in claim');
-    assert.match(firstEvidence.claim, /지연·재정비/, 'reversed claim should include caution suffix');
+    assert.match(firstEvidence.claim, /점검·완충/, 'reversed claim should carry inspection-first tone');
     assert.equal(
       /나아가기 좋은 시점/.test(firstEvidence.rationale),
       false,

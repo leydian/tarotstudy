@@ -75,6 +75,11 @@ for (const sample of cases) {
     assert.equal(response.meta?.fortunePeriod, sample.expectedPeriod);
     assert.equal(response.report?.fortune?.period, sample.expectedPeriod);
     assert.ok(response.report?.summary, 'summary should not be empty');
+    assert.equal(
+      /올해은/.test(String(response.report?.summary || '')),
+      false,
+      'summary should not include malformed particle (올해은)'
+    );
     assert.ok(response.report?.fortune?.message, 'fortune message should not be empty');
     assert.ok(response.report?.actions?.length > 0, 'actions should not be empty');
     assert.ok(response.report?.counterpoints?.length > 0, 'counterpoints should not be empty');

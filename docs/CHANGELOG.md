@@ -2,6 +2,37 @@
 
 ## [2026-02-28]
 
+### 운세 문장 품질 안정화·후처리 축소 4차 (v6.3.39)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/hybrid.js`
+- `apps/api/tests/hybrid-resilience.js`
+- `apps/api/tests/overall-fortune-regression.js`
+- `docs/RELEASE_NOTES_v6.3.39.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 기간 조사 비문 방지
+  - `withTopicParticle()`를 도입해 `buildFortuneSummary()` 조사 결합을 자동화.
+  - `올해은` 형태 비문을 구조적으로 차단.
+- deterministic evidence 문장 개선
+  - 역방향 고정 suffix를 제거하고 orientation/polarity 기반 claim 생성(`buildEvidenceClaim`)으로 전환.
+  - 생성 단계에서 점검/완충 톤을 확보해 후처리 의존도 축소.
+- fortune 후처리 책임 축소
+  - fortune 섹션 재작성은 구조 위반/오염 시에만 수행하도록 제한.
+  - 정상 출력에 대한 스타일성 재작성은 생략.
+- overall_fortune 섹션 매핑 안정화
+  - `pickDominantFact()` fallback 우선순위를 명확히 하여 카드-섹션 매핑 일관성 강화.
+- 회귀 테스트 보강
+  - 역방향 deterministic claim 어조 검증 갱신.
+  - summary 비문(`올해은`) 검증 추가.
+
+#### 검증
+- `node apps/api/tests/hybrid-resilience.js` 통과
+- `node apps/api/tests/overall-fortune-regression.js` 통과
+
+## [2026-02-28]
+
 ### 후처리 3차 경량화·분류형 qualityFlags 확장 (v6.3.38)
 
 #### 변경 파일

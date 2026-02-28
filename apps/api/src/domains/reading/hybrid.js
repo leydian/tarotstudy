@@ -148,6 +148,19 @@ const normalizeFortune = (fortune, fallbackFortune, verdictLabel = 'MAYBE') => {
   };
 };
 
+const hasFortuneContamination = (fortune) => {
+  if (!fortune) return false;
+  return FORTUNE_SECTION_KEYS.some((key) => containsContamination(fortune[key])) || containsContamination(fortune.message);
+};
+
+const isFortuneStructurallyInvalid = (fortune) => {
+  if (!fortune || typeof fortune !== 'object') return true;
+  if (!['today', 'week', 'month', 'year'].includes(fortune.period)) return true;
+  if (!['UP', 'BALANCED', 'CAUTION'].includes(fortune.trendLabel)) return true;
+  if (!sanitizeText(fortune.message)) return true;
+  return FORTUNE_SECTION_KEYS.some((key) => !sanitizeText(fortune[key]));
+};
+
 const stripFortunePrefix = (text, key) => {
   const value = sanitizeText(text);
   if (!value) return value;
@@ -326,9 +339,12 @@ const postProcessReport = (report) => {
 
   if (next.fortune) {
     const before = JSON.stringify(next.fortune);
+    const needsStructuralFix = isFortuneStructurallyInvalid(next.fortune) || hasFortuneContamination(next.fortune);
     next.fortune = normalizeFortune(next.fortune, null, next.verdict?.label);
-    next.fortune = enforceFortuneSectionDiversity(next).fortune;
-    if (JSON.stringify(next.fortune) !== before) {
+    if (needsStructuralFix) {
+      next.fortune = enforceFortuneSectionDiversity(next).fortune;
+    }
+    if (needsStructuralFix && JSON.stringify(next.fortune) !== before) {
       qualityFlags.push('fortune_section_rewritten');
     }
   }
@@ -445,11 +461,10 @@ const getSuitType = (cardId = '') => {
 
 const pickDominantFact = (facts, predicate, fallbackIndex = 0) => {
   const filtered = facts.filter(predicate);
-  const pool = filtered.length > 0 ? filtered : facts;
-  if (!pool.length) return null;
-  return pool
+  if (filtered.length === 0) return facts[fallbackIndex] || facts[0] || null;
+  return filtered
     .map((fact) => ({ fact, magnitude: Math.abs(getYesNoScore(fact.cardId, fact.orientation)) }))
-    .sort((a, b) => b.magnitude - a.magnitude)[0]?.fact || facts[fallbackIndex] || facts[0];
+    .sort((a, b) => b.magnitude - a.magnitude)[0]?.fact || facts[fallbackIndex] || facts[0] || null;
 };
 
 const periodLabelKo = (period = 'week') => {
@@ -457,6 +472,29 @@ const periodLabelKo = (period = 'week') => {
   if (period === 'month') return '이번 달';
   if (period === 'year') return '올해';
   return '이번 주';
+};
+
+const withTopicParticle = (label = '') => {
+  const safe = sanitizeText(label);
+  if (!safe) return safe;
+  const lastChar = safe[safe.length - 1];
+  const code = lastChar.charCodeAt(0);
+  const hasBatchim = code >= 0xac00 && code <= 0xd7a3 && ((code - 0xac00) % 28) !== 0;
+  return `${safe}${hasBatchim ? '은' : '는'}`;
+};
+
+const buildEvidenceClaim = (fact, coreMeaning, polarityScore) => {
+  const prefix = `${fact.cardNameKo}(${fact.orientationLabel})`;
+  if (fact.orientation === 'reversed') {
+    return `${prefix} — ${coreMeaning}. 현재 국면은 점검·완충이 필요한 전환 구간입니다.`;
+  }
+  if (polarityScore > 0) {
+    return `${prefix} — ${coreMeaning}. 추진력은 살아 있으니 무리하지 않는 범위에서 실행을 이어가면 좋습니다.`;
+  }
+  if (polarityScore < 0) {
+    return `${prefix} — ${coreMeaning}. 경고 신호가 함께 보이므로 조건 확인을 먼저 마치고 진행하는 편이 안전합니다.`;
+  }
+  return `${prefix} — ${coreMeaning}. 단정하기보다 핵심 변수부터 좁혀 점진적으로 판단해 보세요.`;
 };
 
 const computeVerdict = (facts, binaryEntities) => {
@@ -504,9 +542,10 @@ const toTrendLabel = (label) => {
 
 const buildFortuneSummary = (fortunePeriod, trendLabel) => {
   const periodLabel = periodLabelKo(fortunePeriod || 'week');
+  const periodWithTopic = withTopicParticle(periodLabel);
   if (trendLabel === 'UP') return `${periodLabel}의 흐름은 상승 기조입니다. 다만 리듬을 유지하며 컨디션 관리를 병행하세요.`;
   if (trendLabel === 'CAUTION') return `${periodLabel}에는 속도 조절이 필요합니다. 무리한 확장보다 점검과 정리가 유리합니다.`;
-  return `${periodLabel}은 균형 구간입니다. 조급한 결정보다 우선순위를 정리하는 접근이 안정적입니다.`;
+  return `${periodWithTopic} 균형 구간입니다. 조급한 결정보다 우선순위를 정리하는 접근이 안정적입니다.`;
 };
 
 const buildDeterministicReport = ({
@@ -541,13 +580,10 @@ const buildDeterministicReport = ({
           : EVIDENCE_RATIONALE_TEMPLATES.neutral;
     const pickedTemplate = templateGroup[fact.index % templateGroup.length];
     const orientationRationale = pickedTemplate.replace('%s', keywordsStr);
-    const reversedSuffix = fact.orientation === 'reversed'
-      ? ' 다만 현재 국면에서는 지연·재정비 신호가 함께 읽힙니다.'
-      : '';
     return {
       cardId: fact.cardId,
       positionLabel: fact.positionLabel,
-      claim: `${fact.cardNameKo}(${fact.orientationLabel}) — ${coreMeaning}${reversedSuffix}`,
+      claim: buildEvidenceClaim(fact, coreMeaning, polarityScore),
       rationale: orientationRationale,
       caution: sanitizeText(fact.advice) || '급한 결정보다는 마음의 우선순위를 먼저 정리해 보세요.'
     };
