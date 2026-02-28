@@ -35,7 +35,7 @@
 
 .panelTitle {
   margin: 0;
-  font-size: 1.2rem;
+  font-size: 1.28rem;
   color: var(--text-primary);
   letter-spacing: 2px;
   font-weight: bold;
@@ -122,7 +122,7 @@
   font-weight: 500;
   cursor: pointer;
   transition: all 0.3s ease;
-  font-size: 0.95rem;
+  font-size: 1rem;
   font-family: 'Pretendard', sans-serif;
 }
 
@@ -143,8 +143,10 @@
 
 .studyGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  max-width: 880px;
+  margin: 0 auto;
 }
 
 .studyCard {
@@ -164,7 +166,7 @@
 }
 
 .studyCardPos {
-  font-size: 0.8rem;
+  font-size: 0.88rem;
   color: var(--accent-gold);
   font-weight: 600;
   letter-spacing: 1px;
@@ -172,14 +174,14 @@
 
 .studyCardName {
   margin: 0;
-  font-size: 1.2rem;
+  font-size: 1.3rem;
   color: var(--text-primary);
   font-family: 'Iropke Batang', serif;
 }
 
 .studyCardDesc {
   margin: 0;
-  font-size: 0.95rem;
+  font-size: 1.02rem;
   line-height: 1.6;
   color: var(--text-secondary);
 }
@@ -191,7 +193,7 @@
 }
 
 .studyTag {
-  font-size: 0.8rem;
+  font-size: 0.88rem;
   color: var(--accent-purple);
   background: rgba(159, 130, 196, 0.1);
   padding: 4px 10px;
@@ -216,7 +218,7 @@
   display: inline-flex;
   align-items: center;
   padding: 6px 10px;
-  font-size: 0.82rem;
+  font-size: 0.9rem;
   line-height: 1;
   color: var(--text-secondary);
   background: rgba(255, 255, 255, 0.04);
@@ -233,14 +235,14 @@
 
 .masterReportTitle {
   color: var(--accent-gold);
-  font-size: 1.3rem;
+  font-size: 1.4rem;
   margin-bottom: 1rem;
   margin-top: 0;
 }
 
 .masterReportText {
   line-height: 1.8;
-  font-size: 1.05rem;
+  font-size: 1.12rem;
   color: var(--text-primary);
   white-space: pre-wrap;
   font-family: 'Iropke Batang', serif;
@@ -259,7 +261,7 @@
 
 .reportSummaryText {
   margin: 0;
-  font-size: 1rem;
+  font-size: 1.06rem;
   color: var(--text-secondary);
   line-height: 1.6;
 }
@@ -273,7 +275,7 @@
   background: rgba(205, 186, 150, 0.1);
   color: var(--accent-gold);
   border-radius: 30px;
-  font-size: 0.9rem;
+  font-size: 0.98rem;
   font-weight: 500;
   border: 1px solid rgba(205, 186, 150, 0.2);
 }
@@ -287,7 +289,7 @@
 
 .counterpointTitle {
   color: var(--text-secondary);
-  font-size: 1rem;
+  font-size: 1.06rem;
   margin-bottom: 0.8rem;
   margin-top: 0;
   font-weight: 600;
@@ -297,7 +299,7 @@
   margin: 0;
   padding-left: 1.2rem;
   color: var(--text-muted);
-  font-size: 0.9rem;
+  font-size: 0.98rem;
   line-height: 1.7;
 }
 
@@ -313,7 +315,7 @@
 
 .arcanaTitle {
   color: var(--accent-purple);
-  font-size: 1.2rem;
+  font-size: 1.28rem;
   margin-bottom: 1rem;
   margin-top: 0;
 }
@@ -321,7 +323,7 @@
 .arcanaList { display: flex; flex-direction: column; gap: 1rem; }
 .arcanaItem { display: flex; gap: 1rem; align-items: flex-start; }
 .arcanaItemBullet { color: var(--accent-purple); }
-.arcanaItemText { margin: 0; font-size: 0.95rem; line-height: 1.6; }
+.arcanaItemText { margin: 0; font-size: 1.02rem; line-height: 1.65; }
 
 /* ── ANIMATIONS ── */
 @keyframes fadeInRight { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
@@ -345,7 +347,7 @@
 
 .inputField {
   flex: 1; background-color: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-subtle);
-  color: var(--text-primary); padding: 1rem; border-radius: 12px;
+  color: var(--text-primary); padding: 1rem; border-radius: 12px; font-size: 1rem;
 }
 
 .submitBtn {
@@ -363,9 +365,9 @@
   .topSpreadArea { min-height: 180px !important; }
   .spreadCenter { transform: scale(0.4); }
   .messages { padding: 1.5rem; }
-  .studyGrid { grid-template-columns: 1fr; }
+  .studyGrid { grid-template-columns: 1fr; max-width: 100%; }
   .tabHeader { width: 100%; }
-  .tabBtn { flex: 1; padding: 10px 0; font-size: 0.85rem; }
+  .tabBtn { flex: 1; padding: 10px 0; font-size: 0.92rem; }
   .inputForm { padding: 1rem; }
 }
 
