@@ -6,6 +6,11 @@ type AnalyticsEvent =
 
 type AnalyticsPayload = {
   questionType?: string;
+  domainTag?: string;
+  riskLevel?: string;
+  readingKind?: string;
+  fortunePeriod?: string | null;
+  personaTone?: string;
   mode?: string;
   fallbackUsed?: boolean;
   spreadId?: string;
@@ -27,6 +32,8 @@ const getSessionId = () => {
   window.sessionStorage.setItem(STORAGE_KEY, next);
   return next;
 };
+
+export const getAnalyticsSessionId = () => getSessionId();
 
 export const trackEvent = (event: AnalyticsEvent, payload: AnalyticsPayload = {}) => {
   const body = {

@@ -20,6 +20,7 @@ export interface Card {
     finance: string;
     advice: string;
   };
+  orientation?: 'upright' | 'reversed';
 }
 
 export interface Position {
@@ -59,6 +60,15 @@ export interface ReadingResponse {
       rationale: string;
       recommendedOption?: 'A' | 'B' | 'EITHER' | 'NONE';
     };
+    fortune?: {
+      period: 'today' | 'week' | 'month' | 'year';
+      trendLabel: 'UP' | 'BALANCED' | 'CAUTION';
+      energy: string;
+      workFinance: string;
+      love: string;
+      healthMind: string;
+      message: string;
+    };
     evidence: Array<{
       cardId: string;
       positionLabel: string;
@@ -81,6 +91,10 @@ export interface ReadingResponse {
     questionType?: string;
     domainTag?: 'health' | 'relationship' | 'career' | 'emotional' | 'lifestyle' | 'general';
     riskLevel?: 'low' | 'medium' | 'high';
+    readingKind?: 'overall_fortune' | 'general_reading';
+    fortunePeriod?: 'today' | 'week' | 'month' | 'year' | null;
+    trendLabel?: 'UP' | 'BALANCED' | 'CAUTION';
+    personaTone?: 'calm' | 'warm' | 'mystic';
     recommendedSpreadId?: string;
     responseMode?: 'concise' | 'balanced' | 'creative';
     path?: 'anthropic_primary' | 'anthropic_retry' | 'fallback';

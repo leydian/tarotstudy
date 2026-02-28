@@ -10,6 +10,11 @@ const HEALTH_SYMPTOM_KEYWORDS = [
 const HEALTH_EMERGENCY_KEYWORDS = [
   '호흡곤란', '숨이', '숨쉬기', '흉통', '의식', '기절', '실신', '출혈', '피가', '고열', '응급'
 ];
+const FORTUNE_KEYWORDS = ['종합 운세', '운세', 'today fortune', 'weekly fortune', 'monthly fortune', 'yearly fortune'];
+const TODAY_FORTUNE_KEYWORDS = ['오늘', '오늘의'];
+const WEEK_FORTUNE_KEYWORDS = ['이번주', '이번 주', '주간'];
+const MONTH_FORTUNE_KEYWORDS = ['이번달', '이번 달', '이달', '월간'];
+const YEAR_FORTUNE_KEYWORDS = ['올해', '연간', '금년'];
 
 const SPREAD_CARD_COUNT = {
   daily: 1,
@@ -24,6 +29,24 @@ const SPREAD_CARD_COUNT = {
 };
 
 const includesKeyword = (text, keywords) => keywords.some((k) => text.includes(k));
+const inferFortuneSpreadByTimeframe = (question = '') => {
+  const safeQuestion = String(question || '');
+  if (!includesKeyword(safeQuestion, FORTUNE_KEYWORDS)) return null;
+  if (includesKeyword(safeQuestion, YEAR_FORTUNE_KEYWORDS)) return 'yearly';
+  if (includesKeyword(safeQuestion, MONTH_FORTUNE_KEYWORDS)) return 'monthly';
+  if (includesKeyword(safeQuestion, WEEK_FORTUNE_KEYWORDS)) return 'weekly';
+  if (includesKeyword(safeQuestion, TODAY_FORTUNE_KEYWORDS)) return 'daily';
+  return 'weekly';
+};
+const inferFortunePeriod = (question = '') => {
+  const safeQuestion = String(question || '');
+  if (!includesKeyword(safeQuestion, FORTUNE_KEYWORDS)) return null;
+  if (includesKeyword(safeQuestion, YEAR_FORTUNE_KEYWORDS)) return 'year';
+  if (includesKeyword(safeQuestion, MONTH_FORTUNE_KEYWORDS)) return 'month';
+  if (includesKeyword(safeQuestion, WEEK_FORTUNE_KEYWORDS)) return 'week';
+  if (includesKeyword(safeQuestion, TODAY_FORTUNE_KEYWORDS)) return 'today';
+  return 'week';
+};
 const isBinaryIntent = (question = '') => {
   const safeQuestion = String(question || '');
   const hasConnector = includesKeyword(safeQuestion, BINARY_CONNECTOR_KEYWORDS);
@@ -62,6 +85,8 @@ export const detectQuestionType = ({
 
 const inferRecommendedSpreadId = ({ question = '', category = 'general', questionType, domainTag }) => {
   const safeQuestion = String(question || '');
+  const fortuneSpread = inferFortuneSpreadByTimeframe(safeQuestion);
+  if (fortuneSpread) return fortuneSpread;
   if (domainTag === 'health') {
     if (questionType === 'binary') return 'choice';
     return 'weekly';
@@ -88,6 +113,8 @@ const inferDomainTag = ({ question = '', category = 'general', questionType }) =
 
 export const inferQuestionProfile = ({ question = '', category = 'general', binaryEntities = null } = {}) => {
   const safeQuestion = String(question || '');
+  const readingKind = includesKeyword(safeQuestion, FORTUNE_KEYWORDS) ? 'overall_fortune' : 'general_reading';
+  const fortunePeriod = inferFortunePeriod(safeQuestion);
   const roughQuestionType = detectQuestionType({
     question: safeQuestion,
     category,
@@ -115,6 +142,8 @@ export const inferQuestionProfile = ({ question = '', category = 'general', bina
     questionType,
     domainTag,
     riskLevel,
+    readingKind,
+    fortunePeriod,
     recommendedSpreadId,
     targetCardCount
   };

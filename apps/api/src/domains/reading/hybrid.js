@@ -190,7 +190,12 @@ const normalizeVerdictLabel = (label) => {
 };
 const isValidVerdictLabel = (label) => label === 'YES' || label === 'NO' || label === 'MAYBE';
 
-const detectResponseMode = (questionType, questionLength, domainTag = 'general') => {
+const detectResponseMode = (questionType, questionLength, domainTag = 'general', readingKind = 'general_reading', fortunePeriod = null) => {
+  if (readingKind === 'overall_fortune') {
+    if (fortunePeriod === 'today') return 'concise';
+    if (fortunePeriod === 'year') return 'creative';
+    return 'balanced';
+  }
   if (domainTag === 'health') return 'concise';
   if (questionType === 'light' || (questionType === 'binary' && questionLength <= 20)) return 'concise';
   if ((questionType === 'emotional' || questionType === 'relationship') && questionLength >= 25) return 'creative';
@@ -208,11 +213,25 @@ const getAnthropicConfig = (responseMode, isRetry = false) => {
   };
 };
 
+const getOrientationLabel = (orientation = 'upright') => (orientation === 'reversed' ? '역방향' : '정방향');
+
 const pickMeaningByCategory = (card, category) => {
-  if (category === 'love') return card.meanings?.love || card.summary;
-  if (category === 'career') return card.meanings?.career || card.summary;
-  if (category === 'finance') return card.meanings?.finance || card.summary;
-  return card.summary;
+  const isReversed = card.orientation === 'reversed';
+  const uprightValue = category === 'love'
+    ? (card.meanings?.love || card.summary)
+    : category === 'career'
+      ? (card.meanings?.career || card.summary)
+      : category === 'finance'
+        ? (card.meanings?.finance || card.summary)
+        : card.summary;
+  const reversedValue = category === 'love'
+    ? (card.reversed?.love || card.reversed?.summary || uprightValue)
+    : category === 'career'
+      ? (card.reversed?.career || card.reversed?.summary || uprightValue)
+      : category === 'finance'
+        ? (card.reversed?.finance || card.reversed?.summary || uprightValue)
+        : (card.reversed?.summary || uprightValue);
+  return isReversed ? reversedValue : uprightValue;
 };
 
 const buildCardFacts = (cards, category) => cards.map((card, idx) => ({
@@ -220,6 +239,8 @@ const buildCardFacts = (cards, category) => cards.map((card, idx) => ({
   cardId: card.id,
   cardName: card.name,
   cardNameKo: card.nameKo,
+  orientation: card.orientation === 'reversed' ? 'reversed' : 'upright',
+  orientationLabel: getOrientationLabel(card.orientation),
   positionLabel: card.positionLabel || `단계 ${idx + 1}`,
   summary: card.summary,
   coreMeaning: pickMeaningByCategory(card, category),
@@ -270,6 +291,25 @@ const computeVerdict = (facts, binaryEntities) => {
   return { label: 'MAYBE', rationale: '상반된 기운이 섞여 있어, 단정 짓기보다 상황의 변화를 조금 더 지켜볼 필요가 있습니다.' };
 };
 
+const toTrendLabel = (label) => {
+  if (label === 'YES') return 'UP';
+  if (label === 'NO') return 'CAUTION';
+  return 'BALANCED';
+};
+
+const buildFortuneSummary = (fortunePeriod, trendLabel) => {
+  const periodLabel = fortunePeriod === 'today'
+    ? '오늘'
+    : fortunePeriod === 'week'
+      ? '이번 주'
+      : fortunePeriod === 'month'
+        ? '이번 달'
+        : '올해';
+  if (trendLabel === 'UP') return `${periodLabel}의 흐름은 상승 기조입니다. 다만 리듬을 유지하며 컨디션 관리를 병행하세요.`;
+  if (trendLabel === 'CAUTION') return `${periodLabel}에는 속도 조절이 필요합니다. 무리한 확장보다 점검과 정리가 유리합니다.`;
+  return `${periodLabel}은 균형 구간입니다. 조급한 결정보다 우선순위를 정리하는 접근이 안정적입니다.`;
+};
+
 const buildDeterministicReport = ({
   question,
   facts,
@@ -277,11 +317,14 @@ const buildDeterministicReport = ({
   binaryEntities,
   questionType,
   domainTag = 'general',
-  riskLevel = 'low'
+  riskLevel = 'low',
+  readingKind = 'general_reading',
+  fortunePeriod = null
 }) => {
   const verdict = computeVerdict(facts, binaryEntities);
   const isCompactBinaryQuestion = questionType === 'binary' && String(question || '').length <= 20;
   const isHealthQuestion = domainTag === 'health';
+  const isOverallFortune = readingKind === 'overall_fortune';
 
   const evidence = facts.map((fact) => {
     const coreMeaning = sanitizeText(fact.coreMeaning || fact.summary).replace(/\.$/, '');
@@ -289,7 +332,7 @@ const buildDeterministicReport = ({
     return {
       cardId: fact.cardId,
       positionLabel: fact.positionLabel,
-      claim: `${fact.cardNameKo}의 상징인 '${coreMeaning}'`,
+      claim: `${fact.cardNameKo}(${fact.orientationLabel})의 상징인 '${coreMeaning}'`,
       rationale: `핵심 키워드인 ${keywordsText}${pickObjectParticle(keywordsText)} 통해 이번 질문의 실마리를 찾을 수 있습니다.`,
       caution: sanitizeText(fact.advice) || '급한 결정보다는 마음의 우선순위를 먼저 정리해 보세요.'
     };
@@ -317,6 +360,30 @@ const buildDeterministicReport = ({
       : `"${question}"의 ${category}적인 맥락에서 카드를 읽어보니, ${verdictTone(verdict.label, verdict.rationale)}`;
 
   const baseReport = { summary, verdict, evidence, counterpoints, actions, fullNarrative: null };
+  if (isOverallFortune) {
+    const trendLabel = toTrendLabel(verdict.label);
+    const first = evidence[0]?.claim || '오늘의 에너지가 안정적으로 흐릅니다.';
+    const second = evidence[1]?.claim || first;
+    const third = evidence[2]?.claim || second;
+    const fortune = {
+      period: fortunePeriod || 'week',
+      trendLabel,
+      energy: `전체 에너지 흐름을 보면, ${first}`,
+      workFinance: `일·재물운은 ${second} 기조를 보입니다. 급한 결정 대신 점검과 누적이 유리합니다.`,
+      love: `애정운은 ${third} 메시지를 보냅니다. 관계에서는 솔직한 대화와 균형이 핵심입니다.`,
+      healthMind: '건강·마음 영역은 과로를 피하고 휴식 리듬을 확보할수록 운의 회복 탄력이 커집니다.',
+      message: trendLabel === 'UP'
+        ? '지금의 상승 흐름을 믿되, 속도보다 리듬을 지키세요.'
+        : trendLabel === 'CAUTION'
+          ? '서두르지 말고 정리와 점검에 집중하면 흐름이 다시 열립니다.'
+          : '균형의 시간을 활용해 우선순위를 재정렬하세요.'
+    };
+    return {
+      ...baseReport,
+      summary: buildFortuneSummary(fortune.period, trendLabel),
+      fortune
+    };
+  }
   if (isHealthQuestion) {
     return applyHealthGuardrail(baseReport, riskLevel);
   }
@@ -333,7 +400,10 @@ const buildPrompt = ({
   responseMode,
   questionType,
   domainTag = 'general',
-  riskLevel = 'low'
+  riskLevel = 'low',
+  readingKind = 'general_reading',
+  fortunePeriod = null,
+  personaTone = 'warm'
 }) => {
   const context = {
     question,
@@ -342,12 +412,29 @@ const buildPrompt = ({
     binaryEntities,
     domainTag,
     riskLevel,
+    readingKind,
+    fortunePeriod,
+    personaTone,
     sessionContext: sessionContext || null,
     facts
   };
 
   const isCompactBinaryQuestion = questionType === 'binary' && String(question || '').length <= 20;
-  const styleGuide = domainTag === 'health'
+  const toneGuide = personaTone === 'mystic'
+    ? '문체 톤: 신비롭고 시적인 어휘를 사용하되 과장된 단정은 피하세요.'
+    : personaTone === 'calm'
+      ? '문체 톤: 차분하고 간결한 어조로 핵심만 명확히 전달하세요.'
+      : '문체 톤: 따뜻하고 공감적인 어조로 실천 가능한 조언을 제시하세요.';
+  const styleGuide = readingKind === 'overall_fortune'
+    ? [
+        '응답 모드: overall_fortune',
+        '- fortune 객체를 반드시 채우세요.',
+        '- fortune.period는 today|week|month|year 중 하나입니다.',
+        '- fortune.trendLabel은 UP|BALANCED|CAUTION 중 하나를 사용하세요.',
+        '- overall_fortune에서는 verdict를 단정형 YES/NO로 몰아가지 말고 균형 있게 작성하세요.',
+        '- energy/workFinance/love/healthMind/message는 각각 1~2문장으로 작성하세요.'
+      ].join('\n')
+    : domainTag === 'health'
     ? [
         '응답 모드: health-safety',
         '- 의료 진단/처방처럼 들리는 단정적 문장을 금지합니다.',
@@ -401,9 +488,10 @@ const buildPrompt = ({
     '반드시 JSON만 출력하고, 카드의 상징에 기반한 따뜻하고 통찰력 있는 분석을 제공하세요.',
     `이 질문은 ${responseMode === 'concise' ? '일상적이고 가벼운' : '진중하고 깊이 있는'} 고민입니다. 그에 맞춰 어휘의 무게를 조절하세요.`,
     '출력 스키마:',
-    '{"fullNarrative":string, "summary":string,"verdict":{"label":"YES|NO|MAYBE","rationale":string,"recommendedOption":"A|B|EITHER|NONE"},"evidence":[{"cardId":string,"positionLabel":string,"claim":string,"rationale":string,"caution":string}],"counterpoints":[string],"actions":[string]}',
+    '{"fullNarrative":string, "summary":string,"verdict":{"label":"YES|NO|MAYBE","rationale":string,"recommendedOption":"A|B|EITHER|NONE"},"fortune":{"period":"today|week|month|year","trendLabel":"UP|BALANCED|CAUTION","energy":string,"workFinance":string,"love":string,"healthMind":string,"message":string},"evidence":[{"cardId":string,"positionLabel":string,"claim":string,"rationale":string,"caution":string}],"counterpoints":[string],"actions":[string]}',
     '- fullNarrative: 사서의 말투로 작성된 3~4문단의 전체 리딩 서사. 카드 개별 해석과 종합 결론을 자연스럽게 연결하세요. 문법과 조사를 완벽하게 처리하세요.',
     '- evidence.claim: 카드의 상징과 현재 상황을 연결하는 문장.',
+    toneGuide,
     '한국어로 작성하고 사서의 우아한 말투를 유지하세요.',
     styleGuide,
     `입력 데이터: ${JSON.stringify(context)}`
@@ -424,7 +512,7 @@ const buildRepairPrompt = ({ question, facts, category, timeframe, binaryEntitie
     '당신은 JSON 정규화 도우미입니다.',
     '반드시 JSON 객체 하나만 출력하세요. 설명, 마크다운, 코드펜스는 금지합니다.',
     '출력 스키마:',
-    '{"fullNarrative":string, "summary":string,"verdict":{"label":"YES|NO|MAYBE","rationale":string,"recommendedOption":"A|B|EITHER|NONE"},"evidence":[{"cardId":string,"positionLabel":string,"claim":string,"rationale":string,"caution":string}],"counterpoints":[string],"actions":[string]}',
+    '{"fullNarrative":string, "summary":string,"verdict":{"label":"YES|NO|MAYBE","rationale":string,"recommendedOption":"A|B|EITHER|NONE"},"fortune":{"period":"today|week|month|year","trendLabel":"UP|BALANCED|CAUTION","energy":string,"workFinance":string,"love":string,"healthMind":string,"message":string},"evidence":[{"cardId":string,"positionLabel":string,"claim":string,"rationale":string,"caution":string}],"counterpoints":[string],"actions":[string]}',
     '요구사항:',
     '- evidence 길이는 facts 길이와 반드시 같아야 합니다.',
     '- evidence.cardId는 반드시 facts 안의 cardId만 사용하세요.',
@@ -601,6 +689,7 @@ const normalizeReport = (report, facts, fallback) => {
       rationale: sanitizeText(report?.verdict?.rationale || fallback.verdict.rationale),
       recommendedOption: report?.verdict?.recommendedOption || 'NONE'
     },
+    fortune: report?.fortune || fallback.fortune || null,
     evidence: normalizedEvidence,
     counterpoints: (Array.isArray(report?.counterpoints) ? report.counterpoints : fallback.counterpoints)
       .map(sanitizeText)
@@ -682,6 +771,7 @@ export const generateReadingHybrid = async ({
   category = 'general',
   sessionContext = null,
   structure = 'evidence_report',
+  personaTone = 'warm',
   debug = false,
   requestId = null,
   serverRevision = 'local',
@@ -695,7 +785,13 @@ export const generateReadingHybrid = async ({
     binaryEntities
   });
   const questionType = resolvedProfile.questionType;
-  const responseMode = detectResponseMode(questionType, safeQuestion.length, resolvedProfile.domainTag);
+  const responseMode = detectResponseMode(
+    questionType,
+    safeQuestion.length,
+    resolvedProfile.domainTag,
+    resolvedProfile.readingKind,
+    resolvedProfile.fortunePeriod
+  );
   const facts = buildCardFacts(cards, category);
 
   const deterministic = buildDeterministicReport({
@@ -705,7 +801,9 @@ export const generateReadingHybrid = async ({
     binaryEntities,
     questionType,
     domainTag: resolvedProfile.domainTag,
-    riskLevel: resolvedProfile.riskLevel
+    riskLevel: resolvedProfile.riskLevel,
+    readingKind: resolvedProfile.readingKind,
+    fortunePeriod: resolvedProfile.fortunePeriod
   });
 
   const prompt = buildPrompt({
@@ -718,7 +816,10 @@ export const generateReadingHybrid = async ({
     responseMode,
     questionType,
     domainTag: resolvedProfile.domainTag,
-    riskLevel: resolvedProfile.riskLevel
+    riskLevel: resolvedProfile.riskLevel,
+    readingKind: resolvedProfile.readingKind,
+    fortunePeriod: resolvedProfile.fortunePeriod,
+    personaTone
   });
 
   let apiUsed = 'none';
@@ -848,7 +949,8 @@ export const generateReadingHybrid = async ({
   const legacyFromV3 = generateReadingV3(cards, safeQuestion, timeframe, category);
   const legacy = toLegacyResponse({ report: normalized, question: safeQuestion, facts });
 
-  const isCompactQuestion = questionType === 'light' || (questionType === 'binary' && safeQuestion.length <= 20);
+  const isOverallFortune = resolvedProfile.readingKind === 'overall_fortune';
+  const isCompactQuestion = isOverallFortune || questionType === 'light' || (questionType === 'binary' && safeQuestion.length <= 20);
   const finalConclusion = isCompactQuestion
     ? normalized.summary
     : (normalized.fullNarrative || legacyFromV3?.conclusion || legacy.conclusion);
@@ -886,6 +988,10 @@ export const generateReadingHybrid = async ({
       questionType,
       domainTag: resolvedProfile.domainTag,
       riskLevel: resolvedProfile.riskLevel,
+      readingKind: resolvedProfile.readingKind,
+      fortunePeriod: resolvedProfile.fortunePeriod || null,
+      trendLabel: normalized?.fortune?.trendLabel || null,
+      personaTone,
       recommendedSpreadId: resolvedProfile.recommendedSpreadId,
       responseMode,
       path,

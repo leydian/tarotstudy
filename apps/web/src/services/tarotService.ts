@@ -21,6 +21,8 @@ export const tarotApi = {
     questionType: 'binary' | 'relationship' | 'career' | 'emotional' | 'light' | 'deep';
     domainTag: 'health' | 'relationship' | 'career' | 'emotional' | 'lifestyle' | 'general';
     riskLevel: 'low' | 'medium' | 'high';
+    readingKind: 'overall_fortune' | 'general_reading';
+    fortunePeriod: 'today' | 'week' | 'month' | 'year' | null;
     recommendedSpreadId: string;
     targetCardCount: number;
   }> {
@@ -40,6 +42,8 @@ export const tarotApi = {
     options?: {
       mode?: 'legacy' | 'hybrid';
       structure?: 'evidence_report';
+      cardDraws?: Array<{ id: string; orientation?: 'upright' | 'reversed' }>;
+      personaTone?: 'calm' | 'warm' | 'mystic';
       sessionContext?: {
         recentQuestions?: string[];
         recentMood?: string;
@@ -47,6 +51,8 @@ export const tarotApi = {
           questionType?: string;
           domainTag?: string;
           riskLevel?: string;
+          readingKind?: string;
+          fortunePeriod?: string | null;
           recommendedSpreadId?: string;
         };
       };

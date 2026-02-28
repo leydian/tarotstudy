@@ -2,12 +2,18 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Sparkles, Send, RefreshCw } from 'lucide-react';
 import { Card, Spread, Message, ReadingResponse } from '../types/tarot';
 import { tarotApi } from '../services/tarotService';
-import { trackEvent } from '../services/analytics';
+import { getAnalyticsSessionId, trackEvent } from '../services/analytics';
 import { TarotCard } from '../components/common/TarotCard';
 import { MessageBubble } from '../components/reading/MessageBubble';
 import styles from './TarotMastery.module.css';
 
 export function TarotMastery() {
+  const quickFortuneQuestions = [
+    { id: 'today', label: '오늘', question: '오늘의 종합 운세는?' },
+    { id: 'week', label: '이번주', question: '이번주 종합 운세는?' },
+    { id: 'month', label: '이번달', question: '이번달 종합 운세는?' },
+    { id: 'year', label: '올해', question: '올해 종합 운세는?' }
+  ] as const;
   const [step, setStep] = useState<'input' | 'reading' | 'result'>('input');
   const [leftPaneTab, setLeftPaneTab] = useState<'spread' | 'study'>('spread');
   const [messages, setMessages] = useState<Message[]>([
@@ -19,6 +25,7 @@ export function TarotMastery() {
   const [spreadLayout, setSpreadLayout] = useState<Spread | null>(null);
   const [revealedIdx, setRevealedIdx] = useState<number[]>([]);
   const [reading, setReading] = useState<ReadingResponse | null>(null);
+  const [personaTone, setPersonaTone] = useState<'calm' | 'warm' | 'mystic'>('warm');
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const spreadViewportRef = useRef<HTMLDivElement>(null);
@@ -123,11 +130,49 @@ export function TarotMastery() {
     '12월': '한 해 흐름을 결산하고 다음 사이클의 방향을 확정하는 시기입니다.'
   };
 
-  const handleStartRitual = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim() || loading) return;
+  const hashString = (value: string) => {
+    let hash = 2166136261;
+    for (let i = 0; i < value.length; i += 1) {
+      hash ^= value.charCodeAt(i);
+      hash += (hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24);
+    }
+    return hash >>> 0;
+  };
 
-    const userQuestion = input.trim();
+  const createSeededRandom = (seed: number) => {
+    let t = seed >>> 0;
+    return () => {
+      t += 0x6D2B79F5;
+      let next = t;
+      next = Math.imul(next ^ (next >>> 15), next | 1);
+      next ^= next + Math.imul(next ^ (next >>> 7), next | 61);
+      return ((next ^ (next >>> 14)) >>> 0) / 4294967296;
+    };
+  };
+
+  const shuffleWithRandom = (items: Card[], randomFn: () => number) => {
+    const clone = [...items];
+    for (let i = clone.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(randomFn() * (i + 1));
+      [clone[i], clone[j]] = [clone[j], clone[i]];
+    }
+    return clone;
+  };
+
+  const shouldUseSeededDraw = (readingKind?: string) => readingKind === 'overall_fortune';
+  const getLocalDateKey = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+  const orientationLabel = (orientation?: 'upright' | 'reversed') => (orientation === 'reversed' ? '역방향' : '정방향');
+
+  const startRitual = async (questionText: string) => {
+    const userQuestion = questionText.trim();
+    if (!userQuestion || loading) return;
+
     clearRevealTimers();
     setLeftPaneTab('spread');
     setRevealedIdx([]);
@@ -146,6 +191,9 @@ export function TarotMastery() {
         questionType: trackedQuestionType,
         domainTag: profile.domainTag,
         riskLevel: profile.riskLevel,
+        readingKind: profile.readingKind,
+        fortunePeriod: profile.fortunePeriod,
+        personaTone,
         mode: 'hybrid'
       });
 
@@ -160,9 +208,30 @@ export function TarotMastery() {
 
       setSpreadLayout(currentSpread);
 
-      const shuffled = [...allCards].sort(() => 0.5 - Math.random());
-      const selectedCards = shuffled.slice(0, currentSpread.positions.length);
+      const rng = shouldUseSeededDraw(profile.readingKind)
+        ? (() => {
+            const seedInput = [
+              getAnalyticsSessionId(),
+              getLocalDateKey(),
+              profile.readingKind,
+              profile.fortunePeriod || 'none',
+              currentSpread.id
+            ].join('|');
+            return createSeededRandom(hashString(seedInput));
+          })()
+        : Math.random;
+      const shuffled = shuffleWithRandom(allCards, rng);
+      const selectedCards = shuffled
+        .slice(0, currentSpread.positions.length)
+        .map((card) => ({
+          ...card,
+          orientation: rng() < 0.34 ? 'reversed' : 'upright'
+        } as Card));
       setDrawnCards(selectedCards);
+      const cardDraws = selectedCards.map((card) => ({
+        id: card.id,
+        orientation: card.orientation || 'upright'
+      }));
 
       const recentQuestions = messages
         .filter(m => m.role === 'user')
@@ -173,12 +242,16 @@ export function TarotMastery() {
         mode: 'hybrid',
         structure: 'evidence_report',
         spreadId: currentSpread.id,
+        cardDraws,
+        personaTone,
         sessionContext: {
           recentQuestions,
           questionProfile: {
             questionType: profile.questionType,
             domainTag: profile.domainTag,
             riskLevel: profile.riskLevel,
+            readingKind: profile.readingKind,
+            fortunePeriod: profile.fortunePeriod,
             recommendedSpreadId: profile.recommendedSpreadId
           }
         },
@@ -189,6 +262,9 @@ export function TarotMastery() {
         questionType: readingData.meta?.questionType || trackedQuestionType,
         domainTag: readingData.meta?.domainTag || profile.domainTag,
         riskLevel: readingData.meta?.riskLevel || profile.riskLevel,
+        readingKind: readingData.meta?.readingKind || profile.readingKind,
+        fortunePeriod: readingData.meta?.fortunePeriod || profile.fortunePeriod,
+        personaTone,
         mode: readingData.mode || 'hybrid',
         fallbackUsed: !!readingData.fallbackUsed,
         spreadId: currentSpread.id
@@ -213,6 +289,17 @@ export function TarotMastery() {
     }
   };
 
+  const handleStartRitual = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!input.trim() || loading) return;
+    await startRitual(input);
+  };
+
+  const handleQuickFortune = async (question: string) => {
+    if (loading) return;
+    await startRitual(question);
+  };
+
   const internalReveal = (idx: number, data: ReadingResponse, spread: Spread, cards: Card[]) => {
     setRevealedIdx(prev => {
       if (prev.includes(idx)) return prev;
@@ -235,10 +322,11 @@ export function TarotMastery() {
       : '';
     const fallbackInterpretation = (data.evidence[idx] || '').split(']').slice(1).join(']').trim();
     const interpretation = reportInterpretation || fallbackInterpretation;
+    const cardOrientation = orientationLabel(cards[idx].orientation);
 
     setMessages(prev => [...prev, {
       role: 'bot',
-      text: `[${posLabel}: ${cards[idx].nameKo}]\n${interpretation.trim().replace(/\.\.$/, '.') || '카드의 상징을 차분히 읽어보세요.'}`
+      text: `[${posLabel}: ${cards[idx].nameKo} (${cardOrientation})]\n${interpretation.trim().replace(/\.\.$/, '.') || '카드의 상징을 차분히 읽어보세요.'}`
     }]);
   };
 
@@ -290,7 +378,13 @@ export function TarotMastery() {
     return false;
   };
 
-  const getDistinctReportCopy = (data: ReadingResponse, isHealthContext: boolean) => {
+  const getDistinctReportCopy = (data: ReadingResponse, isHealthContext: boolean, isOverallFortune: boolean) => {
+    if (isOverallFortune && data.report?.fortune) {
+      return {
+        insightText: data.report.fortune.energy || data.report.summary || '',
+        energyText: data.report.fortune.message || data.report.verdict?.rationale || ''
+      };
+    }
     const summary = data.report?.summary || '';
     const rationale = data.report?.verdict?.rationale || '';
     const conclusionNorm = normalizeForCompare(data.conclusion);
@@ -393,6 +487,12 @@ export function TarotMastery() {
 
   const isCompactBinaryReading = reading?.meta?.questionType === 'binary' && reading?.meta?.responseMode === 'concise';
   const isHealthContext = reading?.meta?.domainTag === 'health';
+  const isOverallFortune = reading?.meta?.readingKind === 'overall_fortune';
+  const trendLabelKo = (label?: 'UP' | 'BALANCED' | 'CAUTION') => {
+    if (label === 'UP') return '상승';
+    if (label === 'CAUTION') return '주의';
+    return '균형';
+  };
 
   return (
     <div className={styles.page}>
@@ -568,7 +668,8 @@ export function TarotMastery() {
                               {reading.report && (
                                 <div className={styles.reportSummaryBox}>
                                   {(() => {
-                                    const distinctCopy = getDistinctReportCopy(reading, !!isHealthContext);
+                                    const distinctCopy = getDistinctReportCopy(reading, !!isHealthContext, !!isOverallFortune);
+                                    const trendKo = trendLabelKo(reading.meta?.trendLabel || reading.report?.fortune?.trendLabel);
                                     return (
                                       <>
                                         <p className={styles.reportSummaryText}>
@@ -576,7 +677,13 @@ export function TarotMastery() {
                                         </p>
                                         <div className={styles.verdictBadge}>
                                           <Sparkles size={14} />
-                                          <span>{isHealthContext ? '안전 안내' : `${verdictLabelKo(reading.report.verdict.label)}의 기운`}: {distinctCopy.energyText}</span>
+                                          <span>
+                                            {isHealthContext
+                                              ? '안전 안내'
+                                              : isOverallFortune
+                                                ? `${trendKo} 기조`
+                                                : `${verdictLabelKo(reading.report.verdict.label)}의 기운`}: {distinctCopy.energyText}
+                                          </span>
                                         </div>
                                       </>
                                     );
@@ -584,6 +691,19 @@ export function TarotMastery() {
                                 </div>
                               )}
                             </div>
+
+                            {isOverallFortune && reading.report?.fortune && (
+                              <div className={styles.counterpointBox}>
+                                <h4 className={styles.counterpointTitle}>오늘의 타로 종합운세</h4>
+                                <ul className={styles.counterpointList}>
+                                  <li><strong>전체 에너지:</strong> {reading.report.fortune.energy}</li>
+                                  <li><strong>일·재물운:</strong> {reading.report.fortune.workFinance}</li>
+                                  <li><strong>애정운:</strong> {reading.report.fortune.love}</li>
+                                  <li><strong>건강·마음:</strong> {reading.report.fortune.healthMind}</li>
+                                  <li><strong>메시지:</strong> {reading.report.fortune.message}</li>
+                                </ul>
+                              </div>
+                            )}
 
                             {isHealthContext && (
                               <div className={styles.counterpointBox}>
@@ -637,18 +757,59 @@ export function TarotMastery() {
         </div>
 
         {step === 'input' && (
-          <form onSubmit={handleStartRitual} className={styles.inputForm}>
-            <input
-              type="text"
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              placeholder="운명의 도서관 사서에게 질문을 던져보세요..."
-              className={styles.inputField}
-            />
-            <button type="submit" disabled={loading} className={styles.submitBtn}>
-              <Send size={16} /> 의식 시작
-            </button>
-          </form>
+          <>
+            <div className={styles.quickFortuneRow}>
+              {quickFortuneQuestions.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  className={styles.quickFortuneBtn}
+                  onClick={() => handleQuickFortune(item.question)}
+                  disabled={loading}
+                >
+                  {item.label} 종합운세
+                </button>
+              ))}
+            </div>
+            <div className={styles.toneRow}>
+              <button
+                type="button"
+                className={`${styles.toneBtn} ${personaTone === 'calm' ? styles.toneBtnActive : ''}`}
+                onClick={() => setPersonaTone('calm')}
+                disabled={loading}
+              >
+                차분 모드
+              </button>
+              <button
+                type="button"
+                className={`${styles.toneBtn} ${personaTone === 'warm' ? styles.toneBtnActive : ''}`}
+                onClick={() => setPersonaTone('warm')}
+                disabled={loading}
+              >
+                공감 모드
+              </button>
+              <button
+                type="button"
+                className={`${styles.toneBtn} ${personaTone === 'mystic' ? styles.toneBtnActive : ''}`}
+                onClick={() => setPersonaTone('mystic')}
+                disabled={loading}
+              >
+                신비 모드
+              </button>
+            </div>
+            <form onSubmit={handleStartRitual} className={styles.inputForm}>
+              <input
+                type="text"
+                value={input}
+                onChange={e => setInput(e.target.value)}
+                placeholder="운명의 도서관 사서에게 질문을 던져보세요..."
+                className={styles.inputField}
+              />
+              <button type="submit" disabled={loading} className={styles.submitBtn}>
+                <Send size={16} /> 의식 시작
+              </button>
+            </form>
+          </>
         )}
       </div>
     </div>

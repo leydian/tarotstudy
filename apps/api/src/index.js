@@ -49,21 +49,37 @@ app.post('/api/reading', async (req, res) => {
   const requestId = makeRequestId();
   const {
     cardIds,
+    cardDraws,
     question,
     timeframe,
     category,
     spreadId,
     mode = 'hybrid',
+    personaTone = 'warm',
     sessionContext,
     structure = 'evidence_report',
     debug = false
   } = req.body;
 
-  if (!cardIds || !Array.isArray(cardIds) || cardIds.length === 0) {
-    return res.status(400).json({ error: 'cardIds 배열이 필요합니다.' });
+  if ((!cardIds || !Array.isArray(cardIds) || cardIds.length === 0) && (!Array.isArray(cardDraws) || cardDraws.length === 0)) {
+    return res.status(400).json({ error: 'cardIds 또는 cardDraws 배열이 필요합니다.' });
   }
 
-  const selectedCards = cardIds.map(id => getCardById(id)).filter(Boolean);
+  const normalizedDraws = Array.isArray(cardDraws) && cardDraws.length > 0
+    ? cardDraws
+      .map((item) => ({
+        id: item?.id,
+        orientation: item?.orientation === 'reversed' ? 'reversed' : 'upright'
+      }))
+      .filter((item) => !!item.id)
+    : (cardIds || []).map((id) => ({ id, orientation: 'upright' }));
+
+  const selectedCards = normalizedDraws
+    .map((draw) => {
+      const card = getCardById(draw.id);
+      return card ? { ...card, orientation: draw.orientation } : null;
+    })
+    .filter(Boolean);
   if (selectedCards.length === 0) {
     return res.status(400).json({ error: '유효한 카드가 없습니다.' });
   }
@@ -98,6 +114,8 @@ app.post('/api/reading', async (req, res) => {
           questionType: questionProfile.questionType,
           domainTag: questionProfile.domainTag,
           riskLevel: questionProfile.riskLevel,
+          readingKind: questionProfile.readingKind,
+          fortunePeriod: questionProfile.fortunePeriod || null,
           recommendedSpreadId: questionProfile.recommendedSpreadId,
           fallbackReason: null
         }
@@ -111,6 +129,7 @@ app.post('/api/reading', async (req, res) => {
       category,
       sessionContext,
       structure,
+      personaTone,
       debug,
       requestId,
       serverRevision,
@@ -140,6 +159,8 @@ app.post('/api/reading', async (req, res) => {
           questionType: questionProfile.questionType,
           domainTag: questionProfile.domainTag,
           riskLevel: questionProfile.riskLevel,
+          readingKind: questionProfile.readingKind,
+          fortunePeriod: questionProfile.fortunePeriod || null,
           recommendedSpreadId: questionProfile.recommendedSpreadId,
           fallbackReason: 'server_error'
         }

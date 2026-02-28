@@ -2,6 +2,64 @@
 
 ## [2026-02-28]
 
+### 종합운세 고도화: 전용 스키마 + 정/역방향 + 기간/톤/재현성 통합 (v6.3.25)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/questionType.js`
+- `apps/api/src/index.js`
+- `apps/api/src/domains/reading/hybrid.js`
+- `apps/web/src/pages/TarotMastery.tsx`
+- `apps/web/src/pages/TarotMastery.module.css`
+- `apps/web/src/services/tarotService.ts`
+- `apps/web/src/services/analytics.ts`
+- `apps/web/src/types/tarot.ts`
+- `docs/CHANGELOG.md`
+- `docs/RELEASE_NOTES_v6.3.25.md`
+
+#### 변경 사항
+- 종합운세 전용 분기(`readingKind=overall_fortune`) 도입
+  - 질문 프로파일에서 `readingKind`, `fortunePeriod(today|week|month|year)`를 함께 반환.
+  - 종합운세 질문은 기간 키워드에 따라 스프레드를 안정 매핑:
+    - 오늘→`daily(1)`
+    - 이번주→`weekly(3)`
+    - 이번달→`monthly(5)`
+    - 올해→`yearly(12)`
+- 종합운세 전용 결과 스키마 추가
+  - `report.fortune` 블록 신설:
+    - `period`, `trendLabel(UP|BALANCED|CAUTION)`,
+    - `energy`, `workFinance`, `love`, `healthMind`, `message`
+- 정/역방향(orientation) 해석 반영
+  - 프론트 드로우 단계에서 카드별 `orientation` 생성.
+  - API 요청에 `cardDraws[{id, orientation}]` 전달.
+  - 엔진에서 정/역방향에 따라 `card.meanings` vs `card.reversed` 의미를 선택.
+  - 카드 공개 메시지에 `(정방향/역방향)` 표기 추가.
+- 종합운세 라벨 정책 변경
+  - 종합운세에서는 YES/NO 강조 대신 `trendLabel` 중심으로 표시.
+  - UI 배지 텍스트를 `상승/균형/주의 기조`로 표시하도록 확장.
+- 페르소나 톤 선택 추가
+  - 입력 화면에 `차분/공감/신비` 톤 버튼 추가.
+  - `personaTone`을 API 프롬프트 가이드로 전달해 결과 문체 강도 조절.
+- 하루 운세 재현성(seed) 추가
+  - 종합운세 질문에서만 `sessionId + localDate + period + spreadId` 기반 seeded shuffle 적용.
+  - 같은 세션·같은 날짜·같은 기간 질문은 카드 구성이 안정적으로 재현.
+- 분석/계약 확장
+  - analytics payload에 `readingKind`, `fortunePeriod`, `personaTone` 추가.
+  - 타입 계약에 `readingKind`, `fortunePeriod`, `trendLabel`, `personaTone`, `report.fortune` 반영.
+
+#### 효과
+- “오늘/주간/월간/연간 종합운세”의 결과 형태가 질문 의도에 맞게 일관됨.
+- 외부 앱 대비 부족했던 정/역방향 표현과 운세형 구조(에너지/재물/애정/건강/메시지)를 보완.
+- 동일한 운세 질문에서 매번 결과가 크게 달라지는 체감이 줄어 신뢰도가 향상.
+- 사용자 취향에 맞는 결과 톤 선택이 가능해 만족도 개선.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과.
+- `npm run test:persona --prefix apps/api` 통과.
+- `npm run build --prefix apps/web` 통과.
+- 상세 변경 요약: `docs/RELEASE_NOTES_v6.3.25.md`
+
+## [2026-02-28]
+
 ### 모바일 UI 전면 재배치: 단일 스크롤 흐름 + 터치 타깃/입력 안정화 (v6.3.24)
 
 #### 변경 파일
