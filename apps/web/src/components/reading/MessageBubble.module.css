@@ -40,6 +40,7 @@
 }
 
 @media (max-width: 768px) {
-  .wrapper  { max-width: 92%; }
-  .bubble   { padding: 0.9rem 1.2rem; font-size: 1.08rem; line-height: 1.68; }
+  .wrapper  { max-width: 95%; }
+  .bubble   { padding: 0.85rem 1rem; font-size: 1rem; line-height: 1.62; }
+  .bubbleAction { font-size: 0.98rem; }
 }
