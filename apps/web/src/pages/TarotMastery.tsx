@@ -209,7 +209,9 @@ export function TarotMastery() {
             <div 
               className={styles.spreadCanvas}
               style={{ 
-                minHeight: Math.max(480, (Math.max(...spreadLayout.positions.map(p => Math.abs(p.y))) * 2 * 0.7) + 300) + 'px'
+                minHeight: (spreadLayout.positions && spreadLayout.positions.length > 0)
+                  ? Math.max(480, (Math.max(...spreadLayout.positions.map(p => Math.abs(p.y))) * 2 * 0.7) + 300) + 'px'
+                  : '480px'
               }}
             >
               <div className={styles.spreadCenter}>
