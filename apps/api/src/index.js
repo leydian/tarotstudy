@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import { cards, getCardById } from './data/cards.js';
 import { spreads, getSpreadById } from './data/spreads.js';
 import { generateReadingV3 } from './domains/reading/v3.js';
+import { generateReadingHybrid, generateReadingAB } from './domains/reading/hybrid.js';
 
 dotenv.config();
 
@@ -34,16 +35,96 @@ app.get('/api/spreads', (req, res) => {
 });
 
 // AI 리딩 생성 (V3 모델)
-app.post('/api/reading', (req, res) => {
-  const { cardIds, question, timeframe, category } = req.body;
+app.post('/api/reading', async (req, res) => {
+  const {
+    cardIds,
+    question,
+    timeframe,
+    category,
+    spreadId,
+    mode = 'hybrid',
+    sessionContext,
+    structure = 'evidence_report',
+    debug = false
+  } = req.body;
+
   if (!cardIds || !Array.isArray(cardIds) || cardIds.length === 0) {
     return res.status(400).json({ error: 'cardIds 배열이 필요합니다.' });
   }
 
   const selectedCards = cardIds.map(id => getCardById(id)).filter(Boolean);
-  const reading = generateReadingV3(selectedCards, question || '나의 현재 상황은?', timeframe, category);
-  
-  res.json(reading);
+  if (selectedCards.length === 0) {
+    return res.status(400).json({ error: '유효한 카드가 없습니다.' });
+  }
+
+  const spread = (spreadId ? getSpreadById(spreadId) : null)
+    || spreads.find(s => s.id === timeframe)
+    || spreads.find(s => s.positions.length === selectedCards.length)
+    || null;
+
+  const cardsWithPosition = selectedCards.map((card, idx) => ({
+    ...card,
+    positionLabel: spread?.positions?.[idx]?.label || `단계 ${idx + 1}`
+  }));
+
+  try {
+    if (mode === 'legacy') {
+      const reading = generateReadingV3(cardsWithPosition, question || '나의 현재 상황은?', timeframe, category);
+      return res.json({ ...reading, mode: 'legacy' });
+    }
+
+    const reading = await generateReadingHybrid({
+      cards: cardsWithPosition,
+      question: question || '나의 현재 상황은?',
+      timeframe,
+      category,
+      sessionContext,
+      structure,
+      debug
+    });
+
+    return res.json(reading);
+  } catch (error) {
+    console.error('[Tarot API] Hybrid reading failed, fallback to legacy:', error?.message || error);
+    const reading = generateReadingV3(cardsWithPosition, question || '나의 현재 상황은?', timeframe, category);
+    return res.json({ ...reading, mode: 'legacy', fallbackUsed: true });
+  }
+});
+
+app.post('/api/reading/ab', async (req, res) => {
+  const { cardIds, question, timeframe, category, spreadId, sessionContext } = req.body;
+  if (!cardIds || !Array.isArray(cardIds) || cardIds.length === 0) {
+    return res.status(400).json({ error: 'cardIds 배열이 필요합니다.' });
+  }
+
+  const selectedCards = cardIds.map(id => getCardById(id)).filter(Boolean);
+  if (selectedCards.length === 0) {
+    return res.status(400).json({ error: '유효한 카드가 없습니다.' });
+  }
+
+  const spread = (spreadId ? getSpreadById(spreadId) : null)
+    || spreads.find(s => s.id === timeframe)
+    || spreads.find(s => s.positions.length === selectedCards.length)
+    || null;
+
+  const cardsWithPosition = selectedCards.map((card, idx) => ({
+    ...card,
+    positionLabel: spread?.positions?.[idx]?.label || `단계 ${idx + 1}`
+  }));
+
+  try {
+    const result = await generateReadingAB({
+      cards: cardsWithPosition,
+      question: question || '나의 현재 상황은?',
+      timeframe,
+      category,
+      sessionContext
+    });
+    return res.json(result);
+  } catch (error) {
+    console.error('[Tarot API] A/B reading failed:', error?.message || error);
+    return res.status(500).json({ error: 'A/B 리딩 생성에 실패했습니다.' });
+  }
 });
 
 // 헬스 체크

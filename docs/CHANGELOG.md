@@ -2,6 +2,39 @@
 
 ## [2026-02-28]
 
+### 하이브리드 리딩 엔진 도입 (Reading Hybrid v6.0)
+
+#### 변경 사항
+- **하이브리드 엔진 신규 추가 (`apps/api/src/domains/reading/hybrid.js`)**:
+    - 규칙 기반 카드 팩트 추출 + 구조화 리포트 생성 + 검증(Consistency) 계층을 구현.
+    - OpenAI API 키가 있을 때는 모델 기반 구조화 리포트를 시도하고, 실패 시 deterministic 결과로 자동 폴백.
+    - `unsupportedClaimCount`, `consistencyScore`, `regenerationCount`를 산출하여 품질을 수치화.
+    - `A vs B` 및 `A 할까 B 할까` 계열 질문의 엔티티 추출을 보강하여 양자택일 해석 정확도 개선.
+
+- **리딩 API 계약 확장 (`apps/api/src/index.js`)**:
+    - `POST /api/reading`가 `mode`, `spreadId`, `sessionContext`, `structure`, `debug` 파라미터를 지원.
+    - `mode=legacy`일 때 기존 v3 서사 응답 유지, 기본값은 `hybrid`.
+    - 하이브리드 실패 시 서버 레벨에서 레거시 폴백 응답 제공.
+    - `POST /api/reading/ab` 신규 추가: 동일 입력으로 legacy/hybrid 결과를 병렬 비교 가능.
+
+- **프론트 타입/서비스 확장 (`apps/web/src/types/tarot.ts`, `apps/web/src/services/tarotService.ts`)**:
+    - `ReadingResponse`에 `report`, `quality`, `fallbackUsed`, `mode` 필드 추가.
+    - `getReading` 호출 옵션 확장(모드/구조/세션 컨텍스트/디버그).
+
+- **TarotMastery UI 개편 (`apps/web/src/pages/TarotMastery.tsx`)**:
+    - 요청 시 하이브리드 모드 및 세션 최근 질문 컨텍스트를 전달.
+    - 결과 화면을 근거 중심으로 개선:
+        - 핵심 요약/판정
+        - 카드별 근거(claim/rationale/caution)
+        - 반례/주의점
+        - 품질 지표(consistency, unsupported claims, regeneration)
+    - 구조화 리포트가 없는 경우 기존 결론/지침 필드를 사용하도록 하위호환 유지.
+
+#### 검증
+- `vite build` 성공으로 프론트 번들 안정성 확인.
+- 하이브리드 엔진 모듈 로드 및 샘플 질문 실행으로 런타임 정상 동작 확인.
+- API 키 미설정 환경에서 deterministic fallback 경로 정상 동작 확인.
+
 ### Vercel 배포 실패 해결: Web 앱 설정 파일 복구
 
 #### 변경 사항

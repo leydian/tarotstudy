@@ -66,7 +66,17 @@ export function TarotMastery() {
       const selectedCards = shuffled.slice(0, currentSpread.positions.length);
       setDrawnCards(selectedCards);
 
-      const readingData = await tarotApi.getReading(selectedCards.map(c => c.id), userQuestion);
+      const recentQuestions = messages
+        .filter(m => m.role === 'user')
+        .slice(-3)
+        .map(m => m.text);
+
+      const readingData = await tarotApi.getReading(selectedCards.map(c => c.id), userQuestion, {
+        mode: 'hybrid',
+        structure: 'evidence_report',
+        spreadId: currentSpread.id,
+        sessionContext: { recentQuestions }
+      });
       setReading(readingData);
 
       setTimeout(() => {
@@ -220,12 +230,50 @@ export function TarotMastery() {
                       <div className={styles.resultSection}>
                         <div className={styles.masterReport}>
                           <h3 className={styles.masterReportTitle}>운명의 마스터 리포트</h3>
-                          <p className={styles.masterReportText}>{reading.conclusion}</p>
+                          <p className={styles.masterReportText}>
+                            {reading.report?.summary || reading.conclusion}
+                          </p>
+                          {reading.report && (
+                            <div style={{ marginTop: '1rem', display: 'grid', gap: '0.6rem' }}>
+                              <p className={styles.masterReportText} style={{ margin: 0 }}>
+                                <strong>판정:</strong> {reading.report.verdict.label} / {reading.report.verdict.rationale}
+                              </p>
+                              {reading.report.counterpoints.length > 0 && (
+                                <p className={styles.masterReportText} style={{ margin: 0 }}>
+                                  <strong>반례/주의:</strong> {reading.report.counterpoints.join(' / ')}
+                                </p>
+                              )}
+                              {reading.quality && (
+                                <p className={styles.masterReportText} style={{ margin: 0, opacity: 0.9 }}>
+                                  <strong>품질 지표:</strong> 신뢰도 {reading.quality.consistencyScore}점 ·
+                                  근거 이탈 {reading.quality.unsupportedClaimCount}건 ·
+                                  재생성 {reading.quality.regenerationCount}회
+                                </p>
+                              )}
+                            </div>
+                          )}
                         </div>
+
+                        {reading.report?.evidence && reading.report.evidence.length > 0 && (
+                          <div className={styles.arcanaGuidance}>
+                            <h4 className={styles.arcanaTitle}>카드별 근거</h4>
+                            <div className={styles.arcanaList}>
+                              {reading.report.evidence.map((ev, i) => (
+                                <div key={i} className={styles.arcanaItem}>
+                                  <span className={styles.arcanaItemBullet}>●</span>
+                                  <p className={styles.arcanaItemText}>
+                                    <strong>[{ev.positionLabel}]</strong> {ev.claim} (근거: {ev.rationale}) / 주의: {ev.caution}
+                                  </p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
                         <div className={styles.arcanaGuidance}>
                           <h4 className={styles.arcanaTitle}>아르카나의 지침</h4>
                           <div className={styles.arcanaList}>
-                            {reading.action.map((act, i) => (
+                            {(reading.report?.actions?.length ? reading.report.actions : reading.action).map((act, i) => (
                               <div key={i} className={styles.arcanaItem}>
                                 <span className={styles.arcanaItemBullet}>●</span>
                                 <p className={styles.arcanaItemText}>{act}</p>
@@ -269,7 +317,6 @@ export function TarotMastery() {
           </div>
         </div>
 
-        {/* 입력창 */}
         {step === 'input' && (
           <form onSubmit={handleStartRitual} className={styles.inputForm}>
             <input
@@ -281,27 +328,6 @@ export function TarotMastery() {
             />
             <button type="submit" disabled={loading} className={styles.submitBtn}>
               <Send size={16} /> 의식 시작
-            </button>
-          </form>
-        )}
-      </div>
-    </div>
-  );
-}
-
-        {/* 입력창 */}
-        {step === 'input' && (
-          <form onSubmit={handleStartRitual} className={styles.inputForm}>
-            <input
-              type="text"
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              placeholder="운명의 도서관 사서에게 질문을 던져보세요..."
-              className={styles.inputField}
-            />
-            <button type="submit" disabled={loading} className={styles.submitBtn}>
-              <Send size={16} />
-              의식 시작
             </button>
           </form>
         )}

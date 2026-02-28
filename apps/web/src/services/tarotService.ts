@@ -18,11 +18,26 @@ export const tarotApi = {
   },
 
   // AI 리딩 요청
-  async getReading(cardIds: string[], question: string): Promise<ReadingResponse> {
+  async getReading(
+    cardIds: string[],
+    question: string,
+    options?: {
+      mode?: 'legacy' | 'hybrid';
+      structure?: 'evidence_report';
+      sessionContext?: {
+        recentQuestions?: string[];
+        recentMood?: string;
+      };
+      timeframe?: string;
+      category?: string;
+      spreadId?: string;
+      debug?: boolean;
+    }
+  ): Promise<ReadingResponse> {
     const res = await fetch(`${API_BASE}/reading`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ cardIds, question }),
+      body: JSON.stringify({ cardIds, question, ...options }),
     });
     if (!res.ok) throw new Error('Failed to get reading');
     return res.json();

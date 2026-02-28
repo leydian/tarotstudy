@@ -48,4 +48,28 @@ export interface ReadingResponse {
   evidence: string[];
   action: string[];
   yesNoVerdict: 'YES' | 'NO' | 'MAYBE';
+  mode?: 'legacy' | 'hybrid';
+  fallbackUsed?: boolean;
+  report?: {
+    summary: string;
+    verdict: {
+      label: 'YES' | 'NO' | 'MAYBE';
+      rationale: string;
+      recommendedOption?: 'A' | 'B' | 'EITHER' | 'NONE';
+    };
+    evidence: Array<{
+      cardId: string;
+      positionLabel: string;
+      claim: string;
+      rationale: string;
+      caution: string;
+    }>;
+    counterpoints: string[];
+    actions: string[];
+  };
+  quality?: {
+    consistencyScore: number;
+    unsupportedClaimCount: number;
+    regenerationCount: number;
+  };
 }
