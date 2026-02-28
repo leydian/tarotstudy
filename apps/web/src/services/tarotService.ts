@@ -1,20 +1,30 @@
 import { Card, Spread, ReadingResponse } from '../types/tarot';
 
 const API_BASE = '/api';
+let cardsCache: Card[] | null = null;
+let spreadsCache: Spread[] | null = null;
+
+const shouldFallbackToV1 = (status: number) => status >= 500;
 
 export const tarotApi = {
   // 모든 카드 목록 조회
   async getCards(): Promise<Card[]> {
+    if (cardsCache) return cardsCache;
     const res = await fetch(`${API_BASE}/cards`);
     if (!res.ok) throw new Error('Failed to fetch cards');
-    return res.json();
+    const data = await res.json();
+    cardsCache = data;
+    return data;
   },
 
   // 모든 스프레드 목록 조회
   async getSpreads(): Promise<Spread[]> {
+    if (spreadsCache) return spreadsCache;
     const res = await fetch(`${API_BASE}/spreads`);
     if (!res.ok) throw new Error('Failed to fetch spreads');
-    return res.json();
+    const data = await res.json();
+    spreadsCache = data;
+    return data;
   },
 
   async getQuestionProfile(question: string, category: string = 'general'): Promise<{
@@ -31,12 +41,21 @@ export const tarotApi = {
     analysis?: ReadingResponse['analysis'];
   }> {
     const payload = { question, category, context: null };
-    const v2 = await fetch(`${API_BASE}/v2/question-profile`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-    if (v2.ok) return v2.json();
+    try {
+      const v2 = await fetch(`${API_BASE}/v2/question-profile`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (v2.ok) return v2.json();
+      if (!shouldFallbackToV1(v2.status)) {
+        throw new Error('Failed to infer question profile');
+      }
+    } catch (error) {
+      if (!(error instanceof TypeError)) {
+        throw error;
+      }
+    }
 
     const v1 = await fetch(`${API_BASE}/question-profile`, {
       method: 'POST',
@@ -75,12 +94,21 @@ export const tarotApi = {
     }
   ): Promise<ReadingResponse> {
     const payload = { cardIds, question, ...options };
-    const v2 = await fetch(`${API_BASE}/v2/reading`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    if (v2.ok) return v2.json();
+    try {
+      const v2 = await fetch(`${API_BASE}/v2/reading`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (v2.ok) return v2.json();
+      if (!shouldFallbackToV1(v2.status)) {
+        throw new Error('Failed to get reading');
+      }
+    } catch (error) {
+      if (!(error instanceof TypeError)) {
+        throw error;
+      }
+    }
 
     const v1 = await fetch(`${API_BASE}/reading`, {
       method: 'POST',

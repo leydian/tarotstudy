@@ -2,6 +2,45 @@
 
 ## [2026-02-28]
 
+### fallback 최소화 + 리딩 지연 단축 (v6.3.47)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/hybrid.js`
+- `apps/api/tests/fallback-minimization.js`
+- `apps/web/src/services/tarotService.ts`
+- `docs/RELEASE_NOTES_v6.3.47.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 모델 호출 지연 단축
+  - Anthropic primary/retry/repair 기본 타임아웃을 각각 `12s/7s/5s`로 축소.
+- fallback 트리거 재정의
+  - fallback은 `모델 미수신` 또는 `치명 계약 이슈`에서만 발동.
+  - 비치명 품질 이슈는 fallback 없이 유지.
+- partial salvage 적용/관측 강화
+  - 모델 응답 불완전 시 전체 fallback 대신 normalize/postprocess 보강 경로 우선.
+  - `qualityFlags`에 `partial_salvage_applied` 추가.
+  - `analysis.safety.reasons`에 `model_timeout_retry`, `parse_repair_used`, `partial_salvage_applied`, `critical_contract_fix` 사유 누적.
+- 웹 API 재호출 최적화
+  - v2 실패 후 v1 폴백은 `5xx/네트워크 오류`에만 허용.
+  - 4xx는 즉시 에러 처리해 불필요한 2차 API 호출 방지.
+  - cards/spreads 메모리 캐시 추가로 반복 요청 감소.
+- 테스트 보강
+  - `fallback-minimization` 테스트 추가:
+    - 비치명 이슈에서 fallback 미발생
+    - partial salvage 플래그 기록 검증
+
+#### 검증
+- `node apps/api/tests/fallback-minimization.js` 통과
+- `node apps/api/tests/hybrid-resilience.js` 통과
+- `node apps/api/tests/overall-fortune-regression.js` 통과
+- `node apps/api/tests/question-profile-v2.js` 통과
+- `node apps/api/tests/reading-v2-contract.js` 통과
+- `npm run test:ui-flow --prefix apps/web` 통과
+- `npm run build --prefix apps/web` 통과
+
+## [2026-02-28]
+
 ### 맥락형 리딩 API v2 도입 (멀티의도/컨텍스트/안전강등) (v6.3.46)
 
 #### 변경 파일

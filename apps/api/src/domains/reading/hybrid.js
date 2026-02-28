@@ -51,9 +51,9 @@ const EVIDENCE_TONE_OVERRIDES = {
 };
 
 const DEFAULT_ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL || 'claude-haiku-4-5-20251001';
-const ANTHROPIC_TIMEOUT_MS = Number(process.env.ANTHROPIC_TIMEOUT_MS || 60000);
-const ANTHROPIC_RETRY_TIMEOUT_MS = Number(process.env.ANTHROPIC_RETRY_TIMEOUT_MS || 25000);
-const ANTHROPIC_REPAIR_TIMEOUT_MS = Number(process.env.ANTHROPIC_REPAIR_TIMEOUT_MS || 12000);
+const ANTHROPIC_TIMEOUT_MS = Number(process.env.ANTHROPIC_TIMEOUT_MS || 12000);
+const ANTHROPIC_RETRY_TIMEOUT_MS = Number(process.env.ANTHROPIC_RETRY_TIMEOUT_MS || 7000);
+const ANTHROPIC_REPAIR_TIMEOUT_MS = Number(process.env.ANTHROPIC_REPAIR_TIMEOUT_MS || 5000);
 const CONTAMINATION_PATTERNS = [
   /사서의\s*통찰\s*:/i,
   /신중의\s*기운\s*:/i,
@@ -1281,10 +1281,27 @@ const verifyReport = (report, facts, binaryEntities) => {
 
   return {
     valid: !hasCriticalIssue,
+    hasCriticalIssue,
     issues,
     unsupportedClaimCount,
     consistencyScore
   };
+};
+
+const CRITICAL_QUALITY_ISSUES = new Set(['summary_missing', 'verdict_missing', 'evidence_length_mismatch']);
+const hasCriticalQualityIssue = (issues = []) => (Array.isArray(issues) ? issues : [])
+  .some((issue) => CRITICAL_QUALITY_ISSUES.has(issue));
+
+const detectPartialSalvageApplied = (modelReport, normalizedReport, facts) => {
+  if (!modelReport || typeof modelReport !== 'object') return false;
+  if (!sanitizeText(modelReport?.summary) && sanitizeText(normalizedReport?.summary)) return true;
+  if (!isValidVerdictLabel(modelReport?.verdict?.label) && isValidVerdictLabel(normalizedReport?.verdict?.label)) return true;
+  if (!sanitizeText(modelReport?.verdict?.rationale) && sanitizeText(normalizedReport?.verdict?.rationale)) return true;
+  const sourceEvidence = Array.isArray(modelReport?.evidence) ? modelReport.evidence : [];
+  if (sourceEvidence.length !== facts.length) return true;
+  const hasWeakEvidence = sourceEvidence.some((item) => !sanitizeText(item?.claim) || !sanitizeText(item?.rationale));
+  if (hasWeakEvidence) return true;
+  return false;
 };
 
 const normalizeReport = (report, facts, fallback) => {
@@ -1591,10 +1608,17 @@ export const generateReadingHybrid = async ({
   const processed = postProcessReport(normalized);
   normalized = processed.report;
   const modelQuality = verifyReport(normalized, facts, binaryEntities);
-  const modelQualityFlags = withCategorizedFlags([...new Set([...processed.qualityFlags, ...modelQuality.issues])]);
+  const partialSalvageApplied = detectPartialSalvageApplied(modelReport, normalized, facts);
+  const preFinalFlags = [
+    ...processed.qualityFlags,
+    ...modelQuality.issues,
+    ...(partialSalvageApplied ? ['partial_salvage_applied'] : [])
+  ];
+  const modelQualityFlags = withCategorizedFlags([...new Set(preFinalFlags)]);
+  const modelHasCriticalIssue = hasCriticalQualityIssue(modelQuality.issues);
 
-  // 최종 폴백: API가 아예 실패했거나 검증에 실패한 경우
-  const fallbackUsed = !modelReport || !modelQuality.valid;
+  // 최종 폴백: API가 아예 실패했거나 치명적 검증 실패인 경우
+  const fallbackUsed = !modelReport || modelHasCriticalIssue;
   let finalized = null;
   if (fallbackUsed) {
     finalized = finalizeOutputReport({
@@ -1607,11 +1631,11 @@ export const generateReadingHybrid = async ({
     });
     apiUsed = 'fallback';
     path = 'fallback';
-    if (!fallbackReason && !modelQuality.valid) fallbackReason = 'validation_failed';
+    if (!fallbackReason && modelHasCriticalIssue) fallbackReason = 'validation_failed';
     if (!fallbackReason) fallbackReason = 'model_unavailable';
     failureStage = mapFailureStage({
       fallbackReason,
-      qualityValid: modelQuality.valid,
+      qualityValid: !modelHasCriticalIssue,
       modelReport: !!modelReport
     });
   } else {
@@ -1621,9 +1645,33 @@ export const generateReadingHybrid = async ({
       riskLevel: resolvedProfile.riskLevel,
       facts,
       binaryEntities,
-      baseFlags: processed.qualityFlags
+      baseFlags: [...new Set(preFinalFlags)]
     });
   }
+
+  const runtimeSafetyReasons = [];
+  if (attempts.retry.attempted && attempts.retry.success && attempts.primary.reason === 'anthropic_timeout') {
+    runtimeSafetyReasons.push('model_timeout_retry');
+  }
+  if (attempts.repair.attempted && attempts.repair.success) {
+    runtimeSafetyReasons.push('parse_repair_used');
+  }
+  if (partialSalvageApplied) {
+    runtimeSafetyReasons.push('partial_salvage_applied');
+  }
+  if (modelHasCriticalIssue) {
+    runtimeSafetyReasons.push('critical_contract_fix');
+  }
+  const finalAnalysis = resolvedAnalysis
+    ? {
+        ...resolvedAnalysis,
+        safety: {
+          ...(resolvedAnalysis.safety || { downgraded: false, reasons: [] }),
+          downgraded: Boolean((resolvedAnalysis.safety?.downgraded) || runtimeSafetyReasons.length > 0),
+          reasons: [...new Set([...(resolvedAnalysis.safety?.reasons || []), ...runtimeSafetyReasons])]
+        }
+      }
+    : null;
 
   const legacyFromV3 = generateReadingV3(cards, safeQuestion, timeframe, category);
   const legacy = toLegacyResponse({ report: finalized.report, question: safeQuestion, facts });
@@ -1682,7 +1730,7 @@ export const generateReadingHybrid = async ({
       attempts,
       failureStage,
       fallbackReason: fallbackReason || null,
-      analysis: resolvedAnalysis,
+      analysis: finalAnalysis,
       qualityFlags: finalized.qualityFlags,
       ...(debug ? { modelQualityFlags } : {})
     }
