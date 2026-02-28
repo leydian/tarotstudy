@@ -339,13 +339,14 @@ const buildDeterministicReport = ({
 
   const evidence = facts.map((fact) => {
     const coreMeaning = sanitizeText(fact.coreMeaning || fact.summary).replace(/\.$/, '');
+    const keywordsStr = fact.keywords.slice(0, 2).join('·') || '균형';
     const orientationRationale = fact.orientation === 'reversed'
-      ? '역방향 신호가 포함되어 있으니 속도 조절과 재점검이 중요합니다.'
-      : '정방향 흐름이 살아 있어 준비된 실행이 성과로 연결될 여지가 큽니다.';
+      ? `${keywordsStr} 에너지가 안쪽으로 향하고 있어, 속도를 낮추고 조건을 재점검할 때입니다.`
+      : `${keywordsStr} 에너지가 활성화되어, 이 흐름에 맞춰 나아가기 좋은 시점입니다.`;
     return {
       cardId: fact.cardId,
       positionLabel: fact.positionLabel,
-      claim: `${fact.cardNameKo}(${fact.orientationLabel})의 상징인 '${coreMeaning}'`,
+      claim: `${fact.cardNameKo}(${fact.orientationLabel}) — ${coreMeaning}`,
       rationale: orientationRationale,
       caution: sanitizeText(fact.advice) || '급한 결정보다는 마음의 우선순위를 먼저 정리해 보세요.'
     };
@@ -451,17 +452,21 @@ const buildDeterministicReport = ({
             '일일 흐름은 컨디션 영향을 크게 받으니 무리한 계획 확대를 피하세요.',
             '오늘의 신호는 단기 참고값이므로 장기 결정은 추가 근거와 함께 판단하세요.'
         ];
+    const claimCardLabel = (fact, refFact) =>
+      refFact && fact.cardId === refFact.cardId
+        ? '이 카드'
+        : `${fact.cardNameKo}(${fact.orientationLabel})`;
     const energyClaim = energyFact
       ? `${energyFact.cardNameKo}(${energyFact.orientationLabel})의 흐름이 ${periodText} 전체 리듬의 기준점으로 작동합니다.`
       : `${periodText}의 에너지는 안정적으로 흐르고 있습니다.`;
     const workClaim = workFact
-      ? `${workFact.cardNameKo}(${workFact.orientationLabel}) 신호를 보면 ${workFrame}`
+      ? `${claimCardLabel(workFact, energyFact)} 신호를 보면 ${workFrame}`
       : workFrame;
     const loveClaim = loveFact
-      ? `${loveFact.cardNameKo}(${loveFact.orientationLabel}) 흐름상 ${loveFrame}`
+      ? `${claimCardLabel(loveFact, energyFact)} 흐름상 ${loveFrame}`
       : loveFrame;
     const mindClaim = mindFact
-      ? `${mindFact.cardNameKo}(${mindFact.orientationLabel}) 경향을 고려하면 ${mindFrame}`
+      ? `${claimCardLabel(mindFact, energyFact)} 경향을 고려하면 ${mindFrame}`
       : mindFrame;
     const fortune = {
       period: resolvedFortunePeriod,
@@ -588,7 +593,7 @@ const buildPrompt = ({
     '출력 스키마:',
     '{"fullNarrative":string, "summary":string,"verdict":{"label":"YES|NO|MAYBE","rationale":string,"recommendedOption":"A|B|EITHER|NONE"},"fortune":{"period":"today|week|month|year","trendLabel":"UP|BALANCED|CAUTION","energy":string,"workFinance":string,"love":string,"healthMind":string,"message":string},"evidence":[{"cardId":string,"positionLabel":string,"claim":string,"rationale":string,"caution":string}],"counterpoints":[string],"actions":[string]}',
     '- fullNarrative: 사서의 말투로 작성된 3~4문단의 전체 리딩 서사. 카드 개별 해석과 종합 결론을 자연스럽게 연결하세요. 문법과 조사를 완벽하게 처리하세요.',
-    '- evidence.claim: 카드의 상징과 현재 상황을 연결하는 문장.',
+    '- evidence[].claim: "~의 상징인 ~" 패턴 금지. 카드 이름(방향)을 주어로, 카드가 현재 상황에 어떻게 작용하는지를 서술형 문장으로 작성.',
     '한국어로 작성하고 사서의 우아한 말투를 유지하세요.',
     styleGuide,
     `입력 데이터: ${JSON.stringify(context)}`

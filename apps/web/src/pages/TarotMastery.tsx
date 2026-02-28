@@ -675,9 +675,11 @@ export function TarotMastery() {
                                     const trendKo = trendLabelKo(reading.meta?.trendLabel || reading.report?.fortune?.trendLabel);
                                     return (
                                       <>
-                                        <p className={styles.reportSummaryText}>
-                                          <strong>사서의 통찰:</strong> {distinctCopy.insightText}
-                                        </p>
+                                        {!isOverallFortune && (
+                                          <p className={styles.reportSummaryText}>
+                                            <strong>사서의 통찰:</strong> {distinctCopy.insightText}
+                                          </p>
+                                        )}
                                         <div className={styles.verdictBadge}>
                                           <Sparkles size={14} />
                                           <span>
@@ -705,7 +707,6 @@ export function TarotMastery() {
                                   <li><strong>일·재물운:</strong> {reading.report.fortune.workFinance}</li>
                                   <li><strong>애정운:</strong> {reading.report.fortune.love}</li>
                                   <li><strong>건강·마음:</strong> {reading.report.fortune.healthMind}</li>
-                                  <li><strong>메시지:</strong> {reading.report.fortune.message}</li>
                                 </ul>
                               </div>
                             )}

@@ -2,6 +2,35 @@
 
 ## [2026-02-28]
 
+### overall_fortune 출력 어색함 5가지 수정 (v6.3.27)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/hybrid.js`
+- `apps/web/src/pages/TarotMastery.tsx`
+- `docs/CHANGELOG.md`
+- `docs/RELEASE_NOTES_v6.3.27.md`
+
+#### 변경 사항
+- 중복 텍스트 제거
+  - `overall_fortune`에서 "사서의 통찰:" 절 조건부 숨김
+    (`conclusion`이 이미 summary를 표시하므로 2회 출력 방지).
+  - fortune 분야별 목록에서 "메시지:" 항목 제거 (verdictBadge에서만 표시).
+- evidence claim 문법 개선
+  - `"X의 상징인 '완결문입니다'"` 비문 패턴 → `"X(방향) — 핵심 의미"` 대시 형식으로 교체.
+  - buildPrompt AI 지침에도 해당 패턴 금지 명시.
+- evidence rationale 카드 연결
+  - 정/역방향 고정 문구 → 카드별 `keywords.slice(0,2)`를 포함한 개인화 문구.
+  - 예) `"균형·절제 에너지가 활성화되어, 이 흐름에 맞춰 나아가기 좋은 시점입니다."`
+- fortune 섹션 카드 이름 반복 방지
+  - `claimCardLabel(fact, refFact)` 헬퍼 추가: energyFact와 동일 카드이면 "이 카드" 반환.
+  - 1장 스프레드에서 workClaim/loveClaim/mindClaim의 카드 이름 4회 반복 → "이 카드"로 간소화.
+
+#### 효과
+- overall_fortune 리딩 결과의 텍스트 중복·반복·비문 문제 해소.
+- evidence rationale이 카드별 에너지 특성을 반영해 리딩마다 다른 맥락 제공.
+
+---
+
 ### 종합운세 정합성 보정: 기간 라벨/역방향 논리/다카드 집계/중복 완화 (v6.3.26)
 
 #### 변경 파일
