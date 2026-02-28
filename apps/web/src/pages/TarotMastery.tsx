@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Sparkles, Send, RefreshCw } from 'lucide-react';
 import { Card, Spread, Message, ReadingResponse } from '../types/tarot';
 import { tarotApi } from '../services/tarotService';
+import { trackEvent } from '../services/analytics';
 import { TarotCard } from '../components/common/TarotCard';
 import { MessageBubble } from '../components/reading/MessageBubble';
 import styles from './TarotMastery.module.css';
@@ -35,7 +36,9 @@ export function TarotMastery() {
     if (!input.trim() || loading) return;
 
     const userQuestion = input.trim();
+    const inferredQuestionType = inferQuestionType(userQuestion);
     setMessages(prev => [...prev, { role: 'user', text: userQuestion }]);
+    trackEvent('question_submitted', { questionType: inferredQuestionType, mode: 'hybrid' });
     setLoading(true);
     setInput('');
 
@@ -78,6 +81,12 @@ export function TarotMastery() {
         sessionContext: { recentQuestions }
       });
       setReading(readingData);
+      trackEvent('reading_result_shown', {
+        questionType: readingData.meta?.questionType || inferredQuestionType,
+        mode: readingData.mode || 'hybrid',
+        fallbackUsed: !!readingData.fallbackUsed,
+        spreadId: currentSpread.id
+      });
 
       setTimeout(() => {
         setMessages(prev => [...prev, { role: 'bot', text: `질문에 맞춰 [${currentSpread.name}] 스프레드를 구성했습니다. 운명의 지도가 펼쳐집니다...` }]);
@@ -135,7 +144,42 @@ export function TarotMastery() {
     return '유보';
   };
 
+  const inferQuestionType = (question: string) => {
+    const relationshipKeywords = ['속마음', '그 사람', '연애', '사랑', '재회', '커플', '썸', '이별'];
+    const careerKeywords = ['이직', '회사', '상사', '퇴사', '연봉', '업무', '커리어', '취업', '면접', '직장', '프로젝트'];
+    const emotionalKeywords = ['힘들', '우울', '슬퍼', '지쳐', '죽겠', '눈물', '불안', '무서', '막막', '상처', '포기'];
+    const lightKeywords = ['커피', '메뉴', '점심', '저녁', '야식', '걷기', '버스', '지하철', '옷', '신발', '살까', '말까', '먹을까', '마실까'];
+    const binaryKeywords = ['할까', '갈까', '탈까', '먹을까', '마실까', '살까', '아니면', 'vs', '또는', '혹은'];
+
+    if (binaryKeywords.some((k) => question.includes(k))) return 'binary';
+    if (relationshipKeywords.some((k) => question.includes(k))) return 'relationship';
+    if (careerKeywords.some((k) => question.includes(k))) return 'career';
+    if (emotionalKeywords.some((k) => question.includes(k))) return 'emotional';
+    if (question.length < 15 && lightKeywords.some((k) => question.includes(k))) return 'light';
+    return 'deep';
+  };
+
+  const handleTabSwitch = (tab: 'report' | 'study') => {
+    setResultTab(tab);
+    if (!reading) return;
+    trackEvent('result_tab_switched', {
+      tab,
+      questionType: reading.meta?.questionType,
+      mode: reading.mode || 'hybrid',
+      fallbackUsed: !!reading.fallbackUsed,
+      spreadId: spreadLayout?.id
+    });
+  };
+
   const handleReset = () => {
+    if (reading) {
+      trackEvent('new_question_clicked', {
+        questionType: reading.meta?.questionType,
+        mode: reading.mode || 'hybrid',
+        fallbackUsed: !!reading.fallbackUsed,
+        spreadId: spreadLayout?.id
+      });
+    }
     setStep('input');
     setReading(null);
     setResultTab('report');
@@ -217,13 +261,13 @@ export function TarotMastery() {
                   {/* 탭 헤더 */}
                   <div className={styles.tabHeader}>
                     <button 
-                      onClick={() => setResultTab('report')}
+                      onClick={() => handleTabSwitch('report')}
                       className={`${styles.tabBtn} ${resultTab === 'report' ? styles.tabBtnActive : ''}`}
                     >
                       운명의 리포트
                     </button>
                     <button 
-                      onClick={() => setResultTab('study')}
+                      onClick={() => handleTabSwitch('study')}
                       className={`${styles.tabBtn} ${resultTab === 'study' ? styles.tabBtnActive : ''}`}
                     >
                       아르카나 탐구

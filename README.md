@@ -32,6 +32,8 @@ npm run dev --prefix apps/web
 ## 📚 상세 문서
 - [🏛 아키텍처 및 엔진 상세](./docs/ARCHITECTURE.md)
 - [🌟 주요 기능 명세](./docs/FEATURES.md)
+- [🧭 페르소나 운영 계약](./docs/PERSONA_CONTRACT.md)
+- [✅ 품질 게이트 기준](./docs/QUALITY_GATE.md)
 - [🔐 설치 및 보안 가이드](./docs/SETUP_SECURITY.md)
 - [📜 변경 이력 (Changelog)](./docs/CHANGELOG.md)
 

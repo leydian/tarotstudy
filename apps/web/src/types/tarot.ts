@@ -72,4 +72,8 @@ export interface ReadingResponse {
     unsupportedClaimCount: number;
     regenerationCount: number;
   };
+  meta?: {
+    questionType?: string;
+    fallbackReason?: string;
+  };
 }

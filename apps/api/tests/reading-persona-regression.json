@@ -1,0 +1,57 @@
+[
+  {
+    "name": "light_daily_choice",
+    "question": "오늘 점심 뭐 먹을까?",
+    "cardIds": ["c01", "w03", "p08"],
+    "category": "general",
+    "timeframe": "daily",
+    "spreadId": "weekly",
+    "expectedQuestionType": "light"
+  },
+  {
+    "name": "deep_life_direction",
+    "question": "요즘 삶의 방향을 어떻게 잡아야 할지 모르겠어",
+    "cardIds": ["m09", "s06", "p04"],
+    "category": "general",
+    "timeframe": "weekly",
+    "spreadId": "weekly",
+    "expectedQuestionType": "deep"
+  },
+  {
+    "name": "relationship_reading",
+    "question": "그 사람 속마음이 궁금해",
+    "cardIds": ["c02", "c06", "m06", "s02", "w05", "p02", "m17"],
+    "category": "love",
+    "timeframe": "relationship",
+    "spreadId": "relationship",
+    "expectedQuestionType": "relationship"
+  },
+  {
+    "name": "career_transition",
+    "question": "이직을 지금 준비하는 게 맞을까?",
+    "cardIds": ["p03", "w08", "s08", "m10", "p10"],
+    "category": "career",
+    "timeframe": "career-path",
+    "spreadId": "career-path",
+    "expectedQuestionType": "career"
+  },
+  {
+    "name": "binary_transport",
+    "question": "집 갈 때 버스 탈까 걸어갈까?",
+    "cardIds": ["w01", "s05"],
+    "category": "general",
+    "timeframe": "daily",
+    "spreadId": "choice",
+    "expectedQuestionType": "binary",
+    "expectRecommendedOption": true
+  },
+  {
+    "name": "emotional_support",
+    "question": "요즘 너무 불안하고 지쳐서 아무것도 못하겠어",
+    "cardIds": ["m18", "c05", "p06"],
+    "category": "general",
+    "timeframe": "daily",
+    "spreadId": "weekly",
+    "expectedQuestionType": "emotional"
+  }
+]

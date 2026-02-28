@@ -2,6 +2,35 @@
 
 ## [2026-02-28]
 
+### 페르소나 기반 유지보수 체계 전면 도입 (v6.2.0)
+
+#### 변경 사항
+- **운영 기준 문서 신설 (`docs/PERSONA_CONTRACT.md`, `docs/QUALITY_GATE.md`)**:
+    - 개발자/기획자/사용자 페르소나의 책임, 승인권, 우선순위를 명시.
+    - 릴리스 품질 게이트(필수 응답 무결성, fallback 보장, 질문 유형 일관성) 기준을 고정.
+
+- **리뷰 프로세스 강화 (`.github/pull_request_template.md`)**:
+    - PR 단계에서 3페르소나 체크리스트를 강제해 회귀 가능성을 사전 차단.
+
+- **리딩 API 메타 확장 (`apps/api/src/domains/reading/hybrid.js`, `apps/api/src/index.js`)**:
+    - 응답에 `meta.questionType`, `meta.fallbackReason`을 추가해 운영 진단 가능성 강화.
+    - 하이브리드 실패 시 서버 레벨 폴백 응답에도 동일 메타를 제공.
+
+- **프론트 타입/계측 확장 (`apps/web/src/types/tarot.ts`, `apps/web/src/pages/TarotMastery.tsx`, `apps/web/src/services/analytics.ts`)**:
+    - `ReadingResponse` 타입에 `meta` 필드를 추가.
+    - 질문 제출/결과 노출/탭 전환/새 질문 클릭 이벤트를 계측하여 체감 품질 분석 기반 마련.
+
+- **회귀 시나리오 자동 검증 도입 (`apps/api/tests/reading-persona-regression.json`, `apps/api/tests/validate-persona-regression.js`)**:
+    - light/deep/relationship/career/binary/emotional 케이스를 고정 입력으로 검증.
+    - `npm run test:persona --prefix apps/api`로 계약 무결성과 fallback 지속성을 자동 확인.
+
+#### 검증
+- `npm run test:persona --prefix apps/api` 통과.
+- `npm run build --prefix apps/web` 통과.
+- 상세 변경 요약: `docs/RELEASE_NOTES_v6.2.0.md`
+
+## [2026-02-28]
+
 ### 하이브리드 리딩 엔진 v6.1.2: 초안정성 강화 및 Vercel 최적화
 
 #### 변경 사항
