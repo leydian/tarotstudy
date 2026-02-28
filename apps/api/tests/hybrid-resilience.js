@@ -363,6 +363,33 @@ const testDeterministicReversedRationale = async () => {
   process.env.ANTHROPIC_API_KEY = originalKey;
 };
 
+const testFallbackPostProcessIsMinimal = async () => {
+  const cards = buildCards(['m01', 'c09', 'w02']).map((card, idx) => ({
+    ...card,
+    orientation: idx === 1 ? 'reversed' : 'upright'
+  }));
+  process.env.ANTHROPIC_API_KEY = '';
+
+  await withFetchSequence([], async () => {
+    const result = await generateReadingHybrid({
+      cards,
+      question: '이번 주 종합 운세는?',
+      timeframe: 'weekly',
+      category: 'general'
+    });
+
+    assert.equal(result.fallbackUsed, true);
+    const flags = result.meta?.qualityFlags || [];
+    assert.equal(
+      flags.includes('phrase_repetition_rewritten'),
+      false,
+      'fallback deterministic path should not require repetitive style rewrites'
+    );
+  });
+
+  process.env.ANTHROPIC_API_KEY = originalKey;
+};
+
 try {
   await testParseRepairPath();
   await testEvidenceNormalization();
@@ -373,6 +400,7 @@ try {
   await testHealthOverridesOverallFortuneIntent();
   await testEvidenceQualityRewrite();
   await testDeterministicReversedRationale();
+  await testFallbackPostProcessIsMinimal();
   console.log('Hybrid resilience tests passed.');
 } finally {
   global.fetch = originalFetch;

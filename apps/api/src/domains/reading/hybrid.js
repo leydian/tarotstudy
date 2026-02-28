@@ -112,12 +112,6 @@ const sanitizeListItems = (items, kind) => {
 };
 
 const FORTUNE_SECTION_KEYS = ['energy', 'workFinance', 'love', 'healthMind'];
-const FORTUNE_SECTION_LABELS = {
-  energy: '전체 에너지',
-  workFinance: '일·재물운',
-  love: '애정운',
-  healthMind: '건강·마음'
-};
 
 const normalizeFortunePeriod = (value) => {
   if (value === 'today' || value === 'week' || value === 'month' || value === 'year') return value;
@@ -169,40 +163,31 @@ const enforceFortuneSectionDiversity = (report) => {
   const fortune = { ...report.fortune };
   const period = normalizeFortunePeriod(fortune.period);
   const defaults = buildFortuneDefaults(period);
-  const evidenceClaims = (report.evidence || [])
-    .map((item) => sanitizeText(item?.claim || '').replace(/\.$/, ''))
-    .filter(Boolean);
 
-  const fallbackByKey = {
-    energy: evidenceClaims[0]
-      ? `전체 에너지 흐름을 보면, ${evidenceClaims[0]}`
-      : defaults.energy,
-    workFinance: evidenceClaims[1]
-      ? `일·재물운은 ${evidenceClaims[1]} 기조를 보입니다.`
-      : defaults.workFinance,
-    love: evidenceClaims[2]
-      ? `애정운은 ${evidenceClaims[2]} 메시지를 보냅니다.`
-      : defaults.love,
-    healthMind: evidenceClaims[evidenceClaims.length - 1]
-      ? `건강·마음 영역은 ${evidenceClaims[evidenceClaims.length - 1]} 흐름이 읽힙니다.`
-      : defaults.healthMind
-  };
-
-  const used = new Set();
+  const stripped = {};
   for (const key of FORTUNE_SECTION_KEYS) {
-    const raw = stripFortunePrefix(fortune[key] || '', key);
-    let nextText = raw || fallbackByKey[key];
-    let normalized = normalizeCompareText(nextText);
-    if (!normalized || used.has(normalized)) {
-      nextText = fallbackByKey[key];
-      normalized = normalizeCompareText(nextText);
+    stripped[key] = stripFortunePrefix(fortune[key] || '', key);
+  }
+  const uniqueCount = new Set(
+    FORTUNE_SECTION_KEYS
+      .map((key) => normalizeCompareText(stripped[key]))
+      .filter(Boolean)
+  ).size;
+
+  // Style-level fix only: if all sections collapse, fill duplicates with defaults.
+  if (uniqueCount <= 1) {
+    const seen = new Set();
+    for (const key of FORTUNE_SECTION_KEYS) {
+      const normalized = normalizeCompareText(stripped[key]);
+      if (!normalized || seen.has(normalized)) {
+        stripped[key] = defaults[key];
+      }
+      seen.add(normalizeCompareText(stripped[key]));
     }
-    if (!normalized || used.has(normalized)) {
-      nextText = `${fallbackByKey[key]} ${FORTUNE_SECTION_LABELS[key]} 조율에 집중해 보세요.`;
-      normalized = normalizeCompareText(nextText);
-    }
-    used.add(normalized);
-    fortune[key] = stripFortunePrefix(nextText, key);
+  }
+
+  for (const key of FORTUNE_SECTION_KEYS) {
+    fortune[key] = sanitizeText(stripped[key] || defaults[key]);
   }
   fortune.period = period;
   fortune.message = sanitizeText(fortune.message || defaults.message);
@@ -283,20 +268,6 @@ const enforceEvidenceQuality = (evidence) => {
   }));
 };
 
-const rewriteRepetitiveEvidenceRationale = (evidence) => {
-  const REPEATED_PATTERN = /에너지가 활성화되어,\s*이 흐름에 맞춰 나아가기 좋은 시점입니다\.?/;
-  let changed = false;
-  const rewritten = (Array.isArray(evidence) ? evidence : []).map((item, idx) => {
-    const current = sanitizeText(item?.rationale || '');
-    if (!REPEATED_PATTERN.test(current)) return item;
-    const replacements = EVIDENCE_RATIONALE_TEMPLATES.positive;
-    const next = replacements[idx % replacements.length].replace('%s', '핵심');
-    if (next !== current) changed = true;
-    return { ...item, rationale: next };
-  });
-  return { evidence: rewritten, changed };
-};
-
 const postProcessReport = (report) => {
   const qualityFlags = [];
   const next = {
@@ -324,13 +295,8 @@ const postProcessReport = (report) => {
   if (Array.isArray(next.evidence)) {
     const before = JSON.stringify(next.evidence);
     next.evidence = enforceEvidenceQuality(next.evidence);
-    const repetitionFix = rewriteRepetitiveEvidenceRationale(next.evidence);
-    next.evidence = repetitionFix.evidence;
     if (JSON.stringify(next.evidence) !== before) {
       qualityFlags.push('evidence_quality_rewritten');
-    }
-    if (repetitionFix.changed) {
-      qualityFlags.push('phrase_repetition_rewritten');
     }
   }
 
@@ -746,7 +712,9 @@ const buildPrompt = ({
         '- fortune.period는 today|week|month|year 중 하나입니다.',
         '- fortune.trendLabel은 UP|BALANCED|CAUTION 중 하나를 사용하세요.',
         '- overall_fortune에서는 verdict를 단정형 YES/NO로 몰아가지 말고 균형 있게 작성하세요.',
-        '- energy/workFinance/love/healthMind/message는 각각 1~2문장으로 작성하세요.'
+        '- energy/workFinance/love/healthMind/message는 각각 1~2문장으로 작성하세요.',
+        '- fortune 섹션 문장은 필드명 접두 반복("전체 에너지 흐름을 보면", "일·재물운은" 등)을 붙이지 마세요.',
+        '- evidence.rationale은 카드마다 같은 문장 패턴을 반복하지 마세요.'
       ].join('\n')
     : domainTag === 'health'
     ? [
@@ -778,7 +746,8 @@ const buildPrompt = ({
           '- 과장된 비유/장황한 세계관 설명 금지.',
           '- 질문에 대한 직접 결론 1문장을 반드시 포함.',
           '- summary와 verdict.rationale은 같은 의미로 반복하지 마세요.',
-          '- counterpoints에는 다른 섹션 문장을 복사하지 마세요.'
+          '- counterpoints에는 다른 섹션 문장을 복사하지 마세요.',
+          '- 역방향 카드에서는 과속/확정형 어조보다 점검/완충 어조를 우선하세요.'
         ].join('\n')
       : responseMode === 'creative'
       ? [
@@ -787,14 +756,16 @@ const buildPrompt = ({
           '- 같은 어구 반복을 피하고 카드별 표현을 다르게 구성하세요.',
           '- 결론은 질문에 대한 실천 방향이 분명해야 합니다.',
           '- summary와 verdict.rationale은 같은 의미로 반복하지 마세요.',
-          '- counterpoints에는 다른 섹션 문장을 복사하지 마세요.'
+          '- counterpoints에는 다른 섹션 문장을 복사하지 마세요.',
+          '- 역방향 카드에서는 감속·점검 관점을 반드시 반영하세요.'
         ].join('\n')
       : [
           '응답 모드: balanced',
           '- 명확하고 안정적인 어조로 카드 근거를 구조적으로 설명하세요.',
           '- 감성적 표현과 실천 지침의 균형을 유지하세요.',
           '- summary와 verdict.rationale은 같은 의미로 반복하지 마세요.',
-          '- counterpoints에는 다른 섹션 문장을 복사하지 마세요.'
+          '- counterpoints에는 다른 섹션 문장을 복사하지 마세요.',
+          '- 역방향 카드에서는 확정형 낙관 문장보다 점검/완충 어조를 우선하세요.'
         ].join('\n');
 
   return [
@@ -1243,8 +1214,7 @@ export const generateReadingHybrid = async ({
   // 최종 폴백: API가 아예 실패했거나 검증에 실패한 경우
   const fallbackUsed = !modelReport || !quality.valid;
   if (fallbackUsed) {
-    const processedFallback = postProcessReport(deterministic);
-    normalized = processedFallback.report;
+    normalized = deterministic;
     if (resolvedProfile.domainTag === 'health') {
       normalized = applyHealthGuardrail(normalized, resolvedProfile.riskLevel);
       qualityFlags = [...new Set([...qualityFlags, 'health_guardrail_applied'])];

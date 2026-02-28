@@ -2,6 +2,36 @@
 
 ## [2026-02-28]
 
+### 후처리 경량화·fallback 중복 제거·프롬프트 유도 강화 (v6.3.36)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/hybrid.js`
+- `apps/api/tests/hybrid-resilience.js`
+- `docs/RELEASE_NOTES_v6.3.36.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 후처리 경량화
+  - fallback 경로에서 deterministic 결과에 `postProcessReport`를 재적용하던 중복 후처리 제거.
+  - `rewriteRepetitiveEvidenceRationale` 제거로 스타일 재작성성 후처리 축소.
+  - `enforceFortuneSectionDiversity`를 최소 보정 모드로 축소(완전 붕괴 시에만 보정).
+- 품질 유지 전략 전환
+  - 계약/안전 보정(오염 제거, health guardrail, 필수 정합성)은 유지.
+  - 스타일 품질은 프롬프트 지시 강화(반복 금지, 역방향 어조 지시)로 유도.
+- 회귀 테스트 보강
+  - fallback deterministic 경로가 스타일 재작성 플래그에 의존하지 않는지 검증 케이스 추가.
+
+#### 검증
+- `node apps/api/tests/hybrid-resilience.js` 통과
+- `node apps/api/tests/overall-fortune-regression.js` 통과
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `node apps/web/tests/validate-ui-contract.js` 통과
+- `node apps/web/tests/validate-reading-flow-contract.js` 통과
+- `npm run build --prefix apps/web` 통과
+
+## [2026-02-28]
+
 ### 역/정방향 충돌 완화·반복 문구 축소·월간 표기 통일 (v6.3.35)
 
 #### 변경 파일
