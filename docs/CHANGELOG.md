@@ -2,6 +2,46 @@
 
 ## [2026-02-28]
 
+### 리딩 중복 억제 강화 + 모바일 성소 내부 스크롤 복원 (v6.3.61)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/report/evidence-templates.js`
+- `apps/api/src/domains/reading/report/deterministic.js`
+- `apps/api/src/domains/reading/report/fact-builder.js`
+- `apps/api/tests/hybrid-resilience.js`
+- `apps/web/src/pages/TarotMastery.module.css`
+- `apps/web/src/pages/TarotMastery.tsx`
+- `docs/RELEASE_NOTES_v6.3.61.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- evidence 이미지 문구 반복 억제 강화
+  - `EVIDENCE_IMAGERY_SENTENCE_TEMPLATES`를 tone별로 확장(positive/caution/reversed/neutral 각 4개).
+  - `buildEvidenceClaim()`에 `usedImagerySet` 옵션을 추가해 동일 리딩 내 이미지 문구 중복 재사용을 회피.
+  - `deterministic` 경로에서 카드 순회 시 `usedImagerySet`을 공유해 문장 다양성을 강제.
+- postprocess 반복 감지 강화
+  - `reduceEvidenceRepetition()`를 최근 3개 슬라이딩 윈도우 기준으로 강화.
+  - 단순 claim overlap 외에 이미지 키워드 반복(예: 시계바늘/안개/파도 등)도 감지.
+  - 반복 재작성 시 세분화 quality flag 추가:
+    - `evidence_quality_rewritten_imagery_repeat`
+    - `evidence_quality_rewritten_claim_overlap`
+- 모바일 성소 내부 스크롤 복원
+  - `TarotMastery.module.css`에서 모바일/태블릿 구간 `rightPane`을 `overflow-y: auto`로 전환.
+  - 숨김 처리했던 모바일 스크롤바를 얇은 형태로 복원(`scrollbar-width: thin`, webkit track/thumb 스타일).
+  - 긴 리딩에서 페이지 전체가 아닌 성소 우측 패널 내부 스크롤로 탐색 가능하도록 정리.
+- 자동 스크롤 기준 보정
+  - `TarotMastery.tsx`에 `rightPaneRef` 추가.
+  - 신규 메시지 도착 시 `messagesEndRef.scrollIntoView` 대신 내부 컨테이너 `scrollTo` 우선 적용.
+  - 모바일은 `auto`, 데스크톱은 `smooth`로 분기해 점프/튐 체감 완화.
+- 회귀 테스트 추가
+  - `hybrid-resilience`에 `testImagerySentenceRepetitionGuard` 추가.
+  - 월간 5카드 케이스에서 이미지 문구가 최소 3종 이상 분산되는지 검증.
+
+#### 검증
+- `node apps/api/tests/hybrid-resilience.js` 통과
+- `node apps/api/tests/overall-fortune-regression.js` 통과
+- `npm run build --prefix apps/web` 통과
+
 ### 모바일 대응 2차 마무리: safe-area/landscape/입력 안정성 보강 (v6.3.60)
 
 #### 변경 파일

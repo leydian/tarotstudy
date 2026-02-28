@@ -113,6 +113,7 @@ const buildDeterministicReport = ({
   };
   const usedClaimIndicesByGroup = new Map();
   const usedClaimNormalizedByGroup = new Map();
+  const usedImagerySet = new Set();
   let prevSuit = null;
 
   const evidence = facts.map((fact, factIdx) => {
@@ -159,7 +160,9 @@ const buildDeterministicReport = ({
     return {
       cardId: fact.cardId,
       positionLabel: fact.positionLabel,
-      claim: buildEvidenceClaim(fact, coreMeaning, toneBucket, selectedClaimTemplate, responseMode),
+      claim: buildEvidenceClaim(fact, coreMeaning, toneBucket, selectedClaimTemplate, responseMode, {
+        usedImagerySet
+      }),
       rationale: orientationRationale,
       caution: sanitizeText(fact.advice) || '급한 결정보다는 마음의 우선순위를 먼저 정리해 보세요.'
     };

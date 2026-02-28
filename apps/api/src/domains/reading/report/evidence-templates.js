@@ -137,19 +137,27 @@ const EVIDENCE_CLAIM_TEMPLATES = {
 const EVIDENCE_IMAGERY_SENTENCE_TEMPLATES = {
   positive: [
     '잔잔한 새벽빛처럼 흐름의 결이 맑게 이어집니다.',
-    '열린 창으로 바람이 드는 장면처럼 전개가 부드럽습니다.'
+    '열린 창으로 바람이 드는 장면처럼 전개가 부드럽습니다.',
+    '이른 아침의 고요한 공기처럼 판단의 결이 또렷해집니다.',
+    '밝아지는 수평선처럼 다음 단계의 방향이 점차 선명해집니다.'
   ],
   caution: [
     '짙은 안개가 낀 길목처럼 확인 절차가 먼저 필요합니다.',
-    '거센 파도가 치는 해변처럼 페이스 조절이 핵심입니다.'
+    '거센 파도가 치는 해변처럼 페이스 조절이 핵심입니다.',
+    '미끄러운 내리막길에 선 듯해 발걸음을 분명히 점검해야 합니다.',
+    '흔들리는 다리 위를 건너는 국면이라 안전장치가 우선입니다.'
   ],
   reversed: [
     '한 박자 늦춘 호흡처럼 재정비의 여백이 필요합니다.',
-    '멈춘 시계바늘 같은 구간이라 점검 리듬을 먼저 세워야 합니다.'
+    '멈춘 시계바늘 같은 구간이라 점검 리듬을 먼저 세워야 합니다.',
+    '거울이 비추는 방향이 뒤집힌 듯해 기준부터 다시 맞춰야 합니다.',
+    '잠시 멈춘 열차처럼 재출발 조건을 정리하는 시간이 필요합니다.'
   ],
   neutral: [
     '갈림길 표지판이 겹쳐 보이는 장면처럼 비교가 필요합니다.',
-    '잔물결이 교차하는 수면처럼 관찰 후 조정이 적합합니다.'
+    '잔물결이 교차하는 수면처럼 관찰 후 조정이 적합합니다.',
+    '두 물길이 만나는 합류점처럼 기준 정리가 우선입니다.',
+    '얇은 구름층 사이를 보는 듯해 단정 대신 확인이 맞습니다.'
   ]
 };
 
@@ -229,12 +237,32 @@ const clampEvidenceClaim = (claim, toneBucket) => {
 const shouldUseImageryLine = (responseMode = 'balanced') =>
   responseMode === 'balanced' || responseMode === 'creative';
 
-const pickImagerySentence = (toneBucket, seedSource) => pickTemplateBySeed(
-  EVIDENCE_IMAGERY_SENTENCE_TEMPLATES[toneBucket] || EVIDENCE_IMAGERY_SENTENCE_TEMPLATES.neutral,
-  seedSource
-);
+const pickImagerySentence = (toneBucket, seedSource, usedImagerySet = null) => {
+  const pool = EVIDENCE_IMAGERY_SENTENCE_TEMPLATES[toneBucket] || EVIDENCE_IMAGERY_SENTENCE_TEMPLATES.neutral;
+  if (!usedImagerySet) return pickTemplateBySeed(pool, seedSource);
+  const start = hashString(seedSource) % pool.length;
+  for (let i = 0; i < pool.length; i += 1) {
+    const candidate = pool[(start + i) % pool.length];
+    const normalized = normalizeCompareText(candidate);
+    if (!normalized || !usedImagerySet.has(normalized)) {
+      if (normalized) usedImagerySet.add(normalized);
+      return candidate;
+    }
+  }
+  const fallback = pool[start];
+  const fallbackNormalized = normalizeCompareText(fallback);
+  if (fallbackNormalized) usedImagerySet.add(fallbackNormalized);
+  return fallback;
+};
 
-const buildEvidenceClaim = (fact, coreMeaning, toneBucket, selectedTemplate, responseMode = 'balanced') => {
+const buildEvidenceClaim = (
+  fact,
+  coreMeaning,
+  toneBucket,
+  selectedTemplate,
+  responseMode = 'balanced',
+  options = {}
+) => {
   const suit = getSuitType(fact.cardId);
   const template = selectedTemplate || pickTemplateBySeed(
     EVIDENCE_CLAIM_TEMPLATES[toneBucket]?.[suit] || EVIDENCE_CLAIM_TEMPLATES[toneBucket]?.major || [],
@@ -257,7 +285,11 @@ const buildEvidenceClaim = (fact, coreMeaning, toneBucket, selectedTemplate, res
     filled = joinSentencesKorean(filled, '실행 강도를 한 단계 낮추면 안정성이 올라갑니다');
   }
   if (shouldUseImageryLine(responseMode)) {
-    const imagery = pickImagerySentence(toneBucket, `${fact.cardId}:${fact.positionLabel}:${responseMode}:imagery`);
+    const imagery = pickImagerySentence(
+      toneBucket,
+      `${fact.cardId}:${fact.positionLabel}:${responseMode}:imagery`,
+      options.usedImagerySet || null
+    );
     if (imagery) {
       filled = joinSentencesKorean(filled, imagery);
     }

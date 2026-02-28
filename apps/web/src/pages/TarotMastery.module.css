@@ -269,12 +269,24 @@
   }
 
   .rightPane {
-    overflow: visible;
-    scrollbar-width: none;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--scroll-thumb-end) var(--scroll-track);
   }
 
   .rightPane::-webkit-scrollbar {
-    display: none;
+    width: 8px;
+  }
+
+  .rightPane::-webkit-scrollbar-track {
+    background: var(--scroll-track);
+    border-radius: 8px;
+  }
+
+  .rightPane::-webkit-scrollbar-thumb {
+    background: linear-gradient(to bottom, var(--scroll-thumb-start), var(--scroll-thumb-end));
+    border-radius: 8px;
+    border: 1px solid var(--scroll-thumb-border);
   }
 }
 
@@ -679,9 +691,11 @@
 
   .rightPane {
     min-height: auto;
-    overflow: visible;
+    overflow-y: auto;
     border-radius: 16px;
     scrollbar-gutter: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--scroll-thumb-end) var(--scroll-track);
     border-left: 1px solid var(--border-subtle);
     border-right: 1px solid var(--border-subtle);
   }

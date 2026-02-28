@@ -91,6 +91,7 @@ export function TarotMastery() {
   });
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const rightPaneRef = useRef<HTMLDivElement>(null);
   const spreadViewportRef = useRef<HTMLDivElement>(null);
   const revealTimersRef = useRef<number[]>([]);
   const [spreadViewportSize, setSpreadViewportSize] = useState({ width: 0, height: 0 });
@@ -100,7 +101,15 @@ export function TarotMastery() {
   }, []);
   const showDiagnostics = debugMode || import.meta.env.DEV;
 
-  const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  const scrollToBottom = () => {
+    const isMobile = typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches;
+    const behavior: ScrollBehavior = isMobile ? 'auto' : 'smooth';
+    if (rightPaneRef.current) {
+      rightPaneRef.current.scrollTo({ top: rightPaneRef.current.scrollHeight, behavior });
+      return;
+    }
+    messagesEndRef.current?.scrollIntoView({ behavior, block: 'end' });
+  };
   useEffect(scrollToBottom, [messages, step]);
   useEffect(() => {
     if (step !== 'result') return;
@@ -695,7 +704,7 @@ export function TarotMastery() {
               </div>
             </div>
 
-            <div className={styles.rightPane}>
+            <div className={styles.rightPane} ref={rightPaneRef}>
               <div className={styles.messagesContainer}>
                 <div className={styles.messages}>
                   {messages.map((msg) => <MessageBubble key={msg.id} message={msg} />)}

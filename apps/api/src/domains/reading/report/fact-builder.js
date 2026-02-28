@@ -87,17 +87,34 @@ const withCategorizedFlags = (flags = []) => {
   return [...new Set(next)];
 };
 
-const reduceEvidenceRepetition = (evidence = []) => {
+const reduceEvidenceRepetition = (evidence = [], reasons = new Set()) => {
   const seenClaims = [];
   return evidence.map((item, idx) => {
     const claim = sanitizeText(item?.claim || '');
-    const overlapCount = seenClaims.filter((picked) => isHighOverlap(picked, claim)).length;
-    const overlapped = claim.length >= 42 && overlapCount >= 2;
+    const recentWindow = seenClaims.slice(-3);
+    const overlapCount = recentWindow.filter((picked) => isHighOverlap(picked, claim)).length;
+    const claimNormalized = normalizeCompareText(claim);
+    const imageryRepeated = /시계바늘|안개|파도|열린 창|잔물결|거울|열차|수평선|합류점/.test(claim)
+      && recentWindow.some((picked) => {
+        const normalized = normalizeCompareText(picked);
+        return normalized.includes('시계바늘')
+          || normalized.includes('안개')
+          || normalized.includes('파도')
+          || normalized.includes('열린 창')
+          || normalized.includes('잔물결')
+          || normalized.includes('거울')
+          || normalized.includes('열차')
+          || normalized.includes('수평선')
+          || normalized.includes('합류점');
+      });
+    const overlapped = claim.length >= 42 && (overlapCount >= 2 || imageryRepeated);
     if (!overlapped) {
       seenClaims.push(claim);
       return item;
     }
-    const fallbackClaim = sanitizeText(`${item?.positionLabel || `단계 ${idx + 1}`} 해석은 이전 카드와 결을 공유하므로, 실행 순서를 분리해 점검하세요.`);
+    if (imageryRepeated) reasons.add('evidence_quality_rewritten_imagery_repeat');
+    else if (claimNormalized) reasons.add('evidence_quality_rewritten_claim_overlap');
+    const fallbackClaim = sanitizeText(`${item?.positionLabel || `단계 ${idx + 1}`} 해석은 이전 카드와 결을 공유하므로, 실행 강도를 낮추고 우선순위를 다시 정리하세요.`);
     seenClaims.push(fallbackClaim);
     return {
       ...item,
@@ -131,9 +148,11 @@ const postProcessReport = (report) => {
     }
   }
 
-  next.evidence = reduceEvidenceRepetition(next.evidence);
+  const evidenceRewriteReasons = new Set();
+  next.evidence = reduceEvidenceRepetition(next.evidence, evidenceRewriteReasons);
   if ((next.evidence || []).some((item, idx, arr) => idx > 0 && isHighOverlap(arr[idx - 1]?.claim, item?.claim))) {
     qualityFlags.push('evidence_quality_rewritten');
+    evidenceRewriteReasons.forEach((reason) => qualityFlags.push(reason));
   }
 
   next.counterpoints = sanitizeListItems(next.counterpoints, 'counterpoints');

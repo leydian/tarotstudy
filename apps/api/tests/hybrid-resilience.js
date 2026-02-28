@@ -704,6 +704,35 @@ const testDomainActionCountRules = async () => {
   process.env.ANTHROPIC_API_KEY = originalKey;
 };
 
+const testImagerySentenceRepetitionGuard = async () => {
+  const cards = buildCards(['s04', 'p01', 'm10', 's07', 'p02']).map((card, idx) => ({
+    ...card,
+    orientation: idx < 4 ? 'reversed' : 'upright'
+  }));
+  process.env.ANTHROPIC_API_KEY = '';
+
+  await withFetchSequence([], async () => {
+    const result = await generateReadingHybrid({
+      cards,
+      question: '이번 달 종합 운세는?',
+      timeframe: 'monthly',
+      category: 'general'
+    });
+    assert.equal(result.fallbackUsed, true);
+    const claims = (result.report?.evidence || []).map((item) => String(item.claim || ''));
+    const imageryHits = claims
+      .map((claim) => {
+        const hit = claim.match(/(시계바늘|안개|파도|거울|열차|갈림길|잔물결|수평선|합류점|열린 창)/);
+        return hit ? hit[1] : null;
+      })
+      .filter(Boolean);
+    const uniqueImagery = new Set(imageryHits);
+    assert.ok(uniqueImagery.size >= 3, '이미지 문장이 5카드 기준 최소 3가지 이상으로 분산되어야 합니다.');
+  });
+
+  process.env.ANTHROPIC_API_KEY = originalKey;
+};
+
 try {
   await testParseRepairPath();
   await testEvidenceNormalization();
@@ -726,6 +755,7 @@ try {
   await testImageryLineByResponseMode();
   await testTwoStageConclusionSummary();
   await testDomainActionCountRules();
+  await testImagerySentenceRepetitionGuard();
   console.log('Hybrid resilience tests passed.');
 } finally {
   global.fetch = originalFetch;
