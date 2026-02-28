@@ -114,8 +114,8 @@ export const generateReadingV3 = (cards, question, timeframe = 'daily', category
   let bridge = "";
   if (firstCard.id.startsWith('s') && lastCard.id.startsWith('c')) bridge = "지금 당신을 괴롭히는 날카로운 이성의 고민들을 지나, 마침내 따스한 감정의 안식처에 도달하게 되는 치유의 흐름이 느껴집니다.";
   else if (firstCard.id.startsWith('w') && lastCard.id.startsWith('p')) bridge = "뜨거운 열정으로 시작한 도전이 마침내 손에 잡히는 구체적인 결실과 안정적인 보상으로 이어지는 성공의 여정이 그려지는군요.";
-  else if (firstCard.id.startsWith('m') && lastCard.id.startsWith('m')) bridge = "운명의 거대한 수레바퀴가 돌며 당신의 삶을 근본적으로 뒤흔들고, 새로운 차원의 성숙으로 인도하는 강력한 변화의 한복판에 서 계십니다.";
-  else bridge = `${firstCard.nameKo}에서 시작된 이 흐름이 ${lastCard.nameKo}의 결과로 향하며, 당신의 운명이 하나의 아름다운 서사를 완성해가고 있습니다.`;
+  else if (firstCard.id.startsWith('m') && lastCard.id.startsWith('m')) bridge = "이 흐름은 단순한 변화를 넘어, 당신의 삶을 새로운 차원의 성숙으로 인도하는 강력한 전환점이 될 것입니다.";
+  else bridge = `${firstCard.nameKo}에서 시작된 이 기운이 ${lastCard.nameKo}의 결실로 향하며, 당신의 운명이 하나의 아름다운 서사를 완성해가고 있습니다.`;
 
   let introduction = isLight 
     ? `${timeGreeting} 가벼운 고민 속에 담긴 운명의 조각을 찾아보았습니다. 너무 무겁게 생각하기보다 카드가 전하는 다정한 힌트에 귀를 기울여 보세요.` 
@@ -135,9 +135,19 @@ export const generateReadingV3 = (cards, question, timeframe = 'daily', category
       
       // 위치 의미를 자연스럽게 문장에 녹임
       let posIntro = "";
-      if (i === 0) posIntro = `가장 먼저 당신의 현재 상황과 여정의 출발점을 보여주는 자리에 **[${c.nameKo}]** 카드가 나타났습니다.`;
-      else if (i === cards.length - 1) posIntro = `그리고 이 모든 흐름이 귀결되는 마지막 결론의 자리에는 **[${c.nameKo}]** 카드가 기다리고 있네요.`;
-      else posIntro = `이어서 ${positionName}의 의미를 담은 자리에는 **[${c.nameKo}]** 카드가 놓여 있습니다.`;
+      if (i === 0) {
+        posIntro = `가장 먼저 당신의 ${positionName}${getJosa(positionName, 'reul')} 보여주는 자리에 **[${c.nameKo}]** 카드가 나타났습니다.`;
+      } else if (i === cards.length - 1) {
+        posIntro = `마지막으로 이 모든 흐름이 귀결되는 **[${positionName}]**의 자리에는 **[${c.nameKo}]** 카드가 기다리고 있네요.`;
+      } else {
+        const connectors = [
+          `이어서 당신의 **[${positionName}]**이 머무는 자리를 살펴보니`,
+          `다음으로 당신의 **[${positionName}]**을 비추는 곳에는`,
+          `시선을 옮겨 당신의 **[${positionName}]**에 담긴 의미를 읽어보니`,
+          `이번에는 당신의 **[${positionName}]**을 상징하는 자리에`
+        ];
+        posIntro = `${connectors[i % connectors.length]} **[${c.nameKo}]** 카드가 놓여 있습니다.`;
+      }
   
       // 이전 카드와의 맥락 연결 (체인 생성)
       let transition = "";
@@ -155,12 +165,13 @@ export const generateReadingV3 = (cards, question, timeframe = 'daily', category
       // 질문 맞춤형 맥락 문장
       let contextSentence = "";
       const keyword = (c.keywords && c.keywords[0]) ? c.keywords[0] : "특별한";
-      if (isRelationship) contextSentence = `두 사람의 관계에서 ${keyword}의 기운이 매우 중요한 변수로 작용합니다.`;
-      else if (isWorker) contextSentence = `당신의 커리어와 이직의 흐름에서 ${keyword}의 태도를 잃지 않는 것이 핵심입니다.`;
-      else if (isFinance) contextSentence = `금전적인 흐름 또한 ${keyword}의 원리에 따라 크게 좌우될 것입니다.`;
+      if (isRelationship) contextSentence = `두 사람의 관계에서 ${keyword}의 기운을 중심에 두는 것이 무엇보다 중요합니다.`;
+      else if (isWorker) contextSentence = `현재 당신의 커리어 여정에서 ${keyword}의 태도는 성공을 위한 필수적인 요소가 될 것입니다.`;
+      else if (isFinance) contextSentence = `금전적인 흐름 또한 ${keyword}의 원리에 따라 크게 좌우될 것으로 보입니다.`;
       else contextSentence = `지금 당신의 삶 전반에 ${keyword}의 에너지가 깊게 스며들어 있습니다.`;
   
-      const paragraph = `${posIntro} ${transition}이 카드는 기본적으로 ${coreSummary}, 현재 당신의 상황에 비추어 볼 때 ${contextSentence} 무엇보다 ${c.meanings.advice.replace(/\.$/, '')} 하시는 것이 운명을 밝히는 열쇠가 될 것입니다.`;
+      const adviceText = c.meanings.advice.replace(/\.$/, '');
+      const paragraph = `${posIntro} ${transition}이 카드는 ${coreSummary}. ${contextSentence} 무엇보다 "**${adviceText}**"라는 사서의 조언을 가슴 깊이 새긴다면, 분명 운명을 밝히는 소중한 열쇠를 얻게 될 것입니다.`;
       narrativeFlow.push(paragraph);
     });
 
@@ -215,6 +226,8 @@ export const generateReadingV3 = (cards, question, timeframe = 'daily', category
     const lastChar = text.charCodeAt(text.length - 1);
     const hasBatchim = (lastChar - 0xac00) % 28 !== 0;
     if (type === 'wa') return hasBatchim ? '과' : '와';
+    if (type === 'reul') return hasBatchim ? '을' : '를';
+    if (type === 'eun') return hasBatchim ? '은' : '는';
     return '';
   };
 
@@ -229,8 +242,8 @@ export const generateReadingV3 = (cards, question, timeframe = 'daily', category
     ];
   } else {
     action = [
-      `[영혼의 조율] ${firstCard.meanings.advice} 이 흐름이 마치 ${selectedMetaphor.intro}처럼 당신의 앞길을 밝혀줄 것입니다.`,
-      `[운명의 실천] ${isRelationship ? '그 사람과의 관계에서' : '지금 이 순간'} ${lastCard.meanings.advice} ${selectedMetaphor.outro}처럼 당신의 삶에 변화가 찾아올 것입니다.`
+      `[영혼의 조율] ${firstCard.meanings.advice.replace(/\.$/, '')} 하여, 이 흐름이 마치 ${selectedMetaphor.intro}처럼 당신의 앞길을 밝혀줄 것입니다.`,
+      `[운명의 실천] ${isRelationship ? '그 사람과의 관계에서' : '지금 이 순간'} ${lastCard.meanings.advice.replace(/\.$/, '')} 한다면, 마치 ${selectedMetaphor.outro}처럼 당신의 삶에 새로운 변화가 찾아올 것입니다.`
     ];
   }
 
