@@ -112,5 +112,6 @@ export interface ReadingResponse {
     };
     failureStage?: 'network' | 'parse' | 'http' | 'model_unavailable' | 'engine' | 'validation' | 'unknown' | null;
     fallbackReason?: string | null;
+    qualityFlags?: string[];
   };
 }

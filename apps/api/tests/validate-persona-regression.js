@@ -21,6 +21,11 @@ const failures = [];
 
 const isValidVerdict = (value) => ['YES', 'NO', 'MAYBE'].includes(value);
 const isValidRecommended = (value) => ['A', 'B', 'EITHER', 'NONE'].includes(value);
+const normalizeCompare = (text) => String(text || '')
+  .toLowerCase()
+  .replace(/[^\p{L}\p{N}\s]/gu, '')
+  .replace(/\s+/g, ' ')
+  .trim();
 
 for (const scenario of scenarios) {
   try {
@@ -64,6 +69,12 @@ for (const scenario of scenarios) {
 
     if (response.report && !isValidVerdict(response.report.verdict.label)) {
       failures.push(`[${scenario.name}] invalid report verdict label: ${response.report.verdict.label}`);
+    }
+    if (normalizeCompare(response.report?.summary) === normalizeCompare(response.report?.verdict?.rationale)) {
+      failures.push(`[${scenario.name}] summary and verdict.rationale should not be duplicated`);
+    }
+    if ((response.report?.counterpoints || []).some((item) => /사서의\s*통찰|신중의\s*기운|\[운명의\s*판정\]/i.test(item))) {
+      failures.push(`[${scenario.name}] counterpoints contains contaminated section text`);
     }
 
     if (scenario.expectRecommendedOption && !isValidRecommended(response.report?.verdict?.recommendedOption)) {

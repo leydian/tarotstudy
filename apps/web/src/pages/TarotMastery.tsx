@@ -21,7 +21,9 @@ export function TarotMastery() {
   const [reading, setReading] = useState<ReadingResponse | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const spreadViewportRef = useRef<HTMLDivElement>(null);
   const revealTimersRef = useRef<number[]>([]);
+  const [spreadViewportSize, setSpreadViewportSize] = useState({ width: 0, height: 0 });
   const debugMode = useMemo(() => {
     if (typeof window === 'undefined') return false;
     return new URLSearchParams(window.location.search).get('debug') === '1';
@@ -34,6 +36,28 @@ export function TarotMastery() {
     revealTimersRef.current.forEach((timerId) => window.clearTimeout(timerId));
     revealTimersRef.current = [];
   }, []);
+  useEffect(() => {
+    const node = spreadViewportRef.current;
+    if (!node) return;
+
+    const updateSize = () => {
+      const rect = node.getBoundingClientRect();
+      setSpreadViewportSize({
+        width: Math.max(0, rect.width),
+        height: Math.max(0, rect.height)
+      });
+    };
+
+    updateSize();
+    const observer = new ResizeObserver(updateSize);
+    observer.observe(node);
+    window.addEventListener('resize', updateSize);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', updateSize);
+    };
+  }, [leftPaneTab, step]);
 
   const queueTimer = (cb: () => void, ms: number) => {
     const timerId = window.setTimeout(cb, ms);
@@ -190,8 +214,18 @@ export function TarotMastery() {
 
   const normalizeForCompare = (text?: string) => String(text || '')
     .replace(/\[운명의 판정\][\s\S]*$/g, '')
+    .replace(/[^\p{L}\p{N}\s]/gu, '')
     .replace(/\s+/g, '')
     .toLowerCase();
+
+  const isTextOverlapHigh = (a?: string, b?: string) => {
+    const left = normalizeForCompare(a);
+    const right = normalizeForCompare(b);
+    if (!left || !right) return false;
+    if (left === right) return true;
+    if (left.length >= 14 && right.length >= 14 && (left.includes(right) || right.includes(left))) return true;
+    return false;
+  };
 
   const getDistinctReportCopy = (data: ReadingResponse) => {
     const summary = data.report?.summary || '';
@@ -199,18 +233,26 @@ export function TarotMastery() {
     const conclusionNorm = normalizeForCompare(data.conclusion);
     const summaryDup = summary && conclusionNorm.includes(normalizeForCompare(summary));
     const rationaleDup = rationale && conclusionNorm.includes(normalizeForCompare(rationale));
+    const summaryRationaleDup = isTextOverlapHigh(summary, rationale);
 
     const isCompactBinary = data.meta?.questionType === 'binary' && data.meta?.responseMode === 'concise';
     const firstEvidence = data.report?.evidence?.[0]?.claim || data.evidence?.[0]?.split('\n').pop()?.trim() || '';
     const firstAction = (data.action?.[0] || '').replace(/^\[운명의 지침 \d+\]\s*/, '').trim();
 
-    const insightText = isCompactBinary
-      ? (summaryDup ? (firstEvidence || summary) : summary)
-      : (summaryDup ? (firstEvidence ? `핵심 카드 흐름으로 보면, ${firstEvidence}` : summary) : summary);
+    let insightText = isCompactBinary
+      ? (summaryDup || summaryRationaleDup ? (firstEvidence || summary) : summary)
+      : (summaryDup || summaryRationaleDup ? (firstEvidence ? `핵심 카드 흐름으로 보면, ${firstEvidence}` : summary) : summary);
 
-    const energyText = isCompactBinary
-      ? (rationaleDup ? (firstAction || rationale) : rationale)
-      : (rationaleDup ? (firstAction ? `실천 에너지는 "${firstAction}" 쪽에 맞춰 두시면 좋습니다.` : rationale) : rationale);
+    let energyText = isCompactBinary
+      ? (rationaleDup || summaryRationaleDup ? (firstAction || rationale) : rationale)
+      : (rationaleDup || summaryRationaleDup ? (firstAction ? `실천 에너지는 "${firstAction}" 쪽에 맞춰 두시면 좋습니다.` : rationale) : rationale);
+
+    if (isTextOverlapHigh(insightText, energyText)) {
+      energyText = firstAction || '이번 주에는 속도를 조절하며 조건을 점검하는 접근이 안전합니다.';
+    }
+    if (isTextOverlapHigh(insightText, energyText)) {
+      insightText = firstEvidence || summary;
+    }
 
     return {
       insightText: insightText || summary,
@@ -218,15 +260,46 @@ export function TarotMastery() {
     };
   };
 
-  const getSpreadRenderConfig = (spread: Spread) => {
-    const maxAbsX = Math.max(...spread.positions.map((p) => Math.abs(p.x)), 1);
-    const maxAbsY = Math.max(...spread.positions.map((p) => Math.abs(p.y)), 1);
-    const maxAbs = Math.max(maxAbsX, maxAbsY);
+  const getSpreadRenderConfig = (spread: Spread, viewport: { width: number; height: number }) => {
+    const cardWidth = 100;
+    const cardHeight = 180;
+    const labelHeight = 56;
+    const padding = 28;
 
-    // Keep large spreads visible without pushing the result panel out of view.
-    const scale = Math.min(0.5, Math.max(0.28, 240 / maxAbs));
-    const areaHeight = Math.min(420, Math.max(280, (maxAbsY * 2 * scale) + 120));
-    return { scale, areaHeight };
+    const isMobileViewport = viewport.width > 0 && viewport.width <= 768;
+    const minScale = isMobileViewport ? 0.12 : 0.16;
+    const maxScale = 0.52;
+
+    let minX = Number.POSITIVE_INFINITY;
+    let maxX = Number.NEGATIVE_INFINITY;
+    let minY = Number.POSITIVE_INFINITY;
+    let maxY = Number.NEGATIVE_INFINITY;
+
+    spread.positions.forEach((pos) => {
+      minX = Math.min(minX, pos.x - cardWidth / 2);
+      maxX = Math.max(maxX, pos.x + cardWidth / 2);
+      minY = Math.min(minY, pos.y - cardHeight / 2);
+      maxY = Math.max(maxY, pos.y + cardHeight / 2 + labelHeight);
+    });
+
+    const contentWidth = Math.max(1, (maxX - minX) + padding * 2);
+    const contentHeight = Math.max(1, (maxY - minY) + padding * 2);
+
+    const availableWidth = Math.max(220, viewport.width - 24);
+    const availableHeight = Math.max(220, viewport.height - 24);
+
+    const fitScaleX = availableWidth / contentWidth;
+    const fitScaleY = availableHeight / contentHeight;
+    const fitScale = Math.min(fitScaleX, fitScaleY);
+    const scale = Math.min(maxScale, Math.max(minScale, fitScale));
+
+    const centerX = (minX + maxX) / 2;
+    const centerY = (minY + maxY) / 2;
+    const offsetX = -centerX * scale;
+    const offsetY = -centerY * scale;
+    const areaHeight = Math.max(280, Math.min(640, Math.round(contentHeight * scale + padding)));
+
+    return { scale, offsetX, offsetY, areaHeight };
   };
 
   const handleReset = () => {
@@ -289,9 +362,13 @@ export function TarotMastery() {
                 {leftPaneTab === 'spread' ? (
                   (step === 'reading' || step === 'result') && spreadLayout ? (
                     (() => {
-                      const renderConfig = getSpreadRenderConfig(spreadLayout);
+                      const renderConfig = getSpreadRenderConfig(spreadLayout, spreadViewportSize);
                       return (
-                        <div className={styles.topSpreadArea}>
+                        <div
+                          ref={spreadViewportRef}
+                          className={styles.topSpreadArea}
+                          style={{ minHeight: `${renderConfig.areaHeight}px` }}
+                        >
                           <div className={styles.spreadCenter}>
                             {spreadLayout.positions.map((pos, idx) => (
                               <div
@@ -299,8 +376,8 @@ export function TarotMastery() {
                                 className={styles.cardPosition}
                                 style={{
                                   position: 'absolute',
-                                  left: `${pos.x * renderConfig.scale}px`,
-                                  top: `${pos.y * renderConfig.scale}px`,
+                                  left: `${(pos.x * renderConfig.scale) + renderConfig.offsetX}px`,
+                                  top: `${(pos.y * renderConfig.scale) + renderConfig.offsetY}px`,
                                   transform: 'translate(-50%, -50%)',
                                   transition: 'all 0.5s ease-out'
                                 }}
@@ -318,7 +395,7 @@ export function TarotMastery() {
                       );
                     })()
                   ) : (
-                    <div className={styles.topSpreadArea}>
+                    <div ref={spreadViewportRef} className={styles.topSpreadArea}>
                       <p className={styles.leftPanePlaceholder}>질문을 입력하면 이곳에 카드 스프레드가 펼쳐집니다.</p>
                     </div>
                   )

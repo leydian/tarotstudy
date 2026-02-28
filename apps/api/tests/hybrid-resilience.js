@@ -145,10 +145,81 @@ const testNoApiKeyFallbackReason = async () => {
   process.env.ANTHROPIC_API_KEY = originalKey;
 };
 
+const testDuplicateSummaryRationaleRewrite = async () => {
+  const cards = buildCards(['m10', 'w05', 'w09', 'm04', 'm18']);
+  const duplicatedText = '지금은 상황을 조금 더 신중하게 살피고 보수적으로 접근하는 것이 안전해 보입니다.';
+  const duplicatedReport = {
+    fullNarrative: '중복 문장을 포함한 테스트 서사입니다.',
+    summary: duplicatedText,
+    verdict: { label: 'NO', rationale: duplicatedText, recommendedOption: 'NONE' },
+    evidence: cards.map((card) => ({
+      cardId: card.id,
+      positionLabel: card.positionLabel,
+      claim: `${card.nameKo}의 상징이 현재 결정 흐름에 중요한 힌트를 줍니다.`,
+      rationale: '핵심 흐름을 확인할 수 있습니다.',
+      caution: '속도를 조절하세요.'
+    })),
+    counterpoints: ['조건을 한 번 더 확인해 보세요.'],
+    actions: ['이번 주에는 준비 항목을 정리해 보세요.']
+  };
+
+  await withFetchSequence([anthResponse(JSON.stringify(duplicatedReport))], async () => {
+    const result = await generateReadingHybrid({
+      cards,
+      question: '3월 내에 이직할 수 있을까?',
+      timeframe: 'monthly',
+      category: 'career'
+    });
+
+    assert.equal(result.fallbackUsed, false);
+    assert.notEqual(result.report?.summary, result.report?.verdict?.rationale, 'summary/rationale 중복은 재작성되어야 합니다.');
+    assert.ok(Array.isArray(result.meta?.qualityFlags), 'qualityFlags가 메타에 포함되어야 합니다.');
+  });
+};
+
+const testCounterpointContaminationFilter = async () => {
+  const cards = buildCards(['m10', 'w05', 'w09', 'm04', 'm18']);
+  const contaminatedReport = {
+    fullNarrative: '오염 텍스트를 포함한 테스트 서사입니다.',
+    summary: '요약은 정상입니다.',
+    verdict: { label: 'MAYBE', rationale: '추가 검토가 필요합니다.', recommendedOption: 'NONE' },
+    evidence: cards.map((card) => ({
+      cardId: card.id,
+      positionLabel: card.positionLabel,
+      claim: `${card.nameKo} 카드는 상황을 한 번 더 확인하라는 신호를 보냅니다.`,
+      rationale: '증거는 충분합니다.',
+      caution: '성급한 결정을 피하세요.'
+    })),
+    counterpoints: [
+      '사서의 통찰: 질문에 대한 운명의 지도를 펼쳐보니...',
+      '[운명의 판정] NO - 지금은 신중하게 접근하세요.',
+      '실무 조건과 일정 가용성을 먼저 재검토해 보세요.'
+    ],
+    actions: ['[운명의 지침 1] 실행하세요.', '이력서 포인트를 업데이트하세요.']
+  };
+
+  await withFetchSequence([anthResponse(JSON.stringify(contaminatedReport))], async () => {
+    const result = await generateReadingHybrid({
+      cards,
+      question: '이번 분기에 이직하는 게 맞을까요?',
+      timeframe: 'monthly',
+      category: 'career'
+    });
+
+    assert.equal(result.fallbackUsed, false);
+    const allCounterpoints = result.report?.counterpoints?.join(' ') || '';
+    assert.equal(/사서의\s*통찰|운명의\s*판정/i.test(allCounterpoints), false, 'counterpoints 오염 문자열은 제거되어야 합니다.');
+    const allActions = result.report?.actions?.join(' ') || '';
+    assert.equal(/\[운명의\s*지침/i.test(allActions), false, 'actions 오염 접두어는 제거되어야 합니다.');
+  });
+};
+
 try {
   await testParseRepairPath();
   await testEvidenceNormalization();
   await testNoApiKeyFallbackReason();
+  await testDuplicateSummaryRationaleRewrite();
+  await testCounterpointContaminationFilter();
   console.log('Hybrid resilience tests passed.');
 } finally {
   global.fetch = originalFetch;

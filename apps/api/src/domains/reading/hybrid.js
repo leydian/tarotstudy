@@ -18,6 +18,13 @@ const DEFAULT_ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL || 'claude-haiku-4-5
 const ANTHROPIC_TIMEOUT_MS = Number(process.env.ANTHROPIC_TIMEOUT_MS || 60000);
 const ANTHROPIC_RETRY_TIMEOUT_MS = Number(process.env.ANTHROPIC_RETRY_TIMEOUT_MS || 25000);
 const ANTHROPIC_REPAIR_TIMEOUT_MS = Number(process.env.ANTHROPIC_REPAIR_TIMEOUT_MS || 12000);
+const CONTAMINATION_PATTERNS = [
+  /사서의\s*통찰\s*:/i,
+  /신중의\s*기운\s*:/i,
+  /운명의\s*마스터\s*리포트/i,
+  /\[운명의\s*판정\]/i,
+  /\[운명의\s*지침\s*\d+\]/i
+];
 
 const getYesNoScore = (cardId) => {
   if (POSITIVE_IDS.has(cardId)) return 1;
@@ -26,6 +33,97 @@ const getYesNoScore = (cardId) => {
 };
 
 const sanitizeText = (value) => String(value || '').replace(/\s+/g, ' ').trim();
+const normalizeCompareText = (value) => sanitizeText(value)
+  .toLowerCase()
+  .replace(/[^\p{L}\p{N}\s]/gu, '')
+  .replace(/\s+/g, ' ')
+  .trim();
+
+const isHighOverlap = (a, b) => {
+  const left = normalizeCompareText(a);
+  const right = normalizeCompareText(b);
+  if (!left || !right) return false;
+  if (left === right) return true;
+  if (left.length >= 14 && right.length >= 14 && (left.includes(right) || right.includes(left))) return true;
+  return false;
+};
+
+const pickObjectParticle = (text) => {
+  const trimmed = sanitizeText(text);
+  if (!trimmed) return '을';
+  const chars = [...trimmed];
+  const lastChar = chars[chars.length - 1];
+  const code = lastChar.charCodeAt(0);
+  const isHangulSyllable = code >= 0xac00 && code <= 0xd7a3;
+  if (!isHangulSyllable) return '을';
+  return (code - 0xac00) % 28 === 0 ? '를' : '을';
+};
+
+const dedupeStrings = (items) => {
+  const seen = new Set();
+  const deduped = [];
+  for (const item of items) {
+    const key = normalizeCompareText(item);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    deduped.push(item);
+  }
+  return deduped;
+};
+
+const sanitizeListItems = (items, kind) => {
+  const maxLen = kind === 'counterpoints' ? 180 : 160;
+  const filtered = (Array.isArray(items) ? items : [])
+    .map((item) => sanitizeText(item))
+    .filter(Boolean)
+    .filter((item) => !CONTAMINATION_PATTERNS.some((pattern) => pattern.test(item)))
+    .map((item) => (item.length > maxLen ? `${item.slice(0, maxLen - 1).trimEnd()}…` : item));
+
+  const deduped = dedupeStrings(filtered).slice(0, 4);
+  if (deduped.length > 0) return deduped;
+
+  if (kind === 'counterpoints') {
+    return [
+      '질문의 범위가 넓으면 카드 신호가 분산될 수 있으니 핵심 조건을 먼저 좁혀 보세요.',
+      '컨디션과 외부 변수에 따라 흐름은 바뀔 수 있으니 일정 주기로 상황을 다시 점검하세요.'
+    ];
+  }
+  return [
+    '지금 가능한 가장 작은 실행 단위를 정해 오늘 안에 한 번 시도해 보세요.',
+    '불확실한 부분은 체크리스트로 분리해 우선순위 높은 항목부터 정리해 보세요.'
+  ];
+};
+
+const buildDistinctRationale = (report) => {
+  const firstClaim = sanitizeText(report?.evidence?.[0]?.claim || '').replace(/\.$/, '');
+  if (firstClaim) return `핵심 카드 흐름으로 보면, ${firstClaim} 쪽에 무게가 실립니다.`;
+  if (report?.verdict?.label === 'YES') return '전반 흐름은 긍정 쪽이 우세하므로 준비된 선택부터 실행해 보세요.';
+  if (report?.verdict?.label === 'NO') return '지금은 속도를 낮추고 조건을 정교하게 점검하는 편이 더 안전합니다.';
+  return '판단을 서두르기보다 추가 신호를 확인한 뒤 결정을 내리는 편이 좋습니다.';
+};
+
+const postProcessReport = (report) => {
+  const qualityFlags = [];
+  const next = {
+    ...report,
+    verdict: { ...report.verdict }
+  };
+
+  if (isHighOverlap(next.summary, next.verdict.rationale)) {
+    qualityFlags.push('summary_verdict_overlap_high');
+    next.verdict.rationale = buildDistinctRationale(next);
+    qualityFlags.push('auto_rewritten');
+  }
+
+  next.counterpoints = sanitizeListItems(next.counterpoints, 'counterpoints');
+  next.actions = sanitizeListItems(next.actions, 'actions');
+
+  if (next.counterpoints.some((item) => CONTAMINATION_PATTERNS.some((pattern) => pattern.test(item)))) {
+    qualityFlags.push('counterpoint_contamination_detected');
+  }
+
+  return { report: next, qualityFlags: [...new Set(qualityFlags)] };
+};
 
 const normalizeVerdictLabel = (label) => {
   if (label === 'YES' || label === 'NO' || label === 'MAYBE') return label;
@@ -118,11 +216,12 @@ const buildDeterministicReport = ({ question, facts, category, binaryEntities, q
 
   const evidence = facts.map((fact) => {
     const coreMeaning = sanitizeText(fact.coreMeaning || fact.summary).replace(/\.$/, '');
+    const keywordsText = fact.keywords.join(', ') || '조화로운 기운';
     return {
       cardId: fact.cardId,
       positionLabel: fact.positionLabel,
       claim: `${fact.cardNameKo}의 상징인 '${coreMeaning}'`,
-      rationale: `핵심 키워드인 ${fact.keywords.join(', ') || '조화로운 기운'}을(를) 통해 이번 질문의 실마리를 찾을 수 있습니다.`,
+      rationale: `핵심 키워드인 ${keywordsText}${pickObjectParticle(keywordsText)} 통해 이번 질문의 실마리를 찾을 수 있습니다.`,
       caution: sanitizeText(fact.advice) || '급한 결정보다는 마음의 우선순위를 먼저 정리해 보세요.'
     };
   });
@@ -168,6 +267,8 @@ const buildPrompt = ({ question, facts, category, timeframe, binaryEntities, ses
         '- 결론은 2~3문장으로 짧고 명확하게 작성하세요.',
         '- 과장된 수사(운명/신비/장대한 은유) 사용 금지.',
         '- verdict.rationale은 자연스러운 일상어로 작성하세요.',
+        '- summary와 verdict.rationale은 같은 의미로 반복하지 마세요.',
+        '- counterpoints에는 다른 섹션 문장을 복사하지 마세요.',
         '- actions는 즉시 실행 가능한 문장 2개만 작성하세요.',
         '- evidence는 카드별 핵심 주장(claim) 중심으로 간결하게 작성하세요.'
       ].join('\n')
@@ -180,18 +281,24 @@ const buildPrompt = ({ question, facts, category, timeframe, binaryEntities, ses
           '- actions는 짧고 실행 가능한 문장으로 작성.',
           '- 과장된 비유/장황한 세계관 설명 금지.',
           '- 질문에 대한 직접 결론 1문장을 반드시 포함.',
+          '- summary와 verdict.rationale은 같은 의미로 반복하지 마세요.',
+          '- counterpoints에는 다른 섹션 문장을 복사하지 마세요.'
         ].join('\n')
       : responseMode === 'creative'
       ? [
           '응답 모드: creative',
           '- 이미지감 있는 표현과 어휘 변주를 사용하세요.',
           '- 같은 어구 반복을 피하고 카드별 표현을 다르게 구성하세요.',
-          '- 결론은 질문에 대한 실천 방향이 분명해야 합니다.'
+          '- 결론은 질문에 대한 실천 방향이 분명해야 합니다.',
+          '- summary와 verdict.rationale은 같은 의미로 반복하지 마세요.',
+          '- counterpoints에는 다른 섹션 문장을 복사하지 마세요.'
         ].join('\n')
       : [
           '응답 모드: balanced',
           '- 명확하고 안정적인 어조로 카드 근거를 구조적으로 설명하세요.',
-          '- 감성적 표현과 실천 지침의 균형을 유지하세요.'
+          '- 감성적 표현과 실천 지침의 균형을 유지하세요.',
+          '- summary와 verdict.rationale은 같은 의미로 반복하지 마세요.',
+          '- counterpoints에는 다른 섹션 문장을 복사하지 마세요.'
         ].join('\n');
 
   return [
@@ -337,6 +444,9 @@ const verifyReport = (report, facts, binaryEntities) => {
 
   if (!report.verdict || !isValidVerdictLabel(report.verdict.label)) {
     issues.push('verdict_missing');
+  }
+  if (isHighOverlap(report.summary, report?.verdict?.rationale)) {
+    issues.push('summary_verdict_overlap_high');
   }
 
   if (!Array.isArray(report.evidence) || report.evidence.length !== facts.length) {
@@ -602,12 +712,20 @@ export const generateReadingHybrid = async ({
   }
 
   let normalized = normalizeReport(modelReport, facts, deterministic);
+  let qualityFlags = [];
+  {
+    const processed = postProcessReport(normalized);
+    normalized = processed.report;
+    qualityFlags = processed.qualityFlags;
+  }
   let quality = verifyReport(normalized, facts, binaryEntities);
+  qualityFlags = [...new Set([...qualityFlags, ...quality.issues])];
 
   // 최종 폴백: API가 아예 실패했거나 검증에 실패한 경우
   const fallbackUsed = !modelReport || !quality.valid;
   if (fallbackUsed) {
-    normalized = deterministic;
+    const processedFallback = postProcessReport(deterministic);
+    normalized = processedFallback.report;
     apiUsed = 'fallback';
     path = 'fallback';
     if (!fallbackReason && !quality.valid) fallbackReason = 'validation_failed';
@@ -668,7 +786,8 @@ export const generateReadingHybrid = async ({
       },
       attempts,
       failureStage,
-      fallbackReason: fallbackReason || null
+      fallbackReason: fallbackReason || null,
+      qualityFlags
     }
   };
 };

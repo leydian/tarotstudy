@@ -2,6 +2,50 @@
 
 ## [2026-02-28]
 
+### 스프레드 자동 맞춤 + 리포트 오염/중복 후처리 강화 (v6.3.22)
+
+#### 변경 파일
+- `apps/web/src/pages/TarotMastery.tsx`
+- `apps/web/src/pages/TarotMastery.module.css`
+- `apps/api/src/domains/reading/hybrid.js`
+- `apps/api/tests/hybrid-resilience.js`
+- `apps/api/tests/validate-persona-regression.js`
+- `apps/web/src/types/tarot.ts`
+- `docs/CHANGELOG.md`
+- `docs/RELEASE_NOTES_v6.3.22.md`
+
+#### 변경 사항
+- 좌측 카드 스프레드 자동 맞춤 렌더링 도입
+  - `ResizeObserver`로 스프레드 뷰포트 실측 크기 추적.
+  - 카드 박스(카드 본체 + 라벨 높이) 기준 bounding box를 계산해 `scale + offset` 자동 산출.
+  - 기존 중심 고정 단순 스케일에서, 실제 경계 중심 정렬로 전환해 상단/측면 클리핑 완화.
+  - 모바일에서 강제 `transform: scale(0.4)` 규칙 제거해 이중 스케일 충돌 방지.
+- 하이브리드 리포트 품질 후처리 강화
+  - `summary`와 `verdict.rationale` 고중복 감지 시 rationale 자동 재작성.
+  - `counterpoints/actions`에서 섹션 오염 문구(예: `[운명의 판정]`, `사서의 통찰:` 등) 필터링.
+  - 리스트 항목 dedupe 및 길이 상한 적용으로 반복/과장 출력 억제.
+  - 조사 자동 선택(`을/를`) 보정으로 키워드 연결 문장 자연스러움 개선.
+  - `meta.qualityFlags`에 품질 보정 플래그를 기록해 운영 추적 가능성 강화.
+- 회귀 테스트 강화
+  - persona 회귀 검증에 `summary`/`verdict.rationale` 중복 금지 검사 추가.
+  - counterpoints 오염 텍스트 포함 여부 검사 추가.
+  - hybrid 복원력 테스트에 중복 재작성/오염 필터 시나리오 추가.
+- 타입 계약 확장
+  - 웹 `ReadingResponse.meta`에 `qualityFlags?: string[]` 반영.
+
+#### 효과
+- 큰 스프레드(5장/7장 등)에서 상단 카드 잘림 빈도가 크게 감소.
+- 리포트 내 중복/섹션 오염 텍스트가 줄어 가독성과 신뢰도가 개선.
+- 품질 후처리 동작을 요청 단위 메타로 관측할 수 있어 디버깅 속도 향상.
+
+#### 검증
+- `npm run build --prefix apps/web` 통과.
+- `npm run test:persona --prefix apps/api` 통과.
+- `npm run test:hybrid --prefix apps/api` 통과.
+- 상세 변경 요약: `docs/RELEASE_NOTES_v6.3.22.md`
+
+## [2026-02-28]
+
 ### 라이트 양자택일 리딩 어색함 개선: 중복 제거 + 자연어 톤 보정 (v6.3.21)
 
 #### 변경 파일

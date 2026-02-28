@@ -542,7 +542,6 @@
     min-height: 50vh;
   }
   .topSpreadArea { min-height: 180px !important; }
-  .spreadCenter { transform: scale(0.4); }
   .messages { padding: 1.5rem; }
   .studyGrid { grid-template-columns: 1fr; max-width: 100%; }
   .tabHeader { width: 100%; }
