@@ -353,12 +353,95 @@ const testDeterministicReversedRationale = async () => {
     const firstEvidence = result.report?.evidence?.[0];
     assert.ok(firstEvidence, 'first evidence should exist');
     assert.match(firstEvidence.claim, /\(역방향\)/, 'reversed card should keep orientation label in claim');
-    assert.match(firstEvidence.claim, /점검·완충/, 'reversed claim should carry inspection-first tone');
+    assert.match(firstEvidence.claim, /(점검|재정비|전환 구간)/, 'reversed claim should carry inspection-first tone');
     assert.equal(
       /나아가기 좋은 시점/.test(firstEvidence.rationale),
       false,
       'reversed rationale should not use optimistic fixed phrase'
     );
+  });
+
+  process.env.ANTHROPIC_API_KEY = originalKey;
+};
+
+const testDeterministicSwordAceUprightTone = async () => {
+  const cards = buildCards(['s01', 'm03', 'p08']);
+  process.env.ANTHROPIC_API_KEY = '';
+
+  await withFetchSequence([], async () => {
+    const result = await generateReadingHybrid({
+      cards,
+      question: '이번 주 종합 운세는?',
+      timeframe: 'weekly',
+      category: 'general'
+    });
+
+    assert.equal(result.fallbackUsed, true);
+    const swordEvidence = (result.report?.evidence || []).find((item) => item.cardId === 's01');
+    assert.ok(swordEvidence, 's01 evidence should exist');
+    assert.equal(
+      /단정하기보다 핵심 변수부터 좁혀/.test(swordEvidence.claim),
+      false,
+      's01 upright claim should avoid neutral fallback sentence'
+    );
+    assert.equal(
+      /중립에 가깝기 때문에/.test(swordEvidence.rationale),
+      false,
+      's01 upright rationale should avoid neutral fixed phrase'
+    );
+  });
+
+  process.env.ANTHROPIC_API_KEY = originalKey;
+};
+
+const testDeterministicPentaclesKingUprightTone = async () => {
+  const cards = buildCards(['p14', 'm01', 'c10']);
+  process.env.ANTHROPIC_API_KEY = '';
+
+  await withFetchSequence([], async () => {
+    const result = await generateReadingHybrid({
+      cards,
+      question: '이번 달 종합 운세는?',
+      timeframe: 'monthly',
+      category: 'general'
+    });
+
+    assert.equal(result.fallbackUsed, true);
+    const p14Evidence = (result.report?.evidence || []).find((item) => item.cardId === 'p14');
+    assert.ok(p14Evidence, 'p14 evidence should exist');
+    assert.equal(
+      /단정하기보다 핵심 변수부터 좁혀/.test(p14Evidence.claim),
+      false,
+      'p14 upright claim should avoid neutral fallback sentence'
+    );
+    assert.equal(
+      /중립에 가깝기 때문에/.test(p14Evidence.rationale),
+      false,
+      'p14 upright rationale should avoid neutral fixed phrase'
+    );
+  });
+
+  process.env.ANTHROPIC_API_KEY = originalKey;
+};
+
+const testDeterministicEvidenceClaimVariation = async () => {
+  const cards = buildCards(['p08', 'p09', 'p10', 'p11', 'p14']);
+  process.env.ANTHROPIC_API_KEY = '';
+
+  await withFetchSequence([], async () => {
+    const result = await generateReadingHybrid({
+      cards,
+      question: '이번 달 종합 운세는?',
+      timeframe: 'monthly',
+      category: 'general'
+    });
+
+    assert.equal(result.fallbackUsed, true);
+    const claimSecondSentences = (result.report?.evidence || [])
+      .map((item) => String(item.claim || '').split('. ').slice(1).join('. ').trim())
+      .filter(Boolean);
+    const uniqueSecondSentences = new Set(claimSecondSentences.map((item) => item.replace(/\.$/, '')));
+    assert.ok(uniqueSecondSentences.size >= 2, 'evidence claim second sentence should show at least two distinct patterns');
   });
 
   process.env.ANTHROPIC_API_KEY = originalKey;
@@ -432,6 +515,9 @@ try {
   await testHealthOverridesOverallFortuneIntent();
   await testEvidenceQualityRewrite();
   await testDeterministicReversedRationale();
+  await testDeterministicSwordAceUprightTone();
+  await testDeterministicPentaclesKingUprightTone();
+  await testDeterministicEvidenceClaimVariation();
   await testFallbackPostProcessIsMinimal();
   await testFallbackQualityMatchesFinalReport();
   console.log('Hybrid resilience tests passed.');

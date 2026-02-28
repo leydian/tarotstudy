@@ -2,6 +2,36 @@
 
 ## [2026-02-28]
 
+### evidence 톤 분리·카드별 어조 정합성 보정 (v6.3.40)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/hybrid.js`
+- `apps/api/tests/hybrid-resilience.js`
+- `apps/api/tests/overall-fortune-regression.js`
+- `docs/RELEASE_NOTES_v6.3.40.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- verdict/evidence 스코어 분리
+  - `getYesNoScore()`는 판정 전용으로 유지.
+  - `getEvidenceToneScore()`를 도입해 evidence 어조를 별도로 계산.
+- 카드별 어조 보정
+  - suit 기본값 + 카드 오버라이드(`EVIDENCE_TONE_OVERRIDES`) 체계 추가.
+  - `s01`, `p14` 포함 코트카드/메이저 일부의 정방향 톤 정합성 개선.
+- evidence 문장 생성 개선
+  - toneBucket(`positive/caution/neutral/reversed`) 기반 claim 생성으로 전환.
+  - suit별 claim 템플릿(`EVIDENCE_CLAIM_TEMPLATES`) 추가.
+  - 해시 기반 템플릿 선택으로 동일 리딩 내 반복 문구 완화.
+- 테스트 보강
+  - `s01`/`p14` 정방향이 neutral 고정 문구로 내려가지 않는지 검증 추가.
+  - evidence claim 반복도(최소 다양성) 검증 추가.
+
+#### 검증
+- `node apps/api/tests/hybrid-resilience.js` 통과
+- `node apps/api/tests/overall-fortune-regression.js` 통과
+
+## [2026-02-28]
+
 ### 운세 문장 품질 안정화·후처리 축소 4차 (v6.3.39)
 
 #### 변경 파일

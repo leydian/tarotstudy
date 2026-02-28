@@ -98,6 +98,34 @@ for (const sample of cases) {
     );
     assert.equal(contaminatedActions, false, 'report.actions should be clean without legacy prefixes');
 
+    const swordAceEvidence = (response.report?.evidence || []).find((item) => item.cardId === 's01');
+    if (swordAceEvidence) {
+      assert.equal(
+        /단정하기보다 핵심 변수부터 좁혀/.test(String(swordAceEvidence.claim || '')),
+        false,
+        's01 upright should avoid neutral fallback wording in claim'
+      );
+      assert.equal(
+        /중립에 가깝기 때문에/.test(String(swordAceEvidence.rationale || '')),
+        false,
+        's01 upright should avoid neutral fallback wording in rationale'
+      );
+    }
+
+    const pentaclesKingEvidence = (response.report?.evidence || []).find((item) => item.cardId === 'p14');
+    if (pentaclesKingEvidence) {
+      assert.equal(
+        /단정하기보다 핵심 변수부터 좁혀/.test(String(pentaclesKingEvidence.claim || '')),
+        false,
+        'p14 upright should avoid neutral fallback wording in claim'
+      );
+      assert.equal(
+        /중립에 가깝기 때문에/.test(String(pentaclesKingEvidence.rationale || '')),
+        false,
+        'p14 upright should avoid neutral fallback wording in rationale'
+      );
+    }
+
     const fortuneSegments = [
       normalizeCompare(response.report?.fortune?.energy),
       normalizeCompare(response.report?.fortune?.workFinance),

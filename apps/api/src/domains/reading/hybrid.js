@@ -14,6 +14,42 @@ const NEGATIVE_IDS = new Set([
   'w09', 'w10', 'c05', 'c08', 'p05'
 ]);
 
+const SUIT_TONE_DEFAULTS = {
+  cups: 0.45,
+  pentacles: 0.5,
+  wands: 0.4,
+  swords: -0.35,
+  major: 0
+};
+
+const EVIDENCE_TONE_OVERRIDES = {
+  s01: 0.55,
+  s06: 0.25,
+  s07: -0.55,
+  c11: 0.5,
+  c12: 0.5,
+  c13: 0.5,
+  c14: 0.5,
+  p11: 0.55,
+  p12: 0.55,
+  p13: 0.55,
+  p14: 0.55,
+  w11: 0.45,
+  w12: 0.45,
+  w13: 0.45,
+  w14: 0.45,
+  s11: -0.45,
+  s12: -0.45,
+  s13: -0.45,
+  s14: -0.45,
+  m06: 0.55,
+  m13: -0.45,
+  m14: 0.4,
+  m15: -0.8,
+  m16: -0.85,
+  m17: 0.7
+};
+
 const DEFAULT_ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL || 'claude-haiku-4-5-20251001';
 const ANTHROPIC_TIMEOUT_MS = Number(process.env.ANTHROPIC_TIMEOUT_MS || 60000);
 const ANTHROPIC_RETRY_TIMEOUT_MS = Number(process.env.ANTHROPIC_RETRY_TIMEOUT_MS || 25000);
@@ -44,11 +80,36 @@ const HEALTH_GUARDRAIL_ACTIONS = {
   ]
 };
 
+const hashString = (value = '') => {
+  let hash = 0;
+  for (let i = 0; i < value.length; i += 1) {
+    hash = ((hash << 5) - hash + value.charCodeAt(i)) | 0;
+  }
+  return Math.abs(hash);
+};
+
+const detectSuitByCardId = (cardId = '') => {
+  const prefix = String(cardId || '').slice(0, 1);
+  if (prefix === 'c') return 'cups';
+  if (prefix === 'p') return 'pentacles';
+  if (prefix === 'w') return 'wands';
+  if (prefix === 's') return 'swords';
+  return 'major';
+};
+
 const getYesNoScore = (cardId, orientation = 'upright') => {
   const direction = orientation === 'reversed' ? -1 : 1;
   if (POSITIVE_IDS.has(cardId)) return 1 * direction;
   if (NEGATIVE_IDS.has(cardId)) return -1 * direction;
   return 0;
+};
+
+const getEvidenceToneScore = (cardId, orientation = 'upright') => {
+  const suit = detectSuitByCardId(cardId);
+  const base = Object.prototype.hasOwnProperty.call(EVIDENCE_TONE_OVERRIDES, cardId)
+    ? EVIDENCE_TONE_OVERRIDES[cardId]
+    : (SUIT_TONE_DEFAULTS[suit] ?? 0);
+  return orientation === 'reversed' ? -base : base;
 };
 
 const sanitizeText = (value) => String(value || '').replace(/\s+/g, ' ').trim();
@@ -227,6 +288,110 @@ const EVIDENCE_RATIONALE_TEMPLATES = {
     '%s 기운이 혼재되어 있어, 우선순위를 좁혀 단계적으로 판단하세요.',
     '%s 흐름은 중립에 가깝기 때문에, 추가 근거를 확인한 뒤 결정이 유리합니다.'
   ]
+};
+
+const EVIDENCE_CLAIM_TEMPLATES = {
+  positive: {
+    major: [
+      '%s — %s. 흐름의 중심축이 강해져 주도권을 잡기 좋은 구간입니다.',
+      '%s — %s. 신호가 또렷하므로 핵심 과제를 밀도 있게 추진하기 좋습니다.'
+    ],
+    cups: [
+      '%s — %s. 감정선이 안정되어 관계와 협업을 부드럽게 이끌 수 있습니다.',
+      '%s — %s. 정서적 여유가 확보되어 중요한 대화를 풀기 좋은 타이밍입니다.'
+    ],
+    pentacles: [
+      '%s — %s. 현실 실행력이 올라가 성과를 누적하기에 유리합니다.',
+      '%s — %s. 기초 체력이 받쳐주므로 계획을 차근히 확장하기 좋습니다.'
+    ],
+    wands: [
+      '%s — %s. 추진 에너지가 살아 있어 시작과 전개 속도가 붙기 쉽습니다.',
+      '%s — %s. 행동 동력이 충분하니 우선순위 과제부터 빠르게 전개해 보세요.'
+    ],
+    swords: [
+      '%s — %s. 판단력이 선명해져 복잡한 이슈를 정리하기 좋습니다.',
+      '%s — %s. 분석력이 올라가 불확실한 변수를 선제적으로 정리할 수 있습니다.'
+    ]
+  },
+  caution: {
+    major: [
+      '%s — %s. 구조적 변동 신호가 커서 무리한 확장보다 리스크 점검이 우선입니다.',
+      '%s — %s. 흐름의 진폭이 큰 구간이라 속도보다 안전장치 확보가 필요합니다.'
+    ],
+    cups: [
+      '%s — %s. 감정 소모가 커질 수 있어 반응보다 조율이 먼저입니다.',
+      '%s — %s. 관계 이슈는 즉답보다 온도 조절 후 대응하는 편이 안정적입니다.'
+    ],
+    pentacles: [
+      '%s — %s. 자원 배분 오류를 막기 위해 조건 확인을 먼저 마치세요.',
+      '%s — %s. 성과보다 손실 방어를 우선하는 운영이 필요한 구간입니다.'
+    ],
+    wands: [
+      '%s — %s. 과속 시 피로 누적이 크니 단계별 검증이 필요합니다.',
+      '%s — %s. 추진 의지는 좋지만 점검 없이 밀어붙이면 변동성이 커집니다.'
+    ],
+    swords: [
+      '%s — %s. 갈등 신호가 살아 있어 결론 전에 쟁점을 분리해 확인해야 합니다.',
+      '%s — %s. 판단 과열을 막기 위해 근거와 가정을 분리해 점검하세요.'
+    ]
+  },
+  neutral: {
+    major: [
+      '%s — %s. 상반된 기운이 공존하므로 우선순위를 좁혀 판단해 보세요.',
+      '%s — %s. 방향성은 열려 있으나 결정 전 추가 근거 확인이 필요합니다.'
+    ],
+    cups: [
+      '%s — %s. 감정 흐름은 유동적이니 대화의 맥락을 먼저 정리하는 편이 좋습니다.',
+      '%s — %s. 관계 변수는 단정하기보다 상황 신호를 더 관찰해 보세요.'
+    ],
+    pentacles: [
+      '%s — %s. 운영 리듬을 유지하면서 지표를 점검하면 안정적으로 전개됩니다.',
+      '%s — %s. 단기 결론보다 누적 데이터를 보며 조정하는 접근이 유리합니다.'
+    ],
+    wands: [
+      '%s — %s. 동력은 있으나 방향이 엇갈릴 수 있어 선택지를 압축해 보세요.',
+      '%s — %s. 실행 전 기준을 한 번 더 맞추면 낭비를 줄일 수 있습니다.'
+    ],
+    swords: [
+      '%s — %s. 이성적 판단은 가능하지만 단정 대신 비교 검토가 필요합니다.',
+      '%s — %s. 결론을 서두르기보다 핵심 변수부터 분리해 확인하세요.'
+    ]
+  },
+  reversed: {
+    major: [
+      '%s — %s. 현재 국면은 점검·완충이 필요한 전환 구간입니다.',
+      '%s — %s. 흐름이 뒤집혀 보여 재정비 후 재진입이 안전합니다.'
+    ],
+    cups: [
+      '%s — %s. 감정 과부하를 줄이고 관계의 간격을 조절하는 편이 좋습니다.',
+      '%s — %s. 내면 피로가 누적되기 쉬우니 속도를 낮춰 회복 리듬을 먼저 세우세요.'
+    ],
+    pentacles: [
+      '%s — %s. 자원 운용은 확장보다 손실 방어와 복구에 집중해야 합니다.',
+      '%s — %s. 실행 템포를 낮추고 기본 조건을 재정렬하면 안정성이 올라갑니다.'
+    ],
+    wands: [
+      '%s — %s. 추진력은 흔들릴 수 있어 무리한 드라이브보다 재정비가 우선입니다.',
+      '%s — %s. 속도보다 방향 교정이 필요한 구간입니다.'
+    ],
+    swords: [
+      '%s — %s. 판단 과열을 식히고 전제를 다시 점검하는 편이 안전합니다.',
+      '%s — %s. 긴장도가 높아질 수 있어 결론 전 검증 단계를 추가하세요.'
+    ]
+  }
+};
+
+const resolveEvidenceToneBucket = (toneScore, orientation = 'upright') => {
+  if (orientation === 'reversed') return 'reversed';
+  if (toneScore >= 0.35) return 'positive';
+  if (toneScore <= -0.35) return 'caution';
+  return 'neutral';
+};
+
+const pickTemplateBySeed = (templates, seedSource) => {
+  if (!Array.isArray(templates) || templates.length === 0) return '';
+  const index = hashString(seedSource) % templates.length;
+  return templates[index];
 };
 
 const buildDistinctRationale = (report) => {
@@ -451,12 +616,7 @@ const verdictTone = (label, rationale) => {
 };
 
 const getSuitType = (cardId = '') => {
-  const prefix = String(cardId || '').slice(0, 1);
-  if (prefix === 'c') return 'cups';
-  if (prefix === 'p') return 'pentacles';
-  if (prefix === 'w') return 'wands';
-  if (prefix === 's') return 'swords';
-  return 'major';
+  return detectSuitByCardId(cardId);
 };
 
 const pickDominantFact = (facts, predicate, fallbackIndex = 0) => {
@@ -483,18 +643,15 @@ const withTopicParticle = (label = '') => {
   return `${safe}${hasBatchim ? '은' : '는'}`;
 };
 
-const buildEvidenceClaim = (fact, coreMeaning, polarityScore) => {
-  const prefix = `${fact.cardNameKo}(${fact.orientationLabel})`;
-  if (fact.orientation === 'reversed') {
-    return `${prefix} — ${coreMeaning}. 현재 국면은 점검·완충이 필요한 전환 구간입니다.`;
-  }
-  if (polarityScore > 0) {
-    return `${prefix} — ${coreMeaning}. 추진력은 살아 있으니 무리하지 않는 범위에서 실행을 이어가면 좋습니다.`;
-  }
-  if (polarityScore < 0) {
-    return `${prefix} — ${coreMeaning}. 경고 신호가 함께 보이므로 조건 확인을 먼저 마치고 진행하는 편이 안전합니다.`;
-  }
-  return `${prefix} — ${coreMeaning}. 단정하기보다 핵심 변수부터 좁혀 점진적으로 판단해 보세요.`;
+const buildEvidenceClaim = (fact, coreMeaning, toneBucket) => {
+  const suit = getSuitType(fact.cardId);
+  const template = pickTemplateBySeed(
+    EVIDENCE_CLAIM_TEMPLATES[toneBucket]?.[suit] || EVIDENCE_CLAIM_TEMPLATES[toneBucket]?.major || [],
+    `${fact.cardId}:${fact.positionLabel}:${toneBucket}`
+  );
+  const label = `${fact.cardNameKo}(${fact.orientationLabel})`;
+  if (!template) return `${label} — ${coreMeaning}.`;
+  return template.replace('%s', label).replace('%s', coreMeaning);
 };
 
 const computeVerdict = (facts, binaryEntities) => {
@@ -570,20 +727,18 @@ const buildDeterministicReport = ({
       .replace(/\.$/, '')
       .replace(/[을를이가]?\s*상징합니다\.?$/, '');
     const keywordsStr = fact.keywords.slice(0, 2).join('·') || '균형';
-    const polarityScore = getYesNoScore(fact.cardId, fact.orientation);
-    const templateGroup = fact.orientation === 'reversed'
-      ? EVIDENCE_RATIONALE_TEMPLATES.reversed
-      : polarityScore > 0
-        ? EVIDENCE_RATIONALE_TEMPLATES.positive
-        : polarityScore < 0
-          ? EVIDENCE_RATIONALE_TEMPLATES.caution
-          : EVIDENCE_RATIONALE_TEMPLATES.neutral;
-    const pickedTemplate = templateGroup[fact.index % templateGroup.length];
+    const toneScore = getEvidenceToneScore(fact.cardId, fact.orientation);
+    const toneBucket = resolveEvidenceToneBucket(toneScore, fact.orientation);
+    const templateGroup = EVIDENCE_RATIONALE_TEMPLATES[toneBucket] || EVIDENCE_RATIONALE_TEMPLATES.neutral;
+    const pickedTemplate = pickTemplateBySeed(
+      templateGroup,
+      `${fact.cardId}:${fact.positionLabel}:${toneBucket}:rationale`
+    ) || templateGroup[0];
     const orientationRationale = pickedTemplate.replace('%s', keywordsStr);
     return {
       cardId: fact.cardId,
       positionLabel: fact.positionLabel,
-      claim: buildEvidenceClaim(fact, coreMeaning, polarityScore),
+      claim: buildEvidenceClaim(fact, coreMeaning, toneBucket),
       rationale: orientationRationale,
       caution: sanitizeText(fact.advice) || '급한 결정보다는 마음의 우선순위를 먼저 정리해 보세요.'
     };
