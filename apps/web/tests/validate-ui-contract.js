@@ -39,6 +39,19 @@ assert.ok(
   'quick fortune handler should exist'
 );
 assert.ok(
+  tarotMastery.includes("question: '이번 달 종합 운세는?'"),
+  'monthly quick fortune question should use spaced Korean copy'
+);
+assert.equal(
+  tarotMastery.includes("question: '이번달 종합 운세는?'"),
+  false,
+  'legacy monthly copy without spacing should not remain'
+);
+assert.ok(
+  tarotMastery.includes("return '이번 달 타로 종합운세';"),
+  'monthly fortune title should use spaced Korean copy'
+);
+assert.ok(
   tarotMastery.includes("setStep('reading')"),
   'reading step transition should exist'
 );

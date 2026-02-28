@@ -101,6 +101,14 @@ for (const sample of cases) {
     ].filter(Boolean);
     const uniqueSegments = new Set(fortuneSegments);
     assert.ok(uniqueSegments.size >= 2, 'fortune sections should not all collapse into identical copy');
+
+    const redundantFortunePrefixDetected = [
+      response.report?.fortune?.energy,
+      response.report?.fortune?.workFinance,
+      response.report?.fortune?.love,
+      response.report?.fortune?.healthMind
+    ].some((value) => /^(전체\s*에너지\s*흐름을\s*보면|일·재물운은|애정운은|건강·마음\s*영역은)/.test(String(value || '').trim()));
+    assert.equal(redundantFortunePrefixDetected, false, 'fortune sections should avoid redundant field prefixes');
   } catch (error) {
     failures.push(`[${sample.name}] ${error.message}`);
   }

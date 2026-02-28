@@ -68,7 +68,7 @@ export function TarotMastery() {
   const quickFortuneQuestions = [
     { id: 'today', label: '오늘', question: '오늘의 종합 운세는?' },
     { id: 'week', label: '이번주', question: '이번주 종합 운세는?' },
-    { id: 'month', label: '이번달', question: '이번달 종합 운세는?' },
+    { id: 'month', label: '이번 달', question: '이번 달 종합 운세는?' },
     { id: 'year', label: '올해', question: '올해 종합 운세는?' }
   ] as const;
   const [step, setStep] = useState<'input' | 'reading' | 'result'>('input');
@@ -548,7 +548,7 @@ export function TarotMastery() {
   const fortuneTitleKo = (period?: 'today' | 'week' | 'month' | 'year' | null) => {
     if (period === 'today') return '오늘의 타로 종합운세';
     if (period === 'week') return '이번주 타로 종합운세';
-    if (period === 'month') return '이번달 타로 종합운세';
+    if (period === 'month') return '이번 달 타로 종합운세';
     if (period === 'year') return '올해 타로 종합운세';
     return '타로 종합운세';
   };

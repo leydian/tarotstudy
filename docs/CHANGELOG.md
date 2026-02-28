@@ -2,6 +2,39 @@
 
 ## [2026-02-28]
 
+### 역/정방향 충돌 완화·반복 문구 축소·월간 표기 통일 (v6.3.35)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/hybrid.js`
+- `apps/api/tests/hybrid-resilience.js`
+- `apps/api/tests/overall-fortune-regression.js`
+- `apps/web/src/pages/TarotMastery.tsx`
+- `apps/web/tests/validate-ui-contract.js`
+- `docs/RELEASE_NOTES_v6.3.35.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 정/역방향 해석 충돌 완화
+  - evidence rationale 분기에서 역방향 우선 처리.
+  - 역방향 claim에 `지연·재정비` 보완 문구 추가.
+- 반복 문구 축소
+  - evidence rationale 템플릿 다양화(`positive/caution/reversed/neutral`).
+  - fortune 섹션 중복 접두 제거 정규화.
+  - 반복 완화 후처리 적용 시 `qualityFlags`에 `phrase_repetition_rewritten` 기록.
+- 표기 통일
+  - 월간 질문/타이틀 문구 `이번 달`로 통일.
+- 회귀 테스트 보강
+  - 역방향 deterministic 문구 검증, fortune 접두 중복 검증, 월간 표기 계약 검증 추가.
+
+#### 검증
+- `node apps/api/tests/overall-fortune-regression.js` 통과
+- `node apps/api/tests/hybrid-resilience.js` 통과
+- `node apps/web/tests/validate-ui-contract.js` 통과
+- `node apps/web/tests/validate-reading-flow-contract.js` 통과
+- `npm run build --prefix apps/web` 통과
+
+## [2026-02-28]
+
 ### 리딩 일관성/건강 안전 우선/모바일 안정화 (v6.3.34)
 
 #### 변경 파일

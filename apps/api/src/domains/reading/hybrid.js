@@ -154,6 +154,16 @@ const normalizeFortune = (fortune, fallbackFortune, verdictLabel = 'MAYBE') => {
   };
 };
 
+const stripFortunePrefix = (text, key) => {
+  const value = sanitizeText(text);
+  if (!value) return value;
+  if (key === 'energy') return value.replace(/^전체\s*에너지\s*흐름을\s*보면,\s*/i, '');
+  if (key === 'workFinance') return value.replace(/^일·재물운은\s*/i, '');
+  if (key === 'love') return value.replace(/^애정운은\s*/i, '');
+  if (key === 'healthMind') return value.replace(/^건강·마음\s*영역은\s*/i, '');
+  return value;
+};
+
 const enforceFortuneSectionDiversity = (report) => {
   if (!report?.fortune) return report;
   const fortune = { ...report.fortune };
@@ -180,7 +190,7 @@ const enforceFortuneSectionDiversity = (report) => {
 
   const used = new Set();
   for (const key of FORTUNE_SECTION_KEYS) {
-    const raw = sanitizeText(fortune[key] || '');
+    const raw = stripFortunePrefix(fortune[key] || '', key);
     let nextText = raw || fallbackByKey[key];
     let normalized = normalizeCompareText(nextText);
     if (!normalized || used.has(normalized)) {
@@ -192,11 +202,33 @@ const enforceFortuneSectionDiversity = (report) => {
       normalized = normalizeCompareText(nextText);
     }
     used.add(normalized);
-    fortune[key] = nextText;
+    fortune[key] = stripFortunePrefix(nextText, key);
   }
   fortune.period = period;
   fortune.message = sanitizeText(fortune.message || defaults.message);
   return { ...report, fortune };
+};
+
+const EVIDENCE_RATIONALE_TEMPLATES = {
+  positive: [
+    '%s 에너지가 전개되어, 이 포지션에서는 실행의 탄력이 붙기 쉽습니다.',
+    '%s 신호가 살아 있어, 지금 단계에서 기회를 붙잡기 유리합니다.',
+    '%s 흐름이 받쳐주므로, 작은 실행을 누적하면 성과로 연결되기 쉽습니다.'
+  ],
+  caution: [
+    '%s 신호가 경계등처럼 켜져 있어, 이 영역은 속도보다 점검이 우선입니다.',
+    '%s 흐름이 흔들리는 구간이므로, 성급한 확정보다 리스크 확인이 필요합니다.',
+    '%s 기운이 제동을 걸고 있어, 조건을 정리한 뒤 움직이는 편이 안전합니다.'
+  ],
+  reversed: [
+    '%s 에너지가 안쪽으로 말려 있어, 당장 확장보다 재정비가 우선입니다.',
+    '%s 흐름이 뒤집혀 보이므로, 속도를 낮추고 핵심 조건부터 다시 맞추세요.',
+    '%s 신호가 지연을 알리니, 지금은 수정·보완 단계로 접근하는 편이 안정적입니다.'
+  ],
+  neutral: [
+    '%s 기운이 혼재되어 있어, 우선순위를 좁혀 단계적으로 판단하세요.',
+    '%s 흐름은 중립에 가깝기 때문에, 추가 근거를 확인한 뒤 결정이 유리합니다.'
+  ]
 };
 
 const buildDistinctRationale = (report) => {
@@ -251,6 +283,20 @@ const enforceEvidenceQuality = (evidence) => {
   }));
 };
 
+const rewriteRepetitiveEvidenceRationale = (evidence) => {
+  const REPEATED_PATTERN = /에너지가 활성화되어,\s*이 흐름에 맞춰 나아가기 좋은 시점입니다\.?/;
+  let changed = false;
+  const rewritten = (Array.isArray(evidence) ? evidence : []).map((item, idx) => {
+    const current = sanitizeText(item?.rationale || '');
+    if (!REPEATED_PATTERN.test(current)) return item;
+    const replacements = EVIDENCE_RATIONALE_TEMPLATES.positive;
+    const next = replacements[idx % replacements.length].replace('%s', '핵심');
+    if (next !== current) changed = true;
+    return { ...item, rationale: next };
+  });
+  return { evidence: rewritten, changed };
+};
+
 const postProcessReport = (report) => {
   const qualityFlags = [];
   const next = {
@@ -278,8 +324,13 @@ const postProcessReport = (report) => {
   if (Array.isArray(next.evidence)) {
     const before = JSON.stringify(next.evidence);
     next.evidence = enforceEvidenceQuality(next.evidence);
+    const repetitionFix = rewriteRepetitiveEvidenceRationale(next.evidence);
+    next.evidence = repetitionFix.evidence;
     if (JSON.stringify(next.evidence) !== before) {
       qualityFlags.push('evidence_quality_rewritten');
+    }
+    if (repetitionFix.changed) {
+      qualityFlags.push('phrase_repetition_rewritten');
     }
   }
 
@@ -491,17 +542,22 @@ const buildDeterministicReport = ({
       .replace(/[을를이가]?\s*상징합니다\.?$/, '');
     const keywordsStr = fact.keywords.slice(0, 2).join('·') || '균형';
     const polarityScore = getYesNoScore(fact.cardId, fact.orientation);
-    const orientationRationale = polarityScore > 0
-      ? `${keywordsStr} 에너지가 활성화되어, 이 흐름에 맞춰 나아가기 좋은 시점입니다.`
-      : polarityScore < 0
-        ? `${keywordsStr} 에너지가 경고 신호를 보내고 있어, 이 영역을 직시하고 대비하세요.`
-        : fact.orientation === 'reversed'
-          ? `${keywordsStr} 에너지가 안쪽으로 향하고 있어, 속도를 낮추고 조건을 재점검할 때입니다.`
-          : `${keywordsStr} 에너지가 활성화되어, 이 흐름에 맞춰 나아가기 좋은 시점입니다.`;
+    const templateGroup = fact.orientation === 'reversed'
+      ? EVIDENCE_RATIONALE_TEMPLATES.reversed
+      : polarityScore > 0
+        ? EVIDENCE_RATIONALE_TEMPLATES.positive
+        : polarityScore < 0
+          ? EVIDENCE_RATIONALE_TEMPLATES.caution
+          : EVIDENCE_RATIONALE_TEMPLATES.neutral;
+    const pickedTemplate = templateGroup[fact.index % templateGroup.length];
+    const orientationRationale = pickedTemplate.replace('%s', keywordsStr);
+    const reversedSuffix = fact.orientation === 'reversed'
+      ? ' 다만 현재 국면에서는 지연·재정비 신호가 함께 읽힙니다.'
+      : '';
     return {
       cardId: fact.cardId,
       positionLabel: fact.positionLabel,
-      claim: `${fact.cardNameKo}(${fact.orientationLabel}) — ${coreMeaning}`,
+      claim: `${fact.cardNameKo}(${fact.orientationLabel}) — ${coreMeaning}${reversedSuffix}`,
       rationale: orientationRationale,
       caution: sanitizeText(fact.advice) || '급한 결정보다는 마음의 우선순위를 먼저 정리해 보세요.'
     };
@@ -626,10 +682,10 @@ const buildDeterministicReport = ({
     const fortune = {
       period: resolvedFortunePeriod,
       trendLabel,
-      energy: `전체 에너지 흐름을 보면, ${energyClaim}`,
-      workFinance: `일·재물운은 ${workClaim}`,
-      love: `애정운은 ${loveClaim}`,
-      healthMind: `건강·마음 영역은 ${mindClaim}`,
+      energy: energyClaim,
+      workFinance: workClaim,
+      love: loveClaim,
+      healthMind: mindClaim,
       message: trendLabel === 'UP'
         ? '지금의 상승 흐름을 믿되, 속도보다 리듬을 지키세요.'
         : trendLabel === 'CAUTION'

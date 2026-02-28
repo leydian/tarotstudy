@@ -333,6 +333,36 @@ const testEvidenceQualityRewrite = async () => {
   });
 };
 
+const testDeterministicReversedRationale = async () => {
+  const cards = buildCards(['s06', 'm15', 'p08']).map((card, idx) => ({
+    ...card,
+    orientation: idx === 0 ? 'reversed' : 'upright'
+  }));
+  process.env.ANTHROPIC_API_KEY = '';
+
+  await withFetchSequence([], async () => {
+    const result = await generateReadingHybrid({
+      cards,
+      question: '이번 달 종합 운세는?',
+      timeframe: 'monthly',
+      category: 'general'
+    });
+
+    assert.equal(result.fallbackUsed, true);
+    const firstEvidence = result.report?.evidence?.[0];
+    assert.ok(firstEvidence, 'first evidence should exist');
+    assert.match(firstEvidence.claim, /\(역방향\)/, 'reversed card should keep orientation label in claim');
+    assert.match(firstEvidence.claim, /지연·재정비/, 'reversed claim should include caution suffix');
+    assert.equal(
+      /나아가기 좋은 시점/.test(firstEvidence.rationale),
+      false,
+      'reversed rationale should not use optimistic fixed phrase'
+    );
+  });
+
+  process.env.ANTHROPIC_API_KEY = originalKey;
+};
+
 try {
   await testParseRepairPath();
   await testEvidenceNormalization();
@@ -342,6 +372,7 @@ try {
   await testHealthGuardrailOverridesUnsafeVerdict();
   await testHealthOverridesOverallFortuneIntent();
   await testEvidenceQualityRewrite();
+  await testDeterministicReversedRationale();
   console.log('Hybrid resilience tests passed.');
 } finally {
   global.fetch = originalFetch;
