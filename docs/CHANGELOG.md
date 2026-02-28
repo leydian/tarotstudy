@@ -2,6 +2,70 @@
 
 ## [2026-02-28]
 
+### 하이브리드 리딩 fallback 저감 안정화 (v6.3.15)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/hybrid.js`
+- `apps/api/tests/hybrid-resilience.js`
+- `apps/api/package.json`
+- `docs/SETUP_SECURITY.md`
+- `docs/CHANGELOG.md`
+- `docs/RELEASE_NOTES_v6.3.15.md`
+
+#### 변경 사항
+- Anthropic 타임아웃 기본값을 안정성 우선으로 재조정.
+  - `ANTHROPIC_TIMEOUT_MS`: `60000`
+  - `ANTHROPIC_RETRY_TIMEOUT_MS`: `25000`
+  - `ANTHROPIC_REPAIR_TIMEOUT_MS`: `12000` (신규)
+- 실패 원인별 재시도 정책 도입.
+  - 재시도: timeout/fetch 오류/parse 오류/5xx
+  - 비재시도: `404`(model_not_found), `401/403`(auth), `429`(rate limited)
+- JSON 파싱 실패 시 repair 전용 프롬프트로 1회 복구 시도 추가.
+- 응답 정규화/검증 로직 보강으로 과도한 fallback 감소.
+  - evidence를 카드 수/카드 ID에 맞게 정규화
+  - 치명 이슈(요약/판정/evidence 길이) 중심으로 fallback 판정
+  - 낮은 evidence 품질은 점수 페널티로만 반영
+- 운영 진단 메타 확장.
+  - `meta.attempts`(primary/retry/repair 단계별 결과)
+  - `meta.failureStage`(network/http/parse/validation 등)
+  - `meta.timings.anthropicRepairMs` 추가
+- 복원력 회귀 테스트 추가.
+  - `npm run test:hybrid --prefix apps/api`
+
+#### 효과
+- parse/부분 구조 불안정 응답에서 deterministic fallback 직행 비율이 감소.
+- fallback 발생 시 원인을 단계별로 추적할 수 있어 운영 디버깅 속도 향상.
+- 문서 기본값과 코드 기본값 정합성 회복.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과.
+- `npm run test:persona --prefix apps/api` 통과.
+- 상세 변경 요약: `docs/RELEASE_NOTES_v6.3.15.md`
+
+## [2026-02-28]
+
+### 아르카나 성소 우측 패널 스크롤바 가시성 개선 (v6.3.14)
+
+#### 변경 파일
+- `apps/web/src/pages/TarotMastery.module.css`
+- `docs/CHANGELOG.md`
+- `docs/RELEASE_NOTES_v6.3.14.md`
+
+#### 변경 사항
+- `아르카나 성소` 우측 패널(`.messages`)의 세로 스크롤 동작을 `auto`에서 `scroll`로 변경.
+- `scrollbar-gutter: stable`을 추가해 콘텐츠 길이에 따라 레이아웃 폭이 흔들리지 않도록 고정.
+- 기존 `thin` 스크롤바 스타일(파이어폭스/웹킷 커스텀)은 유지해 테마 일관성을 보존.
+
+#### 효과
+- 우측 리딩 영역에서 스크롤바가 항상 표시되어 스크롤 가능 상태를 즉시 인지할 수 있음.
+- 결과 탭 전환 및 메시지 길이 변화 시 우측 패널의 가로 폭 점프가 감소해 읽기 흐름이 안정화됨.
+
+#### 검증
+- `npm run build --prefix apps/web` 통과.
+- 상세 변경 요약: `docs/RELEASE_NOTES_v6.3.14.md`
+
+## [2026-02-28]
+
 ### 리딩 화면 3분할 레이아웃 전환 및 와이드 뷰 확장 (v6.3.13)
 
 #### 변경 파일

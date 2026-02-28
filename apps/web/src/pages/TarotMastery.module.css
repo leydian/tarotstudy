@@ -176,7 +176,8 @@
 /* ── MESSAGES AREA ── */
 .messages {
   flex: 1;
-  overflow-y: auto;
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
   padding: 2.5rem;
   display: flex;
   flex-direction: column;
