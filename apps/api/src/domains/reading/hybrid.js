@@ -672,7 +672,7 @@ const buildDeterministicReport = ({
     };
   }
   if (isHealthQuestion) {
-    return applyHealthGuardrail(baseReport, riskLevel);
+    return baseReport;
   }
   return baseReport;
 };
@@ -1048,6 +1048,32 @@ const mapFailureStage = ({ fallbackReason, qualityValid, modelReport }) => {
   return 'unknown';
 };
 
+const finalizeOutputReport = ({
+  report,
+  domainTag,
+  riskLevel,
+  facts,
+  binaryEntities,
+  baseFlags = []
+}) => {
+  let finalReport = report;
+  let flags = [...baseFlags];
+
+  if (domainTag === 'health') {
+    finalReport = applyHealthGuardrail(finalReport, riskLevel);
+    flags = [...flags, 'health_guardrail_applied'];
+  }
+
+  const finalQuality = verifyReport(finalReport, facts, binaryEntities);
+  flags = [...flags, ...finalQuality.issues];
+
+  return {
+    report: finalReport,
+    quality: finalQuality,
+    qualityFlags: [...new Set(flags)]
+  };
+};
+
 export const generateReadingHybrid = async ({
   cards,
   question,
@@ -1198,53 +1224,58 @@ export const generateReadingHybrid = async ({
   }
 
   let normalized = normalizeReport(modelReport, facts, deterministic);
-  let qualityFlags = [];
-  {
-    const processed = postProcessReport(normalized);
-    normalized = processed.report;
-    qualityFlags = processed.qualityFlags;
-  }
-  if (resolvedProfile.domainTag === 'health') {
-    normalized = applyHealthGuardrail(normalized, resolvedProfile.riskLevel);
-    qualityFlags = [...new Set([...qualityFlags, 'health_guardrail_applied'])];
-  }
-  let quality = verifyReport(normalized, facts, binaryEntities);
-  qualityFlags = [...new Set([...qualityFlags, ...quality.issues])];
+  const processed = postProcessReport(normalized);
+  normalized = processed.report;
+  const modelQuality = verifyReport(normalized, facts, binaryEntities);
+  const modelQualityFlags = [...new Set([...processed.qualityFlags, ...modelQuality.issues])];
 
   // 최종 폴백: API가 아예 실패했거나 검증에 실패한 경우
-  const fallbackUsed = !modelReport || !quality.valid;
+  const fallbackUsed = !modelReport || !modelQuality.valid;
+  let finalized = null;
   if (fallbackUsed) {
-    normalized = deterministic;
-    if (resolvedProfile.domainTag === 'health') {
-      normalized = applyHealthGuardrail(normalized, resolvedProfile.riskLevel);
-      qualityFlags = [...new Set([...qualityFlags, 'health_guardrail_applied'])];
-    }
+    finalized = finalizeOutputReport({
+      report: deterministic,
+      domainTag: resolvedProfile.domainTag,
+      riskLevel: resolvedProfile.riskLevel,
+      facts,
+      binaryEntities,
+      baseFlags: []
+    });
     apiUsed = 'fallback';
     path = 'fallback';
-    if (!fallbackReason && !quality.valid) fallbackReason = 'validation_failed';
+    if (!fallbackReason && !modelQuality.valid) fallbackReason = 'validation_failed';
     if (!fallbackReason) fallbackReason = 'model_unavailable';
     failureStage = mapFailureStage({
       fallbackReason,
-      qualityValid: quality.valid,
+      qualityValid: modelQuality.valid,
       modelReport: !!modelReport
+    });
+  } else {
+    finalized = finalizeOutputReport({
+      report: normalized,
+      domainTag: resolvedProfile.domainTag,
+      riskLevel: resolvedProfile.riskLevel,
+      facts,
+      binaryEntities,
+      baseFlags: processed.qualityFlags
     });
   }
 
   const legacyFromV3 = generateReadingV3(cards, safeQuestion, timeframe, category);
-  const legacy = toLegacyResponse({ report: normalized, question: safeQuestion, facts });
+  const legacy = toLegacyResponse({ report: finalized.report, question: safeQuestion, facts });
 
   const isOverallFortune = resolvedProfile.readingKind === 'overall_fortune';
   const isCompactQuestion = isOverallFortune || questionType === 'light' || (questionType === 'binary' && safeQuestion.length <= 20);
   const finalConclusion = isCompactQuestion
-    ? normalized.summary
-    : (normalized.fullNarrative || legacyFromV3?.conclusion || legacy.conclusion);
+    ? finalized.report.summary
+    : (finalized.report.fullNarrative || legacyFromV3?.conclusion || legacy.conclusion);
 
-  const compactEvidence = normalized.evidence.map((item) => {
+  const compactEvidence = finalized.report.evidence.map((item) => {
     const cardName = facts.find((f) => f.cardId === item.cardId)?.cardNameKo || item.cardId;
     return `[${item.positionLabel}: ${cardName}]\n${item.claim}`;
   });
 
-  const compactActions = (normalized.actions.length > 0 ? normalized.actions : deterministic.actions)
+  const compactActions = (finalized.report.actions.length > 0 ? finalized.report.actions : deterministic.actions)
     .slice(0, 2)
     .map((item, idx) => `[운명의 지침 ${idx + 1}] ${item}`);
   const totalMs = Date.now() - startedAt;
@@ -1253,11 +1284,11 @@ export const generateReadingHybrid = async ({
     conclusion: finalConclusion,
     evidence: isCompactQuestion ? compactEvidence : (legacyFromV3?.evidence || legacy.evidence),
     action: isCompactQuestion ? compactActions : (legacyFromV3?.action || legacy.action),
-    yesNoVerdict: normalizeVerdictLabel(normalized.verdict.label),
-    report: normalized,
+    yesNoVerdict: normalizeVerdictLabel(finalized.report.verdict.label),
+    report: finalized.report,
     quality: {
-      consistencyScore: quality.consistencyScore,
-      unsupportedClaimCount: quality.unsupportedClaimCount,
+      consistencyScore: finalized.quality.consistencyScore,
+      unsupportedClaimCount: finalized.quality.unsupportedClaimCount,
       regenerationCount: 0
     },
     fallbackUsed,
@@ -1274,7 +1305,7 @@ export const generateReadingHybrid = async ({
       riskLevel: resolvedProfile.riskLevel,
       readingKind: resolvedProfile.readingKind,
       fortunePeriod: resolvedFortunePeriod,
-      trendLabel: normalized?.fortune?.trendLabel || null,
+      trendLabel: finalized.report?.fortune?.trendLabel || null,
       recommendedSpreadId: resolvedProfile.recommendedSpreadId,
       responseMode,
       path,
@@ -1287,7 +1318,8 @@ export const generateReadingHybrid = async ({
       attempts,
       failureStage,
       fallbackReason: fallbackReason || null,
-      qualityFlags
+      qualityFlags: finalized.qualityFlags,
+      ...(debug ? { modelQualityFlags } : {})
     }
   };
 };

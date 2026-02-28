@@ -2,6 +2,37 @@
 
 ## [2026-02-28]
 
+### 최종 품질 기준 정렬·qualityFlags 분리·health finalize 통일 (v6.3.37)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/hybrid.js`
+- `apps/api/tests/hybrid-resilience.js`
+- `docs/RELEASE_NOTES_v6.3.37.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 최종 품질 기준 정렬
+  - `finalizeOutputReport()`를 도입해 최종 report 확정 후 quality를 재계산.
+  - 반환 `quality`/`meta.qualityFlags`가 최종 응답 기준과 일치하도록 정리.
+- qualityFlags 분리
+  - 모델 단계 플래그(`modelQualityFlags`)와 최종 응답 플래그를 분리.
+  - 기본 응답은 최종 플래그만 노출, debug 모드에서만 모델 플래그 추가 노출.
+- health 경로 단순화
+  - deterministic 생성 단계가 아닌 finalize 단계에서 health guardrail을 단일 적용.
+- 회귀 테스트 보강
+  - fallback 경로에서 최종 품질 기준이 모델 단계 잡음에 오염되지 않는지 검증 추가.
+
+#### 검증
+- `node apps/api/tests/hybrid-resilience.js` 통과
+- `node apps/api/tests/overall-fortune-regression.js` 통과
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `node apps/web/tests/validate-ui-contract.js` 통과
+- `node apps/web/tests/validate-reading-flow-contract.js` 통과
+- `npm run build --prefix apps/web` 통과
+
+## [2026-02-28]
+
 ### 후처리 경량화·fallback 중복 제거·프롬프트 유도 강화 (v6.3.36)
 
 #### 변경 파일

@@ -390,6 +390,32 @@ const testFallbackPostProcessIsMinimal = async () => {
   process.env.ANTHROPIC_API_KEY = originalKey;
 };
 
+const testFallbackQualityMatchesFinalReport = async () => {
+  const cards = buildCards(['m01', 'c09', 'w02']);
+  process.env.ANTHROPIC_API_KEY = '';
+
+  await withFetchSequence([], async () => {
+    const result = await generateReadingHybrid({
+      cards,
+      question: '이번 주 종합 운세는?',
+      timeframe: 'weekly',
+      category: 'general'
+    });
+
+    assert.equal(result.fallbackUsed, true);
+    assert.equal(result.meta?.fallbackReason, 'model_unavailable');
+    assert.equal(
+      (result.meta?.qualityFlags || []).includes('report_missing'),
+      false,
+      'final quality flags should reflect final fallback report instead of model-stage missing report issue'
+    );
+    assert.ok(result.quality?.consistencyScore >= 60, 'final quality should be recomputed from fallback report');
+    assert.ok(result.report?.summary, 'final fallback report should include non-empty summary');
+  });
+
+  process.env.ANTHROPIC_API_KEY = originalKey;
+};
+
 try {
   await testParseRepairPath();
   await testEvidenceNormalization();
@@ -401,6 +427,7 @@ try {
   await testEvidenceQualityRewrite();
   await testDeterministicReversedRationale();
   await testFallbackPostProcessIsMinimal();
+  await testFallbackQualityMatchesFinalReport();
   console.log('Hybrid resilience tests passed.');
 } finally {
   global.fetch = originalFetch;
