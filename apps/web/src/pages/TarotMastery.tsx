@@ -323,6 +323,9 @@ export function TarotMastery() {
         fortunePeriod: readingData.meta?.fortunePeriod || profile.fortunePeriod,
         mode: readingData.mode || 'hybrid',
         fallbackUsed: !!readingData.fallbackUsed,
+        fallbackReason: readingData.meta?.fallbackReason ?? readingData.fallbackReason ?? null,
+        fallbackCategory: readingData.meta?.fallbackCategory ?? null,
+        failureStage: readingData.meta?.failureStage ?? null,
         spreadId: currentSpread.id
       });
 

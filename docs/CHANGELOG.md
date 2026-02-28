@@ -2,6 +2,46 @@
 
 ## [2026-02-28]
 
+### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/prompt-builder.js`
+- `apps/api/src/domains/reading/model-client.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/index.js`
+- `apps/api/.env.example`
+- `apps/web/src/services/analytics.ts`
+- `apps/web/src/pages/TarotMastery.tsx`
+- `apps/web/src/types/tarot.ts`
+- `docs/RELEASE_NOTES_v6.3.65.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 호출 타임아웃 정책 보강
+  - 일반/종합운세 별도 timeout 정책 적용 및 최소 timeout 하한 강제.
+  - 과도하게 낮은 환경값(예: 5초)으로 인한 즉시 fallback 빈도 완화.
+- 재시도 안정화
+  - 1회 재시도 전 짧은 백오프를 추가해 일시 지연/네트워크 변동 회복률 개선.
+- 종합운세(`overall_fortune`) 전용 정책 분리
+  - `ANTHROPIC_TIMEOUT_OVERALL_MS`, `ANTHROPIC_RETRY_TIMEOUT_OVERALL_MS` 도입.
+- fallback 사유 분해 관측
+  - `fallbackReason` 외 `fallbackCategory`(timeout/rate_limit/provider_5xx/...)를 추가해 원인 추적 강화.
+  - 서버 metric 로그와 프런트 analytics 이벤트에서 동일 카테고리로 기록.
+- 2순위 모델 failover 추가
+  - `ANTHROPIC_FALLBACK_MODEL` 설정 시 primary/retry 실패 후 보조 모델 1회 시도.
+  - 성공 시 `meta.path=anthropic_failover`, `meta.attempts.failover`/`meta.timings.anthropicFailoverMs`에 기록.
+- 타입/메타 정합성 업데이트
+  - `ReadingResponse.meta`에 failover 경로/타이밍/카테고리 필드 반영.
+  - `renderer`의 failure stage 매핑에 `anthropic_provider_5xx` 추가.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:metrics --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run test:unit --prefix apps/web` 통과
+- `npm run build --prefix apps/web` 통과
+
 ### 성소 패널 높이 고정으로 리딩 길이 무한 확장 방지 (v6.3.64)
 
 #### 변경 파일
@@ -616,6 +656,46 @@
 
 ## [2026-02-28]
 
+### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/prompt-builder.js`
+- `apps/api/src/domains/reading/model-client.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/index.js`
+- `apps/api/.env.example`
+- `apps/web/src/services/analytics.ts`
+- `apps/web/src/pages/TarotMastery.tsx`
+- `apps/web/src/types/tarot.ts`
+- `docs/RELEASE_NOTES_v6.3.65.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 호출 타임아웃 정책 보강
+  - 일반/종합운세 별도 timeout 정책 적용 및 최소 timeout 하한 강제.
+  - 과도하게 낮은 환경값(예: 5초)으로 인한 즉시 fallback 빈도 완화.
+- 재시도 안정화
+  - 1회 재시도 전 짧은 백오프를 추가해 일시 지연/네트워크 변동 회복률 개선.
+- 종합운세(`overall_fortune`) 전용 정책 분리
+  - `ANTHROPIC_TIMEOUT_OVERALL_MS`, `ANTHROPIC_RETRY_TIMEOUT_OVERALL_MS` 도입.
+- fallback 사유 분해 관측
+  - `fallbackReason` 외 `fallbackCategory`(timeout/rate_limit/provider_5xx/...)를 추가해 원인 추적 강화.
+  - 서버 metric 로그와 프런트 analytics 이벤트에서 동일 카테고리로 기록.
+- 2순위 모델 failover 추가
+  - `ANTHROPIC_FALLBACK_MODEL` 설정 시 primary/retry 실패 후 보조 모델 1회 시도.
+  - 성공 시 `meta.path=anthropic_failover`, `meta.attempts.failover`/`meta.timings.anthropicFailoverMs`에 기록.
+- 타입/메타 정합성 업데이트
+  - `ReadingResponse.meta`에 failover 경로/타이밍/카테고리 필드 반영.
+  - `renderer`의 failure stage 매핑에 `anthropic_provider_5xx` 추가.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:metrics --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run test:unit --prefix apps/web` 통과
+- `npm run build --prefix apps/web` 통과
+
 ### 맥락형 리딩 API v2 도입 (멀티의도/컨텍스트/안전강등) (v6.3.46)
 
 #### 변경 파일
@@ -661,6 +741,46 @@
 
 ## [2026-02-28]
 
+### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/prompt-builder.js`
+- `apps/api/src/domains/reading/model-client.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/index.js`
+- `apps/api/.env.example`
+- `apps/web/src/services/analytics.ts`
+- `apps/web/src/pages/TarotMastery.tsx`
+- `apps/web/src/types/tarot.ts`
+- `docs/RELEASE_NOTES_v6.3.65.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 호출 타임아웃 정책 보강
+  - 일반/종합운세 별도 timeout 정책 적용 및 최소 timeout 하한 강제.
+  - 과도하게 낮은 환경값(예: 5초)으로 인한 즉시 fallback 빈도 완화.
+- 재시도 안정화
+  - 1회 재시도 전 짧은 백오프를 추가해 일시 지연/네트워크 변동 회복률 개선.
+- 종합운세(`overall_fortune`) 전용 정책 분리
+  - `ANTHROPIC_TIMEOUT_OVERALL_MS`, `ANTHROPIC_RETRY_TIMEOUT_OVERALL_MS` 도입.
+- fallback 사유 분해 관측
+  - `fallbackReason` 외 `fallbackCategory`(timeout/rate_limit/provider_5xx/...)를 추가해 원인 추적 강화.
+  - 서버 metric 로그와 프런트 analytics 이벤트에서 동일 카테고리로 기록.
+- 2순위 모델 failover 추가
+  - `ANTHROPIC_FALLBACK_MODEL` 설정 시 primary/retry 실패 후 보조 모델 1회 시도.
+  - 성공 시 `meta.path=anthropic_failover`, `meta.attempts.failover`/`meta.timings.anthropicFailoverMs`에 기록.
+- 타입/메타 정합성 업데이트
+  - `ReadingResponse.meta`에 failover 경로/타이밍/카테고리 필드 반영.
+  - `renderer`의 failure stage 매핑에 `anthropic_provider_5xx` 추가.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:metrics --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run test:unit --prefix apps/web` 통과
+- `npm run build --prefix apps/web` 통과
+
 ### 품질 플래그 단일화 + overall fortune UI 보정 축소 (v6.3.45)
 
 #### 변경 파일
@@ -688,6 +808,46 @@
 - `npm run test:ui-flow --prefix apps/web` 통과
 
 ## [2026-02-28]
+
+### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/prompt-builder.js`
+- `apps/api/src/domains/reading/model-client.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/index.js`
+- `apps/api/.env.example`
+- `apps/web/src/services/analytics.ts`
+- `apps/web/src/pages/TarotMastery.tsx`
+- `apps/web/src/types/tarot.ts`
+- `docs/RELEASE_NOTES_v6.3.65.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 호출 타임아웃 정책 보강
+  - 일반/종합운세 별도 timeout 정책 적용 및 최소 timeout 하한 강제.
+  - 과도하게 낮은 환경값(예: 5초)으로 인한 즉시 fallback 빈도 완화.
+- 재시도 안정화
+  - 1회 재시도 전 짧은 백오프를 추가해 일시 지연/네트워크 변동 회복률 개선.
+- 종합운세(`overall_fortune`) 전용 정책 분리
+  - `ANTHROPIC_TIMEOUT_OVERALL_MS`, `ANTHROPIC_RETRY_TIMEOUT_OVERALL_MS` 도입.
+- fallback 사유 분해 관측
+  - `fallbackReason` 외 `fallbackCategory`(timeout/rate_limit/provider_5xx/...)를 추가해 원인 추적 강화.
+  - 서버 metric 로그와 프런트 analytics 이벤트에서 동일 카테고리로 기록.
+- 2순위 모델 failover 추가
+  - `ANTHROPIC_FALLBACK_MODEL` 설정 시 primary/retry 실패 후 보조 모델 1회 시도.
+  - 성공 시 `meta.path=anthropic_failover`, `meta.attempts.failover`/`meta.timings.anthropicFailoverMs`에 기록.
+- 타입/메타 정합성 업데이트
+  - `ReadingResponse.meta`에 failover 경로/타이밍/카테고리 필드 반영.
+  - `renderer`의 failure stage 매핑에 `anthropic_provider_5xx` 추가.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:metrics --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run test:unit --prefix apps/web` 통과
+- `npm run build --prefix apps/web` 통과
 
 ### 후처리 최소화 + normalize 1차 보정 전환 (v6.3.44)
 
@@ -717,6 +877,46 @@
 - `npm run test:ui-flow --prefix apps/web` 통과
 
 ## [2026-02-28]
+
+### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/prompt-builder.js`
+- `apps/api/src/domains/reading/model-client.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/index.js`
+- `apps/api/.env.example`
+- `apps/web/src/services/analytics.ts`
+- `apps/web/src/pages/TarotMastery.tsx`
+- `apps/web/src/types/tarot.ts`
+- `docs/RELEASE_NOTES_v6.3.65.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 호출 타임아웃 정책 보강
+  - 일반/종합운세 별도 timeout 정책 적용 및 최소 timeout 하한 강제.
+  - 과도하게 낮은 환경값(예: 5초)으로 인한 즉시 fallback 빈도 완화.
+- 재시도 안정화
+  - 1회 재시도 전 짧은 백오프를 추가해 일시 지연/네트워크 변동 회복률 개선.
+- 종합운세(`overall_fortune`) 전용 정책 분리
+  - `ANTHROPIC_TIMEOUT_OVERALL_MS`, `ANTHROPIC_RETRY_TIMEOUT_OVERALL_MS` 도입.
+- fallback 사유 분해 관측
+  - `fallbackReason` 외 `fallbackCategory`(timeout/rate_limit/provider_5xx/...)를 추가해 원인 추적 강화.
+  - 서버 metric 로그와 프런트 analytics 이벤트에서 동일 카테고리로 기록.
+- 2순위 모델 failover 추가
+  - `ANTHROPIC_FALLBACK_MODEL` 설정 시 primary/retry 실패 후 보조 모델 1회 시도.
+  - 성공 시 `meta.path=anthropic_failover`, `meta.attempts.failover`/`meta.timings.anthropicFailoverMs`에 기록.
+- 타입/메타 정합성 업데이트
+  - `ReadingResponse.meta`에 failover 경로/타이밍/카테고리 필드 반영.
+  - `renderer`의 failure stage 매핑에 `anthropic_provider_5xx` 추가.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:metrics --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run test:unit --prefix apps/web` 통과
+- `npm run build --prefix apps/web` 통과
 
 ### 리딩 문장 결합/중복/상세도 보정 (v6.3.43)
 
@@ -757,6 +957,46 @@
 
 ## [2026-02-28]
 
+### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/prompt-builder.js`
+- `apps/api/src/domains/reading/model-client.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/index.js`
+- `apps/api/.env.example`
+- `apps/web/src/services/analytics.ts`
+- `apps/web/src/pages/TarotMastery.tsx`
+- `apps/web/src/types/tarot.ts`
+- `docs/RELEASE_NOTES_v6.3.65.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 호출 타임아웃 정책 보강
+  - 일반/종합운세 별도 timeout 정책 적용 및 최소 timeout 하한 강제.
+  - 과도하게 낮은 환경값(예: 5초)으로 인한 즉시 fallback 빈도 완화.
+- 재시도 안정화
+  - 1회 재시도 전 짧은 백오프를 추가해 일시 지연/네트워크 변동 회복률 개선.
+- 종합운세(`overall_fortune`) 전용 정책 분리
+  - `ANTHROPIC_TIMEOUT_OVERALL_MS`, `ANTHROPIC_RETRY_TIMEOUT_OVERALL_MS` 도입.
+- fallback 사유 분해 관측
+  - `fallbackReason` 외 `fallbackCategory`(timeout/rate_limit/provider_5xx/...)를 추가해 원인 추적 강화.
+  - 서버 metric 로그와 프런트 analytics 이벤트에서 동일 카테고리로 기록.
+- 2순위 모델 failover 추가
+  - `ANTHROPIC_FALLBACK_MODEL` 설정 시 primary/retry 실패 후 보조 모델 1회 시도.
+  - 성공 시 `meta.path=anthropic_failover`, `meta.attempts.failover`/`meta.timings.anthropicFailoverMs`에 기록.
+- 타입/메타 정합성 업데이트
+  - `ReadingResponse.meta`에 failover 경로/타이밍/카테고리 필드 반영.
+  - `renderer`의 failure stage 매핑에 `anthropic_provider_5xx` 추가.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:metrics --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run test:unit --prefix apps/web` 통과
+- `npm run build --prefix apps/web` 통과
+
 ### 웹 운영 지표 페이지(/ops) 제거 (v6.3.42)
 
 #### 변경 파일
@@ -784,6 +1024,46 @@
 - `npm run build --prefix apps/web` 통과
 
 ## [2026-02-28]
+
+### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/prompt-builder.js`
+- `apps/api/src/domains/reading/model-client.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/index.js`
+- `apps/api/.env.example`
+- `apps/web/src/services/analytics.ts`
+- `apps/web/src/pages/TarotMastery.tsx`
+- `apps/web/src/types/tarot.ts`
+- `docs/RELEASE_NOTES_v6.3.65.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 호출 타임아웃 정책 보강
+  - 일반/종합운세 별도 timeout 정책 적용 및 최소 timeout 하한 강제.
+  - 과도하게 낮은 환경값(예: 5초)으로 인한 즉시 fallback 빈도 완화.
+- 재시도 안정화
+  - 1회 재시도 전 짧은 백오프를 추가해 일시 지연/네트워크 변동 회복률 개선.
+- 종합운세(`overall_fortune`) 전용 정책 분리
+  - `ANTHROPIC_TIMEOUT_OVERALL_MS`, `ANTHROPIC_RETRY_TIMEOUT_OVERALL_MS` 도입.
+- fallback 사유 분해 관측
+  - `fallbackReason` 외 `fallbackCategory`(timeout/rate_limit/provider_5xx/...)를 추가해 원인 추적 강화.
+  - 서버 metric 로그와 프런트 analytics 이벤트에서 동일 카테고리로 기록.
+- 2순위 모델 failover 추가
+  - `ANTHROPIC_FALLBACK_MODEL` 설정 시 primary/retry 실패 후 보조 모델 1회 시도.
+  - 성공 시 `meta.path=anthropic_failover`, `meta.attempts.failover`/`meta.timings.anthropicFailoverMs`에 기록.
+- 타입/메타 정합성 업데이트
+  - `ReadingResponse.meta`에 failover 경로/타이밍/카테고리 필드 반영.
+  - `renderer`의 failure stage 매핑에 `anthropic_provider_5xx` 추가.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:metrics --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run test:unit --prefix apps/web` 통과
+- `npm run build --prefix apps/web` 통과
 
 ### 반복감·강도·밀도 동시 보정 (v6.3.41)
 
@@ -818,6 +1098,46 @@
 
 ## [2026-02-28]
 
+### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/prompt-builder.js`
+- `apps/api/src/domains/reading/model-client.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/index.js`
+- `apps/api/.env.example`
+- `apps/web/src/services/analytics.ts`
+- `apps/web/src/pages/TarotMastery.tsx`
+- `apps/web/src/types/tarot.ts`
+- `docs/RELEASE_NOTES_v6.3.65.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 호출 타임아웃 정책 보강
+  - 일반/종합운세 별도 timeout 정책 적용 및 최소 timeout 하한 강제.
+  - 과도하게 낮은 환경값(예: 5초)으로 인한 즉시 fallback 빈도 완화.
+- 재시도 안정화
+  - 1회 재시도 전 짧은 백오프를 추가해 일시 지연/네트워크 변동 회복률 개선.
+- 종합운세(`overall_fortune`) 전용 정책 분리
+  - `ANTHROPIC_TIMEOUT_OVERALL_MS`, `ANTHROPIC_RETRY_TIMEOUT_OVERALL_MS` 도입.
+- fallback 사유 분해 관측
+  - `fallbackReason` 외 `fallbackCategory`(timeout/rate_limit/provider_5xx/...)를 추가해 원인 추적 강화.
+  - 서버 metric 로그와 프런트 analytics 이벤트에서 동일 카테고리로 기록.
+- 2순위 모델 failover 추가
+  - `ANTHROPIC_FALLBACK_MODEL` 설정 시 primary/retry 실패 후 보조 모델 1회 시도.
+  - 성공 시 `meta.path=anthropic_failover`, `meta.attempts.failover`/`meta.timings.anthropicFailoverMs`에 기록.
+- 타입/메타 정합성 업데이트
+  - `ReadingResponse.meta`에 failover 경로/타이밍/카테고리 필드 반영.
+  - `renderer`의 failure stage 매핑에 `anthropic_provider_5xx` 추가.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:metrics --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run test:unit --prefix apps/web` 통과
+- `npm run build --prefix apps/web` 통과
+
 ### evidence 톤 분리·카드별 어조 정합성 보정 (v6.3.40)
 
 #### 변경 파일
@@ -847,6 +1167,46 @@
 - `node apps/api/tests/overall-fortune-regression.js` 통과
 
 ## [2026-02-28]
+
+### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/prompt-builder.js`
+- `apps/api/src/domains/reading/model-client.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/index.js`
+- `apps/api/.env.example`
+- `apps/web/src/services/analytics.ts`
+- `apps/web/src/pages/TarotMastery.tsx`
+- `apps/web/src/types/tarot.ts`
+- `docs/RELEASE_NOTES_v6.3.65.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 호출 타임아웃 정책 보강
+  - 일반/종합운세 별도 timeout 정책 적용 및 최소 timeout 하한 강제.
+  - 과도하게 낮은 환경값(예: 5초)으로 인한 즉시 fallback 빈도 완화.
+- 재시도 안정화
+  - 1회 재시도 전 짧은 백오프를 추가해 일시 지연/네트워크 변동 회복률 개선.
+- 종합운세(`overall_fortune`) 전용 정책 분리
+  - `ANTHROPIC_TIMEOUT_OVERALL_MS`, `ANTHROPIC_RETRY_TIMEOUT_OVERALL_MS` 도입.
+- fallback 사유 분해 관측
+  - `fallbackReason` 외 `fallbackCategory`(timeout/rate_limit/provider_5xx/...)를 추가해 원인 추적 강화.
+  - 서버 metric 로그와 프런트 analytics 이벤트에서 동일 카테고리로 기록.
+- 2순위 모델 failover 추가
+  - `ANTHROPIC_FALLBACK_MODEL` 설정 시 primary/retry 실패 후 보조 모델 1회 시도.
+  - 성공 시 `meta.path=anthropic_failover`, `meta.attempts.failover`/`meta.timings.anthropicFailoverMs`에 기록.
+- 타입/메타 정합성 업데이트
+  - `ReadingResponse.meta`에 failover 경로/타이밍/카테고리 필드 반영.
+  - `renderer`의 failure stage 매핑에 `anthropic_provider_5xx` 추가.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:metrics --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run test:unit --prefix apps/web` 통과
+- `npm run build --prefix apps/web` 통과
 
 ### 운세 문장 품질 안정화·후처리 축소 4차 (v6.3.39)
 
@@ -878,6 +1238,46 @@
 - `node apps/api/tests/overall-fortune-regression.js` 통과
 
 ## [2026-02-28]
+
+### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/prompt-builder.js`
+- `apps/api/src/domains/reading/model-client.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/index.js`
+- `apps/api/.env.example`
+- `apps/web/src/services/analytics.ts`
+- `apps/web/src/pages/TarotMastery.tsx`
+- `apps/web/src/types/tarot.ts`
+- `docs/RELEASE_NOTES_v6.3.65.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 호출 타임아웃 정책 보강
+  - 일반/종합운세 별도 timeout 정책 적용 및 최소 timeout 하한 강제.
+  - 과도하게 낮은 환경값(예: 5초)으로 인한 즉시 fallback 빈도 완화.
+- 재시도 안정화
+  - 1회 재시도 전 짧은 백오프를 추가해 일시 지연/네트워크 변동 회복률 개선.
+- 종합운세(`overall_fortune`) 전용 정책 분리
+  - `ANTHROPIC_TIMEOUT_OVERALL_MS`, `ANTHROPIC_RETRY_TIMEOUT_OVERALL_MS` 도입.
+- fallback 사유 분해 관측
+  - `fallbackReason` 외 `fallbackCategory`(timeout/rate_limit/provider_5xx/...)를 추가해 원인 추적 강화.
+  - 서버 metric 로그와 프런트 analytics 이벤트에서 동일 카테고리로 기록.
+- 2순위 모델 failover 추가
+  - `ANTHROPIC_FALLBACK_MODEL` 설정 시 primary/retry 실패 후 보조 모델 1회 시도.
+  - 성공 시 `meta.path=anthropic_failover`, `meta.attempts.failover`/`meta.timings.anthropicFailoverMs`에 기록.
+- 타입/메타 정합성 업데이트
+  - `ReadingResponse.meta`에 failover 경로/타이밍/카테고리 필드 반영.
+  - `renderer`의 failure stage 매핑에 `anthropic_provider_5xx` 추가.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:metrics --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run test:unit --prefix apps/web` 통과
+- `npm run build --prefix apps/web` 통과
 
 ### 후처리 3차 경량화·분류형 qualityFlags 확장 (v6.3.38)
 
@@ -911,6 +1311,46 @@
 
 ## [2026-02-28]
 
+### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/prompt-builder.js`
+- `apps/api/src/domains/reading/model-client.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/index.js`
+- `apps/api/.env.example`
+- `apps/web/src/services/analytics.ts`
+- `apps/web/src/pages/TarotMastery.tsx`
+- `apps/web/src/types/tarot.ts`
+- `docs/RELEASE_NOTES_v6.3.65.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 호출 타임아웃 정책 보강
+  - 일반/종합운세 별도 timeout 정책 적용 및 최소 timeout 하한 강제.
+  - 과도하게 낮은 환경값(예: 5초)으로 인한 즉시 fallback 빈도 완화.
+- 재시도 안정화
+  - 1회 재시도 전 짧은 백오프를 추가해 일시 지연/네트워크 변동 회복률 개선.
+- 종합운세(`overall_fortune`) 전용 정책 분리
+  - `ANTHROPIC_TIMEOUT_OVERALL_MS`, `ANTHROPIC_RETRY_TIMEOUT_OVERALL_MS` 도입.
+- fallback 사유 분해 관측
+  - `fallbackReason` 외 `fallbackCategory`(timeout/rate_limit/provider_5xx/...)를 추가해 원인 추적 강화.
+  - 서버 metric 로그와 프런트 analytics 이벤트에서 동일 카테고리로 기록.
+- 2순위 모델 failover 추가
+  - `ANTHROPIC_FALLBACK_MODEL` 설정 시 primary/retry 실패 후 보조 모델 1회 시도.
+  - 성공 시 `meta.path=anthropic_failover`, `meta.attempts.failover`/`meta.timings.anthropicFailoverMs`에 기록.
+- 타입/메타 정합성 업데이트
+  - `ReadingResponse.meta`에 failover 경로/타이밍/카테고리 필드 반영.
+  - `renderer`의 failure stage 매핑에 `anthropic_provider_5xx` 추가.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:metrics --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run test:unit --prefix apps/web` 통과
+- `npm run build --prefix apps/web` 통과
+
 ### 최종 품질 기준 정렬·qualityFlags 분리·health finalize 통일 (v6.3.37)
 
 #### 변경 파일
@@ -942,6 +1382,46 @@
 
 ## [2026-02-28]
 
+### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/prompt-builder.js`
+- `apps/api/src/domains/reading/model-client.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/index.js`
+- `apps/api/.env.example`
+- `apps/web/src/services/analytics.ts`
+- `apps/web/src/pages/TarotMastery.tsx`
+- `apps/web/src/types/tarot.ts`
+- `docs/RELEASE_NOTES_v6.3.65.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 호출 타임아웃 정책 보강
+  - 일반/종합운세 별도 timeout 정책 적용 및 최소 timeout 하한 강제.
+  - 과도하게 낮은 환경값(예: 5초)으로 인한 즉시 fallback 빈도 완화.
+- 재시도 안정화
+  - 1회 재시도 전 짧은 백오프를 추가해 일시 지연/네트워크 변동 회복률 개선.
+- 종합운세(`overall_fortune`) 전용 정책 분리
+  - `ANTHROPIC_TIMEOUT_OVERALL_MS`, `ANTHROPIC_RETRY_TIMEOUT_OVERALL_MS` 도입.
+- fallback 사유 분해 관측
+  - `fallbackReason` 외 `fallbackCategory`(timeout/rate_limit/provider_5xx/...)를 추가해 원인 추적 강화.
+  - 서버 metric 로그와 프런트 analytics 이벤트에서 동일 카테고리로 기록.
+- 2순위 모델 failover 추가
+  - `ANTHROPIC_FALLBACK_MODEL` 설정 시 primary/retry 실패 후 보조 모델 1회 시도.
+  - 성공 시 `meta.path=anthropic_failover`, `meta.attempts.failover`/`meta.timings.anthropicFailoverMs`에 기록.
+- 타입/메타 정합성 업데이트
+  - `ReadingResponse.meta`에 failover 경로/타이밍/카테고리 필드 반영.
+  - `renderer`의 failure stage 매핑에 `anthropic_provider_5xx` 추가.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:metrics --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run test:unit --prefix apps/web` 통과
+- `npm run build --prefix apps/web` 통과
+
 ### 후처리 경량화·fallback 중복 제거·프롬프트 유도 강화 (v6.3.36)
 
 #### 변경 파일
@@ -971,6 +1451,46 @@
 - `npm run build --prefix apps/web` 통과
 
 ## [2026-02-28]
+
+### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/prompt-builder.js`
+- `apps/api/src/domains/reading/model-client.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/index.js`
+- `apps/api/.env.example`
+- `apps/web/src/services/analytics.ts`
+- `apps/web/src/pages/TarotMastery.tsx`
+- `apps/web/src/types/tarot.ts`
+- `docs/RELEASE_NOTES_v6.3.65.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 호출 타임아웃 정책 보강
+  - 일반/종합운세 별도 timeout 정책 적용 및 최소 timeout 하한 강제.
+  - 과도하게 낮은 환경값(예: 5초)으로 인한 즉시 fallback 빈도 완화.
+- 재시도 안정화
+  - 1회 재시도 전 짧은 백오프를 추가해 일시 지연/네트워크 변동 회복률 개선.
+- 종합운세(`overall_fortune`) 전용 정책 분리
+  - `ANTHROPIC_TIMEOUT_OVERALL_MS`, `ANTHROPIC_RETRY_TIMEOUT_OVERALL_MS` 도입.
+- fallback 사유 분해 관측
+  - `fallbackReason` 외 `fallbackCategory`(timeout/rate_limit/provider_5xx/...)를 추가해 원인 추적 강화.
+  - 서버 metric 로그와 프런트 analytics 이벤트에서 동일 카테고리로 기록.
+- 2순위 모델 failover 추가
+  - `ANTHROPIC_FALLBACK_MODEL` 설정 시 primary/retry 실패 후 보조 모델 1회 시도.
+  - 성공 시 `meta.path=anthropic_failover`, `meta.attempts.failover`/`meta.timings.anthropicFailoverMs`에 기록.
+- 타입/메타 정합성 업데이트
+  - `ReadingResponse.meta`에 failover 경로/타이밍/카테고리 필드 반영.
+  - `renderer`의 failure stage 매핑에 `anthropic_provider_5xx` 추가.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:metrics --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run test:unit --prefix apps/web` 통과
+- `npm run build --prefix apps/web` 통과
 
 ### 역/정방향 충돌 완화·반복 문구 축소·월간 표기 통일 (v6.3.35)
 
@@ -1004,6 +1524,46 @@
 - `npm run build --prefix apps/web` 통과
 
 ## [2026-02-28]
+
+### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/prompt-builder.js`
+- `apps/api/src/domains/reading/model-client.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/index.js`
+- `apps/api/.env.example`
+- `apps/web/src/services/analytics.ts`
+- `apps/web/src/pages/TarotMastery.tsx`
+- `apps/web/src/types/tarot.ts`
+- `docs/RELEASE_NOTES_v6.3.65.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 호출 타임아웃 정책 보강
+  - 일반/종합운세 별도 timeout 정책 적용 및 최소 timeout 하한 강제.
+  - 과도하게 낮은 환경값(예: 5초)으로 인한 즉시 fallback 빈도 완화.
+- 재시도 안정화
+  - 1회 재시도 전 짧은 백오프를 추가해 일시 지연/네트워크 변동 회복률 개선.
+- 종합운세(`overall_fortune`) 전용 정책 분리
+  - `ANTHROPIC_TIMEOUT_OVERALL_MS`, `ANTHROPIC_RETRY_TIMEOUT_OVERALL_MS` 도입.
+- fallback 사유 분해 관측
+  - `fallbackReason` 외 `fallbackCategory`(timeout/rate_limit/provider_5xx/...)를 추가해 원인 추적 강화.
+  - 서버 metric 로그와 프런트 analytics 이벤트에서 동일 카테고리로 기록.
+- 2순위 모델 failover 추가
+  - `ANTHROPIC_FALLBACK_MODEL` 설정 시 primary/retry 실패 후 보조 모델 1회 시도.
+  - 성공 시 `meta.path=anthropic_failover`, `meta.attempts.failover`/`meta.timings.anthropicFailoverMs`에 기록.
+- 타입/메타 정합성 업데이트
+  - `ReadingResponse.meta`에 failover 경로/타이밍/카테고리 필드 반영.
+  - `renderer`의 failure stage 매핑에 `anthropic_provider_5xx` 추가.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:metrics --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run test:unit --prefix apps/web` 통과
+- `npm run build --prefix apps/web` 통과
 
 ### 리딩 일관성/건강 안전 우선/모바일 안정화 (v6.3.34)
 
@@ -1040,6 +1600,46 @@
 - `npm run build --prefix apps/web` 통과
 
 ## [2026-02-28]
+
+### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/prompt-builder.js`
+- `apps/api/src/domains/reading/model-client.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/index.js`
+- `apps/api/.env.example`
+- `apps/web/src/services/analytics.ts`
+- `apps/web/src/pages/TarotMastery.tsx`
+- `apps/web/src/types/tarot.ts`
+- `docs/RELEASE_NOTES_v6.3.65.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 호출 타임아웃 정책 보강
+  - 일반/종합운세 별도 timeout 정책 적용 및 최소 timeout 하한 강제.
+  - 과도하게 낮은 환경값(예: 5초)으로 인한 즉시 fallback 빈도 완화.
+- 재시도 안정화
+  - 1회 재시도 전 짧은 백오프를 추가해 일시 지연/네트워크 변동 회복률 개선.
+- 종합운세(`overall_fortune`) 전용 정책 분리
+  - `ANTHROPIC_TIMEOUT_OVERALL_MS`, `ANTHROPIC_RETRY_TIMEOUT_OVERALL_MS` 도입.
+- fallback 사유 분해 관측
+  - `fallbackReason` 외 `fallbackCategory`(timeout/rate_limit/provider_5xx/...)를 추가해 원인 추적 강화.
+  - 서버 metric 로그와 프런트 analytics 이벤트에서 동일 카테고리로 기록.
+- 2순위 모델 failover 추가
+  - `ANTHROPIC_FALLBACK_MODEL` 설정 시 primary/retry 실패 후 보조 모델 1회 시도.
+  - 성공 시 `meta.path=anthropic_failover`, `meta.attempts.failover`/`meta.timings.anthropicFailoverMs`에 기록.
+- 타입/메타 정합성 업데이트
+  - `ReadingResponse.meta`에 failover 경로/타이밍/카테고리 필드 반영.
+  - `renderer`의 failure stage 매핑에 `anthropic_provider_5xx` 추가.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:metrics --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run test:unit --prefix apps/web` 통과
+- `npm run build --prefix apps/web` 통과
 
 ### 메트릭 필터링/ops 고도화/릴리스 생성 자동화 (v6.3.33)
 
@@ -1081,6 +1681,46 @@
 - `npm run build --prefix apps/web` 통과
 
 ## [2026-02-28]
+
+### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/prompt-builder.js`
+- `apps/api/src/domains/reading/model-client.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/index.js`
+- `apps/api/.env.example`
+- `apps/web/src/services/analytics.ts`
+- `apps/web/src/pages/TarotMastery.tsx`
+- `apps/web/src/types/tarot.ts`
+- `docs/RELEASE_NOTES_v6.3.65.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 호출 타임아웃 정책 보강
+  - 일반/종합운세 별도 timeout 정책 적용 및 최소 timeout 하한 강제.
+  - 과도하게 낮은 환경값(예: 5초)으로 인한 즉시 fallback 빈도 완화.
+- 재시도 안정화
+  - 1회 재시도 전 짧은 백오프를 추가해 일시 지연/네트워크 변동 회복률 개선.
+- 종합운세(`overall_fortune`) 전용 정책 분리
+  - `ANTHROPIC_TIMEOUT_OVERALL_MS`, `ANTHROPIC_RETRY_TIMEOUT_OVERALL_MS` 도입.
+- fallback 사유 분해 관측
+  - `fallbackReason` 외 `fallbackCategory`(timeout/rate_limit/provider_5xx/...)를 추가해 원인 추적 강화.
+  - 서버 metric 로그와 프런트 analytics 이벤트에서 동일 카테고리로 기록.
+- 2순위 모델 failover 추가
+  - `ANTHROPIC_FALLBACK_MODEL` 설정 시 primary/retry 실패 후 보조 모델 1회 시도.
+  - 성공 시 `meta.path=anthropic_failover`, `meta.attempts.failover`/`meta.timings.anthropicFailoverMs`에 기록.
+- 타입/메타 정합성 업데이트
+  - `ReadingResponse.meta`에 failover 경로/타이밍/카테고리 필드 반영.
+  - `renderer`의 failure stage 매핑에 `anthropic_provider_5xx` 추가.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:metrics --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run test:unit --prefix apps/web` 통과
+- `npm run build --prefix apps/web` 통과
 
 ### 운영 보안/단위테스트/야간 모니터링 고도화 (v6.3.32)
 
@@ -1126,6 +1766,46 @@
 - `npm run build --prefix apps/web` 통과
 
 ## [2026-02-28]
+
+### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/prompt-builder.js`
+- `apps/api/src/domains/reading/model-client.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/index.js`
+- `apps/api/.env.example`
+- `apps/web/src/services/analytics.ts`
+- `apps/web/src/pages/TarotMastery.tsx`
+- `apps/web/src/types/tarot.ts`
+- `docs/RELEASE_NOTES_v6.3.65.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 호출 타임아웃 정책 보강
+  - 일반/종합운세 별도 timeout 정책 적용 및 최소 timeout 하한 강제.
+  - 과도하게 낮은 환경값(예: 5초)으로 인한 즉시 fallback 빈도 완화.
+- 재시도 안정화
+  - 1회 재시도 전 짧은 백오프를 추가해 일시 지연/네트워크 변동 회복률 개선.
+- 종합운세(`overall_fortune`) 전용 정책 분리
+  - `ANTHROPIC_TIMEOUT_OVERALL_MS`, `ANTHROPIC_RETRY_TIMEOUT_OVERALL_MS` 도입.
+- fallback 사유 분해 관측
+  - `fallbackReason` 외 `fallbackCategory`(timeout/rate_limit/provider_5xx/...)를 추가해 원인 추적 강화.
+  - 서버 metric 로그와 프런트 analytics 이벤트에서 동일 카테고리로 기록.
+- 2순위 모델 failover 추가
+  - `ANTHROPIC_FALLBACK_MODEL` 설정 시 primary/retry 실패 후 보조 모델 1회 시도.
+  - 성공 시 `meta.path=anthropic_failover`, `meta.attempts.failover`/`meta.timings.anthropicFailoverMs`에 기록.
+- 타입/메타 정합성 업데이트
+  - `ReadingResponse.meta`에 failover 경로/타이밍/카테고리 필드 반영.
+  - `renderer`의 failure stage 매핑에 `anthropic_provider_5xx` 추가.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:metrics --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run test:unit --prefix apps/web` 통과
+- `npm run build --prefix apps/web` 통과
 
 ### 운영 임계치/흐름 회귀/내부 대시보드 확장 (v6.3.31)
 
@@ -1179,6 +1859,46 @@
 
 ## [2026-02-28]
 
+### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/prompt-builder.js`
+- `apps/api/src/domains/reading/model-client.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/index.js`
+- `apps/api/.env.example`
+- `apps/web/src/services/analytics.ts`
+- `apps/web/src/pages/TarotMastery.tsx`
+- `apps/web/src/types/tarot.ts`
+- `docs/RELEASE_NOTES_v6.3.65.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 호출 타임아웃 정책 보강
+  - 일반/종합운세 별도 timeout 정책 적용 및 최소 timeout 하한 강제.
+  - 과도하게 낮은 환경값(예: 5초)으로 인한 즉시 fallback 빈도 완화.
+- 재시도 안정화
+  - 1회 재시도 전 짧은 백오프를 추가해 일시 지연/네트워크 변동 회복률 개선.
+- 종합운세(`overall_fortune`) 전용 정책 분리
+  - `ANTHROPIC_TIMEOUT_OVERALL_MS`, `ANTHROPIC_RETRY_TIMEOUT_OVERALL_MS` 도입.
+- fallback 사유 분해 관측
+  - `fallbackReason` 외 `fallbackCategory`(timeout/rate_limit/provider_5xx/...)를 추가해 원인 추적 강화.
+  - 서버 metric 로그와 프런트 analytics 이벤트에서 동일 카테고리로 기록.
+- 2순위 모델 failover 추가
+  - `ANTHROPIC_FALLBACK_MODEL` 설정 시 primary/retry 실패 후 보조 모델 1회 시도.
+  - 성공 시 `meta.path=anthropic_failover`, `meta.attempts.failover`/`meta.timings.anthropicFailoverMs`에 기록.
+- 타입/메타 정합성 업데이트
+  - `ReadingResponse.meta`에 failover 경로/타이밍/카테고리 필드 반영.
+  - `renderer`의 failure stage 매핑에 `anthropic_provider_5xx` 추가.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:metrics --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run test:unit --prefix apps/web` 통과
+- `npm run build --prefix apps/web` 통과
+
 ### 운영 메트릭 집계/모바일 읽기성/회귀 검증 확장 (v6.3.30)
 
 #### 변경 파일
@@ -1220,6 +1940,46 @@
 - `npm run metrics:report --prefix apps/api` 통과(샘플 로그)
 
 ## [2026-02-28]
+
+### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/prompt-builder.js`
+- `apps/api/src/domains/reading/model-client.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/index.js`
+- `apps/api/.env.example`
+- `apps/web/src/services/analytics.ts`
+- `apps/web/src/pages/TarotMastery.tsx`
+- `apps/web/src/types/tarot.ts`
+- `docs/RELEASE_NOTES_v6.3.65.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 호출 타임아웃 정책 보강
+  - 일반/종합운세 별도 timeout 정책 적용 및 최소 timeout 하한 강제.
+  - 과도하게 낮은 환경값(예: 5초)으로 인한 즉시 fallback 빈도 완화.
+- 재시도 안정화
+  - 1회 재시도 전 짧은 백오프를 추가해 일시 지연/네트워크 변동 회복률 개선.
+- 종합운세(`overall_fortune`) 전용 정책 분리
+  - `ANTHROPIC_TIMEOUT_OVERALL_MS`, `ANTHROPIC_RETRY_TIMEOUT_OVERALL_MS` 도입.
+- fallback 사유 분해 관측
+  - `fallbackReason` 외 `fallbackCategory`(timeout/rate_limit/provider_5xx/...)를 추가해 원인 추적 강화.
+  - 서버 metric 로그와 프런트 analytics 이벤트에서 동일 카테고리로 기록.
+- 2순위 모델 failover 추가
+  - `ANTHROPIC_FALLBACK_MODEL` 설정 시 primary/retry 실패 후 보조 모델 1회 시도.
+  - 성공 시 `meta.path=anthropic_failover`, `meta.attempts.failover`/`meta.timings.anthropicFailoverMs`에 기록.
+- 타입/메타 정합성 업데이트
+  - `ReadingResponse.meta`에 failover 경로/타이밍/카테고리 필드 반영.
+  - `renderer`의 failure stage 매핑에 `anthropic_provider_5xx` 추가.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:metrics --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run test:unit --prefix apps/web` 통과
+- `npm run build --prefix apps/web` 통과
 
 ### 품질 게이트 자동화 및 종합운세 회귀 체계 강화 (v6.3.29)
 
@@ -1271,6 +2031,46 @@
 
 ## [2026-02-28]
 
+### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/prompt-builder.js`
+- `apps/api/src/domains/reading/model-client.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/index.js`
+- `apps/api/.env.example`
+- `apps/web/src/services/analytics.ts`
+- `apps/web/src/pages/TarotMastery.tsx`
+- `apps/web/src/types/tarot.ts`
+- `docs/RELEASE_NOTES_v6.3.65.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 호출 타임아웃 정책 보강
+  - 일반/종합운세 별도 timeout 정책 적용 및 최소 timeout 하한 강제.
+  - 과도하게 낮은 환경값(예: 5초)으로 인한 즉시 fallback 빈도 완화.
+- 재시도 안정화
+  - 1회 재시도 전 짧은 백오프를 추가해 일시 지연/네트워크 변동 회복률 개선.
+- 종합운세(`overall_fortune`) 전용 정책 분리
+  - `ANTHROPIC_TIMEOUT_OVERALL_MS`, `ANTHROPIC_RETRY_TIMEOUT_OVERALL_MS` 도입.
+- fallback 사유 분해 관측
+  - `fallbackReason` 외 `fallbackCategory`(timeout/rate_limit/provider_5xx/...)를 추가해 원인 추적 강화.
+  - 서버 metric 로그와 프런트 analytics 이벤트에서 동일 카테고리로 기록.
+- 2순위 모델 failover 추가
+  - `ANTHROPIC_FALLBACK_MODEL` 설정 시 primary/retry 실패 후 보조 모델 1회 시도.
+  - 성공 시 `meta.path=anthropic_failover`, `meta.attempts.failover`/`meta.timings.anthropicFailoverMs`에 기록.
+- 타입/메타 정합성 업데이트
+  - `ReadingResponse.meta`에 failover 경로/타이밍/카테고리 필드 반영.
+  - `renderer`의 failure stage 매핑에 `anthropic_provider_5xx` 추가.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:metrics --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run test:unit --prefix apps/web` 통과
+- `npm run build --prefix apps/web` 통과
+
 ### UI 최적화: 안정성/성능/CSS토큰/A11y 정비 (v6.3.28)
 
 #### 변경 파일
@@ -1317,6 +2117,46 @@
 - 상세 변경 요약: `docs/RELEASE_NOTES_v6.3.28.md`
 
 ## [2026-02-28]
+
+### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/prompt-builder.js`
+- `apps/api/src/domains/reading/model-client.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/index.js`
+- `apps/api/.env.example`
+- `apps/web/src/services/analytics.ts`
+- `apps/web/src/pages/TarotMastery.tsx`
+- `apps/web/src/types/tarot.ts`
+- `docs/RELEASE_NOTES_v6.3.65.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 호출 타임아웃 정책 보강
+  - 일반/종합운세 별도 timeout 정책 적용 및 최소 timeout 하한 강제.
+  - 과도하게 낮은 환경값(예: 5초)으로 인한 즉시 fallback 빈도 완화.
+- 재시도 안정화
+  - 1회 재시도 전 짧은 백오프를 추가해 일시 지연/네트워크 변동 회복률 개선.
+- 종합운세(`overall_fortune`) 전용 정책 분리
+  - `ANTHROPIC_TIMEOUT_OVERALL_MS`, `ANTHROPIC_RETRY_TIMEOUT_OVERALL_MS` 도입.
+- fallback 사유 분해 관측
+  - `fallbackReason` 외 `fallbackCategory`(timeout/rate_limit/provider_5xx/...)를 추가해 원인 추적 강화.
+  - 서버 metric 로그와 프런트 analytics 이벤트에서 동일 카테고리로 기록.
+- 2순위 모델 failover 추가
+  - `ANTHROPIC_FALLBACK_MODEL` 설정 시 primary/retry 실패 후 보조 모델 1회 시도.
+  - 성공 시 `meta.path=anthropic_failover`, `meta.attempts.failover`/`meta.timings.anthropicFailoverMs`에 기록.
+- 타입/메타 정합성 업데이트
+  - `ReadingResponse.meta`에 failover 경로/타이밍/카테고리 필드 반영.
+  - `renderer`의 failure stage 매핑에 `anthropic_provider_5xx` 추가.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:metrics --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run test:unit --prefix apps/web` 통과
+- `npm run build --prefix apps/web` 통과
 
 ### overall_fortune 출력 어색함 5가지 수정 (v6.3.27)
 
@@ -1396,6 +2236,46 @@
 
 ## [2026-02-28]
 
+### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/prompt-builder.js`
+- `apps/api/src/domains/reading/model-client.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/index.js`
+- `apps/api/.env.example`
+- `apps/web/src/services/analytics.ts`
+- `apps/web/src/pages/TarotMastery.tsx`
+- `apps/web/src/types/tarot.ts`
+- `docs/RELEASE_NOTES_v6.3.65.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 호출 타임아웃 정책 보강
+  - 일반/종합운세 별도 timeout 정책 적용 및 최소 timeout 하한 강제.
+  - 과도하게 낮은 환경값(예: 5초)으로 인한 즉시 fallback 빈도 완화.
+- 재시도 안정화
+  - 1회 재시도 전 짧은 백오프를 추가해 일시 지연/네트워크 변동 회복률 개선.
+- 종합운세(`overall_fortune`) 전용 정책 분리
+  - `ANTHROPIC_TIMEOUT_OVERALL_MS`, `ANTHROPIC_RETRY_TIMEOUT_OVERALL_MS` 도입.
+- fallback 사유 분해 관측
+  - `fallbackReason` 외 `fallbackCategory`(timeout/rate_limit/provider_5xx/...)를 추가해 원인 추적 강화.
+  - 서버 metric 로그와 프런트 analytics 이벤트에서 동일 카테고리로 기록.
+- 2순위 모델 failover 추가
+  - `ANTHROPIC_FALLBACK_MODEL` 설정 시 primary/retry 실패 후 보조 모델 1회 시도.
+  - 성공 시 `meta.path=anthropic_failover`, `meta.attempts.failover`/`meta.timings.anthropicFailoverMs`에 기록.
+- 타입/메타 정합성 업데이트
+  - `ReadingResponse.meta`에 failover 경로/타이밍/카테고리 필드 반영.
+  - `renderer`의 failure stage 매핑에 `anthropic_provider_5xx` 추가.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:metrics --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run test:unit --prefix apps/web` 통과
+- `npm run build --prefix apps/web` 통과
+
 ### 종합운세 고도화: 전용 스키마 + 정/역방향 + 기간/톤/재현성 통합 (v6.3.25)
 
 #### 변경 파일
@@ -1454,6 +2334,46 @@
 
 ## [2026-02-28]
 
+### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/prompt-builder.js`
+- `apps/api/src/domains/reading/model-client.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/index.js`
+- `apps/api/.env.example`
+- `apps/web/src/services/analytics.ts`
+- `apps/web/src/pages/TarotMastery.tsx`
+- `apps/web/src/types/tarot.ts`
+- `docs/RELEASE_NOTES_v6.3.65.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 호출 타임아웃 정책 보강
+  - 일반/종합운세 별도 timeout 정책 적용 및 최소 timeout 하한 강제.
+  - 과도하게 낮은 환경값(예: 5초)으로 인한 즉시 fallback 빈도 완화.
+- 재시도 안정화
+  - 1회 재시도 전 짧은 백오프를 추가해 일시 지연/네트워크 변동 회복률 개선.
+- 종합운세(`overall_fortune`) 전용 정책 분리
+  - `ANTHROPIC_TIMEOUT_OVERALL_MS`, `ANTHROPIC_RETRY_TIMEOUT_OVERALL_MS` 도입.
+- fallback 사유 분해 관측
+  - `fallbackReason` 외 `fallbackCategory`(timeout/rate_limit/provider_5xx/...)를 추가해 원인 추적 강화.
+  - 서버 metric 로그와 프런트 analytics 이벤트에서 동일 카테고리로 기록.
+- 2순위 모델 failover 추가
+  - `ANTHROPIC_FALLBACK_MODEL` 설정 시 primary/retry 실패 후 보조 모델 1회 시도.
+  - 성공 시 `meta.path=anthropic_failover`, `meta.attempts.failover`/`meta.timings.anthropicFailoverMs`에 기록.
+- 타입/메타 정합성 업데이트
+  - `ReadingResponse.meta`에 failover 경로/타이밍/카테고리 필드 반영.
+  - `renderer`의 failure stage 매핑에 `anthropic_provider_5xx` 추가.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:metrics --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run test:unit --prefix apps/web` 통과
+- `npm run build --prefix apps/web` 통과
+
 ### 모바일 UI 전면 재배치: 단일 스크롤 흐름 + 터치 타깃/입력 안정화 (v6.3.24)
 
 #### 변경 파일
@@ -1490,6 +2410,46 @@
 - 상세 변경 요약: `docs/RELEASE_NOTES_v6.3.24.md`
 
 ## [2026-02-28]
+
+### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/prompt-builder.js`
+- `apps/api/src/domains/reading/model-client.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/index.js`
+- `apps/api/.env.example`
+- `apps/web/src/services/analytics.ts`
+- `apps/web/src/pages/TarotMastery.tsx`
+- `apps/web/src/types/tarot.ts`
+- `docs/RELEASE_NOTES_v6.3.65.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 호출 타임아웃 정책 보강
+  - 일반/종합운세 별도 timeout 정책 적용 및 최소 timeout 하한 강제.
+  - 과도하게 낮은 환경값(예: 5초)으로 인한 즉시 fallback 빈도 완화.
+- 재시도 안정화
+  - 1회 재시도 전 짧은 백오프를 추가해 일시 지연/네트워크 변동 회복률 개선.
+- 종합운세(`overall_fortune`) 전용 정책 분리
+  - `ANTHROPIC_TIMEOUT_OVERALL_MS`, `ANTHROPIC_RETRY_TIMEOUT_OVERALL_MS` 도입.
+- fallback 사유 분해 관측
+  - `fallbackReason` 외 `fallbackCategory`(timeout/rate_limit/provider_5xx/...)를 추가해 원인 추적 강화.
+  - 서버 metric 로그와 프런트 analytics 이벤트에서 동일 카테고리로 기록.
+- 2순위 모델 failover 추가
+  - `ANTHROPIC_FALLBACK_MODEL` 설정 시 primary/retry 실패 후 보조 모델 1회 시도.
+  - 성공 시 `meta.path=anthropic_failover`, `meta.attempts.failover`/`meta.timings.anthropicFailoverMs`에 기록.
+- 타입/메타 정합성 업데이트
+  - `ReadingResponse.meta`에 failover 경로/타이밍/카테고리 필드 반영.
+  - `renderer`의 failure stage 매핑에 `anthropic_provider_5xx` 추가.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:metrics --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run test:unit --prefix apps/web` 통과
+- `npm run build --prefix apps/web` 통과
 
 ### 질문 프로파일 v2 + 헬스 가드레일 + 스프레드 선택 정책 전환 (v6.3.23)
 
@@ -1542,6 +2502,46 @@
 
 ## [2026-02-28]
 
+### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/prompt-builder.js`
+- `apps/api/src/domains/reading/model-client.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/index.js`
+- `apps/api/.env.example`
+- `apps/web/src/services/analytics.ts`
+- `apps/web/src/pages/TarotMastery.tsx`
+- `apps/web/src/types/tarot.ts`
+- `docs/RELEASE_NOTES_v6.3.65.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 호출 타임아웃 정책 보강
+  - 일반/종합운세 별도 timeout 정책 적용 및 최소 timeout 하한 강제.
+  - 과도하게 낮은 환경값(예: 5초)으로 인한 즉시 fallback 빈도 완화.
+- 재시도 안정화
+  - 1회 재시도 전 짧은 백오프를 추가해 일시 지연/네트워크 변동 회복률 개선.
+- 종합운세(`overall_fortune`) 전용 정책 분리
+  - `ANTHROPIC_TIMEOUT_OVERALL_MS`, `ANTHROPIC_RETRY_TIMEOUT_OVERALL_MS` 도입.
+- fallback 사유 분해 관측
+  - `fallbackReason` 외 `fallbackCategory`(timeout/rate_limit/provider_5xx/...)를 추가해 원인 추적 강화.
+  - 서버 metric 로그와 프런트 analytics 이벤트에서 동일 카테고리로 기록.
+- 2순위 모델 failover 추가
+  - `ANTHROPIC_FALLBACK_MODEL` 설정 시 primary/retry 실패 후 보조 모델 1회 시도.
+  - 성공 시 `meta.path=anthropic_failover`, `meta.attempts.failover`/`meta.timings.anthropicFailoverMs`에 기록.
+- 타입/메타 정합성 업데이트
+  - `ReadingResponse.meta`에 failover 경로/타이밍/카테고리 필드 반영.
+  - `renderer`의 failure stage 매핑에 `anthropic_provider_5xx` 추가.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:metrics --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run test:unit --prefix apps/web` 통과
+- `npm run build --prefix apps/web` 통과
+
 ### 스프레드 자동 맞춤 + 리포트 오염/중복 후처리 강화 (v6.3.22)
 
 #### 변경 파일
@@ -1586,6 +2586,46 @@
 
 ## [2026-02-28]
 
+### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/prompt-builder.js`
+- `apps/api/src/domains/reading/model-client.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/index.js`
+- `apps/api/.env.example`
+- `apps/web/src/services/analytics.ts`
+- `apps/web/src/pages/TarotMastery.tsx`
+- `apps/web/src/types/tarot.ts`
+- `docs/RELEASE_NOTES_v6.3.65.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 호출 타임아웃 정책 보강
+  - 일반/종합운세 별도 timeout 정책 적용 및 최소 timeout 하한 강제.
+  - 과도하게 낮은 환경값(예: 5초)으로 인한 즉시 fallback 빈도 완화.
+- 재시도 안정화
+  - 1회 재시도 전 짧은 백오프를 추가해 일시 지연/네트워크 변동 회복률 개선.
+- 종합운세(`overall_fortune`) 전용 정책 분리
+  - `ANTHROPIC_TIMEOUT_OVERALL_MS`, `ANTHROPIC_RETRY_TIMEOUT_OVERALL_MS` 도입.
+- fallback 사유 분해 관측
+  - `fallbackReason` 외 `fallbackCategory`(timeout/rate_limit/provider_5xx/...)를 추가해 원인 추적 강화.
+  - 서버 metric 로그와 프런트 analytics 이벤트에서 동일 카테고리로 기록.
+- 2순위 모델 failover 추가
+  - `ANTHROPIC_FALLBACK_MODEL` 설정 시 primary/retry 실패 후 보조 모델 1회 시도.
+  - 성공 시 `meta.path=anthropic_failover`, `meta.attempts.failover`/`meta.timings.anthropicFailoverMs`에 기록.
+- 타입/메타 정합성 업데이트
+  - `ReadingResponse.meta`에 failover 경로/타이밍/카테고리 필드 반영.
+  - `renderer`의 failure stage 매핑에 `anthropic_provider_5xx` 추가.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:metrics --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run test:unit --prefix apps/web` 통과
+- `npm run build --prefix apps/web` 통과
+
 ### 라이트 양자택일 리딩 어색함 개선: 중복 제거 + 자연어 톤 보정 (v6.3.21)
 
 #### 변경 파일
@@ -1624,6 +2664,46 @@
 - 상세 변경 요약: `docs/RELEASE_NOTES_v6.3.21.md`
 
 ## [2026-02-28]
+
+### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/prompt-builder.js`
+- `apps/api/src/domains/reading/model-client.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/index.js`
+- `apps/api/.env.example`
+- `apps/web/src/services/analytics.ts`
+- `apps/web/src/pages/TarotMastery.tsx`
+- `apps/web/src/types/tarot.ts`
+- `docs/RELEASE_NOTES_v6.3.65.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 호출 타임아웃 정책 보강
+  - 일반/종합운세 별도 timeout 정책 적용 및 최소 timeout 하한 강제.
+  - 과도하게 낮은 환경값(예: 5초)으로 인한 즉시 fallback 빈도 완화.
+- 재시도 안정화
+  - 1회 재시도 전 짧은 백오프를 추가해 일시 지연/네트워크 변동 회복률 개선.
+- 종합운세(`overall_fortune`) 전용 정책 분리
+  - `ANTHROPIC_TIMEOUT_OVERALL_MS`, `ANTHROPIC_RETRY_TIMEOUT_OVERALL_MS` 도입.
+- fallback 사유 분해 관측
+  - `fallbackReason` 외 `fallbackCategory`(timeout/rate_limit/provider_5xx/...)를 추가해 원인 추적 강화.
+  - 서버 metric 로그와 프런트 analytics 이벤트에서 동일 카테고리로 기록.
+- 2순위 모델 failover 추가
+  - `ANTHROPIC_FALLBACK_MODEL` 설정 시 primary/retry 실패 후 보조 모델 1회 시도.
+  - 성공 시 `meta.path=anthropic_failover`, `meta.attempts.failover`/`meta.timings.anthropicFailoverMs`에 기록.
+- 타입/메타 정합성 업데이트
+  - `ReadingResponse.meta`에 failover 경로/타이밍/카테고리 필드 반영.
+  - `renderer`의 failure stage 매핑에 `anthropic_provider_5xx` 추가.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:metrics --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run test:unit --prefix apps/web` 통과
+- `npm run build --prefix apps/web` 통과
 
 ### 우측 패널 토글 제거: 운명의 리포트 단일 흐름화 (v6.3.20)
 
@@ -1758,6 +2838,46 @@
 
 ## [2026-02-28]
 
+### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/prompt-builder.js`
+- `apps/api/src/domains/reading/model-client.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/index.js`
+- `apps/api/.env.example`
+- `apps/web/src/services/analytics.ts`
+- `apps/web/src/pages/TarotMastery.tsx`
+- `apps/web/src/types/tarot.ts`
+- `docs/RELEASE_NOTES_v6.3.65.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 호출 타임아웃 정책 보강
+  - 일반/종합운세 별도 timeout 정책 적용 및 최소 timeout 하한 강제.
+  - 과도하게 낮은 환경값(예: 5초)으로 인한 즉시 fallback 빈도 완화.
+- 재시도 안정화
+  - 1회 재시도 전 짧은 백오프를 추가해 일시 지연/네트워크 변동 회복률 개선.
+- 종합운세(`overall_fortune`) 전용 정책 분리
+  - `ANTHROPIC_TIMEOUT_OVERALL_MS`, `ANTHROPIC_RETRY_TIMEOUT_OVERALL_MS` 도입.
+- fallback 사유 분해 관측
+  - `fallbackReason` 외 `fallbackCategory`(timeout/rate_limit/provider_5xx/...)를 추가해 원인 추적 강화.
+  - 서버 metric 로그와 프런트 analytics 이벤트에서 동일 카테고리로 기록.
+- 2순위 모델 failover 추가
+  - `ANTHROPIC_FALLBACK_MODEL` 설정 시 primary/retry 실패 후 보조 모델 1회 시도.
+  - 성공 시 `meta.path=anthropic_failover`, `meta.attempts.failover`/`meta.timings.anthropicFailoverMs`에 기록.
+- 타입/메타 정합성 업데이트
+  - `ReadingResponse.meta`에 failover 경로/타이밍/카테고리 필드 반영.
+  - `renderer`의 failure stage 매핑에 `anthropic_provider_5xx` 추가.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:metrics --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run test:unit --prefix apps/web` 통과
+- `npm run build --prefix apps/web` 통과
+
 ### 아르카나 성소 와이드 확장 + 우측 스크롤바 노출 강화 + 기본 카드 설명 심화 (v6.3.16)
 
 #### 변경 파일
@@ -1829,6 +2949,46 @@
 
 ## [2026-02-28]
 
+### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/prompt-builder.js`
+- `apps/api/src/domains/reading/model-client.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/index.js`
+- `apps/api/.env.example`
+- `apps/web/src/services/analytics.ts`
+- `apps/web/src/pages/TarotMastery.tsx`
+- `apps/web/src/types/tarot.ts`
+- `docs/RELEASE_NOTES_v6.3.65.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 호출 타임아웃 정책 보강
+  - 일반/종합운세 별도 timeout 정책 적용 및 최소 timeout 하한 강제.
+  - 과도하게 낮은 환경값(예: 5초)으로 인한 즉시 fallback 빈도 완화.
+- 재시도 안정화
+  - 1회 재시도 전 짧은 백오프를 추가해 일시 지연/네트워크 변동 회복률 개선.
+- 종합운세(`overall_fortune`) 전용 정책 분리
+  - `ANTHROPIC_TIMEOUT_OVERALL_MS`, `ANTHROPIC_RETRY_TIMEOUT_OVERALL_MS` 도입.
+- fallback 사유 분해 관측
+  - `fallbackReason` 외 `fallbackCategory`(timeout/rate_limit/provider_5xx/...)를 추가해 원인 추적 강화.
+  - 서버 metric 로그와 프런트 analytics 이벤트에서 동일 카테고리로 기록.
+- 2순위 모델 failover 추가
+  - `ANTHROPIC_FALLBACK_MODEL` 설정 시 primary/retry 실패 후 보조 모델 1회 시도.
+  - 성공 시 `meta.path=anthropic_failover`, `meta.attempts.failover`/`meta.timings.anthropicFailoverMs`에 기록.
+- 타입/메타 정합성 업데이트
+  - `ReadingResponse.meta`에 failover 경로/타이밍/카테고리 필드 반영.
+  - `renderer`의 failure stage 매핑에 `anthropic_provider_5xx` 추가.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:metrics --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run test:unit --prefix apps/web` 통과
+- `npm run build --prefix apps/web` 통과
+
 ### 아르카나 성소 우측 패널 스크롤바 가시성 개선 (v6.3.14)
 
 #### 변경 파일
@@ -1850,6 +3010,46 @@
 - 상세 변경 요약: `docs/RELEASE_NOTES_v6.3.14.md`
 
 ## [2026-02-28]
+
+### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/prompt-builder.js`
+- `apps/api/src/domains/reading/model-client.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/index.js`
+- `apps/api/.env.example`
+- `apps/web/src/services/analytics.ts`
+- `apps/web/src/pages/TarotMastery.tsx`
+- `apps/web/src/types/tarot.ts`
+- `docs/RELEASE_NOTES_v6.3.65.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 호출 타임아웃 정책 보강
+  - 일반/종합운세 별도 timeout 정책 적용 및 최소 timeout 하한 강제.
+  - 과도하게 낮은 환경값(예: 5초)으로 인한 즉시 fallback 빈도 완화.
+- 재시도 안정화
+  - 1회 재시도 전 짧은 백오프를 추가해 일시 지연/네트워크 변동 회복률 개선.
+- 종합운세(`overall_fortune`) 전용 정책 분리
+  - `ANTHROPIC_TIMEOUT_OVERALL_MS`, `ANTHROPIC_RETRY_TIMEOUT_OVERALL_MS` 도입.
+- fallback 사유 분해 관측
+  - `fallbackReason` 외 `fallbackCategory`(timeout/rate_limit/provider_5xx/...)를 추가해 원인 추적 강화.
+  - 서버 metric 로그와 프런트 analytics 이벤트에서 동일 카테고리로 기록.
+- 2순위 모델 failover 추가
+  - `ANTHROPIC_FALLBACK_MODEL` 설정 시 primary/retry 실패 후 보조 모델 1회 시도.
+  - 성공 시 `meta.path=anthropic_failover`, `meta.attempts.failover`/`meta.timings.anthropicFailoverMs`에 기록.
+- 타입/메타 정합성 업데이트
+  - `ReadingResponse.meta`에 failover 경로/타이밍/카테고리 필드 반영.
+  - `renderer`의 failure stage 매핑에 `anthropic_provider_5xx` 추가.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:metrics --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run test:unit --prefix apps/web` 통과
+- `npm run build --prefix apps/web` 통과
 
 ### 리딩 화면 3분할 레이아웃 전환 및 와이드 뷰 확장 (v6.3.13)
 
@@ -1880,6 +3080,46 @@
 
 ## [2026-02-28]
 
+### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/prompt-builder.js`
+- `apps/api/src/domains/reading/model-client.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/index.js`
+- `apps/api/.env.example`
+- `apps/web/src/services/analytics.ts`
+- `apps/web/src/pages/TarotMastery.tsx`
+- `apps/web/src/types/tarot.ts`
+- `docs/RELEASE_NOTES_v6.3.65.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 호출 타임아웃 정책 보강
+  - 일반/종합운세 별도 timeout 정책 적용 및 최소 timeout 하한 강제.
+  - 과도하게 낮은 환경값(예: 5초)으로 인한 즉시 fallback 빈도 완화.
+- 재시도 안정화
+  - 1회 재시도 전 짧은 백오프를 추가해 일시 지연/네트워크 변동 회복률 개선.
+- 종합운세(`overall_fortune`) 전용 정책 분리
+  - `ANTHROPIC_TIMEOUT_OVERALL_MS`, `ANTHROPIC_RETRY_TIMEOUT_OVERALL_MS` 도입.
+- fallback 사유 분해 관측
+  - `fallbackReason` 외 `fallbackCategory`(timeout/rate_limit/provider_5xx/...)를 추가해 원인 추적 강화.
+  - 서버 metric 로그와 프런트 analytics 이벤트에서 동일 카테고리로 기록.
+- 2순위 모델 failover 추가
+  - `ANTHROPIC_FALLBACK_MODEL` 설정 시 primary/retry 실패 후 보조 모델 1회 시도.
+  - 성공 시 `meta.path=anthropic_failover`, `meta.attempts.failover`/`meta.timings.anthropicFailoverMs`에 기록.
+- 타입/메타 정합성 업데이트
+  - `ReadingResponse.meta`에 failover 경로/타이밍/카테고리 필드 반영.
+  - `renderer`의 failure stage 매핑에 `anthropic_provider_5xx` 추가.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:metrics --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run test:unit --prefix apps/web` 통과
+- `npm run build --prefix apps/web` 통과
+
 ### 완드 9 카드 이미지 로드 실패 핫픽스 (v6.3.12)
 
 #### 변경 파일
@@ -1904,6 +3144,46 @@
 - 상세 변경 요약: `docs/RELEASE_NOTES_v6.3.12.md`
 
 ## [2026-02-28]
+
+### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/prompt-builder.js`
+- `apps/api/src/domains/reading/model-client.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/index.js`
+- `apps/api/.env.example`
+- `apps/web/src/services/analytics.ts`
+- `apps/web/src/pages/TarotMastery.tsx`
+- `apps/web/src/types/tarot.ts`
+- `docs/RELEASE_NOTES_v6.3.65.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 호출 타임아웃 정책 보강
+  - 일반/종합운세 별도 timeout 정책 적용 및 최소 timeout 하한 강제.
+  - 과도하게 낮은 환경값(예: 5초)으로 인한 즉시 fallback 빈도 완화.
+- 재시도 안정화
+  - 1회 재시도 전 짧은 백오프를 추가해 일시 지연/네트워크 변동 회복률 개선.
+- 종합운세(`overall_fortune`) 전용 정책 분리
+  - `ANTHROPIC_TIMEOUT_OVERALL_MS`, `ANTHROPIC_RETRY_TIMEOUT_OVERALL_MS` 도입.
+- fallback 사유 분해 관측
+  - `fallbackReason` 외 `fallbackCategory`(timeout/rate_limit/provider_5xx/...)를 추가해 원인 추적 강화.
+  - 서버 metric 로그와 프런트 analytics 이벤트에서 동일 카테고리로 기록.
+- 2순위 모델 failover 추가
+  - `ANTHROPIC_FALLBACK_MODEL` 설정 시 primary/retry 실패 후 보조 모델 1회 시도.
+  - 성공 시 `meta.path=anthropic_failover`, `meta.attempts.failover`/`meta.timings.anthropicFailoverMs`에 기록.
+- 타입/메타 정합성 업데이트
+  - `ReadingResponse.meta`에 failover 경로/타이밍/카테고리 필드 반영.
+  - `renderer`의 failure stage 매핑에 `anthropic_provider_5xx` 추가.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:metrics --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run test:unit --prefix apps/web` 통과
+- `npm run build --prefix apps/web` 통과
 
 ### 결과 화면 가독성 개선: 폰트 상향 + 탐구 섹션 상하 분할 (v6.3.11)
 
@@ -1930,6 +3210,46 @@
 
 ## [2026-02-28]
 
+### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/prompt-builder.js`
+- `apps/api/src/domains/reading/model-client.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/index.js`
+- `apps/api/.env.example`
+- `apps/web/src/services/analytics.ts`
+- `apps/web/src/pages/TarotMastery.tsx`
+- `apps/web/src/types/tarot.ts`
+- `docs/RELEASE_NOTES_v6.3.65.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 호출 타임아웃 정책 보강
+  - 일반/종합운세 별도 timeout 정책 적용 및 최소 timeout 하한 강제.
+  - 과도하게 낮은 환경값(예: 5초)으로 인한 즉시 fallback 빈도 완화.
+- 재시도 안정화
+  - 1회 재시도 전 짧은 백오프를 추가해 일시 지연/네트워크 변동 회복률 개선.
+- 종합운세(`overall_fortune`) 전용 정책 분리
+  - `ANTHROPIC_TIMEOUT_OVERALL_MS`, `ANTHROPIC_RETRY_TIMEOUT_OVERALL_MS` 도입.
+- fallback 사유 분해 관측
+  - `fallbackReason` 외 `fallbackCategory`(timeout/rate_limit/provider_5xx/...)를 추가해 원인 추적 강화.
+  - 서버 metric 로그와 프런트 analytics 이벤트에서 동일 카테고리로 기록.
+- 2순위 모델 failover 추가
+  - `ANTHROPIC_FALLBACK_MODEL` 설정 시 primary/retry 실패 후 보조 모델 1회 시도.
+  - 성공 시 `meta.path=anthropic_failover`, `meta.attempts.failover`/`meta.timings.anthropicFailoverMs`에 기록.
+- 타입/메타 정합성 업데이트
+  - `ReadingResponse.meta`에 failover 경로/타이밍/카테고리 필드 반영.
+  - `renderer`의 failure stage 매핑에 `anthropic_provider_5xx` 추가.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:metrics --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run test:unit --prefix apps/web` 통과
+- `npm run build --prefix apps/web` 통과
+
 ### 결과 요약 중복 제거 및 보조 인사이트 차별화 (v6.3.10)
 
 #### 변경 파일
@@ -1954,6 +3274,46 @@
 - 상세 변경 요약: `docs/RELEASE_NOTES_v6.3.10.md`
 
 ## [2026-02-28]
+
+### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/prompt-builder.js`
+- `apps/api/src/domains/reading/model-client.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/index.js`
+- `apps/api/.env.example`
+- `apps/web/src/services/analytics.ts`
+- `apps/web/src/pages/TarotMastery.tsx`
+- `apps/web/src/types/tarot.ts`
+- `docs/RELEASE_NOTES_v6.3.65.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 호출 타임아웃 정책 보강
+  - 일반/종합운세 별도 timeout 정책 적용 및 최소 timeout 하한 강제.
+  - 과도하게 낮은 환경값(예: 5초)으로 인한 즉시 fallback 빈도 완화.
+- 재시도 안정화
+  - 1회 재시도 전 짧은 백오프를 추가해 일시 지연/네트워크 변동 회복률 개선.
+- 종합운세(`overall_fortune`) 전용 정책 분리
+  - `ANTHROPIC_TIMEOUT_OVERALL_MS`, `ANTHROPIC_RETRY_TIMEOUT_OVERALL_MS` 도입.
+- fallback 사유 분해 관측
+  - `fallbackReason` 외 `fallbackCategory`(timeout/rate_limit/provider_5xx/...)를 추가해 원인 추적 강화.
+  - 서버 metric 로그와 프런트 analytics 이벤트에서 동일 카테고리로 기록.
+- 2순위 모델 failover 추가
+  - `ANTHROPIC_FALLBACK_MODEL` 설정 시 primary/retry 실패 후 보조 모델 1회 시도.
+  - 성공 시 `meta.path=anthropic_failover`, `meta.attempts.failover`/`meta.timings.anthropicFailoverMs`에 기록.
+- 타입/메타 정합성 업데이트
+  - `ReadingResponse.meta`에 failover 경로/타이밍/카테고리 필드 반영.
+  - `renderer`의 failure stage 매핑에 `anthropic_provider_5xx` 추가.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:metrics --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run test:unit --prefix apps/web` 통과
+- `npm run build --prefix apps/web` 통과
 
 ### Claude 전용 엔진 전환 + 응답 다양성/속도 최적화 (v6.3.9)
 
@@ -1994,6 +3354,46 @@
 
 ## [2026-02-28]
 
+### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/prompt-builder.js`
+- `apps/api/src/domains/reading/model-client.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/index.js`
+- `apps/api/.env.example`
+- `apps/web/src/services/analytics.ts`
+- `apps/web/src/pages/TarotMastery.tsx`
+- `apps/web/src/types/tarot.ts`
+- `docs/RELEASE_NOTES_v6.3.65.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 호출 타임아웃 정책 보강
+  - 일반/종합운세 별도 timeout 정책 적용 및 최소 timeout 하한 강제.
+  - 과도하게 낮은 환경값(예: 5초)으로 인한 즉시 fallback 빈도 완화.
+- 재시도 안정화
+  - 1회 재시도 전 짧은 백오프를 추가해 일시 지연/네트워크 변동 회복률 개선.
+- 종합운세(`overall_fortune`) 전용 정책 분리
+  - `ANTHROPIC_TIMEOUT_OVERALL_MS`, `ANTHROPIC_RETRY_TIMEOUT_OVERALL_MS` 도입.
+- fallback 사유 분해 관측
+  - `fallbackReason` 외 `fallbackCategory`(timeout/rate_limit/provider_5xx/...)를 추가해 원인 추적 강화.
+  - 서버 metric 로그와 프런트 analytics 이벤트에서 동일 카테고리로 기록.
+- 2순위 모델 failover 추가
+  - `ANTHROPIC_FALLBACK_MODEL` 설정 시 primary/retry 실패 후 보조 모델 1회 시도.
+  - 성공 시 `meta.path=anthropic_failover`, `meta.attempts.failover`/`meta.timings.anthropicFailoverMs`에 기록.
+- 타입/메타 정합성 업데이트
+  - `ReadingResponse.meta`에 failover 경로/타이밍/카테고리 필드 반영.
+  - `renderer`의 failure stage 매핑에 `anthropic_provider_5xx` 추가.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:metrics --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run test:unit --prefix apps/web` 통과
+- `npm run build --prefix apps/web` 통과
+
 ### 초간단 질문 간결 모드 및 2카드 스프레드 최적화 (v6.3.8)
 
 #### 변경 파일
@@ -2024,6 +3424,46 @@
 
 ## [2026-02-28]
 
+### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/prompt-builder.js`
+- `apps/api/src/domains/reading/model-client.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/index.js`
+- `apps/api/.env.example`
+- `apps/web/src/services/analytics.ts`
+- `apps/web/src/pages/TarotMastery.tsx`
+- `apps/web/src/types/tarot.ts`
+- `docs/RELEASE_NOTES_v6.3.65.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 호출 타임아웃 정책 보강
+  - 일반/종합운세 별도 timeout 정책 적용 및 최소 timeout 하한 강제.
+  - 과도하게 낮은 환경값(예: 5초)으로 인한 즉시 fallback 빈도 완화.
+- 재시도 안정화
+  - 1회 재시도 전 짧은 백오프를 추가해 일시 지연/네트워크 변동 회복률 개선.
+- 종합운세(`overall_fortune`) 전용 정책 분리
+  - `ANTHROPIC_TIMEOUT_OVERALL_MS`, `ANTHROPIC_RETRY_TIMEOUT_OVERALL_MS` 도입.
+- fallback 사유 분해 관측
+  - `fallbackReason` 외 `fallbackCategory`(timeout/rate_limit/provider_5xx/...)를 추가해 원인 추적 강화.
+  - 서버 metric 로그와 프런트 analytics 이벤트에서 동일 카테고리로 기록.
+- 2순위 모델 failover 추가
+  - `ANTHROPIC_FALLBACK_MODEL` 설정 시 primary/retry 실패 후 보조 모델 1회 시도.
+  - 성공 시 `meta.path=anthropic_failover`, `meta.attempts.failover`/`meta.timings.anthropicFailoverMs`에 기록.
+- 타입/메타 정합성 업데이트
+  - `ReadingResponse.meta`에 failover 경로/타이밍/카테고리 필드 반영.
+  - `renderer`의 failure stage 매핑에 `anthropic_provider_5xx` 추가.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:metrics --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run test:unit --prefix apps/web` 통과
+- `npm run build --prefix apps/web` 통과
+
 ### API 진단 메타 표준화 및 fallback 이유 일관화 (v6.3.7)
 
 #### 변경 파일
@@ -2052,6 +3492,46 @@
 
 ## [2026-02-28]
 
+### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/prompt-builder.js`
+- `apps/api/src/domains/reading/model-client.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/index.js`
+- `apps/api/.env.example`
+- `apps/web/src/services/analytics.ts`
+- `apps/web/src/pages/TarotMastery.tsx`
+- `apps/web/src/types/tarot.ts`
+- `docs/RELEASE_NOTES_v6.3.65.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 호출 타임아웃 정책 보강
+  - 일반/종합운세 별도 timeout 정책 적용 및 최소 timeout 하한 강제.
+  - 과도하게 낮은 환경값(예: 5초)으로 인한 즉시 fallback 빈도 완화.
+- 재시도 안정화
+  - 1회 재시도 전 짧은 백오프를 추가해 일시 지연/네트워크 변동 회복률 개선.
+- 종합운세(`overall_fortune`) 전용 정책 분리
+  - `ANTHROPIC_TIMEOUT_OVERALL_MS`, `ANTHROPIC_RETRY_TIMEOUT_OVERALL_MS` 도입.
+- fallback 사유 분해 관측
+  - `fallbackReason` 외 `fallbackCategory`(timeout/rate_limit/provider_5xx/...)를 추가해 원인 추적 강화.
+  - 서버 metric 로그와 프런트 analytics 이벤트에서 동일 카테고리로 기록.
+- 2순위 모델 failover 추가
+  - `ANTHROPIC_FALLBACK_MODEL` 설정 시 primary/retry 실패 후 보조 모델 1회 시도.
+  - 성공 시 `meta.path=anthropic_failover`, `meta.attempts.failover`/`meta.timings.anthropicFailoverMs`에 기록.
+- 타입/메타 정합성 업데이트
+  - `ReadingResponse.meta`에 failover 경로/타이밍/카테고리 필드 반영.
+  - `renderer`의 failure stage 매핑에 `anthropic_provider_5xx` 추가.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:metrics --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run test:unit --prefix apps/web` 통과
+- `npm run build --prefix apps/web` 통과
+
 ### 리딩 결과 API 사용 상태 가시화 (v6.3.6)
 
 #### 변경 파일
@@ -2074,6 +3554,46 @@
 - 상세 변경 요약: `docs/RELEASE_NOTES_v6.3.6.md`
 
 ## [2026-02-28]
+
+### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/prompt-builder.js`
+- `apps/api/src/domains/reading/model-client.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/index.js`
+- `apps/api/.env.example`
+- `apps/web/src/services/analytics.ts`
+- `apps/web/src/pages/TarotMastery.tsx`
+- `apps/web/src/types/tarot.ts`
+- `docs/RELEASE_NOTES_v6.3.65.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 호출 타임아웃 정책 보강
+  - 일반/종합운세 별도 timeout 정책 적용 및 최소 timeout 하한 강제.
+  - 과도하게 낮은 환경값(예: 5초)으로 인한 즉시 fallback 빈도 완화.
+- 재시도 안정화
+  - 1회 재시도 전 짧은 백오프를 추가해 일시 지연/네트워크 변동 회복률 개선.
+- 종합운세(`overall_fortune`) 전용 정책 분리
+  - `ANTHROPIC_TIMEOUT_OVERALL_MS`, `ANTHROPIC_RETRY_TIMEOUT_OVERALL_MS` 도입.
+- fallback 사유 분해 관측
+  - `fallbackReason` 외 `fallbackCategory`(timeout/rate_limit/provider_5xx/...)를 추가해 원인 추적 강화.
+  - 서버 metric 로그와 프런트 analytics 이벤트에서 동일 카테고리로 기록.
+- 2순위 모델 failover 추가
+  - `ANTHROPIC_FALLBACK_MODEL` 설정 시 primary/retry 실패 후 보조 모델 1회 시도.
+  - 성공 시 `meta.path=anthropic_failover`, `meta.attempts.failover`/`meta.timings.anthropicFailoverMs`에 기록.
+- 타입/메타 정합성 업데이트
+  - `ReadingResponse.meta`에 failover 경로/타이밍/카테고리 필드 반영.
+  - `renderer`의 failure stage 매핑에 `anthropic_provider_5xx` 추가.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:metrics --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run test:unit --prefix apps/web` 통과
+- `npm run build --prefix apps/web` 통과
 
 ### 개발 방식 표준화 문서 도입 (v6.3.5)
 
@@ -2098,6 +3618,46 @@
 
 ## [2026-02-28]
 
+### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/prompt-builder.js`
+- `apps/api/src/domains/reading/model-client.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/index.js`
+- `apps/api/.env.example`
+- `apps/web/src/services/analytics.ts`
+- `apps/web/src/pages/TarotMastery.tsx`
+- `apps/web/src/types/tarot.ts`
+- `docs/RELEASE_NOTES_v6.3.65.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 호출 타임아웃 정책 보강
+  - 일반/종합운세 별도 timeout 정책 적용 및 최소 timeout 하한 강제.
+  - 과도하게 낮은 환경값(예: 5초)으로 인한 즉시 fallback 빈도 완화.
+- 재시도 안정화
+  - 1회 재시도 전 짧은 백오프를 추가해 일시 지연/네트워크 변동 회복률 개선.
+- 종합운세(`overall_fortune`) 전용 정책 분리
+  - `ANTHROPIC_TIMEOUT_OVERALL_MS`, `ANTHROPIC_RETRY_TIMEOUT_OVERALL_MS` 도입.
+- fallback 사유 분해 관측
+  - `fallbackReason` 외 `fallbackCategory`(timeout/rate_limit/provider_5xx/...)를 추가해 원인 추적 강화.
+  - 서버 metric 로그와 프런트 analytics 이벤트에서 동일 카테고리로 기록.
+- 2순위 모델 failover 추가
+  - `ANTHROPIC_FALLBACK_MODEL` 설정 시 primary/retry 실패 후 보조 모델 1회 시도.
+  - 성공 시 `meta.path=anthropic_failover`, `meta.attempts.failover`/`meta.timings.anthropicFailoverMs`에 기록.
+- 타입/메타 정합성 업데이트
+  - `ReadingResponse.meta`에 failover 경로/타이밍/카테고리 필드 반영.
+  - `renderer`의 failure stage 매핑에 `anthropic_provider_5xx` 추가.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:metrics --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run test:unit --prefix apps/web` 통과
+- `npm run build --prefix apps/web` 통과
+
 ### Anthropic 호출 안정화: 모델/타임아웃 재정렬 (v6.3.4)
 
 #### 변경 파일
@@ -2120,6 +3680,46 @@
 
 ## [2026-02-28]
 
+### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/prompt-builder.js`
+- `apps/api/src/domains/reading/model-client.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/index.js`
+- `apps/api/.env.example`
+- `apps/web/src/services/analytics.ts`
+- `apps/web/src/pages/TarotMastery.tsx`
+- `apps/web/src/types/tarot.ts`
+- `docs/RELEASE_NOTES_v6.3.65.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 호출 타임아웃 정책 보강
+  - 일반/종합운세 별도 timeout 정책 적용 및 최소 timeout 하한 강제.
+  - 과도하게 낮은 환경값(예: 5초)으로 인한 즉시 fallback 빈도 완화.
+- 재시도 안정화
+  - 1회 재시도 전 짧은 백오프를 추가해 일시 지연/네트워크 변동 회복률 개선.
+- 종합운세(`overall_fortune`) 전용 정책 분리
+  - `ANTHROPIC_TIMEOUT_OVERALL_MS`, `ANTHROPIC_RETRY_TIMEOUT_OVERALL_MS` 도입.
+- fallback 사유 분해 관측
+  - `fallbackReason` 외 `fallbackCategory`(timeout/rate_limit/provider_5xx/...)를 추가해 원인 추적 강화.
+  - 서버 metric 로그와 프런트 analytics 이벤트에서 동일 카테고리로 기록.
+- 2순위 모델 failover 추가
+  - `ANTHROPIC_FALLBACK_MODEL` 설정 시 primary/retry 실패 후 보조 모델 1회 시도.
+  - 성공 시 `meta.path=anthropic_failover`, `meta.attempts.failover`/`meta.timings.anthropicFailoverMs`에 기록.
+- 타입/메타 정합성 업데이트
+  - `ReadingResponse.meta`에 failover 경로/타이밍/카테고리 필드 반영.
+  - `renderer`의 failure stage 매핑에 `anthropic_provider_5xx` 추가.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:metrics --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run test:unit --prefix apps/web` 통과
+- `npm run build --prefix apps/web` 통과
+
 ### Anthropic 실패 진단성 강화 및 모델 롤백 (v6.3.3)
 
 #### 변경 파일
@@ -2141,6 +3741,46 @@
 
 ## [2026-02-28]
 
+### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/prompt-builder.js`
+- `apps/api/src/domains/reading/model-client.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/index.js`
+- `apps/api/.env.example`
+- `apps/web/src/services/analytics.ts`
+- `apps/web/src/pages/TarotMastery.tsx`
+- `apps/web/src/types/tarot.ts`
+- `docs/RELEASE_NOTES_v6.3.65.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 호출 타임아웃 정책 보강
+  - 일반/종합운세 별도 timeout 정책 적용 및 최소 timeout 하한 강제.
+  - 과도하게 낮은 환경값(예: 5초)으로 인한 즉시 fallback 빈도 완화.
+- 재시도 안정화
+  - 1회 재시도 전 짧은 백오프를 추가해 일시 지연/네트워크 변동 회복률 개선.
+- 종합운세(`overall_fortune`) 전용 정책 분리
+  - `ANTHROPIC_TIMEOUT_OVERALL_MS`, `ANTHROPIC_RETRY_TIMEOUT_OVERALL_MS` 도입.
+- fallback 사유 분해 관측
+  - `fallbackReason` 외 `fallbackCategory`(timeout/rate_limit/provider_5xx/...)를 추가해 원인 추적 강화.
+  - 서버 metric 로그와 프런트 analytics 이벤트에서 동일 카테고리로 기록.
+- 2순위 모델 failover 추가
+  - `ANTHROPIC_FALLBACK_MODEL` 설정 시 primary/retry 실패 후 보조 모델 1회 시도.
+  - 성공 시 `meta.path=anthropic_failover`, `meta.attempts.failover`/`meta.timings.anthropicFailoverMs`에 기록.
+- 타입/메타 정합성 업데이트
+  - `ReadingResponse.meta`에 failover 경로/타이밍/카테고리 필드 반영.
+  - `renderer`의 failure stage 매핑에 `anthropic_provider_5xx` 추가.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:metrics --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run test:unit --prefix apps/web` 통과
+- `npm run build --prefix apps/web` 통과
+
 ### Anthropic 기본 모델/토큰 상향 (v6.3.2)
 
 #### 변경 파일
@@ -2161,6 +3801,46 @@
 
 ## [2026-02-28]
 
+### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/prompt-builder.js`
+- `apps/api/src/domains/reading/model-client.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/index.js`
+- `apps/api/.env.example`
+- `apps/web/src/services/analytics.ts`
+- `apps/web/src/pages/TarotMastery.tsx`
+- `apps/web/src/types/tarot.ts`
+- `docs/RELEASE_NOTES_v6.3.65.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 호출 타임아웃 정책 보강
+  - 일반/종합운세 별도 timeout 정책 적용 및 최소 timeout 하한 강제.
+  - 과도하게 낮은 환경값(예: 5초)으로 인한 즉시 fallback 빈도 완화.
+- 재시도 안정화
+  - 1회 재시도 전 짧은 백오프를 추가해 일시 지연/네트워크 변동 회복률 개선.
+- 종합운세(`overall_fortune`) 전용 정책 분리
+  - `ANTHROPIC_TIMEOUT_OVERALL_MS`, `ANTHROPIC_RETRY_TIMEOUT_OVERALL_MS` 도입.
+- fallback 사유 분해 관측
+  - `fallbackReason` 외 `fallbackCategory`(timeout/rate_limit/provider_5xx/...)를 추가해 원인 추적 강화.
+  - 서버 metric 로그와 프런트 analytics 이벤트에서 동일 카테고리로 기록.
+- 2순위 모델 failover 추가
+  - `ANTHROPIC_FALLBACK_MODEL` 설정 시 primary/retry 실패 후 보조 모델 1회 시도.
+  - 성공 시 `meta.path=anthropic_failover`, `meta.attempts.failover`/`meta.timings.anthropicFailoverMs`에 기록.
+- 타입/메타 정합성 업데이트
+  - `ReadingResponse.meta`에 failover 경로/타이밍/카테고리 필드 반영.
+  - `renderer`의 failure stage 매핑에 `anthropic_provider_5xx` 추가.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:metrics --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run test:unit --prefix apps/web` 통과
+- `npm run build --prefix apps/web` 통과
+
 ### 리딩 결과 미노출 UI 핫픽스 (v6.3.1)
 
 #### 변경 파일
@@ -2180,6 +3860,46 @@
 - 상세 변경 요약: `docs/RELEASE_NOTES_v6.3.1.md`
 
 ## [2026-02-28]
+
+### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/prompt-builder.js`
+- `apps/api/src/domains/reading/model-client.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/index.js`
+- `apps/api/.env.example`
+- `apps/web/src/services/analytics.ts`
+- `apps/web/src/pages/TarotMastery.tsx`
+- `apps/web/src/types/tarot.ts`
+- `docs/RELEASE_NOTES_v6.3.65.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 호출 타임아웃 정책 보강
+  - 일반/종합운세 별도 timeout 정책 적용 및 최소 timeout 하한 강제.
+  - 과도하게 낮은 환경값(예: 5초)으로 인한 즉시 fallback 빈도 완화.
+- 재시도 안정화
+  - 1회 재시도 전 짧은 백오프를 추가해 일시 지연/네트워크 변동 회복률 개선.
+- 종합운세(`overall_fortune`) 전용 정책 분리
+  - `ANTHROPIC_TIMEOUT_OVERALL_MS`, `ANTHROPIC_RETRY_TIMEOUT_OVERALL_MS` 도입.
+- fallback 사유 분해 관측
+  - `fallbackReason` 외 `fallbackCategory`(timeout/rate_limit/provider_5xx/...)를 추가해 원인 추적 강화.
+  - 서버 metric 로그와 프런트 analytics 이벤트에서 동일 카테고리로 기록.
+- 2순위 모델 failover 추가
+  - `ANTHROPIC_FALLBACK_MODEL` 설정 시 primary/retry 실패 후 보조 모델 1회 시도.
+  - 성공 시 `meta.path=anthropic_failover`, `meta.attempts.failover`/`meta.timings.anthropicFailoverMs`에 기록.
+- 타입/메타 정합성 업데이트
+  - `ReadingResponse.meta`에 failover 경로/타이밍/카테고리 필드 반영.
+  - `renderer`의 failure stage 매핑에 `anthropic_provider_5xx` 추가.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:metrics --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run test:unit --prefix apps/web` 통과
+- `npm run build --prefix apps/web` 통과
 
 ### Claude API 리딩 품질 개선 (v6.3.0)
 
@@ -2218,6 +3938,46 @@
 
 ## [2026-02-28]
 
+### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/prompt-builder.js`
+- `apps/api/src/domains/reading/model-client.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/index.js`
+- `apps/api/.env.example`
+- `apps/web/src/services/analytics.ts`
+- `apps/web/src/pages/TarotMastery.tsx`
+- `apps/web/src/types/tarot.ts`
+- `docs/RELEASE_NOTES_v6.3.65.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 호출 타임아웃 정책 보강
+  - 일반/종합운세 별도 timeout 정책 적용 및 최소 timeout 하한 강제.
+  - 과도하게 낮은 환경값(예: 5초)으로 인한 즉시 fallback 빈도 완화.
+- 재시도 안정화
+  - 1회 재시도 전 짧은 백오프를 추가해 일시 지연/네트워크 변동 회복률 개선.
+- 종합운세(`overall_fortune`) 전용 정책 분리
+  - `ANTHROPIC_TIMEOUT_OVERALL_MS`, `ANTHROPIC_RETRY_TIMEOUT_OVERALL_MS` 도입.
+- fallback 사유 분해 관측
+  - `fallbackReason` 외 `fallbackCategory`(timeout/rate_limit/provider_5xx/...)를 추가해 원인 추적 강화.
+  - 서버 metric 로그와 프런트 analytics 이벤트에서 동일 카테고리로 기록.
+- 2순위 모델 failover 추가
+  - `ANTHROPIC_FALLBACK_MODEL` 설정 시 primary/retry 실패 후 보조 모델 1회 시도.
+  - 성공 시 `meta.path=anthropic_failover`, `meta.attempts.failover`/`meta.timings.anthropicFailoverMs`에 기록.
+- 타입/메타 정합성 업데이트
+  - `ReadingResponse.meta`에 failover 경로/타이밍/카테고리 필드 반영.
+  - `renderer`의 failure stage 매핑에 `anthropic_provider_5xx` 추가.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:metrics --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run test:unit --prefix apps/web` 통과
+- `npm run build --prefix apps/web` 통과
+
 ### 페르소나 기반 유지보수 체계 전면 도입 (v6.2.0)
 
 #### 변경 사항
@@ -2247,6 +4007,46 @@
 
 ## [2026-02-28]
 
+### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/prompt-builder.js`
+- `apps/api/src/domains/reading/model-client.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/index.js`
+- `apps/api/.env.example`
+- `apps/web/src/services/analytics.ts`
+- `apps/web/src/pages/TarotMastery.tsx`
+- `apps/web/src/types/tarot.ts`
+- `docs/RELEASE_NOTES_v6.3.65.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 호출 타임아웃 정책 보강
+  - 일반/종합운세 별도 timeout 정책 적용 및 최소 timeout 하한 강제.
+  - 과도하게 낮은 환경값(예: 5초)으로 인한 즉시 fallback 빈도 완화.
+- 재시도 안정화
+  - 1회 재시도 전 짧은 백오프를 추가해 일시 지연/네트워크 변동 회복률 개선.
+- 종합운세(`overall_fortune`) 전용 정책 분리
+  - `ANTHROPIC_TIMEOUT_OVERALL_MS`, `ANTHROPIC_RETRY_TIMEOUT_OVERALL_MS` 도입.
+- fallback 사유 분해 관측
+  - `fallbackReason` 외 `fallbackCategory`(timeout/rate_limit/provider_5xx/...)를 추가해 원인 추적 강화.
+  - 서버 metric 로그와 프런트 analytics 이벤트에서 동일 카테고리로 기록.
+- 2순위 모델 failover 추가
+  - `ANTHROPIC_FALLBACK_MODEL` 설정 시 primary/retry 실패 후 보조 모델 1회 시도.
+  - 성공 시 `meta.path=anthropic_failover`, `meta.attempts.failover`/`meta.timings.anthropicFailoverMs`에 기록.
+- 타입/메타 정합성 업데이트
+  - `ReadingResponse.meta`에 failover 경로/타이밍/카테고리 필드 반영.
+  - `renderer`의 failure stage 매핑에 `anthropic_provider_5xx` 추가.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:metrics --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run test:unit --prefix apps/web` 통과
+- `npm run build --prefix apps/web` 통과
+
 ### 하이브리드 리딩 엔진 v6.1.3: 정밀 진단 시스템(Diagnostic Layer) 도입
 
 #### 변경 사항
@@ -2267,6 +4067,46 @@
 - 네트워크 단절 시 `dns_error` 또는 `network_error` 감지 확인.
 
 ## [2026-02-28]
+
+### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/prompt-builder.js`
+- `apps/api/src/domains/reading/model-client.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/index.js`
+- `apps/api/.env.example`
+- `apps/web/src/services/analytics.ts`
+- `apps/web/src/pages/TarotMastery.tsx`
+- `apps/web/src/types/tarot.ts`
+- `docs/RELEASE_NOTES_v6.3.65.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 호출 타임아웃 정책 보강
+  - 일반/종합운세 별도 timeout 정책 적용 및 최소 timeout 하한 강제.
+  - 과도하게 낮은 환경값(예: 5초)으로 인한 즉시 fallback 빈도 완화.
+- 재시도 안정화
+  - 1회 재시도 전 짧은 백오프를 추가해 일시 지연/네트워크 변동 회복률 개선.
+- 종합운세(`overall_fortune`) 전용 정책 분리
+  - `ANTHROPIC_TIMEOUT_OVERALL_MS`, `ANTHROPIC_RETRY_TIMEOUT_OVERALL_MS` 도입.
+- fallback 사유 분해 관측
+  - `fallbackReason` 외 `fallbackCategory`(timeout/rate_limit/provider_5xx/...)를 추가해 원인 추적 강화.
+  - 서버 metric 로그와 프런트 analytics 이벤트에서 동일 카테고리로 기록.
+- 2순위 모델 failover 추가
+  - `ANTHROPIC_FALLBACK_MODEL` 설정 시 primary/retry 실패 후 보조 모델 1회 시도.
+  - 성공 시 `meta.path=anthropic_failover`, `meta.attempts.failover`/`meta.timings.anthropicFailoverMs`에 기록.
+- 타입/메타 정합성 업데이트
+  - `ReadingResponse.meta`에 failover 경로/타이밍/카테고리 필드 반영.
+  - `renderer`의 failure stage 매핑에 `anthropic_provider_5xx` 추가.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:metrics --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run test:unit --prefix apps/web` 통과
+- `npm run build --prefix apps/web` 통과
 
 ### 하이브리드 리딩 엔진 v6.1.2: 초안정성 강화 및 Vercel 최적화
 
@@ -2292,6 +4132,46 @@
 
 ## [2026-02-28]
 
+### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/prompt-builder.js`
+- `apps/api/src/domains/reading/model-client.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/index.js`
+- `apps/api/.env.example`
+- `apps/web/src/services/analytics.ts`
+- `apps/web/src/pages/TarotMastery.tsx`
+- `apps/web/src/types/tarot.ts`
+- `docs/RELEASE_NOTES_v6.3.65.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 호출 타임아웃 정책 보강
+  - 일반/종합운세 별도 timeout 정책 적용 및 최소 timeout 하한 강제.
+  - 과도하게 낮은 환경값(예: 5초)으로 인한 즉시 fallback 빈도 완화.
+- 재시도 안정화
+  - 1회 재시도 전 짧은 백오프를 추가해 일시 지연/네트워크 변동 회복률 개선.
+- 종합운세(`overall_fortune`) 전용 정책 분리
+  - `ANTHROPIC_TIMEOUT_OVERALL_MS`, `ANTHROPIC_RETRY_TIMEOUT_OVERALL_MS` 도입.
+- fallback 사유 분해 관측
+  - `fallbackReason` 외 `fallbackCategory`(timeout/rate_limit/provider_5xx/...)를 추가해 원인 추적 강화.
+  - 서버 metric 로그와 프런트 analytics 이벤트에서 동일 카테고리로 기록.
+- 2순위 모델 failover 추가
+  - `ANTHROPIC_FALLBACK_MODEL` 설정 시 primary/retry 실패 후 보조 모델 1회 시도.
+  - 성공 시 `meta.path=anthropic_failover`, `meta.attempts.failover`/`meta.timings.anthropicFailoverMs`에 기록.
+- 타입/메타 정합성 업데이트
+  - `ReadingResponse.meta`에 failover 경로/타이밍/카테고리 필드 반영.
+  - `renderer`의 failure stage 매핑에 `anthropic_provider_5xx` 추가.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:metrics --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run test:unit --prefix apps/web` 통과
+- `npm run build --prefix apps/web` 통과
+
 ### 하이브리드 리딩 엔진 v6.1.1: 문서 체계 혁신 및 보안 강화
 
 #### 변경 사항
@@ -2311,6 +4191,46 @@
 - `.env` 파일의 추적 제외 상태(Untracked) 재검증.
 
 ## [2026-02-28]
+
+### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/prompt-builder.js`
+- `apps/api/src/domains/reading/model-client.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/index.js`
+- `apps/api/.env.example`
+- `apps/web/src/services/analytics.ts`
+- `apps/web/src/pages/TarotMastery.tsx`
+- `apps/web/src/types/tarot.ts`
+- `docs/RELEASE_NOTES_v6.3.65.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 호출 타임아웃 정책 보강
+  - 일반/종합운세 별도 timeout 정책 적용 및 최소 timeout 하한 강제.
+  - 과도하게 낮은 환경값(예: 5초)으로 인한 즉시 fallback 빈도 완화.
+- 재시도 안정화
+  - 1회 재시도 전 짧은 백오프를 추가해 일시 지연/네트워크 변동 회복률 개선.
+- 종합운세(`overall_fortune`) 전용 정책 분리
+  - `ANTHROPIC_TIMEOUT_OVERALL_MS`, `ANTHROPIC_RETRY_TIMEOUT_OVERALL_MS` 도입.
+- fallback 사유 분해 관측
+  - `fallbackReason` 외 `fallbackCategory`(timeout/rate_limit/provider_5xx/...)를 추가해 원인 추적 강화.
+  - 서버 metric 로그와 프런트 analytics 이벤트에서 동일 카테고리로 기록.
+- 2순위 모델 failover 추가
+  - `ANTHROPIC_FALLBACK_MODEL` 설정 시 primary/retry 실패 후 보조 모델 1회 시도.
+  - 성공 시 `meta.path=anthropic_failover`, `meta.attempts.failover`/`meta.timings.anthropicFailoverMs`에 기록.
+- 타입/메타 정합성 업데이트
+  - `ReadingResponse.meta`에 failover 경로/타이밍/카테고리 필드 반영.
+  - `renderer`의 failure stage 매핑에 `anthropic_provider_5xx` 추가.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:metrics --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run test:unit --prefix apps/web` 통과
+- `npm run build --prefix apps/web` 통과
 
 ### 하이브리드 리딩 엔진 v6.1: 클로드(Anthropic) 서사 혁신
 
@@ -2339,6 +4259,46 @@
 
 ## [2026-02-28]
 
+### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/prompt-builder.js`
+- `apps/api/src/domains/reading/model-client.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/index.js`
+- `apps/api/.env.example`
+- `apps/web/src/services/analytics.ts`
+- `apps/web/src/pages/TarotMastery.tsx`
+- `apps/web/src/types/tarot.ts`
+- `docs/RELEASE_NOTES_v6.3.65.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 호출 타임아웃 정책 보강
+  - 일반/종합운세 별도 timeout 정책 적용 및 최소 timeout 하한 강제.
+  - 과도하게 낮은 환경값(예: 5초)으로 인한 즉시 fallback 빈도 완화.
+- 재시도 안정화
+  - 1회 재시도 전 짧은 백오프를 추가해 일시 지연/네트워크 변동 회복률 개선.
+- 종합운세(`overall_fortune`) 전용 정책 분리
+  - `ANTHROPIC_TIMEOUT_OVERALL_MS`, `ANTHROPIC_RETRY_TIMEOUT_OVERALL_MS` 도입.
+- fallback 사유 분해 관측
+  - `fallbackReason` 외 `fallbackCategory`(timeout/rate_limit/provider_5xx/...)를 추가해 원인 추적 강화.
+  - 서버 metric 로그와 프런트 analytics 이벤트에서 동일 카테고리로 기록.
+- 2순위 모델 failover 추가
+  - `ANTHROPIC_FALLBACK_MODEL` 설정 시 primary/retry 실패 후 보조 모델 1회 시도.
+  - 성공 시 `meta.path=anthropic_failover`, `meta.attempts.failover`/`meta.timings.anthropicFailoverMs`에 기록.
+- 타입/메타 정합성 업데이트
+  - `ReadingResponse.meta`에 failover 경로/타이밍/카테고리 필드 반영.
+  - `renderer`의 failure stage 매핑에 `anthropic_provider_5xx` 추가.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:metrics --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run test:unit --prefix apps/web` 통과
+- `npm run build --prefix apps/web` 통과
+
 ### 하이브리드 리딩 품질 복원 패치 (v6.0.2)
 
 #### 변경 사항
@@ -2359,6 +4319,46 @@
 - UI/UX 테마 일관성 확인.
 
 ## [2026-02-28]
+
+### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/prompt-builder.js`
+- `apps/api/src/domains/reading/model-client.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/index.js`
+- `apps/api/.env.example`
+- `apps/web/src/services/analytics.ts`
+- `apps/web/src/pages/TarotMastery.tsx`
+- `apps/web/src/types/tarot.ts`
+- `docs/RELEASE_NOTES_v6.3.65.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 호출 타임아웃 정책 보강
+  - 일반/종합운세 별도 timeout 정책 적용 및 최소 timeout 하한 강제.
+  - 과도하게 낮은 환경값(예: 5초)으로 인한 즉시 fallback 빈도 완화.
+- 재시도 안정화
+  - 1회 재시도 전 짧은 백오프를 추가해 일시 지연/네트워크 변동 회복률 개선.
+- 종합운세(`overall_fortune`) 전용 정책 분리
+  - `ANTHROPIC_TIMEOUT_OVERALL_MS`, `ANTHROPIC_RETRY_TIMEOUT_OVERALL_MS` 도입.
+- fallback 사유 분해 관측
+  - `fallbackReason` 외 `fallbackCategory`(timeout/rate_limit/provider_5xx/...)를 추가해 원인 추적 강화.
+  - 서버 metric 로그와 프런트 analytics 이벤트에서 동일 카테고리로 기록.
+- 2순위 모델 failover 추가
+  - `ANTHROPIC_FALLBACK_MODEL` 설정 시 primary/retry 실패 후 보조 모델 1회 시도.
+  - 성공 시 `meta.path=anthropic_failover`, `meta.attempts.failover`/`meta.timings.anthropicFailoverMs`에 기록.
+- 타입/메타 정합성 업데이트
+  - `ReadingResponse.meta`에 failover 경로/타이밍/카테고리 필드 반영.
+  - `renderer`의 failure stage 매핑에 `anthropic_provider_5xx` 추가.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:metrics --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run test:unit --prefix apps/web` 통과
+- `npm run build --prefix apps/web` 통과
 
 ### 하이브리드 리딩 품질 복원 패치 (v6.0.1)
 

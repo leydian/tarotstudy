@@ -12,6 +12,9 @@ type AnalyticsPayload = {
   fortunePeriod?: string | null;
   mode?: string;
   fallbackUsed?: boolean;
+  fallbackReason?: string | null;
+  fallbackCategory?: string | null;
+  failureStage?: string | null;
   spreadId?: string;
   tab?: 'report' | 'study';
   latencyMs?: number;

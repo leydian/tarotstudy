@@ -1,5 +1,9 @@
 const ANTHROPIC_TIMEOUT_MS = Number(process.env.ANTHROPIC_TIMEOUT_MS || 12000);
-const ANTHROPIC_RETRY_TIMEOUT_MS = Number(process.env.ANTHROPIC_RETRY_TIMEOUT_MS || 7000);
+const ANTHROPIC_RETRY_TIMEOUT_MS = Number(process.env.ANTHROPIC_RETRY_TIMEOUT_MS || 9000);
+const ANTHROPIC_TIMEOUT_OVERALL_MS = Number(process.env.ANTHROPIC_TIMEOUT_OVERALL_MS || 15000);
+const ANTHROPIC_RETRY_TIMEOUT_OVERALL_MS = Number(process.env.ANTHROPIC_RETRY_TIMEOUT_OVERALL_MS || 12000);
+
+const clampTimeout = (value, minValue) => Math.max(minValue, Number.isFinite(value) ? value : minValue);
 
 const detectResponseMode = (questionType, questionLength, domainTag = 'general', readingKind = 'general_reading', fortunePeriod = null) => {
   if (readingKind === 'overall_fortune') {
@@ -13,13 +17,26 @@ const detectResponseMode = (questionType, questionLength, domainTag = 'general',
   return 'balanced';
 };
 
-const getAnthropicConfig = (responseMode, isRetry = false) => {
+const getAnthropicConfig = (
+  responseMode,
+  {
+    isRetry = false,
+    readingKind = 'general_reading'
+  } = {}
+) => {
   const tokenBase = responseMode === 'concise' ? 500 : (responseMode === 'creative' ? 1300 : 1100);
   const maxTokens = isRetry ? Math.max(300, Math.floor(tokenBase * 0.8)) : tokenBase;
   const temperature = responseMode === 'concise' ? 0.25 : (responseMode === 'creative' ? 0.7 : 0.45);
+  const isOverallFortune = readingKind === 'overall_fortune';
+  const resolvedTimeoutMs = isRetry
+    ? (isOverallFortune ? ANTHROPIC_RETRY_TIMEOUT_OVERALL_MS : ANTHROPIC_RETRY_TIMEOUT_MS)
+    : (isOverallFortune ? ANTHROPIC_TIMEOUT_OVERALL_MS : ANTHROPIC_TIMEOUT_MS);
+  const minTimeoutMs = isRetry
+    ? (isOverallFortune ? 10000 : 8000)
+    : (isOverallFortune ? 12000 : 10000);
   return {
     maxTokens,
-    timeoutMs: isRetry ? ANTHROPIC_RETRY_TIMEOUT_MS : ANTHROPIC_TIMEOUT_MS,
+    timeoutMs: clampTimeout(resolvedTimeoutMs, minTimeoutMs),
     temperature
   };
 };

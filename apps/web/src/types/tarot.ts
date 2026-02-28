@@ -119,11 +119,12 @@ export interface ReadingResponse {
     trendLabel?: 'UP' | 'BALANCED' | 'CAUTION';
     recommendedSpreadId?: string;
     responseMode?: 'concise' | 'balanced' | 'creative';
-    path?: 'anthropic_primary' | 'anthropic_retry' | 'fallback';
+    path?: 'anthropic_primary' | 'anthropic_retry' | 'anthropic_failover' | 'fallback';
     timings?: {
       totalMs: number;
       anthropicPrimaryMs?: number | null;
       anthropicRetryMs?: number | null;
+      anthropicFailoverMs?: number | null;
       anthropicRepairMs?: number | null;
     };
     attempts?: {
@@ -141,6 +142,14 @@ export interface ReadingResponse {
         status?: number | null;
         durationMs?: number | null;
       };
+      failover?: {
+        attempted: boolean;
+        success: boolean;
+        reason?: string | null;
+        status?: number | null;
+        durationMs?: number | null;
+        model?: string | null;
+      };
       repair: {
         attempted: boolean;
         success: boolean;
@@ -151,6 +160,7 @@ export interface ReadingResponse {
     };
     failureStage?: 'network' | 'parse' | 'http' | 'model_unavailable' | 'engine' | 'validation' | 'unknown' | null;
     fallbackReason?: string | null;
+    fallbackCategory?: 'timeout' | 'rate_limit' | 'provider_5xx' | 'network' | 'auth' | 'model' | 'parse' | 'validation' | 'engine' | 'other' | null;
     confidence?: number;
     lowConfidence?: boolean;
     contextUsed?: boolean;

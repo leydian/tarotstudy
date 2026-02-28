@@ -39,6 +39,7 @@ const logReadingMetrics = (requestId, reading) => {
     apiUsed: reading?.apiUsed || 'unknown',
     fallbackUsed: !!reading?.fallbackUsed,
     fallbackReason: reading?.meta?.fallbackReason || reading?.fallbackReason || null,
+    fallbackCategory: reading?.meta?.fallbackCategory || null,
     failureStage: reading?.meta?.failureStage || null,
     questionType: reading?.meta?.questionType || null,
     domainTag: reading?.meta?.domainTag || null,

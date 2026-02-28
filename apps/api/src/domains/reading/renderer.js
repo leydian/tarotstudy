@@ -52,6 +52,7 @@ const mapFailureStage = ({ fallbackReason, qualityValid, modelReport }) => {
   if (fallbackReason === 'anthropic_parse_error') return 'parse';
   if (
     fallbackReason === 'model_not_found' ||
+    fallbackReason === 'anthropic_provider_5xx' ||
     fallbackReason === 'anthropic_http_error' ||
     fallbackReason === 'anthropic_auth_error' ||
     fallbackReason === 'anthropic_rate_limited'

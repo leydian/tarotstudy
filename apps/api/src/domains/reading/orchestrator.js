@@ -17,7 +17,11 @@ import {
 } from './prompt-builder.js';
 import {
   ANTHROPIC_REPAIR_TIMEOUT_MS,
+  FALLBACK_ANTHROPIC_MODEL,
   shouldRetryAnthropic,
+  shouldAttemptModelFailover,
+  sleepMs,
+  categorizeFallbackReason,
   callAnthropic
 } from './model-client.js';
 import {
@@ -111,15 +115,20 @@ export const generateReadingHybrid = async ({
   let anthropicPrimaryMs = null;
   let anthropicRetryMs = null;
   let anthropicRepairMs = null;
+  let anthropicFailoverMs = null;
   const attempts = {
     primary: { attempted: false, success: false, reason: null, status: null, durationMs: null },
     retry: { attempted: false, success: false, reason: null, status: null, durationMs: null },
+    failover: { attempted: false, success: false, reason: null, status: null, durationMs: null, model: null },
     repair: { attempted: false, success: false, reason: null, status: null, durationMs: null }
   };
   let parseFailureSeen = false;
 
   try {
-    const primaryConfig = getAnthropicConfig(responseMode, false);
+    const primaryConfig = getAnthropicConfig(responseMode, {
+      isRetry: false,
+      readingKind: resolvedProfile.readingKind
+    });
     attempts.primary.attempted = true;
     const primaryStartedAt = Date.now();
     const antResult = await callAnthropic(prompt, primaryConfig);
@@ -136,7 +145,12 @@ export const generateReadingHybrid = async ({
       fallbackReason = antResult.reason;
       parseFailureSeen = parseFailureSeen || fallbackReason === 'anthropic_parse_error';
       if (shouldRetryAnthropic(antResult.reason, antResult.status)) {
-        const retryConfig = getAnthropicConfig(responseMode, true);
+        const retryConfig = getAnthropicConfig(responseMode, {
+          isRetry: true,
+          readingKind: resolvedProfile.readingKind
+        });
+        const retryBackoffMs = antResult.reason === 'anthropic_timeout' ? 450 : 220;
+        await sleepMs(retryBackoffMs);
         attempts.retry.attempted = true;
         const retryStartedAt = Date.now();
         const antRetryResult = await callAnthropic(prompt, retryConfig);
@@ -152,6 +166,37 @@ export const generateReadingHybrid = async ({
           path = 'anthropic_retry';
         } else {
           fallbackReason = antRetryResult.reason || fallbackReason;
+          parseFailureSeen = parseFailureSeen || fallbackReason === 'anthropic_parse_error';
+        }
+      }
+
+      const failoverStatus = attempts.retry.attempted ? attempts.retry.status : attempts.primary.status;
+      if (!modelReport && shouldAttemptModelFailover(fallbackReason, failoverStatus)) {
+        const failoverConfig = getAnthropicConfig(responseMode, {
+          isRetry: true,
+          readingKind: resolvedProfile.readingKind
+        });
+        attempts.failover.attempted = true;
+        attempts.failover.model = FALLBACK_ANTHROPIC_MODEL;
+        await sleepMs(320);
+        const failoverStartedAt = Date.now();
+        const failoverResult = await callAnthropic(prompt, {
+          ...failoverConfig,
+          model: FALLBACK_ANTHROPIC_MODEL
+        });
+        anthropicFailoverMs = Date.now() - failoverStartedAt;
+        attempts.failover.durationMs = anthropicFailoverMs;
+        attempts.failover.success = !!failoverResult.report;
+        attempts.failover.reason = failoverResult.reason || null;
+        attempts.failover.status = failoverResult.status ?? null;
+        modelReport = failoverResult.report;
+
+        if (modelReport) {
+          apiUsed = 'anthropic';
+          fallbackReason = null;
+          path = 'anthropic_failover';
+        } else {
+          fallbackReason = failoverResult.reason || fallbackReason;
           parseFailureSeen = parseFailureSeen || fallbackReason === 'anthropic_parse_error';
         }
       }
@@ -240,6 +285,9 @@ export const generateReadingHybrid = async ({
   if (attempts.retry.attempted && attempts.retry.success && attempts.primary.reason === 'anthropic_timeout') {
     runtimeSafetyReasons.push('model_timeout_retry');
   }
+  if (attempts.failover.attempted && attempts.failover.success) {
+    runtimeSafetyReasons.push('model_failover_used');
+  }
   if (attempts.repair.attempted && attempts.repair.success) {
     runtimeSafetyReasons.push('parse_repair_used');
   }
@@ -277,6 +325,7 @@ export const generateReadingHybrid = async ({
     .slice(0, 2)
     .map((item, idx) => `[운명의 지침 ${idx + 1}] ${item}`);
   const totalMs = Date.now() - startedAt;
+  const fallbackCategory = categorizeFallbackReason(fallbackReason);
   const qualityScore = Math.max(
     0,
     Math.min(
@@ -323,11 +372,13 @@ export const generateReadingHybrid = async ({
         totalMs,
         anthropicPrimaryMs,
         anthropicRetryMs,
+        anthropicFailoverMs,
         anthropicRepairMs
       },
       attempts,
       failureStage,
       fallbackReason: fallbackReason || null,
+      fallbackCategory: fallbackCategory || null,
       analysis: finalAnalysis,
       qualityFlags: finalized.qualityFlags,
       qualityScore,
