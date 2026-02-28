@@ -31,4 +31,29 @@ assert.ok(
 assert.ok(cardsPage.includes('aria-label="카드 검색"'), 'Cards search input aria-label is missing');
 assert.ok(cardsPage.includes('aria-pressed={filter === key}'), 'Cards filter button aria-pressed is missing');
 
+assert.ok(
+  tarotMastery.includes("const handleQuickFortune = async (question: string) =>"),
+  'quick fortune handler should exist'
+);
+assert.ok(
+  tarotMastery.includes("setStep('reading')"),
+  'reading step transition should exist'
+);
+assert.ok(
+  tarotMastery.includes("setStep('result')"),
+  'result step transition should exist'
+);
+assert.ok(
+  tarotMastery.includes("const handleReset = () =>"),
+  'reset handler should exist'
+);
+assert.ok(
+  tarotMastery.includes("setStep('input')"),
+  'reset should return to input step'
+);
+assert.ok(
+  tarotMastery.includes("setMessages([makeMsg('bot', '새로운 의식을 시작할 준비가 되었습니다. 무엇이 궁금하신가요?')]);"),
+  'reset baseline bot message should be restored'
+);
+
 console.log('Web UI contract regression checks passed.');

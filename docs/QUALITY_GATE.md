@@ -48,6 +48,9 @@
    - 감정 취약 질문
    - API 키 없는 환경 질문
    - `?debug=1`에서 진단 배지 노출 확인 / 일반 모드 비노출 확인
+7. 운영 메트릭 점검
+   - `npm run metrics:report --prefix apps/api`
+   - fallbackRate / p95 / failureStage 분포를 릴리스 노트에 기록
 
 ## 6. CI 게이트
 - `.github/workflows/quality-gate.yml`에서 위 검증 절차를 PR/`main` push마다 실행합니다.

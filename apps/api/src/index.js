@@ -1,6 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import fs from 'node:fs';
+import path from 'node:path';
 import { cards, getCardById } from './data/cards.js';
 import { spreads, getSpreadById } from './data/spreads.js';
 import { generateReadingV3 } from './domains/reading/v3.js';
@@ -12,6 +14,7 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT || 8787;
 const serverRevision = process.env.VERCEL_GIT_COMMIT_SHA || process.env.GIT_COMMIT_SHA || 'local';
+const metricLogPath = process.env.TAROT_METRIC_LOG_PATH || '';
 
 app.use(cors());
 app.use(express.json());
@@ -34,6 +37,15 @@ const logReadingMetrics = (requestId, reading) => {
     totalMs: reading?.meta?.timings?.totalMs ?? null
   };
   console.log(`[Tarot Metric] ${JSON.stringify(metric)}`);
+  if (metricLogPath) {
+    const safePath = path.resolve(metricLogPath);
+    try {
+      fs.mkdirSync(path.dirname(safePath), { recursive: true });
+      fs.appendFileSync(safePath, `${JSON.stringify(metric)}\n`, 'utf8');
+    } catch (error) {
+      console.error('[Tarot Metric] Failed to append metric log:', error?.message || error);
+    }
+  }
 };
 
 // 타로 카드 목록 조회

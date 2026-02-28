@@ -2,6 +2,48 @@
 
 ## [2026-02-28]
 
+### 운영 메트릭 집계/모바일 읽기성/회귀 검증 확장 (v6.3.30)
+
+#### 변경 파일
+- `apps/api/src/index.js`
+- `apps/api/package.json`
+- `apps/api/scripts/aggregate-metrics.js`
+- `apps/api/tests/overall-fortune-regression.js`
+- `apps/web/src/pages/TarotMastery.tsx`
+- `apps/web/src/pages/TarotMastery.module.css`
+- `apps/web/tests/validate-ui-contract.js`
+- `docs/OPERATIONS_METRICS.md`
+- `docs/RELEASE_TEMPLATE.md`
+- `docs/RELEASE_NOTES_v6.3.30.md`
+- `docs/QUALITY_GATE.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 운영 관측
+  - `TAROT_METRIC_LOG_PATH` 설정 시 리딩 메트릭을 JSONL 파일로도 저장.
+  - `metrics:report` 스크립트 추가(`apps/api/scripts/aggregate-metrics.js`)로 fallbackRate, latency p50/p95, 원인 분포 집계.
+- 회귀 테스트 강화
+  - `overall-fortune-regression`에 중복 문장/오염 라벨/섹션 단조화 검증 추가.
+  - 웹 `ui-contract`에 상태 전이(quick fortune, reset baseline) 검증 항목 추가.
+- 모바일 UI 개선
+  - 결과 영역의 `종합운세/안전안내/운명의 지침/함께 고려할 변수` 섹션에 접기/펼치기 추가.
+  - 모바일에서는 기본적으로 일부 긴 섹션을 접어 초기 읽기 부담을 완화.
+  - 입력창에 `enterKeyHint="send"`, `autoComplete="off"`, `spellCheck={false}` 적용.
+- 문서 운영 체계
+  - 운영 메트릭 가이드 문서(`docs/OPERATIONS_METRICS.md`) 추가.
+  - 릴리스 작성 템플릿(`docs/RELEASE_TEMPLATE.md`) 추가.
+  - 품질 게이트에 메트릭 점검 절차 추가.
+
+#### 검증
+- `npm run test:persona --prefix apps/api` 통과
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run test:ui-contract --prefix apps/web` 통과
+- `npm run build --prefix apps/web` 통과
+- `npm run metrics:report --prefix apps/api` 통과(샘플 로그)
+
+## [2026-02-28]
+
 ### 품질 게이트 자동화 및 종합운세 회귀 체계 강화 (v6.3.29)
 
 #### 변경 파일

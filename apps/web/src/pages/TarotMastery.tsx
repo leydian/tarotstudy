@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Sparkles, Send, RefreshCw } from 'lucide-react';
+import { Sparkles, Send, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
 import { Card, Spread, Message, ReadingResponse } from '../types/tarot';
 import { tarotApi } from '../services/tarotService';
 import { getAnalyticsSessionId, trackEvent } from '../services/analytics';
@@ -82,6 +82,12 @@ export function TarotMastery() {
   const [spreadLayout, setSpreadLayout] = useState<Spread | null>(null);
   const [revealedIdx, setRevealedIdx] = useState<number[]>([]);
   const [reading, setReading] = useState<ReadingResponse | null>(null);
+  const [collapsedSections, setCollapsedSections] = useState({
+    fortune: false,
+    health: false,
+    guidance: false,
+    counterpoints: false
+  });
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const spreadViewportRef = useRef<HTMLDivElement>(null);
@@ -95,6 +101,16 @@ export function TarotMastery() {
 
   const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   useEffect(scrollToBottom, [messages, step]);
+  useEffect(() => {
+    if (step !== 'result') return;
+    const isMobile = typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches;
+    setCollapsedSections({
+      fortune: false,
+      health: false,
+      guidance: isMobile,
+      counterpoints: isMobile
+    });
+  }, [step, reading?.meta?.readingKind]);
   useEffect(() => () => {
     revealTimersRef.current.forEach((timerId) => window.clearTimeout(timerId));
     revealTimersRef.current = [];
@@ -128,6 +144,9 @@ export function TarotMastery() {
   const clearRevealTimers = () => {
     revealTimersRef.current.forEach((timerId) => window.clearTimeout(timerId));
     revealTimersRef.current = [];
+  };
+  const toggleSection = (section: 'fortune' | 'health' | 'guidance' | 'counterpoints') => {
+    setCollapsedSections((prev) => ({ ...prev, [section]: !prev[section] }));
   };
 
   const positionDefinitions: { [key: string]: string } = {
@@ -494,6 +513,12 @@ export function TarotMastery() {
     setRevealedIdx([]);
     setDrawnCards([]);
     setSpreadLayout(null);
+    setCollapsedSections({
+      fortune: false,
+      health: false,
+      guidance: false,
+      counterpoints: false
+    });
   };
 
   const isCompactBinaryReading = reading?.meta?.questionType === 'binary' && reading?.meta?.responseMode === 'concise';
@@ -728,50 +753,102 @@ export function TarotMastery() {
 
                             {isOverallFortune && reading.report?.fortune && (
                               <div className={styles.counterpointBox}>
-                                <h4 className={styles.counterpointTitle}>
-                                  {fortuneTitleKo(reading.report.fortune.period || reading.meta?.fortunePeriod || null)}
-                                </h4>
-                                <ul className={styles.counterpointList}>
-                                  <li><strong>전체 에너지:</strong> {reading.report.fortune.energy}</li>
-                                  <li><strong>일·재물운:</strong> {reading.report.fortune.workFinance}</li>
-                                  <li><strong>애정운:</strong> {reading.report.fortune.love}</li>
-                                  <li><strong>건강·마음:</strong> {reading.report.fortune.healthMind}</li>
-                                </ul>
+                                <div className={styles.sectionHeader}>
+                                  <h4 className={styles.counterpointTitle}>
+                                    {fortuneTitleKo(reading.report.fortune.period || reading.meta?.fortunePeriod || null)}
+                                  </h4>
+                                  <button
+                                    type="button"
+                                    className={styles.sectionToggleBtn}
+                                    onClick={() => toggleSection('fortune')}
+                                    aria-expanded={!collapsedSections.fortune}
+                                  >
+                                    {collapsedSections.fortune ? '펼치기' : '접기'}
+                                    {collapsedSections.fortune ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+                                  </button>
+                                </div>
+                                {!collapsedSections.fortune && (
+                                  <ul className={styles.counterpointList}>
+                                    <li><strong>전체 에너지:</strong> {reading.report.fortune.energy}</li>
+                                    <li><strong>일·재물운:</strong> {reading.report.fortune.workFinance}</li>
+                                    <li><strong>애정운:</strong> {reading.report.fortune.love}</li>
+                                    <li><strong>건강·마음:</strong> {reading.report.fortune.healthMind}</li>
+                                  </ul>
+                                )}
                               </div>
                             )}
 
                             {isHealthContext && (
                               <div className={styles.counterpointBox}>
-                                <h4 className={styles.counterpointTitle}>안전 우선 안내</h4>
-                                <ul className={styles.counterpointList}>
-                                  <li>이 리딩은 의료 진단이나 처방을 대체하지 않습니다.</li>
-                                  <li>증상이 지속되거나 악화되면 진료를 우선하세요.</li>
-                                </ul>
+                                <div className={styles.sectionHeader}>
+                                  <h4 className={styles.counterpointTitle}>안전 우선 안내</h4>
+                                  <button
+                                    type="button"
+                                    className={styles.sectionToggleBtn}
+                                    onClick={() => toggleSection('health')}
+                                    aria-expanded={!collapsedSections.health}
+                                  >
+                                    {collapsedSections.health ? '펼치기' : '접기'}
+                                    {collapsedSections.health ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+                                  </button>
+                                </div>
+                                {!collapsedSections.health && (
+                                  <ul className={styles.counterpointList}>
+                                    <li>이 리딩은 의료 진단이나 처방을 대체하지 않습니다.</li>
+                                    <li>증상이 지속되거나 악화되면 진료를 우선하세요.</li>
+                                  </ul>
+                                )}
                               </div>
                             )}
 
                             <div className={styles.arcanaGuidance}>
-                              <h4 className={styles.arcanaTitle}>운명의 지침</h4>
-                              <div className={styles.arcanaList}>
-                                {reading.action.map((act, i) => (
-                                  <div key={i} className={styles.arcanaItem}>
-                                    <span className={styles.arcanaItemBullet}>●</span>
-                                    <p className={styles.arcanaItemText}>
-                                      {showDiagnostics ? act : act.replace(/^\[운명의 지침 \d+\]\s*/, '')}
-                                    </p>
-                                  </div>
-                                ))}
+                              <div className={styles.sectionHeader}>
+                                <h4 className={styles.arcanaTitle}>운명의 지침</h4>
+                                <button
+                                  type="button"
+                                  className={styles.sectionToggleBtn}
+                                  onClick={() => toggleSection('guidance')}
+                                  aria-expanded={!collapsedSections.guidance}
+                                >
+                                  {collapsedSections.guidance ? '펼치기' : '접기'}
+                                  {collapsedSections.guidance ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+                                </button>
                               </div>
+                              {!collapsedSections.guidance && (
+                                <div className={styles.arcanaList}>
+                                  {reading.action.map((act, i) => (
+                                    <div key={i} className={styles.arcanaItem}>
+                                      <span className={styles.arcanaItemBullet}>●</span>
+                                      <p className={styles.arcanaItemText}>
+                                        {showDiagnostics ? act : act.replace(/^\[운명의 지침 \d+\]\s*/, '')}
+                                      </p>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
                             </div>
 
                             {reading.report && reading.report.counterpoints.length > 0 && (!isCompactBinaryReading || !!reading.fallbackUsed) && (
                               <div className={styles.counterpointBox}>
-                                <h4 className={styles.counterpointTitle}>함께 고려할 변수</h4>
-                                <ul className={styles.counterpointList}>
-                                  {reading.report.counterpoints.map((cp, i) => (
-                                    <li key={i}>{cp}</li>
-                                  ))}
-                                </ul>
+                                <div className={styles.sectionHeader}>
+                                  <h4 className={styles.counterpointTitle}>함께 고려할 변수</h4>
+                                  <button
+                                    type="button"
+                                    className={styles.sectionToggleBtn}
+                                    onClick={() => toggleSection('counterpoints')}
+                                    aria-expanded={!collapsedSections.counterpoints}
+                                  >
+                                    {collapsedSections.counterpoints ? '펼치기' : '접기'}
+                                    {collapsedSections.counterpoints ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+                                  </button>
+                                </div>
+                                {!collapsedSections.counterpoints && (
+                                  <ul className={styles.counterpointList}>
+                                    {reading.report.counterpoints.map((cp, i) => (
+                                      <li key={i}>{cp}</li>
+                                    ))}
+                                  </ul>
+                                )}
                               </div>
                             )}
                         </div>
@@ -813,6 +890,9 @@ export function TarotMastery() {
                 onChange={e => setInput(e.target.value)}
                 placeholder="운명의 도서관 사서에게 질문을 던져보세요..."
                 className={styles.inputField}
+                autoComplete="off"
+                spellCheck={false}
+                enterKeyHint="send"
               />
               <button type="submit" disabled={loading} className={styles.submitBtn}>
                 <Send size={16} /> 의식 시작

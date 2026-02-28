@@ -54,6 +54,11 @@ const cases = [
 ];
 
 const failures = [];
+const normalizeCompare = (text) => String(text || '')
+  .toLowerCase()
+  .replace(/[^\p{L}\p{N}\s]/gu, '')
+  .replace(/\s+/g, ' ')
+  .trim();
 
 for (const sample of cases) {
   try {
@@ -73,6 +78,29 @@ for (const sample of cases) {
     assert.ok(response.report?.fortune?.message, 'fortune message should not be empty');
     assert.ok(response.report?.actions?.length > 0, 'actions should not be empty');
     assert.ok(response.report?.counterpoints?.length > 0, 'counterpoints should not be empty');
+
+    const summaryNorm = normalizeCompare(response.report?.summary);
+    const rationaleNorm = normalizeCompare(response.report?.verdict?.rationale);
+    assert.notEqual(summaryNorm, rationaleNorm, 'summary and verdict.rationale should not be duplicated');
+
+    const contaminatedCounterpoints = (response.report?.counterpoints || []).some((item) =>
+      /사서의\s*통찰|\[운명의\s*판정\]/i.test(item)
+    );
+    assert.equal(contaminatedCounterpoints, false, 'counterpoints should not contain contaminated labels');
+
+    const contaminatedActions = (response.report?.actions || []).some((item) =>
+      /\[운명의\s*지침\s*\d+\]/i.test(item)
+    );
+    assert.equal(contaminatedActions, false, 'report.actions should be clean without legacy prefixes');
+
+    const fortuneSegments = [
+      normalizeCompare(response.report?.fortune?.energy),
+      normalizeCompare(response.report?.fortune?.workFinance),
+      normalizeCompare(response.report?.fortune?.love),
+      normalizeCompare(response.report?.fortune?.healthMind)
+    ].filter(Boolean);
+    const uniqueSegments = new Set(fortuneSegments);
+    assert.ok(uniqueSegments.size >= 2, 'fortune sections should not all collapse into identical copy');
   } catch (error) {
     failures.push(`[${sample.name}] ${error.message}`);
   }
