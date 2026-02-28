@@ -2,6 +2,27 @@
 
 ## [2026-02-28]
 
+### Anthropic 실패 진단성 강화 및 모델 롤백 (v6.3.3)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/hybrid.js`
+- `docs/RELEASE_NOTES_v6.3.3.md`
+
+#### 변경 사항
+- Anthropic 기본 모델을 `claude-3-5-haiku-20241022`로 롤백.
+- Anthropic 호출에 20초 타임아웃(`AbortController`) 적용.
+- 실패 로그에 `status/model/body` 또는 `message/cause`를 포함하도록 확장.
+
+#### 효과
+- fallback 원인 파악 속도 개선(권한/한도/네트워크 문제 분리).
+- 운영 중 "왜 API를 못 불렀는지"를 로그만으로 추적 가능.
+
+#### 검증
+- `npm run test:persona --prefix apps/api` 통과.
+- 상세 변경 요약: `docs/RELEASE_NOTES_v6.3.3.md`
+
+## [2026-02-28]
+
 ### Anthropic 기본 모델/토큰 상향 (v6.3.2)
 
 #### 변경 파일

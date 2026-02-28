@@ -14,7 +14,7 @@ const NEGATIVE_IDS = new Set([
 ]);
 
 const DEFAULT_OPENAI_MODEL = process.env.READING_MODEL || 'gpt-4o-mini';
-const DEFAULT_ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL || 'claude-haiku-4-5-20251001';
+const DEFAULT_ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL || 'claude-3-5-haiku-20241022';
 
 const getYesNoScore = (cardId) => {
   if (POSITIVE_IDS.has(cardId)) return 1;
@@ -194,31 +194,42 @@ const callAnthropic = async (prompt) => {
   }
 
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: DEFAULT_ANTHROPIC_MODEL,
-        max_tokens: 4096,
-        messages: [{ role: 'user', content: prompt }],
-        system: '당신은 아르카나 도서관의 지혜로운 사서입니다. 따뜻하고 신비로우면서도 실용적인 조언을 아끼지 않습니다. 카드 한 장 한 장을 생생하게 묘사하고, 질문자의 상황에 직접 연결하는 것이 당신의 특기입니다. 반드시 순수한 JSON 객체만 반환하세요. 마크다운 코드 블록, 설명 텍스트, 주석 일절 금지.'
-      })
-    });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 20000);
+    try {
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01'
+        },
+        body: JSON.stringify({
+          model: DEFAULT_ANTHROPIC_MODEL,
+          max_tokens: 4096,
+          messages: [{ role: 'user', content: prompt }],
+          system: '당신은 아르카나 도서관의 지혜로운 사서입니다. 따뜻하고 신비로우면서도 실용적인 조언을 아끼지 않습니다. 카드 한 장 한 장을 생생하게 묘사하고, 질문자의 상황에 직접 연결하는 것이 당신의 특기입니다. 반드시 순수한 JSON 객체만 반환하세요. 마크다운 코드 블록, 설명 텍스트, 주석 일절 금지.'
+        }),
+        signal: controller.signal
+      });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`[Anthropic API] Error ${response.status}:`, errorText);
-      return null;
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(
+          `[Anthropic API] Error status=${response.status} model=${DEFAULT_ANTHROPIC_MODEL} body=${errorText}`
+        );
+        return null;
+      }
+
+      const data = await response.json();
+      return extractJsonObject(data?.content?.[0]?.text);
+    } finally {
+      clearTimeout(timeout);
     }
-
-    const data = await response.json();
-    return extractJsonObject(data?.content?.[0]?.text);
   } catch (error) {
-    console.error('[Anthropic API] Fetch Error:', error.message);
+    console.error(
+      `[Anthropic API] Fetch Error model=${DEFAULT_ANTHROPIC_MODEL} message=${error?.message || 'unknown'} cause=${error?.cause?.code || error?.cause?.message || 'none'}`
+    );
     return null;
   }
 };
