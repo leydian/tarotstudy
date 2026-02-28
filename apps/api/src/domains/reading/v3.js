@@ -130,12 +130,16 @@ export const generateReadingV3 = (cards, question, timeframe = 'daily', category
     // 운명의 서사 (Narrative Synthesis) - 이전 카드와의 인과관계 및 대화형 화법 적용
     let narrativeFlow = [];
     cards.forEach((c, i) => {
-      const positionName = c.positionLabel || (isBinary ? (i === 0 ? "첫 번째 길" : "두 번째 길") : (cardCount === 1 ? "핵심" : `운명의 ${i+1}단계`));
+      const positionName = c.positionLabel || (isBinary ? (i === 0 ? "첫 번째 선택" : "두 번째 선택") : (cardCount === 1 ? "핵심" : `운명의 ${i+1}단계`));
       const coreSummary = smoothConnect(c.summary || "");
       
       // 위치 의미를 자연스럽게 문장에 녹임
       let posIntro = "";
-      if (i === 0) {
+      if (isBinary) {
+        posIntro = i === 0 
+          ? `먼저 당신이 고민 중인 **첫 번째 길(A)**을 살펴보니 **[${c.nameKo}]** 카드가 그 모습을 드러냈습니다.`
+          : `반면, 당신의 마음 한편에 자리한 **두 번째 길(B)**의 자리에는 **[${c.nameKo}]** 카드가 놓여 있군요.`;
+      } else if (i === 0) {
         posIntro = `가장 먼저 당신의 ${positionName}${getJosa(positionName, 'reul')} 보여주는 자리에 **[${c.nameKo}]** 카드가 나타났습니다.`;
       } else if (i === cards.length - 1) {
         posIntro = `마지막으로 이 모든 흐름이 귀결되는 **[${positionName}]**의 자리에는 **[${c.nameKo}]** 카드가 기다리고 있네요.`;
@@ -151,7 +155,7 @@ export const generateReadingV3 = (cards, question, timeframe = 'daily', category
   
       // 이전 카드와의 맥락 연결 (체인 생성)
       let transition = "";
-      if (i > 0) {
+      if (!isBinary && i > 0) {
         const prevCard = cards[i - 1];
         const prevScore = getYesNoScore(prevCard);
         const currScore = getYesNoScore(c);
@@ -171,7 +175,9 @@ export const generateReadingV3 = (cards, question, timeframe = 'daily', category
       else contextSentence = `지금 당신의 삶 전반에 ${keyword}의 에너지가 깊게 스며들어 있습니다.`;
   
       const adviceText = c.meanings.advice.replace(/\.$/, '');
-      const paragraph = `${posIntro} ${transition}이 카드는 ${coreSummary}. ${contextSentence} 무엇보다 "**${adviceText}**"라는 사서의 조언을 가슴 깊이 새긴다면, 분명 운명을 밝히는 소중한 열쇠를 얻게 될 것입니다.`;
+      const paragraph = isBinary
+        ? `${posIntro} 이 선택을 한다면 카드는 ${coreSummary}. 사서의 시선으로 조언을 드리자면, "**${adviceText}**" 하는 마음가짐이 이 선택지를 빛나게 할 것입니다.`
+        : `${posIntro} ${transition}이 카드는 ${coreSummary}. ${contextSentence} 무엇보다 "**${adviceText}**"라는 사서의 조언을 가슴 깊이 새긴다면, 분명 운명을 밝히는 소중한 열쇠를 얻게 될 것입니다.`;
       narrativeFlow.push(paragraph);
     });
 
@@ -185,7 +191,12 @@ export const generateReadingV3 = (cards, question, timeframe = 'daily', category
     return `${card.nameKo}의 흐름 속에서 균형을 잡으며`;
   };
 
-  const finalSummary = `\n\n[종합 분석] 사서인 제가 읽어낸 이번 리딩의 핵심은 이렇습니다. 당신의 질문 "${question}"에 대하여, ${firstCard.nameKo}에서 시작된 기운이 ${getCardFraming(lastCard)} 나아가야 한다는 것입니다. 전체적인 운의 흐름은 '${verdictKo}'를 가리키고 있으니, 카드가 전해준 조언들을 마음속 나침반 삼아 한 걸음씩 나아가시길 바랍니다.`;
+  let finalSummary = "";
+  if (isBinary) {
+    finalSummary = `\n\n[종합 분석] 사서인 제가 읽어낸 이번 양자택일의 결론은 이렇습니다. 당신의 질문 "${question}"에 대하여, ${verdictKo}. 카드가 보여준 각기 다른 두 길의 풍경을 찬찬히 비교해 보시고, 당신의 영혼이 더 편안하게 숨 쉴 수 있는 곳을 선택하시길 바랍니다.`;
+  } else {
+    finalSummary = `\n\n[종합 분석] 사서인 제가 읽어낸 이번 리딩의 핵심은 이렇습니다. 당신의 질문 "${question}"에 대하여, ${firstCard.nameKo}에서 시작된 기운이 ${getCardFraming(lastCard)} 나아가야 한다는 것입니다. 전체적인 운의 흐름은 '${verdictKo}'를 가리키고 있으니, 카드가 전해준 조언들을 마음속 나침반 삼아 한 걸음씩 나아가시길 바랍니다.`;
+  }
 
   const conclusion = `${introduction}\n\n[운명의 서사 분석]\n${narrative}${finalSummary}`;
 
