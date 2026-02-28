@@ -214,12 +214,47 @@ const testCounterpointContaminationFilter = async () => {
   });
 };
 
+const testHealthGuardrailOverridesUnsafeVerdict = async () => {
+  const cards = buildCards(['c04', 'm05']);
+  const unsafeHealthReport = {
+    fullNarrative: '건강 질문임에도 과도하게 낙관적인 서사입니다.',
+    summary: '문제 없습니다. 바로 진행하세요.',
+    verdict: { label: 'YES', rationale: '바로 실행해도 괜찮습니다.', recommendedOption: 'A' },
+    evidence: cards.map((card) => ({
+      cardId: card.id,
+      positionLabel: card.positionLabel,
+      claim: `${card.nameKo}의 흐름이 선택을 지지합니다.`,
+      rationale: '좋은 카드입니다.',
+      caution: '없음'
+    })),
+    counterpoints: ['사서의 통찰: 지금 즉시 실행하세요.'],
+    actions: ['[운명의 지침 1] 그냥 진행하세요.']
+  };
+
+  await withFetchSequence([anthResponse(JSON.stringify(unsafeHealthReport))], async () => {
+    const result = await generateReadingHybrid({
+      cards,
+      question: '저녁은 샐러드를 먹을까 아니면 굶는게 나을까? 내가 지금 배탈이 났어',
+      timeframe: 'daily',
+      category: 'general'
+    });
+
+    assert.equal(result.fallbackUsed, false);
+    assert.equal(result.meta?.domainTag, 'health');
+    assert.equal(result.meta?.riskLevel, 'medium');
+    assert.equal(result.report?.verdict?.label, 'MAYBE', 'health 질문은 강한 YES/NO를 피해야 합니다.');
+    assert.equal(result.report?.verdict?.recommendedOption, 'NONE');
+    assert.ok((result.report?.summary || '').includes('의료 조언'), 'health 요약에는 의료 조언 대체 불가 고지가 포함되어야 합니다.');
+  });
+};
+
 try {
   await testParseRepairPath();
   await testEvidenceNormalization();
   await testNoApiKeyFallbackReason();
   await testDuplicateSummaryRationaleRewrite();
   await testCounterpointContaminationFilter();
+  await testHealthGuardrailOverridesUnsafeVerdict();
   console.log('Hybrid resilience tests passed.');
 } finally {
   global.fetch = originalFetch;

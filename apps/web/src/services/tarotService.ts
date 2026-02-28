@@ -19,6 +19,9 @@ export const tarotApi = {
 
   async getQuestionProfile(question: string, category: string = 'general'): Promise<{
     questionType: 'binary' | 'relationship' | 'career' | 'emotional' | 'light' | 'deep';
+    domainTag: 'health' | 'relationship' | 'career' | 'emotional' | 'lifestyle' | 'general';
+    riskLevel: 'low' | 'medium' | 'high';
+    recommendedSpreadId: string;
     targetCardCount: number;
   }> {
     const res = await fetch(`${API_BASE}/question-profile`, {
@@ -40,6 +43,12 @@ export const tarotApi = {
       sessionContext?: {
         recentQuestions?: string[];
         recentMood?: string;
+        questionProfile?: {
+          questionType?: string;
+          domainTag?: string;
+          riskLevel?: string;
+          recommendedSpreadId?: string;
+        };
       };
       timeframe?: string;
       category?: string;

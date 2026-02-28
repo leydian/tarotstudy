@@ -86,6 +86,15 @@ for (const scenario of scenarios) {
     } else if (response.meta.questionType !== scenario.expectedQuestionType) {
       failures.push(`[${scenario.name}] expected questionType=${scenario.expectedQuestionType}, actual=${response.meta.questionType}`);
     }
+    if (scenario.expectedDomainTag && response.meta?.domainTag !== scenario.expectedDomainTag) {
+      failures.push(`[${scenario.name}] expected domainTag=${scenario.expectedDomainTag}, actual=${response.meta?.domainTag}`);
+    }
+    if (scenario.expectedRiskLevel && response.meta?.riskLevel !== scenario.expectedRiskLevel) {
+      failures.push(`[${scenario.name}] expected riskLevel=${scenario.expectedRiskLevel}, actual=${response.meta?.riskLevel}`);
+    }
+    if (scenario.expectedDomainTag === 'health' && response.report?.verdict?.label !== 'MAYBE') {
+      failures.push(`[${scenario.name}] health domain verdict should be MAYBE`);
+    }
 
     if (!response.fallbackUsed) {
       failures.push(`[${scenario.name}] expected fallbackUsed=true when API keys are empty`);

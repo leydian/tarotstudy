@@ -5,7 +5,7 @@ import { cards, getCardById } from './data/cards.js';
 import { spreads, getSpreadById } from './data/spreads.js';
 import { generateReadingV3 } from './domains/reading/v3.js';
 import { generateReadingHybrid } from './domains/reading/hybrid.js';
-import { detectQuestionType, inferTargetCardCount } from './domains/reading/questionType.js';
+import { inferQuestionProfile } from './domains/reading/questionType.js';
 
 dotenv.config();
 
@@ -40,13 +40,8 @@ app.get('/api/spreads', (req, res) => {
 
 app.post('/api/question-profile', (req, res) => {
   const { question = '', category = 'general' } = req.body || {};
-  const targetCardCount = inferTargetCardCount(question);
-  const questionType = detectQuestionType({
-    question,
-    category,
-    cardCount: targetCardCount
-  });
-  return res.json({ questionType, targetCardCount });
+  const profile = inferQuestionProfile({ question, category });
+  return res.json(profile);
 });
 
 // AI 리딩 생성 (V3 모델)
@@ -82,6 +77,10 @@ app.post('/api/reading', async (req, res) => {
     ...card,
     positionLabel: spread?.positions?.[idx]?.label || `단계 ${idx + 1}`
   }));
+  const questionProfile = inferQuestionProfile({
+    question: question || '나의 현재 상황은?',
+    category
+  });
 
   try {
     if (mode === 'legacy') {
@@ -96,11 +95,10 @@ app.post('/api/reading', async (req, res) => {
           requestId,
           serverRevision,
           serverTimestamp: new Date().toISOString(),
-          questionType: detectQuestionType({
-            question,
-            category,
-            cardCount: cardsWithPosition.length
-          }),
+          questionType: questionProfile.questionType,
+          domainTag: questionProfile.domainTag,
+          riskLevel: questionProfile.riskLevel,
+          recommendedSpreadId: questionProfile.recommendedSpreadId,
           fallbackReason: null
         }
       });
@@ -115,7 +113,8 @@ app.post('/api/reading', async (req, res) => {
       structure,
       debug,
       requestId,
-      serverRevision
+      serverRevision,
+      questionProfile
     });
 
     console.log(
@@ -134,18 +133,17 @@ app.post('/api/reading', async (req, res) => {
       fallbackUsed: true,
       apiUsed: 'fallback',
       fallbackReason: 'server_error',
-      meta: {
-        requestId,
-        serverRevision,
-        serverTimestamp: new Date().toISOString(),
-        questionType: detectQuestionType({
-          question,
-          category,
-          cardCount: cardsWithPosition.length
-        }),
-        fallbackReason: 'server_error'
-      }
-    });
+        meta: {
+          requestId,
+          serverRevision,
+          serverTimestamp: new Date().toISOString(),
+          questionType: questionProfile.questionType,
+          domainTag: questionProfile.domainTag,
+          riskLevel: questionProfile.riskLevel,
+          recommendedSpreadId: questionProfile.recommendedSpreadId,
+          fallbackReason: 'server_error'
+        }
+      });
   }
 });
 

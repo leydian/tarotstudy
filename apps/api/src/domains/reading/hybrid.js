@@ -1,5 +1,5 @@
 import { generateReadingV3 } from './v3.js';
-import { detectQuestionType } from './questionType.js';
+import { inferQuestionProfile } from './questionType.js';
 
 const POSITIVE_IDS = new Set([
   'm01', 'm03', 'm06', 'm07', 'm10', 'm11', 'm14', 'm17', 'm19', 'm21',
@@ -21,10 +21,28 @@ const ANTHROPIC_REPAIR_TIMEOUT_MS = Number(process.env.ANTHROPIC_REPAIR_TIMEOUT_
 const CONTAMINATION_PATTERNS = [
   /사서의\s*통찰\s*:/i,
   /신중의\s*기운\s*:/i,
+  /긍정의\s*기운\s*:/i,
   /운명의\s*마스터\s*리포트/i,
   /\[운명의\s*판정\]/i,
-  /\[운명의\s*지침\s*\d+\]/i
+  /\[운명의\s*지침\s*\d+\]/i,
+  /\[영혼의\s*조율\]/i,
+  /\[운명의\s*실천\]/i
 ];
+const LIST_PREFIX_PATTERNS = [
+  /^\[운명의\s*지침\s*\d+\]\s*/i,
+  /^\[영혼의\s*조율\]\s*/i,
+  /^\[운명의\s*실천\]\s*/i
+];
+const HEALTH_GUARDRAIL_ACTIONS = {
+  medium: [
+    '자극적인 음식과 카페인은 잠시 줄이고, 미지근한 물을 조금씩 자주 드셔 보세요.',
+    '통증이나 설사/구토가 계속되거나 악화되면 오늘 안에 의료진 상담을 받는 편이 안전합니다.'
+  ],
+  high: [
+    '강한 통증, 호흡 곤란, 출혈, 고열처럼 급한 증상이 있으면 즉시 응급 진료를 우선하세요.',
+    '타로 해석보다 현재 증상 관찰과 의료진 판단을 기준으로 결정을 내리세요.'
+  ]
+};
 
 const getYesNoScore = (cardId) => {
   if (POSITIVE_IDS.has(cardId)) return 1;
@@ -59,13 +77,22 @@ const pickObjectParticle = (text) => {
   return (code - 0xac00) % 28 === 0 ? '를' : '을';
 };
 
+const stripListPrefix = (text) => {
+  let next = sanitizeText(text);
+  for (const pattern of LIST_PREFIX_PATTERNS) {
+    next = next.replace(pattern, '').trim();
+  }
+  return next;
+};
+
+const containsContamination = (text) => CONTAMINATION_PATTERNS.some((pattern) => pattern.test(String(text || '')));
+
 const dedupeStrings = (items) => {
-  const seen = new Set();
   const deduped = [];
   for (const item of items) {
     const key = normalizeCompareText(item);
-    if (!key || seen.has(key)) continue;
-    seen.add(key);
+    if (!key) continue;
+    if (deduped.some((picked) => isHighOverlap(picked, item))) continue;
     deduped.push(item);
   }
   return deduped;
@@ -74,9 +101,9 @@ const dedupeStrings = (items) => {
 const sanitizeListItems = (items, kind) => {
   const maxLen = kind === 'counterpoints' ? 180 : 160;
   const filtered = (Array.isArray(items) ? items : [])
-    .map((item) => sanitizeText(item))
+    .map((item) => stripListPrefix(item))
     .filter(Boolean)
-    .filter((item) => !CONTAMINATION_PATTERNS.some((pattern) => pattern.test(item)))
+    .filter((item) => !containsContamination(item))
     .map((item) => (item.length > maxLen ? `${item.slice(0, maxLen - 1).trimEnd()}…` : item));
 
   const deduped = dedupeStrings(filtered).slice(0, 4);
@@ -109,6 +136,15 @@ const postProcessReport = (report) => {
     verdict: { ...report.verdict }
   };
 
+  if (containsContamination(next.summary)) {
+    qualityFlags.push('summary_contamination_detected');
+    next.summary = '카드 흐름을 요약하면, 지금은 핵심 조건을 좁히고 단계적으로 판단하는 편이 안정적입니다.';
+  }
+  if (containsContamination(next.verdict?.rationale)) {
+    qualityFlags.push('verdict_contamination_detected');
+    next.verdict.rationale = buildDistinctRationale(next);
+  }
+
   if (isHighOverlap(next.summary, next.verdict.rationale)) {
     qualityFlags.push('summary_verdict_overlap_high');
     next.verdict.rationale = buildDistinctRationale(next);
@@ -118,11 +154,34 @@ const postProcessReport = (report) => {
   next.counterpoints = sanitizeListItems(next.counterpoints, 'counterpoints');
   next.actions = sanitizeListItems(next.actions, 'actions');
 
-  if (next.counterpoints.some((item) => CONTAMINATION_PATTERNS.some((pattern) => pattern.test(item)))) {
+  if (next.counterpoints.some((item) => containsContamination(item))) {
     qualityFlags.push('counterpoint_contamination_detected');
   }
 
   return { report: next, qualityFlags: [...new Set(qualityFlags)] };
+};
+
+const applyHealthGuardrail = (report, riskLevel = 'medium') => {
+  const guidanceLevel = riskLevel === 'high' ? 'high' : 'medium';
+  const actions = HEALTH_GUARDRAIL_ACTIONS[guidanceLevel];
+
+  const next = {
+    ...report,
+    verdict: {
+      ...report.verdict,
+      label: 'MAYBE',
+      recommendedOption: 'NONE',
+      rationale: '건강 증상 관련 선택은 타로로 단정하기보다 현재 증상과 의료 기준을 우선해 판단하는 편이 안전합니다.'
+    },
+    summary: '현재 질문에는 신체 증상이 포함되어 있어, 카드 해석보다 몸 상태 확인과 안전한 관리가 우선입니다. 이 리딩은 의료 조언을 대체하지 않습니다.',
+    counterpoints: sanitizeListItems([
+      ...(report.counterpoints || []),
+      '증상이 지속되거나 악화되면 진료를 미루지 마세요.',
+      '탈수나 고열, 심한 통증 같은 위험 신호가 있으면 즉시 의료기관을 이용하세요.'
+    ], 'counterpoints'),
+    actions: sanitizeListItems(actions, 'actions')
+  };
+  return next;
 };
 
 const normalizeVerdictLabel = (label) => {
@@ -131,7 +190,8 @@ const normalizeVerdictLabel = (label) => {
 };
 const isValidVerdictLabel = (label) => label === 'YES' || label === 'NO' || label === 'MAYBE';
 
-const detectResponseMode = (questionType, questionLength) => {
+const detectResponseMode = (questionType, questionLength, domainTag = 'general') => {
+  if (domainTag === 'health') return 'concise';
   if (questionType === 'light' || (questionType === 'binary' && questionLength <= 20)) return 'concise';
   if ((questionType === 'emotional' || questionType === 'relationship') && questionLength >= 25) return 'creative';
   return 'balanced';
@@ -210,9 +270,18 @@ const computeVerdict = (facts, binaryEntities) => {
   return { label: 'MAYBE', rationale: '상반된 기운이 섞여 있어, 단정 짓기보다 상황의 변화를 조금 더 지켜볼 필요가 있습니다.' };
 };
 
-const buildDeterministicReport = ({ question, facts, category, binaryEntities, questionType }) => {
+const buildDeterministicReport = ({
+  question,
+  facts,
+  category,
+  binaryEntities,
+  questionType,
+  domainTag = 'general',
+  riskLevel = 'low'
+}) => {
   const verdict = computeVerdict(facts, binaryEntities);
   const isCompactBinaryQuestion = questionType === 'binary' && String(question || '').length <= 20;
+  const isHealthQuestion = domainTag === 'health';
 
   const evidence = facts.map((fact) => {
     const coreMeaning = sanitizeText(fact.coreMeaning || fact.summary).replace(/\.$/, '');
@@ -247,21 +316,47 @@ const buildDeterministicReport = ({ question, facts, category, binaryEntities, q
       ? `질문 "${question}"에 대한 운명의 지도를 펼쳐보니, ${verdictTone(verdict.label, verdict.rationale)}`
       : `"${question}"의 ${category}적인 맥락에서 카드를 읽어보니, ${verdictTone(verdict.label, verdict.rationale)}`;
 
-  return { summary, verdict, evidence, counterpoints, actions, fullNarrative: null };
+  const baseReport = { summary, verdict, evidence, counterpoints, actions, fullNarrative: null };
+  if (isHealthQuestion) {
+    return applyHealthGuardrail(baseReport, riskLevel);
+  }
+  return baseReport;
 };
 
-const buildPrompt = ({ question, facts, category, timeframe, binaryEntities, sessionContext, responseMode, questionType }) => {
+const buildPrompt = ({
+  question,
+  facts,
+  category,
+  timeframe,
+  binaryEntities,
+  sessionContext,
+  responseMode,
+  questionType,
+  domainTag = 'general',
+  riskLevel = 'low'
+}) => {
   const context = {
     question,
     category,
     timeframe,
     binaryEntities,
+    domainTag,
+    riskLevel,
     sessionContext: sessionContext || null,
     facts
   };
 
   const isCompactBinaryQuestion = questionType === 'binary' && String(question || '').length <= 20;
-  const styleGuide = isCompactBinaryQuestion
+  const styleGuide = domainTag === 'health'
+    ? [
+        '응답 모드: health-safety',
+        '- 의료 진단/처방처럼 들리는 단정적 문장을 금지합니다.',
+        '- verdict.label은 반드시 MAYBE를 사용하세요.',
+        '- verdict.rationale에는 안전 우선 원칙과 의료 상담 필요 조건을 포함하세요.',
+        '- actions는 즉시 실행 가능한 안전 수칙 2개로 작성하세요.',
+        '- summary에는 "의료 조언을 대체하지 않는다"는 취지를 반드시 반영하세요.'
+      ].join('\n')
+    : isCompactBinaryQuestion
     ? [
         '응답 모드: concise-binary-light',
         '- 결론은 2~3문장으로 짧고 명확하게 작성하세요.',
@@ -589,17 +684,18 @@ export const generateReadingHybrid = async ({
   structure = 'evidence_report',
   debug = false,
   requestId = null,
-  serverRevision = 'local'
+  serverRevision = 'local',
+  questionProfile = null
 }) => {
   const safeQuestion = sanitizeText(question || '나의 현재 상황은?');
   const binaryEntities = extractBinaryEntities(safeQuestion, cards.length);
-  const questionType = detectQuestionType({
+  const resolvedProfile = questionProfile || inferQuestionProfile({
     question: safeQuestion,
     category,
-    cardCount: cards.length,
     binaryEntities
   });
-  const responseMode = detectResponseMode(questionType, safeQuestion.length);
+  const questionType = resolvedProfile.questionType;
+  const responseMode = detectResponseMode(questionType, safeQuestion.length, resolvedProfile.domainTag);
   const facts = buildCardFacts(cards, category);
 
   const deterministic = buildDeterministicReport({
@@ -607,7 +703,9 @@ export const generateReadingHybrid = async ({
     facts,
     category,
     binaryEntities,
-    questionType
+    questionType,
+    domainTag: resolvedProfile.domainTag,
+    riskLevel: resolvedProfile.riskLevel
   });
 
   const prompt = buildPrompt({
@@ -618,7 +716,9 @@ export const generateReadingHybrid = async ({
     binaryEntities,
     sessionContext,
     responseMode,
-    questionType
+    questionType,
+    domainTag: resolvedProfile.domainTag,
+    riskLevel: resolvedProfile.riskLevel
   });
 
   let apiUsed = 'none';
@@ -718,6 +818,10 @@ export const generateReadingHybrid = async ({
     normalized = processed.report;
     qualityFlags = processed.qualityFlags;
   }
+  if (resolvedProfile.domainTag === 'health') {
+    normalized = applyHealthGuardrail(normalized, resolvedProfile.riskLevel);
+    qualityFlags = [...new Set([...qualityFlags, 'health_guardrail_applied'])];
+  }
   let quality = verifyReport(normalized, facts, binaryEntities);
   qualityFlags = [...new Set([...qualityFlags, ...quality.issues])];
 
@@ -726,6 +830,10 @@ export const generateReadingHybrid = async ({
   if (fallbackUsed) {
     const processedFallback = postProcessReport(deterministic);
     normalized = processedFallback.report;
+    if (resolvedProfile.domainTag === 'health') {
+      normalized = applyHealthGuardrail(normalized, resolvedProfile.riskLevel);
+      qualityFlags = [...new Set([...qualityFlags, 'health_guardrail_applied'])];
+    }
     apiUsed = 'fallback';
     path = 'fallback';
     if (!fallbackReason && !quality.valid) fallbackReason = 'validation_failed';
@@ -776,6 +884,9 @@ export const generateReadingHybrid = async ({
       serverRevision,
       serverTimestamp: new Date().toISOString(),
       questionType,
+      domainTag: resolvedProfile.domainTag,
+      riskLevel: resolvedProfile.riskLevel,
+      recommendedSpreadId: resolvedProfile.recommendedSpreadId,
       responseMode,
       path,
       timings: {

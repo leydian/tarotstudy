@@ -79,6 +79,9 @@ export interface ReadingResponse {
     serverRevision?: string;
     serverTimestamp?: string;
     questionType?: string;
+    domainTag?: 'health' | 'relationship' | 'career' | 'emotional' | 'lifestyle' | 'general';
+    riskLevel?: 'low' | 'medium' | 'high';
+    recommendedSpreadId?: string;
     responseMode?: 'concise' | 'balanced' | 'creative';
     path?: 'anthropic_primary' | 'anthropic_retry' | 'fallback';
     timings?: {

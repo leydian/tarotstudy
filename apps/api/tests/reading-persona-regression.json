@@ -53,5 +53,17 @@
     "timeframe": "daily",
     "spreadId": "weekly",
     "expectedQuestionType": "emotional"
+  },
+  {
+    "name": "health_binary_symptom",
+    "question": "저녁은 샐러드를 먹을까 아니면 굶는게 나을까? 내가 지금 배탈이 났어",
+    "cardIds": ["c04", "m05"],
+    "category": "general",
+    "timeframe": "daily",
+    "spreadId": "choice",
+    "expectedQuestionType": "binary",
+    "expectedDomainTag": "health",
+    "expectedRiskLevel": "medium",
+    "expectRecommendedOption": true
   }
 ]

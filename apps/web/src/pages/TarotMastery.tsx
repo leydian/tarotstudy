@@ -70,7 +70,57 @@ export function TarotMastery() {
   };
 
   const positionDefinitions: { [key: string]: string } = {
-    // ... 기존 정의 ...
+    '오늘의 조언': '오늘의 흐름을 가장 효율적으로 활용하기 위한 핵심 힌트입니다.',
+    '선택 A': '첫 번째 선택지가 현재 흐름에서 가지는 가능성과 리스크를 보여줍니다.',
+    '선택 B': '두 번째 선택지가 현재 흐름에서 가지는 가능성과 리스크를 보여줍니다.',
+    '과거/기반': '현재 고민이 만들어진 배경과 이미 형성된 토대를 설명합니다.',
+    '현재/중심': '지금 가장 큰 영향을 미치는 핵심 이슈와 에너지를 보여줍니다.',
+    '미래/흐름': '가까운 시점에서 전개될 가능성이 높은 흐름을 가리킵니다.',
+    '현재 상태': '지금 당신이 서 있는 출발점과 컨디션을 드러냅니다.',
+    '과거의 영향': '이미 지나갔지만 여전히 현재 결정에 작용하는 요인을 뜻합니다.',
+    '잠재적 미래': '현재 선택이 이어질 때 펼쳐질 수 있는 다음 국면을 보여줍니다.',
+    '내면의 빛': '당신 안에서 이미 작동 중인 강점과 회복 자원을 나타냅니다.',
+    '외부의 환경': '주변 사람, 조직, 시장처럼 통제하기 어려운 외부 변수를 설명합니다.',
+    '나의 현재': '당신이 관계 안에서 실제로 느끼고 있는 현재 감정 상태입니다.',
+    '상대의 현재': '상대가 관계 안에서 체감하고 있는 현재 심리 상태입니다.',
+    '나의 속마음': '겉으로 표현되지 않았지만 내면에 쌓인 진짜 욕구를 보여줍니다.',
+    '상대의 속마음': '상대가 말하지 않았던 의도와 감정의 결을 드러냅니다.',
+    '관계의 장애물': '관계 진전을 지연시키는 구조적 패턴이나 오해 요소입니다.',
+    '가까운 변화': '단기간 안에 체감될 가능성이 높은 관계 흐름의 변화입니다.',
+    '최종적 유대': '관계가 장기적으로 수렴할 가능성이 높은 결말 방향입니다.',
+    '현재의 실력': '지금 시점에서 실제로 시장에 제시할 수 있는 역량 수준입니다.',
+    '잠재적 재능': '아직 충분히 활용되지 않았지만 경쟁력이 될 잠재 자원입니다.',
+    '숨겨진 기회': '겉으로는 잘 보이지 않지만 성과로 연결될 수 있는 기회 신호입니다.',
+    '현실적 장애': '일정, 역량, 조건 등 실행 단계에서 부딪히는 구체적 제약입니다.',
+    '성공의 열쇠': '현재 질문을 해결할 때 우선순위로 잡아야 할 핵심 행동 지점입니다.',
+    '과거의 상황': '지금 이 국면으로 이어지게 만든 과거의 주요 사건과 맥락입니다.',
+    '현재의 위치': '현재 당신이 서 있는 객관적 좌표와 우선순위를 보여줍니다.',
+    '숨겨진 영향': '표면 아래에서 의사결정에 간접적으로 작용하는 보이지 않는 변수입니다.',
+    '문제의 핵심': '지금 질문의 본질을 이루는 중심 갈등 또는 과제입니다.',
+    '타인의 시선': '주변이 당신의 선택을 어떻게 해석하는지 보여주는 사회적 관점입니다.',
+    '해야 할 행동': '상황을 전환하기 위해 즉시 실행 가능한 행동 지침입니다.',
+    '최종 결과': '현재 흐름이 유지될 때 도달할 가능성이 높은 결과입니다.',
+    '현재 상황': '지금 국면의 핵심 상태를 가장 압축적으로 보여주는 자리입니다.',
+    '장애물': '진행 속도를 늦추거나 판단을 흐리는 현실적 저항 요소입니다.',
+    '잠재의식': '무의식적으로 반복되는 신념과 감정 패턴을 드러냅니다.',
+    '과거': '현재 문제를 만든 이전 선택과 경험의 잔여 영향을 뜻합니다.',
+    '현재 의식': '지금 스스로 분명하게 인식하고 있는 생각과 우선순위입니다.',
+    '가까운 미래': '단기적으로 가장 먼저 체감될 변화의 방향입니다.',
+    '당신의 태도': '상황에 대응하는 당신의 접근 방식과 의사결정 습관입니다.',
+    '주변 환경': '외부 인물/조직/조건이 현재 흐름에 주는 영향입니다.',
+    '희망과 공포': '같은 이슈에 공존하는 기대와 불안의 양면성을 보여줍니다.',
+    '1월': '연초의 출발 흐름과 기본 방향을 점검하는 시기입니다.',
+    '2월': '초기 계획을 현실에 맞게 조정하며 리듬을 만드는 시기입니다.',
+    '3월': '변화 가능성이 커지는 구간으로 선택의 분기점이 형성되는 시기입니다.',
+    '4월': '실행 강도를 높이며 성과 기반을 다지는 시기입니다.',
+    '5월': '협업과 조율이 중요한 전환기로 대인 변수 관리가 필요한 시기입니다.',
+    '6월': '중간 점검을 통해 우선순위를 재정렬하는 시기입니다.',
+    '7월': '상반기 누적 결과가 드러나며 다음 전략이 구체화되는 시기입니다.',
+    '8월': '속도 조절과 컨디션 관리가 성과를 좌우하는 시기입니다.',
+    '9월': '새 기회와 기존 과제가 교차하며 선택의 정밀도가 필요한 시기입니다.',
+    '10월': '정리와 확장이 동시에 진행되어 자원 배분이 중요한 시기입니다.',
+    '11월': '연말 목표 달성을 위해 집중력과 마무리 품질이 필요한 시기입니다.',
+    '12월': '한 해 흐름을 결산하고 다음 사이클의 방향을 확정하는 시기입니다.'
   };
 
   const handleStartRitual = async (e: React.FormEvent) => {
@@ -92,18 +142,21 @@ export function TarotMastery() {
       const profile = await tarotApi.getQuestionProfile(userQuestion);
       const targetCardCount = profile.targetCardCount;
       const trackedQuestionType = profile.questionType;
-      trackEvent('question_submitted', { questionType: trackedQuestionType, mode: 'hybrid' });
+      trackEvent('question_submitted', {
+        questionType: trackedQuestionType,
+        domainTag: profile.domainTag,
+        riskLevel: profile.riskLevel,
+        mode: 'hybrid'
+      });
 
       const [allSpreads, allCards] = await Promise.all([
         tarotApi.getSpreads(),
         tarotApi.getCards()
       ]);
 
-      const currentSpread = (targetCardCount === 7 ? allSpreads.find(s => s.id === 'relationship') :
-                            targetCardCount === 5 ? allSpreads.find(s => s.id === 'career-path') :
-                            targetCardCount === 2 ? allSpreads.find(s => s.id === 'choice') : null)
-                            || allSpreads.find(s => s.positions.length === targetCardCount)
-                            || allSpreads[0];
+      const currentSpread = allSpreads.find((s) => s.id === profile.recommendedSpreadId)
+        || allSpreads.find((s) => s.positions.length === targetCardCount)
+        || allSpreads[0];
 
       setSpreadLayout(currentSpread);
 
@@ -120,12 +173,22 @@ export function TarotMastery() {
         mode: 'hybrid',
         structure: 'evidence_report',
         spreadId: currentSpread.id,
-        sessionContext: { recentQuestions },
+        sessionContext: {
+          recentQuestions,
+          questionProfile: {
+            questionType: profile.questionType,
+            domainTag: profile.domainTag,
+            riskLevel: profile.riskLevel,
+            recommendedSpreadId: profile.recommendedSpreadId
+          }
+        },
         debug: showDiagnostics
       });
       setReading(readingData);
       trackEvent('reading_result_shown', {
         questionType: readingData.meta?.questionType || trackedQuestionType,
+        domainTag: readingData.meta?.domainTag || profile.domainTag,
+        riskLevel: readingData.meta?.riskLevel || profile.riskLevel,
         mode: readingData.mode || 'hybrid',
         fallbackUsed: !!readingData.fallbackUsed,
         spreadId: currentSpread.id
@@ -187,7 +250,7 @@ export function TarotMastery() {
 
   const getPositionInfo = (idx: number) => {
     const posLabel = spreadLayout?.positions[idx].label || "";
-    const posDesc = positionDefinitions[posLabel] || "운명의 중요한 단계입니다.";
+    const posDesc = positionDefinitions[posLabel] || `${posLabel || '이 포지션'}에서 읽히는 핵심 흐름입니다.`;
     const card = drawnCards[idx];
     return { posLabel, posDesc, card };
   };
@@ -227,7 +290,7 @@ export function TarotMastery() {
     return false;
   };
 
-  const getDistinctReportCopy = (data: ReadingResponse) => {
+  const getDistinctReportCopy = (data: ReadingResponse, isHealthContext: boolean) => {
     const summary = data.report?.summary || '';
     const rationale = data.report?.verdict?.rationale || '';
     const conclusionNorm = normalizeForCompare(data.conclusion);
@@ -252,6 +315,13 @@ export function TarotMastery() {
     }
     if (isTextOverlapHigh(insightText, energyText)) {
       insightText = firstEvidence || summary;
+    }
+
+    if (isHealthContext) {
+      return {
+        insightText: summary || '건강 관련 질문은 상태 확인과 안전 관리가 우선입니다.',
+        energyText: rationale || '의료 판단이 필요한 경우에는 전문가 상담을 우선하세요.'
+      };
     }
 
     return {
@@ -322,6 +392,7 @@ export function TarotMastery() {
   };
 
   const isCompactBinaryReading = reading?.meta?.questionType === 'binary' && reading?.meta?.responseMode === 'concise';
+  const isHealthContext = reading?.meta?.domainTag === 'health';
 
   return (
     <div className={styles.page}>
@@ -497,7 +568,7 @@ export function TarotMastery() {
                               {reading.report && (
                                 <div className={styles.reportSummaryBox}>
                                   {(() => {
-                                    const distinctCopy = getDistinctReportCopy(reading);
+                                    const distinctCopy = getDistinctReportCopy(reading, !!isHealthContext);
                                     return (
                                       <>
                                         <p className={styles.reportSummaryText}>
@@ -505,7 +576,7 @@ export function TarotMastery() {
                                         </p>
                                         <div className={styles.verdictBadge}>
                                           <Sparkles size={14} />
-                                          <span>{verdictLabelKo(reading.report.verdict.label)}의 기운: {distinctCopy.energyText}</span>
+                                          <span>{isHealthContext ? '안전 안내' : `${verdictLabelKo(reading.report.verdict.label)}의 기운`}: {distinctCopy.energyText}</span>
                                         </div>
                                       </>
                                     );
@@ -513,6 +584,16 @@ export function TarotMastery() {
                                 </div>
                               )}
                             </div>
+
+                            {isHealthContext && (
+                              <div className={styles.counterpointBox}>
+                                <h4 className={styles.counterpointTitle}>안전 우선 안내</h4>
+                                <ul className={styles.counterpointList}>
+                                  <li>이 리딩은 의료 진단이나 처방을 대체하지 않습니다.</li>
+                                  <li>증상이 지속되거나 악화되면 진료를 우선하세요.</li>
+                                </ul>
+                              </div>
+                            )}
 
                             <div className={styles.arcanaGuidance}>
                               <h4 className={styles.arcanaTitle}>운명의 지침</h4>

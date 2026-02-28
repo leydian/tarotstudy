@@ -2,6 +2,57 @@
 
 ## [2026-02-28]
 
+### 질문 프로파일 v2 + 헬스 가드레일 + 스프레드 선택 정책 전환 (v6.3.23)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/questionType.js`
+- `apps/api/src/index.js`
+- `apps/api/src/domains/reading/hybrid.js`
+- `apps/api/tests/hybrid-resilience.js`
+- `apps/api/tests/reading-persona-regression.json`
+- `apps/api/tests/validate-persona-regression.js`
+- `apps/web/src/pages/TarotMastery.tsx`
+- `apps/web/src/services/tarotService.ts`
+- `apps/web/src/types/tarot.ts`
+- `docs/CHANGELOG.md`
+- `docs/RELEASE_NOTES_v6.3.23.md`
+
+#### 변경 사항
+- 질문 프로파일 v2 도입
+  - `questionType` 외에 `domainTag`, `riskLevel`, `recommendedSpreadId`, `targetCardCount`를 함께 산출.
+  - 건강 증상/응급 키워드 기반 risk 분류(`low/medium/high`) 추가.
+- 스프레드 선택 정책 전환
+  - 프론트의 `cardCount -> spread` 하드매핑(특히 `5장 => career-path`) 제거.
+  - `POST /api/question-profile` 응답의 `recommendedSpreadId`를 우선 사용하도록 변경.
+- 헬스 도메인 안전 가드레일 추가
+  - health 질문에서는 판정을 `MAYBE`로 고정하고 `recommendedOption=NONE`으로 정규화.
+  - summary/verdict/actions에 의료 대체 불가 및 진료 우선 안내를 강제.
+  - health 맥락은 `responseMode=concise`로 제한해 과도한 서사/단정형 어조 완화.
+- 오염/중복 후처리 강화
+  - 오염 패턴 확장(`긍정의 기운`, `[영혼의 조율]`, `[운명의 실천]` 등).
+  - actions/counterpoints의 접두 오염 문자열 제거 후 dedupe.
+  - summary/verdict에도 오염 문자열 방어 로직 추가.
+- UI 정책 연동
+  - health 맥락에서 결과 배지를 `안전 안내`로 전환.
+  - 결과 영역에 의료 대체 불가/증상 악화 시 진료 우선 고지 블록 추가.
+  - 이벤트 트래킹에 `domainTag`, `riskLevel` 포함.
+- 회귀 테스트 보강
+  - 배탈 시나리오(`저녁은 샐러드를 먹을까...`)를 persona 회귀에 추가.
+  - health 도메인에서 unsafe YES 응답이 들어와도 guardrail로 `MAYBE` 강제되는지 검증 추가.
+
+#### 효과
+- 건강/증상 질문이 커리어 스프레드로 잘못 라우팅되던 문제를 구조적으로 완화.
+- “타로 결과가 의료 판단을 대체하는 듯 보이는” 리스크를 정책적으로 차단.
+- 질문 프로파일과 UI/엔진/테스트 계약이 일치해 회귀 위험 감소.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과.
+- `npm run test:persona --prefix apps/api` 통과.
+- `npm run build --prefix apps/web` 통과.
+- 상세 변경 요약: `docs/RELEASE_NOTES_v6.3.23.md`
+
+## [2026-02-28]
+
 ### 스프레드 자동 맞춤 + 리포트 오염/중복 후처리 강화 (v6.3.22)
 
 #### 변경 파일
