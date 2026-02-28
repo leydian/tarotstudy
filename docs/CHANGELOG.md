@@ -2,6 +2,43 @@
 
 ## [2026-02-28]
 
+### Claude API 리딩 품질 개선 (v6.3.0)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/hybrid.js`
+- `apps/web/src/pages/TarotMastery.tsx`
+
+#### 변경 사항
+
+- **`callAnthropic()` system 메시지 강화**:
+    - 기존 "JSON만 반환하세요" 수준에서 카드 생생한 묘사·질문 직접 연결 특기를 명시하는 지시문으로 교체.
+    - 마크다운 코드 블록·설명 텍스트·주석 일절 금지 조건 추가.
+
+- **`buildPrompt()` 전면 재작성 — 질문 유형별 fullNarrative 지시 구체화**:
+    - `questionType` 파라미터 추가 후 `isBinary` / `isLight` 플래그로 3종 `fullNarrativeGuide` 분기.
+    - **binary**: 4문단 구조 강제 (오프닝 → A 카드 이미지 묘사·흐름 → B 카드 이미지 묘사·흐름 → "~쪽이 더 좋아요!" 형태 직접 추천).
+    - **light**: 2~3문단, 가볍고 친근한 한 줄 결론.
+    - **default**: 포지션 순서대로 카드 이미지 묘사 + 핵심 메시지 + 행동 제안.
+    - `evidence[].claim` 서술형 문장 강제, `actions[]` 범용 표현 금지 지침 추가.
+    - `generateReadingHybrid()` 내 `buildPrompt` 호출에 `questionType` 전달.
+
+- **이진 질문 카드 수 2장 → 5장 (`TarotMastery.tsx`)**:
+    - 5장 스프레드(현재상황 + A단기·A장기 + B단기·B장기)로 각 선택지별 단기/장기 흐름 비교 가능.
+
+- **`extractBinaryEntities()` 카드 수 조건 확장**:
+    - `cardCount !== 2` → `cardCount !== 2 && cardCount !== 5` — 5장 드로우에서도 이진 감지 유지.
+    - `detectQuestionType()` 내 조건도 동일하게 `cardCount === 2 || cardCount === 5`로 수정.
+
+- **`max_tokens` 2000 → 2500**:
+    - 5장 스프레드 + 상세 `fullNarrative` 생성을 위한 토큰 여유 확보.
+
+#### 검증
+- `npm run build:web` 통과 (vite build 3.03s).
+
+---
+
+## [2026-02-28]
+
 ### 페르소나 기반 유지보수 체계 전면 도입 (v6.2.0)
 
 #### 변경 사항

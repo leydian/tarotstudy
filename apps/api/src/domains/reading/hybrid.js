@@ -120,28 +120,51 @@ const buildDeterministicReport = ({ question, facts, category, binaryEntities })
   return { summary, verdict, evidence, counterpoints, actions, fullNarrative: null };
 };
 
-const buildPrompt = ({ question, facts, category, timeframe, binaryEntities, sessionContext }) => {
-  const context = {
-    question,
-    category,
-    timeframe,
-    binaryEntities,
-    sessionContext: sessionContext || null,
-    facts
-  };
+const buildPrompt = ({ question, facts, category, timeframe, binaryEntities, sessionContext, questionType }) => {
+  const context = { question, category, timeframe, binaryEntities, sessionContext: sessionContext || null, facts };
+  const isBinary = questionType === 'binary' && binaryEntities;
+  const isLight = questionType === 'light';
 
-  const isLight = question.length < 15 && ['커피', '메뉴', '점심', '저녁', '야식', '걷기', '버스', '지하철', '옷', '신발', '살까', '말까', '먹을까', '마실까'].some(k => question.includes(k));
+  const fullNarrativeGuide = isBinary
+    ? [
+        `- fullNarrative: 3~4문단. 반드시 아래 순서로 작성:`,
+        `  1문단: 카드가 펼쳐진 상황을 짧게 묘사하고, 질문("${question}")을 부드럽게 수용하는 오프닝.`,
+        `  2문단: [${binaryEntities[0]}] 쪽 카드의 이미지(색상·인물·상징)를 1~2문장 묘사 후 이 선택지의 흐름을 설명.`,
+        `  3문단: [${binaryEntities[1]}] 쪽 카드의 이미지를 1~2문장 묘사 후 이 선택지의 흐름을 설명.`,
+        `  4문단: 두 선택지를 비교하여 하나를 명확하게 추천하는 결론. "~쪽이 더 좋아요!" 형태의 직접적 추천 필수.`,
+      ].join('\n')
+    : isLight
+    ? [
+        `- fullNarrative: 2~3문단. 가볍고 따뜻한 톤으로:`,
+        `  1문단: 카드가 전하는 오늘의 분위기를 한 문장으로.`,
+        `  2문단: 각 카드의 이미지를 짧게 묘사하며 질문에 바로 연결.`,
+        `  3문단: 구체적이고 친근한 한 줄 결론 ("오늘은 ~하는 게 좋겠어요!" 형태).`,
+      ].join('\n')
+    : [
+        `- fullNarrative: 3~4문단. 아래 순서로:`,
+        `  1문단: 카드 배열 전체의 분위기를 시적으로 묘사하는 오프닝.`,
+        `  2문단: 각 카드를 포지션별로(${facts.map(f => f.positionLabel).join(' → ')}) 순서대로, 카드 이미지 묘사 + 질문과의 연결 포함.`,
+        `  3문단: 카드들이 함께 가리키는 핵심 메시지와 구체적 행동 제안.`,
+        `  (선택) 4문단: 주의해야 할 반전 가능성이나 사서의 따뜻한 격려.`,
+      ].join('\n');
 
   return [
     '당신은 아르카나 도서관의 지혜로운 사서이자 타로 전문가입니다.',
-    '반드시 JSON만 출력하고, 카드의 상징에 기반한 따뜻하고 통찰력 있는 분석을 제공하세요.',
-    `이 질문은 ${isLight ? '일상적이고 가벼운' : '진중하고 깊이 있는'} 고민입니다. 그에 맞춰 어휘의 무게를 조절하세요.`,
+    '반드시 JSON만 출력하세요. 설명 텍스트 없음.',
+    `이 질문은 "${question}" — ${isLight ? '일상적이고 가벼운' : isBinary ? '이진 선택을 고민하는' : '진중하고 깊이 있는'} 고민입니다.`,
+    '',
     '출력 스키마:',
-    '{"fullNarrative":string, "summary":string,"verdict":{"label":"YES|NO|MAYBE","rationale":string,"recommendedOption":"A|B|EITHER|NONE"},"evidence":[{"cardId":string,"positionLabel":string,"claim":string,"rationale":string,"caution":string}],"counterpoints":[string],"actions":[string]}',
-    '- fullNarrative: 사서의 말투로 작성된 3~4문단의 전체 리딩 서사. 카드 개별 해석과 종합 결론을 자연스럽게 연결하세요. 문법과 조사를 완벽하게 처리하세요.',
-    '- evidence.claim: 카드의 상징과 현재 상황을 연결하는 문장.',
-    '한국어로 작성하고 사서의 우아한 말투를 유지하세요.',
-    `입력 데이터: ${JSON.stringify(context)}`
+    '{"fullNarrative":string,"summary":string,"verdict":{"label":"YES|NO|MAYBE","rationale":string,"recommendedOption":"A|B|EITHER|NONE"},"evidence":[{"cardId":string,"positionLabel":string,"claim":string,"rationale":string,"caution":string}],"counterpoints":[string],"actions":[string]}',
+    '',
+    '필드 작성 지침:',
+    fullNarrativeGuide,
+    '- summary: 결론을 1문장으로 요약. verdict.rationale과 중복 금지.',
+    '- evidence[].claim: 카드 이미지의 구체적 묘사 + 질문 상황과의 연결. "~의 상징인 ~" 형태가 아닌 서술형 문장.',
+    '- evidence[].caution: 이 카드가 경고하는 함정이나 주의사항. 카드 고유의 내용 반영.',
+    '- actions[]: 질문에 맞는 구체적 행동 제안 2개. "마음의 소리를 들어보세요" 같은 범용 표현 금지.',
+    '',
+    '한국어로 작성. 사서의 따뜻하고 우아한 말투 유지.',
+    `입력 데이터: ${JSON.stringify(context)}`,
   ].join('\n');
 };
 
@@ -180,9 +203,9 @@ const callAnthropic = async (prompt) => {
       },
       body: JSON.stringify({
         model: DEFAULT_ANTHROPIC_MODEL,
-        max_tokens: 2000,
+        max_tokens: 2500,
         messages: [{ role: 'user', content: prompt }],
-        system: '아르카나 도서관의 사서로서 따뜻하고 신비로운 분위기를 유지하며 JSON만 반환하세요.'
+        system: '당신은 아르카나 도서관의 지혜로운 사서입니다. 따뜻하고 신비로우면서도 실용적인 조언을 아끼지 않습니다. 카드 한 장 한 장을 생생하게 묘사하고, 질문자의 상황에 직접 연결하는 것이 당신의 특기입니다. 반드시 순수한 JSON 객체만 반환하세요. 마크다운 코드 블록, 설명 텍스트, 주석 일절 금지.'
       })
     });
 
@@ -329,7 +352,7 @@ const toLegacyResponse = ({ report, question, facts }) => {
 };
 
 const extractBinaryEntities = (question, cardCount) => {
-  if (cardCount !== 2) return null;
+  if (cardCount !== 2 && cardCount !== 5) return null;
 
   const splitRegex = /(.+?)\s*(?:아니면|vs|또는|혹은)\s*(.+?)(?:\?|$)/;
   const splitMatch = question.match(splitRegex);
@@ -349,7 +372,7 @@ const extractBinaryEntities = (question, cardCount) => {
 };
 
 const detectQuestionType = ({ question, category, cardCount, binaryEntities }) => {
-  if (binaryEntities && cardCount === 2) return 'binary';
+  if (binaryEntities && (cardCount === 2 || cardCount === 5)) return 'binary';
 
   const relationshipKeywords = ['속마음', '그 사람', '연애', '사랑', '재회', '커플', '썸', '이별'];
   const careerKeywords = ['이직', '회사', '상사', '퇴사', '연봉', '업무', '커리어', '취업', '면접', '직장', '프로젝트'];
@@ -395,7 +418,8 @@ export const generateReadingHybrid = async ({
     category,
     timeframe,
     binaryEntities,
-    sessionContext
+    sessionContext,
+    questionType
   });
 
   let apiUsed = 'none';
