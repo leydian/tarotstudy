@@ -48,7 +48,10 @@ export function TarotMastery() {
       const binaryKeywords = ['할까', '갈까', '탈까', '먹을까', '마실까', '살까', '아니면', 'vs', '또는', '혹은'];
       
       let targetCardCount = 3;
-      if (binaryKeywords.some(k => userQuestion.includes(k)) || userQuestion.includes(' 아니면 ')) targetCardCount = 5;
+      if (binaryKeywords.some(k => userQuestion.includes(k)) || userQuestion.includes(' 아니면 ')) {
+        // Keep short daily binary questions concise.
+        targetCardCount = userQuestion.length <= 20 ? 2 : 5;
+      }
       else if (relationshipKeywords.some(k => userQuestion.includes(k))) targetCardCount = 7;
       else if (careerKeywords.some(k => userQuestion.includes(k))) targetCardCount = 5;
       else if (userQuestion.length > 30) targetCardCount = 10;
@@ -59,7 +62,8 @@ export function TarotMastery() {
       ]);
 
       const currentSpread = (targetCardCount === 7 ? allSpreads.find(s => s.id === 'relationship') :
-                            targetCardCount === 5 ? allSpreads.find(s => s.id === 'career-path') : null)
+                            targetCardCount === 5 ? allSpreads.find(s => s.id === 'career-path') :
+                            targetCardCount === 2 ? allSpreads.find(s => s.id === 'choice') : null)
                             || allSpreads.find(s => s.positions.length === targetCardCount)
                             || allSpreads[0];
 

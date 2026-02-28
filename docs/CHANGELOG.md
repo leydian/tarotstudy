@@ -2,6 +2,36 @@
 
 ## [2026-02-28]
 
+### 초간단 질문 간결 모드 및 2카드 스프레드 최적화 (v6.3.8)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/hybrid.js`
+- `apps/web/src/pages/TarotMastery.tsx`
+- `docs/CHANGELOG.md`
+- `docs/RELEASE_NOTES_v6.3.8.md`
+
+#### 변경 사항
+- 짧은 일상형 질문(`light`)과 짧은 이진 질문(`binary` + 20자 이하)에 대해 **간결 모드**를 도입.
+- 프롬프트에 스타일 가드(`styleGuard`)를 추가해 과장된 세계관/장문 서사를 억제하고 직접 결론을 강제.
+- 간결 모드 응답은 `conclusion/evidence/action`을 압축 형식으로 재구성:
+  - `conclusion`: 요약 + `[운명의 판정]` 한 줄 결론
+  - `evidence`: 카드별 핵심 주장만 출력
+  - `action`: 최대 2개 지침만 노출
+- 프론트 스프레드 선택 로직 개선:
+  - 짧은 이진 질문은 5카드 커리어 스프레드 대신 2카드 `choice` 스프레드 선택.
+
+#### 효과
+- "커피를 마실까 말까?" 같은 초간단 질문에서 과도하게 장황한 리딩을 방지.
+- 질문 무게와 결과 톤을 맞춰 사용자 체감 품질 개선.
+- 운영 중 fallback 여부와 무관하게 결과 길이 일관성 확보.
+
+#### 검증
+- `npm run test:persona --prefix apps/api` 통과.
+- `npm run build --prefix apps/web` 통과.
+- 상세 변경 요약: `docs/RELEASE_NOTES_v6.3.8.md`
+
+## [2026-02-28]
+
 ### API 진단 메타 표준화 및 fallback 이유 일관화 (v6.3.7)
 
 #### 변경 파일

@@ -133,6 +133,15 @@ const buildPrompt = ({ question, facts, category, timeframe, binaryEntities, ses
 
   const isLight = question.length < 15 && ['커피', '메뉴', '점심', '저녁', '야식', '걷기', '버스', '지하철', '옷', '신발', '살까', '말까', '먹을까', '마실까'].some(k => question.includes(k));
 
+  const styleGuard = isLight
+    ? [
+        '길이 제한:',
+        '- fullNarrative는 2문단 이내, 문단당 2문장 이내.',
+        '- 과장된 비유/장황한 세계관 설명 금지.',
+        '- 질문에 대한 직접 결론 1문장을 반드시 포함.',
+      ].join('\n')
+    : '';
+
   return [
     '당신은 아르카나 도서관의 지혜로운 사서이자 타로 전문가입니다.',
     '반드시 JSON만 출력하고, 카드의 상징에 기반한 따뜻하고 통찰력 있는 분석을 제공하세요.',
@@ -142,6 +151,7 @@ const buildPrompt = ({ question, facts, category, timeframe, binaryEntities, ses
     '- fullNarrative: 사서의 말투로 작성된 3~4문단의 전체 리딩 서사. 카드 개별 해석과 종합 결론을 자연스럽게 연결하세요. 문법과 조사를 완벽하게 처리하세요.',
     '- evidence.claim: 카드의 상징과 현재 상황을 연결하는 문장.',
     '한국어로 작성하고 사서의 우아한 말투를 유지하세요.',
+    styleGuard,
     `입력 데이터: ${JSON.stringify(context)}`
   ].join('\n');
 };
@@ -469,13 +479,25 @@ export const generateReadingHybrid = async ({
   const legacyFromV3 = generateReadingV3(cards, safeQuestion, timeframe, category);
   const legacy = toLegacyResponse({ report: normalized, question: safeQuestion, facts });
 
-  const finalConclusion = normalized.fullNarrative || legacyFromV3?.conclusion || legacy.conclusion;
+  const isCompactQuestion = questionType === 'light' || (questionType === 'binary' && safeQuestion.length <= 20);
+  const finalConclusion = isCompactQuestion
+    ? `${normalized.summary}\n\n[운명의 판정] ${normalized.verdict.label} - ${normalized.verdict.rationale}`
+    : (normalized.fullNarrative || legacyFromV3?.conclusion || legacy.conclusion);
+
+  const compactEvidence = normalized.evidence.map((item) => {
+    const cardName = facts.find((f) => f.cardId === item.cardId)?.cardNameKo || item.cardId;
+    return `[${item.positionLabel}: ${cardName}]\n${item.claim}`;
+  });
+
+  const compactActions = (normalized.actions.length > 0 ? normalized.actions : deterministic.actions)
+    .slice(0, 2)
+    .map((item, idx) => `[운명의 지침 ${idx + 1}] ${item}`);
 
   return {
     conclusion: finalConclusion,
-    evidence: legacyFromV3?.evidence || legacy.evidence,
-    action: legacyFromV3?.action || legacy.action,
-    yesNoVerdict: legacy.yesNoVerdict,
+    evidence: isCompactQuestion ? compactEvidence : (legacyFromV3?.evidence || legacy.evidence),
+    action: isCompactQuestion ? compactActions : (legacyFromV3?.action || legacy.action),
+    yesNoVerdict: normalizeVerdictLabel(normalized.verdict.label),
     report: normalized,
     quality: {
       consistencyScore: quality.consistencyScore,
