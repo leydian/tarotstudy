@@ -366,10 +366,10 @@ export function TarotMastery() {
     return '유보';
   };
 
-  const apiUsedLabel = (apiUsed?: 'anthropic' | 'openai' | 'fallback' | 'none') => {
+  const apiUsedLabel = (apiUsed?: 'anthropic' | 'fallback' | 'none') => {
     if (apiUsed === 'anthropic') return 'Anthropic';
-    if (apiUsed === 'openai') return 'OpenAI(legacy)';
     if (apiUsed === 'fallback') return 'Fallback';
+    if (apiUsed === 'none') return 'Legacy';
     return 'Unknown';
   };
 

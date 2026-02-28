@@ -8,21 +8,20 @@
 | 변수명 | 설명 | 비고 |
 | :--- | :--- | :--- |
 | `ANTHROPIC_API_KEY` | Anthropic Claude API 키 | 필수 (1순위 엔진) |
-| `OPENAI_API_KEY` | OpenAI API 키 | 선택 (2순위 엔진) |
 | `ANTHROPIC_MODEL` | 사용할 클로드 모델명 | 기본: `claude-haiku-4-5-20251001` |
 | `ANTHROPIC_TIMEOUT_MS` | Anthropic 요청 타임아웃(ms) | 기본: `60000` |
 | `ANTHROPIC_RETRY_TIMEOUT_MS` | Anthropic 재시도 타임아웃(ms) | 기본: `25000` |
 | `ANTHROPIC_REPAIR_TIMEOUT_MS` | JSON 복구(repair) 시도 타임아웃(ms) | 기본: `12000` |
-| `READING_MODEL` | 사용할 GPT 모델명 | 기본: `gpt-4o-mini` |
 
 ### 주의사항: `.env` 파일 관리
 - 파일 이름은 반드시 **`.env`** (앞에 점 포함)여야 합니다.
 - 파일 위치는 **`apps/api/`** 또는 프로젝트 최상단 루트입니다.
 - **절대 본 파일을 GitHub 등 공용 저장소에 커밋하지 마십시오.**
+- 신규 환경은 **`apps/api/.env.example`**을 복사해 시작하고, 키 값을 채운 뒤 저장하세요.
 
 ## 🛡️ 보안 강화 수칙 (Security Rules)
 1.  **API 키 하드코딩 금지**: 소스 코드 내에 키 값을 직접 입력하지 마십시오. 반드시 환경 변수를 통해서만 참조합니다.
-2.  **Usage Limits 설정**: OpenAI/Anthropic 대시보드에서 월별 최대 사용 금액(예: $10)을 설정하여 예기치 않은 비용 발생을 방지하십시오.
+2.  **Usage Limits 설정**: Anthropic 대시보드에서 월별 최대 사용 금액(예: $10)을 설정하여 예기치 않은 비용 발생을 방지하십시오.
 3.  **로그 검열**: `console.log` 등에 API 응답 전체를 출력할 경우, 키 정보나 민감 정보가 포함되지 않도록 마스킹 처리합니다.
 4.  **파일 권한**: `.env` 파일은 오직 개발자 본인만 읽을 수 있도록 권한을 설정하십시오.
 

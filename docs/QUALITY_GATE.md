@@ -39,14 +39,21 @@
 
 ## 5. 검증 절차
 1. `npm run test:persona --prefix apps/api`
-2. `npm run build --prefix apps/web`
-3. 수동 시나리오 확인
+2. `npm run test:hybrid --prefix apps/api`
+3. `npm run test:fortune --prefix apps/api`
+4. `npm run test:ui-contract --prefix apps/web`
+5. `npm run build --prefix apps/web`
+6. 수동 시나리오 확인
    - binary 질문
    - 감정 취약 질문
    - API 키 없는 환경 질문
    - `?debug=1`에서 진단 배지 노출 확인 / 일반 모드 비노출 확인
 
-## 6. 실패 처리
+## 6. CI 게이트
+- `.github/workflows/quality-gate.yml`에서 위 검증 절차를 PR/`main` push마다 실행합니다.
+- 실패 시 머지/배포를 중단하고 회귀 원인을 먼저 해결합니다.
+
+## 7. 실패 처리
 - 품질 게이트 실패 시 릴리스를 보류하고 원인 카테고리를 기록합니다.
   - 계약 회귀
   - fallback 실패

@@ -17,6 +17,24 @@ app.use(cors());
 app.use(express.json());
 
 const makeRequestId = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+const logReadingMetrics = (requestId, reading) => {
+  const metric = {
+    type: 'reading_metric',
+    requestId,
+    timestamp: new Date().toISOString(),
+    mode: reading?.mode || 'unknown',
+    apiUsed: reading?.apiUsed || 'unknown',
+    fallbackUsed: !!reading?.fallbackUsed,
+    fallbackReason: reading?.meta?.fallbackReason || reading?.fallbackReason || null,
+    failureStage: reading?.meta?.failureStage || null,
+    questionType: reading?.meta?.questionType || null,
+    domainTag: reading?.meta?.domainTag || null,
+    readingKind: reading?.meta?.readingKind || null,
+    fortunePeriod: reading?.meta?.fortunePeriod || null,
+    totalMs: reading?.meta?.timings?.totalMs ?? null
+  };
+  console.log(`[Tarot Metric] ${JSON.stringify(metric)}`);
+};
 
 // 타로 카드 목록 조회
 app.get('/api/cards', (req, res) => {
@@ -137,6 +155,7 @@ app.post('/api/reading', async (req, res) => {
     console.log(
       `[Tarot API] requestId=${requestId} mode=${reading.mode} apiUsed=${reading.apiUsed} fallbackUsed=${reading.fallbackUsed} fallbackReason=${reading.meta?.fallbackReason || reading.fallbackReason || 'none'}`
     );
+    logReadingMetrics(requestId, reading);
     return res.json(reading);
   } catch (error) {
     console.error(

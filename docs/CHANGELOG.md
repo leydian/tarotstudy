@@ -2,6 +2,56 @@
 
 ## [2026-02-28]
 
+### 품질 게이트 자동화 및 종합운세 회귀 체계 강화 (v6.3.29)
+
+#### 변경 파일
+- `.github/workflows/quality-gate.yml`
+- `.gitignore`
+- `apps/api/.env.example`
+- `apps/api/package.json`
+- `apps/api/src/index.js`
+- `apps/api/tests/overall-fortune-regression.js`
+- `apps/web/package.json`
+- `apps/web/src/pages/TarotMastery.tsx`
+- `apps/web/src/types/tarot.ts`
+- `apps/web/tests/validate-ui-contract.js`
+- `docs/ARCHITECTURE.md`
+- `docs/CHANGELOG.md`
+- `docs/QUALITY_GATE.md`
+- `docs/RELEASE_NOTES_v6.3.29.md`
+- `docs/SETUP_SECURITY.md`
+
+#### 변경 사항
+- 자동 품질 게이트
+  - PR/`main` push마다 API/WEB 검증을 실행하는 CI 워크플로 추가.
+  - 게이트 항목:
+    - `test:persona`
+    - `test:hybrid`
+    - `test:fortune`
+    - `test:ui-contract`
+    - `build:web`
+- 회귀 테스트 강화
+  - API에 `overall-fortune` 4시나리오(today/week/month/year) 회귀 테스트 추가.
+  - WEB에 핵심 UI 계약(빠른 운세 버튼, 탭 ARIA, stable key, 카드 검색 A11y) 검증 스크립트 추가.
+- 운영 관측성 강화
+  - `/api/reading` 응답 시 구조화된 메트릭 로그(`reading_metric`) 출력 추가.
+  - requestId, fallbackUsed/reason, failureStage, totalMs, questionType 등 운영 필드 포함.
+- 문서/코드 정합성
+  - 아키텍처/보안 문서를 Anthropic + deterministic fallback 기준으로 정리.
+  - UI 진단 라벨/타입에서 `OpenAI(legacy)` 경로 제거.
+- 보안 위생
+  - `apps/api/.env` 및 `apps/web/.env`를 `.gitignore`에 명시.
+  - `apps/api/.env.example` 추가로 안전한 초기 설정 경로 제공.
+
+#### 검증
+- `npm run test:persona --prefix apps/api`
+- `npm run test:hybrid --prefix apps/api`
+- `npm run test:fortune --prefix apps/api`
+- `npm run test:ui-contract --prefix apps/web`
+- `npm run build --prefix apps/web`
+
+## [2026-02-28]
+
 ### UI 최적화: 안정성/성능/CSS토큰/A11y 정비 (v6.3.28)
 
 #### 변경 파일
