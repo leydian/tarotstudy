@@ -14,7 +14,8 @@ const NEGATIVE_IDS = new Set([
 ]);
 
 const DEFAULT_OPENAI_MODEL = process.env.READING_MODEL || 'gpt-4o-mini';
-const DEFAULT_ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL || 'claude-3-5-haiku-20241022';
+const DEFAULT_ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL || 'claude-haiku-4-5-20251001';
+const ANTHROPIC_TIMEOUT_MS = Number(process.env.ANTHROPIC_TIMEOUT_MS || 60000);
 
 const getYesNoScore = (cardId) => {
   if (POSITIVE_IDS.has(cardId)) return 1;
@@ -195,7 +196,7 @@ const callAnthropic = async (prompt) => {
 
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 20000);
+    const timeout = setTimeout(() => controller.abort(), ANTHROPIC_TIMEOUT_MS);
     try {
       const response = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
@@ -227,8 +228,9 @@ const callAnthropic = async (prompt) => {
       clearTimeout(timeout);
     }
   } catch (error) {
+    const isTimeout = error?.name === 'AbortError' || error?.message?.includes('aborted');
     console.error(
-      `[Anthropic API] Fetch Error model=${DEFAULT_ANTHROPIC_MODEL} message=${error?.message || 'unknown'} cause=${error?.cause?.code || error?.cause?.message || 'none'}`
+      `[Anthropic API] Fetch Error model=${DEFAULT_ANTHROPIC_MODEL} timeout_ms=${ANTHROPIC_TIMEOUT_MS} timed_out=${isTimeout} message=${error?.message || 'unknown'} cause=${error?.cause?.code || error?.cause?.message || 'none'}`
     );
     return null;
   }

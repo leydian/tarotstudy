@@ -9,7 +9,8 @@
 | :--- | :--- | :--- |
 | `ANTHROPIC_API_KEY` | Anthropic Claude API 키 | 필수 (1순위 엔진) |
 | `OPENAI_API_KEY` | OpenAI API 키 | 선택 (2순위 엔진) |
-| `ANTHROPIC_MODEL` | 사용할 클로드 모델명 | 기본: `claude-3-5-haiku-20241022` |
+| `ANTHROPIC_MODEL` | 사용할 클로드 모델명 | 기본: `claude-haiku-4-5-20251001` |
+| `ANTHROPIC_TIMEOUT_MS` | Anthropic 요청 타임아웃(ms) | 기본: `60000` |
 | `READING_MODEL` | 사용할 GPT 모델명 | 기본: `gpt-4o-mini` |
 
 ### 주의사항: `.env` 파일 관리

@@ -2,6 +2,28 @@
 
 ## [2026-02-28]
 
+### Anthropic 호출 안정화: 모델/타임아웃 재정렬 (v6.3.4)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/hybrid.js`
+- `docs/SETUP_SECURITY.md`
+- `docs/RELEASE_NOTES_v6.3.4.md`
+
+#### 변경 사항
+- 기본 모델을 계정 가용값인 `claude-haiku-4-5-20251001`로 조정.
+- Anthropic 타임아웃을 `ANTHROPIC_TIMEOUT_MS`(기본 60000ms)로 환경변수화.
+- Fetch 실패 로그에 `timeout_ms`, `timed_out`, `cause`를 포함해 원인 분리 가능성 강화.
+
+#### 원인 결론
+- `EAI_AGAIN`(DNS 불안정), 모델 404, 20초 abort가 복합적으로 fallback을 유발.
+
+#### 검증
+- `npm run test:persona --prefix apps/api` 통과.
+- 샘플 호출에서 `apiUsed=anthropic`, `fallbackUsed=false` 확인.
+- 상세 변경 요약: `docs/RELEASE_NOTES_v6.3.4.md`
+
+## [2026-02-28]
+
 ### Anthropic 실패 진단성 강화 및 모델 롤백 (v6.3.3)
 
 #### 변경 파일
