@@ -25,7 +25,6 @@ export function TarotMastery() {
   const [spreadLayout, setSpreadLayout] = useState<Spread | null>(null);
   const [revealedIdx, setRevealedIdx] = useState<number[]>([]);
   const [reading, setReading] = useState<ReadingResponse | null>(null);
-  const [personaTone, setPersonaTone] = useState<'calm' | 'warm' | 'mystic'>('warm');
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const spreadViewportRef = useRef<HTMLDivElement>(null);
@@ -193,7 +192,6 @@ export function TarotMastery() {
         riskLevel: profile.riskLevel,
         readingKind: profile.readingKind,
         fortunePeriod: profile.fortunePeriod,
-        personaTone,
         mode: 'hybrid'
       });
 
@@ -243,7 +241,6 @@ export function TarotMastery() {
         structure: 'evidence_report',
         spreadId: currentSpread.id,
         cardDraws,
-        personaTone,
         sessionContext: {
           recentQuestions,
           questionProfile: {
@@ -264,7 +261,6 @@ export function TarotMastery() {
         riskLevel: readingData.meta?.riskLevel || profile.riskLevel,
         readingKind: readingData.meta?.readingKind || profile.readingKind,
         fortunePeriod: readingData.meta?.fortunePeriod || profile.fortunePeriod,
-        personaTone,
         mode: readingData.mode || 'hybrid',
         fallbackUsed: !!readingData.fallbackUsed,
         spreadId: currentSpread.id
@@ -381,7 +377,7 @@ export function TarotMastery() {
   const getDistinctReportCopy = (data: ReadingResponse, isHealthContext: boolean, isOverallFortune: boolean) => {
     if (isOverallFortune && data.report?.fortune) {
       return {
-        insightText: data.report.fortune.energy || data.report.summary || '',
+        insightText: data.report.summary || data.report.fortune.energy || '',
         energyText: data.report.fortune.message || data.report.verdict?.rationale || ''
       };
     }
@@ -492,6 +488,13 @@ export function TarotMastery() {
     if (label === 'UP') return '상승';
     if (label === 'CAUTION') return '주의';
     return '균형';
+  };
+  const fortuneTitleKo = (period?: 'today' | 'week' | 'month' | 'year' | null) => {
+    if (period === 'today') return '오늘의 타로 종합운세';
+    if (period === 'week') return '이번주 타로 종합운세';
+    if (period === 'month') return '이번달 타로 종합운세';
+    if (period === 'year') return '올해 타로 종합운세';
+    return '타로 종합운세';
   };
 
   return (
@@ -694,7 +697,9 @@ export function TarotMastery() {
 
                             {isOverallFortune && reading.report?.fortune && (
                               <div className={styles.counterpointBox}>
-                                <h4 className={styles.counterpointTitle}>오늘의 타로 종합운세</h4>
+                                <h4 className={styles.counterpointTitle}>
+                                  {fortuneTitleKo(reading.report.fortune.period || reading.meta?.fortunePeriod || null)}
+                                </h4>
                                 <ul className={styles.counterpointList}>
                                   <li><strong>전체 에너지:</strong> {reading.report.fortune.energy}</li>
                                   <li><strong>일·재물운:</strong> {reading.report.fortune.workFinance}</li>
@@ -770,32 +775,6 @@ export function TarotMastery() {
                   {item.label} 종합운세
                 </button>
               ))}
-            </div>
-            <div className={styles.toneRow}>
-              <button
-                type="button"
-                className={`${styles.toneBtn} ${personaTone === 'calm' ? styles.toneBtnActive : ''}`}
-                onClick={() => setPersonaTone('calm')}
-                disabled={loading}
-              >
-                차분 모드
-              </button>
-              <button
-                type="button"
-                className={`${styles.toneBtn} ${personaTone === 'warm' ? styles.toneBtnActive : ''}`}
-                onClick={() => setPersonaTone('warm')}
-                disabled={loading}
-              >
-                공감 모드
-              </button>
-              <button
-                type="button"
-                className={`${styles.toneBtn} ${personaTone === 'mystic' ? styles.toneBtnActive : ''}`}
-                onClick={() => setPersonaTone('mystic')}
-                disabled={loading}
-              >
-                신비 모드
-              </button>
             </div>
             <form onSubmit={handleStartRitual} className={styles.inputForm}>
               <input

@@ -2,6 +2,55 @@
 
 ## [2026-02-28]
 
+### 종합운세 정합성 보정: 기간 라벨/역방향 논리/다카드 집계/중복 완화 (v6.3.26)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/hybrid.js`
+- `apps/api/src/index.js`
+- `apps/web/src/pages/TarotMastery.tsx`
+- `apps/web/src/pages/TarotMastery.module.css`
+- `apps/web/src/services/analytics.ts`
+- `apps/web/src/services/tarotService.ts`
+- `apps/web/src/types/tarot.ts`
+- `docs/CHANGELOG.md`
+- `docs/RELEASE_NOTES_v6.3.26.md`
+
+#### 변경 사항
+- 기간 라벨 정합성 보정
+  - 종합운세 박스 제목을 기간별로 동적 표시:
+    - 오늘의/이번주/이번달/올해 타로 종합운세
+- 역방향 해석 충돌 보정
+  - 카드 근거 문장에서 정방향 키워드 고정 템플릿을 제거하고 orientation 기반 설명으로 교체.
+  - 점수 산정에도 orientation(정/역)을 반영하도록 변경.
+- 트렌드 판정 안정화
+  - 다카드 점수에 임계값(threshold) 적용해 과도한 `상승`/`주의` 판정을 완화.
+  - 종합운세는 verdict를 YES/NO 단정 대신 기조 해석 중심으로 정규화.
+- 다카드 집계 로직 강화(주/월/연)
+  - 전체 카드에서 suit/메이저 성격을 기준으로 `에너지/일·재물/애정/건강·마음` 대표 카드를 선택해 요약.
+  - 월간/연간에서 앞 3장 편향을 줄이고 전체 스프레드 반영도를 높임.
+- 템플릿 반복 문구 완화
+  - today/week/month/year 기간별로 메시지·조언·변수 문구를 분기.
+  - 기간 스케일에 맞는 액션 지침으로 교체(일간 단기 루틴, 연간 분기 회고 등).
+- 중복 표현 완화
+  - 상단 `사서의 통찰`은 summary 중심, 하단 종합운세 박스는 분야별 상세 중심으로 역할 분리.
+- 톤 모드 제거 정리
+  - `차분/공감/신비` UI 제거 및 관련 타입/요청/분석 필드(`personaTone`) 정리.
+  - API는 단일 기본 톤으로 일관 동작.
+
+#### 효과
+- 주/월/연 운세에서 제목/구조/판정이 질문 기간과 일치해 읽기 신뢰도가 개선.
+- 역방향 카드가 포함된 리딩에서 의미 충돌(역방향 설명 + 정방향 키워드)이 감소.
+- 연간/월간 운세가 소수 카드 편향 없이 스프레드 전체를 반영해 설득력이 향상.
+- 반복 템플릿 느낌이 줄고 기간별 실천 가이드가 더 현실적으로 제공됨.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과.
+- `npm run test:persona --prefix apps/api` 통과.
+- `npm run build --prefix apps/web` 통과.
+- 상세 변경 요약: `docs/RELEASE_NOTES_v6.3.26.md`
+
+## [2026-02-28]
+
 ### 종합운세 고도화: 전용 스키마 + 정/역방향 + 기간/톤/재현성 통합 (v6.3.25)
 
 #### 변경 파일

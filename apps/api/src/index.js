@@ -55,7 +55,6 @@ app.post('/api/reading', async (req, res) => {
     category,
     spreadId,
     mode = 'hybrid',
-    personaTone = 'warm',
     sessionContext,
     structure = 'evidence_report',
     debug = false
@@ -129,7 +128,6 @@ app.post('/api/reading', async (req, res) => {
       category,
       sessionContext,
       structure,
-      personaTone,
       debug,
       requestId,
       serverRevision,

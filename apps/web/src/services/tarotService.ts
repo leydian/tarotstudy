@@ -43,7 +43,6 @@ export const tarotApi = {
       mode?: 'legacy' | 'hybrid';
       structure?: 'evidence_report';
       cardDraws?: Array<{ id: string; orientation?: 'upright' | 'reversed' }>;
-      personaTone?: 'calm' | 'warm' | 'mystic';
       sessionContext?: {
         recentQuestions?: string[];
         recentMood?: string;

@@ -94,7 +94,6 @@ export interface ReadingResponse {
     readingKind?: 'overall_fortune' | 'general_reading';
     fortunePeriod?: 'today' | 'week' | 'month' | 'year' | null;
     trendLabel?: 'UP' | 'BALANCED' | 'CAUTION';
-    personaTone?: 'calm' | 'warm' | 'mystic';
     recommendedSpreadId?: string;
     responseMode?: 'concise' | 'balanced' | 'creative';
     path?: 'anthropic_primary' | 'anthropic_retry' | 'fallback';

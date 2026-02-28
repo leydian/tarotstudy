@@ -44,9 +44,10 @@ const HEALTH_GUARDRAIL_ACTIONS = {
   ]
 };
 
-const getYesNoScore = (cardId) => {
-  if (POSITIVE_IDS.has(cardId)) return 1;
-  if (NEGATIVE_IDS.has(cardId)) return -1;
+const getYesNoScore = (cardId, orientation = 'upright') => {
+  const direction = orientation === 'reversed' ? -1 : 1;
+  if (POSITIVE_IDS.has(cardId)) return 1 * direction;
+  if (NEGATIVE_IDS.has(cardId)) return -1 * direction;
   return 0;
 };
 
@@ -64,17 +65,6 @@ const isHighOverlap = (a, b) => {
   if (left === right) return true;
   if (left.length >= 14 && right.length >= 14 && (left.includes(right) || right.includes(left))) return true;
   return false;
-};
-
-const pickObjectParticle = (text) => {
-  const trimmed = sanitizeText(text);
-  if (!trimmed) return '을';
-  const chars = [...trimmed];
-  const lastChar = chars[chars.length - 1];
-  const code = lastChar.charCodeAt(0);
-  const isHangulSyllable = code >= 0xac00 && code <= 0xd7a3;
-  if (!isHangulSyllable) return '을';
-  return (code - 0xac00) % 28 === 0 ? '를' : '을';
 };
 
 const stripListPrefix = (text) => {
@@ -255,14 +245,39 @@ const verdictTone = (label, rationale) => {
   return `안개 속에 가려진 것처럼 상황이 조금 더 무르익기를 기다려야 할 것 같네요. ${rationale} 조금 더 시간을 두고 지켜보는 것은 어떨까요?`;
 };
 
+const getSuitType = (cardId = '') => {
+  const prefix = String(cardId || '').slice(0, 1);
+  if (prefix === 'c') return 'cups';
+  if (prefix === 'p') return 'pentacles';
+  if (prefix === 'w') return 'wands';
+  if (prefix === 's') return 'swords';
+  return 'major';
+};
+
+const pickDominantFact = (facts, predicate, fallbackIndex = 0) => {
+  const filtered = facts.filter(predicate);
+  const pool = filtered.length > 0 ? filtered : facts;
+  if (!pool.length) return null;
+  return pool
+    .map((fact) => ({ fact, magnitude: Math.abs(getYesNoScore(fact.cardId, fact.orientation)) }))
+    .sort((a, b) => b.magnitude - a.magnitude)[0]?.fact || facts[fallbackIndex] || facts[0];
+};
+
+const periodLabelKo = (period = 'week') => {
+  if (period === 'today') return '오늘';
+  if (period === 'month') return '이번 달';
+  if (period === 'year') return '올해';
+  return '이번 주';
+};
+
 const computeVerdict = (facts, binaryEntities) => {
   if (binaryEntities && facts.length === 2) {
-    const scoreA = getYesNoScore(facts[0].cardId);
-    const scoreB = getYesNoScore(facts[1].cardId);
+    const scoreA = getYesNoScore(facts[0].cardId, facts[0].orientation);
+    const scoreB = getYesNoScore(facts[1].cardId, facts[1].orientation);
     const entityA = sanitizeText(binaryEntities[0]) || '선택 A';
     const entityB = sanitizeText(binaryEntities[1]) || '선택 B';
 
-    if (scoreA > scoreB) {
+    if (scoreA - scoreB > 0.2) {
       return {
         label: 'YES',
         recommendedOption: 'A',
@@ -270,7 +285,7 @@ const computeVerdict = (facts, binaryEntities) => {
       };
     }
 
-    if (scoreB > scoreA) {
+    if (scoreB - scoreA > 0.2) {
       return {
         label: 'YES',
         recommendedOption: 'B',
@@ -285,9 +300,10 @@ const computeVerdict = (facts, binaryEntities) => {
     };
   }
 
-  const score = facts.reduce((acc, fact) => acc + getYesNoScore(fact.cardId), 0);
-  if (score > 0) return { label: 'YES', rationale: '카드의 전반적인 기운이 당신의 질문에 대해 긍정적인 응답을 보내고 있습니다.' };
-  if (score < 0) return { label: 'NO', rationale: '지금은 상황을 조금 더 신중하게 살피고 보수적으로 접근하는 것이 안전해 보입니다.' };
+  const score = facts.reduce((acc, fact) => acc + getYesNoScore(fact.cardId, fact.orientation), 0);
+  const threshold = Math.max(0.8, facts.length * 0.2);
+  if (score > threshold) return { label: 'YES', rationale: '카드의 전반적인 흐름이 상승 구간에 가까워 기회 포착에 유리합니다.' };
+  if (score < -threshold) return { label: 'NO', rationale: '역방향·경고 신호가 섞여 있어 속도 조절과 리스크 관리가 우선입니다.' };
   return { label: 'MAYBE', rationale: '상반된 기운이 섞여 있어, 단정 짓기보다 상황의 변화를 조금 더 지켜볼 필요가 있습니다.' };
 };
 
@@ -298,13 +314,7 @@ const toTrendLabel = (label) => {
 };
 
 const buildFortuneSummary = (fortunePeriod, trendLabel) => {
-  const periodLabel = fortunePeriod === 'today'
-    ? '오늘'
-    : fortunePeriod === 'week'
-      ? '이번 주'
-      : fortunePeriod === 'month'
-        ? '이번 달'
-        : '올해';
+  const periodLabel = periodLabelKo(fortunePeriod || 'week');
   if (trendLabel === 'UP') return `${periodLabel}의 흐름은 상승 기조입니다. 다만 리듬을 유지하며 컨디션 관리를 병행하세요.`;
   if (trendLabel === 'CAUTION') return `${periodLabel}에는 속도 조절이 필요합니다. 무리한 확장보다 점검과 정리가 유리합니다.`;
   return `${periodLabel}은 균형 구간입니다. 조급한 결정보다 우선순위를 정리하는 접근이 안정적입니다.`;
@@ -325,15 +335,18 @@ const buildDeterministicReport = ({
   const isCompactBinaryQuestion = questionType === 'binary' && String(question || '').length <= 20;
   const isHealthQuestion = domainTag === 'health';
   const isOverallFortune = readingKind === 'overall_fortune';
+  const resolvedFortunePeriod = fortunePeriod || 'week';
 
   const evidence = facts.map((fact) => {
     const coreMeaning = sanitizeText(fact.coreMeaning || fact.summary).replace(/\.$/, '');
-    const keywordsText = fact.keywords.join(', ') || '조화로운 기운';
+    const orientationRationale = fact.orientation === 'reversed'
+      ? '역방향 신호가 포함되어 있으니 속도 조절과 재점검이 중요합니다.'
+      : '정방향 흐름이 살아 있어 준비된 실행이 성과로 연결될 여지가 큽니다.';
     return {
       cardId: fact.cardId,
       positionLabel: fact.positionLabel,
       claim: `${fact.cardNameKo}(${fact.orientationLabel})의 상징인 '${coreMeaning}'`,
-      rationale: `핵심 키워드인 ${keywordsText}${pickObjectParticle(keywordsText)} 통해 이번 질문의 실마리를 찾을 수 있습니다.`,
+      rationale: orientationRationale,
       caution: sanitizeText(fact.advice) || '급한 결정보다는 마음의 우선순위를 먼저 정리해 보세요.'
     };
   });
@@ -362,16 +375,101 @@ const buildDeterministicReport = ({
   const baseReport = { summary, verdict, evidence, counterpoints, actions, fullNarrative: null };
   if (isOverallFortune) {
     const trendLabel = toTrendLabel(verdict.label);
-    const first = evidence[0]?.claim || '오늘의 에너지가 안정적으로 흐릅니다.';
-    const second = evidence[1]?.claim || first;
-    const third = evidence[2]?.claim || second;
+    const energyFact = pickDominantFact(facts, () => true, 0);
+    const workFact = pickDominantFact(
+      facts,
+      (fact) => ['pentacles', 'wands'].includes(getSuitType(fact.cardId)),
+      1
+    );
+    const loveFact = pickDominantFact(
+      facts,
+      (fact) => getSuitType(fact.cardId) === 'cups' || ['m06', 'm02', 'm03', 'm17'].includes(fact.cardId),
+      2
+    );
+    const mindFact = pickDominantFact(
+      facts,
+      (fact) => getSuitType(fact.cardId) === 'swords' || ['m09', 'm12', 'm14'].includes(fact.cardId),
+      facts.length - 1
+    );
+    const periodText = periodLabelKo(resolvedFortunePeriod);
+    const workFrame = resolvedFortunePeriod === 'year'
+      ? '분기 단위로 목표와 자원 배분을 재정렬해 보세요.'
+      : resolvedFortunePeriod === 'month'
+        ? '주차별 우선순위를 쪼개서 실행하면 효율이 올라갑니다.'
+        : resolvedFortunePeriod === 'week'
+          ? '주중 중반에 체크포인트를 두면 변동 대응이 쉬워집니다.'
+          : '오늘은 한 번에 한 가지 핵심 과제에 집중하는 편이 유리합니다.';
+    const loveFrame = resolvedFortunePeriod === 'year'
+      ? '관계의 패턴을 장기적으로 점검하고 기대치를 조율하세요.'
+      : resolvedFortunePeriod === 'month'
+        ? '감정 소모가 큰 대화는 시점을 조절해 부드럽게 풀어가세요.'
+        : resolvedFortunePeriod === 'week'
+          ? '이번 주는 짧더라도 솔직한 대화 빈도를 높이는 편이 좋습니다.'
+          : '오늘은 감정 반응보다 진심을 천천히 전달해 보세요.';
+    const mindFrame = resolvedFortunePeriod === 'year'
+      ? '페이스를 연중 리듬으로 관리하고 휴식 캘린더를 미리 확보하세요.'
+      : resolvedFortunePeriod === 'month'
+        ? '과로 신호가 보이면 즉시 일정을 덜어내는 방식이 필요합니다.'
+        : resolvedFortunePeriod === 'week'
+          ? '수면과 회복 루틴을 고정하면 변동성을 줄일 수 있습니다.'
+          : '짧은 휴식 루틴을 자주 넣는 것이 집중력 유지에 도움이 됩니다.';
+    const periodActions = resolvedFortunePeriod === 'year'
+      ? [
+          '올해 목표를 분기 단위로 쪼개고, 각 분기 종료 시점에 반드시 회고 시간을 확보하세요.',
+          '성장/관계/건강 지표를 각각 하나씩 정해 연중 추이를 기록해 보세요.'
+        ]
+      : resolvedFortunePeriod === 'month'
+        ? [
+            '이번 달 목표를 주차별로 나누고, 매주 말 우선순위를 재조정하세요.',
+            '한 달 동안 유지할 회복 루틴(수면/운동/휴식)을 하나 정해 꾸준히 실행해 보세요.'
+          ]
+      : resolvedFortunePeriod === 'week'
+        ? [
+            '이번 주 핵심 3가지를 정하고, 중간 점검(수/목) 시간을 미리 잡아 두세요.',
+            '중요한 결정은 하루 숙성 후 확정해 감정 과속을 줄이세요.'
+          ]
+      : [
+            '오늘 해야 할 한 가지 핵심 과제를 정하고 완료 기준을 먼저 적어두세요.',
+            '오후 한 차례 10분 정리 시간을 확보해 리듬을 회복하세요.'
+        ];
+    const periodCounterpoints = resolvedFortunePeriod === 'year'
+      ? [
+          '연간 흐름은 외부 변수의 영향이 크므로 분기마다 방향을 재점검하세요.',
+          '상반기와 하반기의 에너지 결이 다를 수 있으니 고정 전략보다 적응 전략이 유리합니다.'
+        ]
+      : resolvedFortunePeriod === 'month'
+        ? [
+            '월간 흐름은 주차별 편차가 크므로 중간 조정 여지를 남겨두세요.',
+            '한 번의 변동으로 전체 추세를 단정하지 말고 누적 신호를 보세요.'
+        ]
+      : resolvedFortunePeriod === 'week'
+        ? [
+            '주간 흐름은 일정 충돌에 민감하므로 하루 단위 완충 시간을 남겨두세요.',
+            '초반의 강한 신호가 주말까지 그대로 가지 않을 수 있으니 중간 점검이 필요합니다.'
+        ]
+      : [
+            '일일 흐름은 컨디션 영향을 크게 받으니 무리한 계획 확대를 피하세요.',
+            '오늘의 신호는 단기 참고값이므로 장기 결정은 추가 근거와 함께 판단하세요.'
+        ];
+    const energyClaim = energyFact
+      ? `${energyFact.cardNameKo}(${energyFact.orientationLabel})의 흐름이 ${periodText} 전체 리듬의 기준점으로 작동합니다.`
+      : `${periodText}의 에너지는 안정적으로 흐르고 있습니다.`;
+    const workClaim = workFact
+      ? `${workFact.cardNameKo}(${workFact.orientationLabel}) 신호를 보면 ${workFrame}`
+      : workFrame;
+    const loveClaim = loveFact
+      ? `${loveFact.cardNameKo}(${loveFact.orientationLabel}) 흐름상 ${loveFrame}`
+      : loveFrame;
+    const mindClaim = mindFact
+      ? `${mindFact.cardNameKo}(${mindFact.orientationLabel}) 경향을 고려하면 ${mindFrame}`
+      : mindFrame;
     const fortune = {
-      period: fortunePeriod || 'week',
+      period: resolvedFortunePeriod,
       trendLabel,
-      energy: `전체 에너지 흐름을 보면, ${first}`,
-      workFinance: `일·재물운은 ${second} 기조를 보입니다. 급한 결정 대신 점검과 누적이 유리합니다.`,
-      love: `애정운은 ${third} 메시지를 보냅니다. 관계에서는 솔직한 대화와 균형이 핵심입니다.`,
-      healthMind: '건강·마음 영역은 과로를 피하고 휴식 리듬을 확보할수록 운의 회복 탄력이 커집니다.',
+      energy: `전체 에너지 흐름을 보면, ${energyClaim}`,
+      workFinance: `일·재물운은 ${workClaim}`,
+      love: `애정운은 ${loveClaim}`,
+      healthMind: `건강·마음 영역은 ${mindClaim}`,
       message: trendLabel === 'UP'
         ? '지금의 상승 흐름을 믿되, 속도보다 리듬을 지키세요.'
         : trendLabel === 'CAUTION'
@@ -381,6 +479,13 @@ const buildDeterministicReport = ({
     return {
       ...baseReport,
       summary: buildFortuneSummary(fortune.period, trendLabel),
+      verdict: {
+        label: 'MAYBE',
+        rationale: `${periodText} 종합운세는 YES/NO보다 기조(상승·균형·주의)로 읽는 편이 더 정확합니다.`,
+        recommendedOption: 'NONE'
+      },
+      actions: periodActions,
+      counterpoints: periodCounterpoints,
       fortune
     };
   }
@@ -402,8 +507,7 @@ const buildPrompt = ({
   domainTag = 'general',
   riskLevel = 'low',
   readingKind = 'general_reading',
-  fortunePeriod = null,
-  personaTone = 'warm'
+  fortunePeriod = null
 }) => {
   const context = {
     question,
@@ -414,17 +518,11 @@ const buildPrompt = ({
     riskLevel,
     readingKind,
     fortunePeriod,
-    personaTone,
     sessionContext: sessionContext || null,
     facts
   };
 
   const isCompactBinaryQuestion = questionType === 'binary' && String(question || '').length <= 20;
-  const toneGuide = personaTone === 'mystic'
-    ? '문체 톤: 신비롭고 시적인 어휘를 사용하되 과장된 단정은 피하세요.'
-    : personaTone === 'calm'
-      ? '문체 톤: 차분하고 간결한 어조로 핵심만 명확히 전달하세요.'
-      : '문체 톤: 따뜻하고 공감적인 어조로 실천 가능한 조언을 제시하세요.';
   const styleGuide = readingKind === 'overall_fortune'
     ? [
         '응답 모드: overall_fortune',
@@ -491,7 +589,6 @@ const buildPrompt = ({
     '{"fullNarrative":string, "summary":string,"verdict":{"label":"YES|NO|MAYBE","rationale":string,"recommendedOption":"A|B|EITHER|NONE"},"fortune":{"period":"today|week|month|year","trendLabel":"UP|BALANCED|CAUTION","energy":string,"workFinance":string,"love":string,"healthMind":string,"message":string},"evidence":[{"cardId":string,"positionLabel":string,"claim":string,"rationale":string,"caution":string}],"counterpoints":[string],"actions":[string]}',
     '- fullNarrative: 사서의 말투로 작성된 3~4문단의 전체 리딩 서사. 카드 개별 해석과 종합 결론을 자연스럽게 연결하세요. 문법과 조사를 완벽하게 처리하세요.',
     '- evidence.claim: 카드의 상징과 현재 상황을 연결하는 문장.',
-    toneGuide,
     '한국어로 작성하고 사서의 우아한 말투를 유지하세요.',
     styleGuide,
     `입력 데이터: ${JSON.stringify(context)}`
@@ -771,7 +868,6 @@ export const generateReadingHybrid = async ({
   category = 'general',
   sessionContext = null,
   structure = 'evidence_report',
-  personaTone = 'warm',
   debug = false,
   requestId = null,
   serverRevision = 'local',
@@ -818,8 +914,7 @@ export const generateReadingHybrid = async ({
     domainTag: resolvedProfile.domainTag,
     riskLevel: resolvedProfile.riskLevel,
     readingKind: resolvedProfile.readingKind,
-    fortunePeriod: resolvedProfile.fortunePeriod,
-    personaTone
+    fortunePeriod: resolvedProfile.fortunePeriod
   });
 
   let apiUsed = 'none';
@@ -991,7 +1086,6 @@ export const generateReadingHybrid = async ({
       readingKind: resolvedProfile.readingKind,
       fortunePeriod: resolvedProfile.fortunePeriod || null,
       trendLabel: normalized?.fortune?.trendLabel || null,
-      personaTone,
       recommendedSpreadId: resolvedProfile.recommendedSpreadId,
       responseMode,
       path,

@@ -10,7 +10,6 @@ type AnalyticsPayload = {
   riskLevel?: string;
   readingKind?: string;
   fortunePeriod?: string | null;
-  personaTone?: string;
   mode?: string;
   fallbackUsed?: boolean;
   spreadId?: string;
