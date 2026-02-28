@@ -194,7 +194,6 @@ export const generateReadingV3 = (cards, question, timeframe = 'daily', category
     }
 
     const visualDesc = card.description ? card.description.split('\n\n')[0] : card.summary;
-    const enhancedVisual = visualDesc.length > 60 ? visualDesc.substring(0, 150) + "..." : visualDesc;
     
     let meaning = card.summary;
     if (isRelationship) meaning = card.meanings.love;
@@ -208,7 +207,7 @@ export const generateReadingV3 = (cards, question, timeframe = 'daily', category
     }
 
     // 딱딱한 항목 나열을 부드러운 대화체 단락으로 변환
-    return `[${posLabel}: ${card.nameKo}]\n\n이 카드의 그림을 가만히 들여다보세요. "${enhancedVisual}"\n\n이러한 카드의 모습은 현재 당신의 상황에서 다음과 같은 의미를 갖습니다. ${meaning}\n\n사서로서 조언을 드리자면, ${card.meanings.advice}`;
+    return `[${posLabel}: ${card.nameKo}]\n\n이 카드의 그림을 가만히 들여다보세요. "${visualDesc}"\n\n이러한 카드의 모습은 현재 당신의 상황에서 다음과 같은 의미를 갖습니다. ${meaning}\n\n사서로서 조언을 드리자면, ${card.meanings.advice}`;
   });
 
   // 조사를 적절히 선택하는 헬퍼 함수
