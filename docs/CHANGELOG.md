@@ -2,6 +2,31 @@
 
 ## [2026-02-28]
 
+### 완드 9 카드 이미지 로드 실패 핫픽스 (v6.3.12)
+
+#### 변경 파일
+- `apps/api/src/data/wands.js`
+- `docs/CHANGELOG.md`
+- `docs/RELEASE_NOTES_v6.3.12.md`
+
+#### 변경 사항
+- `w09`(지팡이 9) 카드의 이미지 URL을 404 경로에서 정상 응답(200) 경로로 교체.
+  - 기존: `https://commons.wikimedia.org/wiki/Special:FilePath/Wands09.jpg`
+  - 변경: `https://commons.wikimedia.org/wiki/Special:FilePath/Tarot%20Nine%20of%20Wands.jpg`
+
+#### 원인
+- Wikimedia `Special:FilePath/Wands09.jpg` 리다이렉션 체인의 최종 응답이 404로 반환되어 해당 카드만 이미지가 깨짐.
+
+#### 효과
+- 지팡이 9 카드가 정상적으로 렌더링됨.
+- 특정 카드 단일 이미지 누락으로 인한 UI 불일치 해소.
+
+#### 검증
+- `npm run build --prefix apps/web` 통과.
+- 상세 변경 요약: `docs/RELEASE_NOTES_v6.3.12.md`
+
+## [2026-02-28]
+
 ### 결과 화면 가독성 개선: 폰트 상향 + 탐구 섹션 상하 분할 (v6.3.11)
 
 #### 변경 파일
