@@ -1,5 +1,5 @@
 .page {
-  max-width: 1520px;
+  max-width: 1720px;
   margin: 0 auto;
   height: calc(100vh - 140px);
   display: flex;
@@ -59,7 +59,7 @@
 .workspaceGrid {
   height: 100%;
   display: grid;
-  grid-template-columns: minmax(420px, 46%) minmax(520px, 54%);
+  grid-template-columns: minmax(440px, 44%) minmax(560px, 56%);
   gap: 1rem;
   padding: 1rem;
 }
@@ -76,7 +76,18 @@
   border: 1px solid var(--border-subtle);
   border-radius: 20px;
   background: rgba(0, 0, 0, 0.14);
-  overflow: hidden;
+  overflow-y: scroll;
+  scrollbar-gutter: stable both-edges;
+  scrollbar-width: auto;
+  scrollbar-color: rgba(205, 186, 150, 0.8) rgba(255, 255, 255, 0.08);
+}
+
+.rightPane::-webkit-scrollbar { width: 12px; }
+.rightPane::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.08); border-radius: 12px; }
+.rightPane::-webkit-scrollbar-thumb {
+  background: linear-gradient(to bottom, rgba(232, 214, 179, 0.9), rgba(205, 186, 150, 0.8));
+  border-radius: 12px;
+  border: 2px solid rgba(12, 12, 16, 0.6);
 }
 
 /* ── TOP SPREAD AREA (STICKY-LIKE) ── */
@@ -164,10 +175,32 @@
   font-size: 0.92rem;
 }
 
+.cardBasicsContext {
+  margin: 0 0 0.55rem;
+  color: var(--accent-gold);
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.cardBasicsKeywords {
+  margin-top: 0.65rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.cardBasicsKeyword {
+  font-size: 0.78rem;
+  color: var(--accent-purple);
+  background: rgba(159, 130, 196, 0.12);
+  border: 1px solid rgba(159, 130, 196, 0.25);
+  border-radius: 999px;
+  padding: 3px 8px;
+}
+
 .messagesContainer {
   flex: 1;
   min-height: 0;
-  overflow: hidden;
   display: flex;
   flex-direction: column;
   position: relative;
@@ -175,19 +208,13 @@
 
 /* ── MESSAGES AREA ── */
 .messages {
-  flex: 1;
-  overflow-y: scroll;
-  scrollbar-gutter: stable;
+  min-height: 100%;
+  overflow: visible;
   padding: 2.5rem;
   display: flex;
   flex-direction: column;
   gap: 2rem;
-  scrollbar-width: thin;
-  scrollbar-color: #333 transparent;
 }
-
-.messages::-webkit-scrollbar { width: 6px; }
-.messages::-webkit-scrollbar-thumb { background-color: #333; border-radius: 10px; }
 
 /* ── TAB SYSTEM ── */
 .tabContainer {

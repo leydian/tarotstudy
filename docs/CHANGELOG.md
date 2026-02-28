@@ -2,6 +2,35 @@
 
 ## [2026-02-28]
 
+### 아르카나 성소 와이드 확장 + 우측 스크롤바 노출 강화 + 기본 카드 설명 심화 (v6.3.16)
+
+#### 변경 파일
+- `apps/web/src/pages/TarotMastery.module.css`
+- `apps/web/src/pages/TarotMastery.tsx`
+- `docs/CHANGELOG.md`
+- `docs/RELEASE_NOTES_v6.3.16.md`
+
+#### 변경 사항
+- 화면 가로폭 확장
+  - `.page` 최대 폭을 `1520px -> 1720px`로 확대.
+  - `workspaceGrid` 비율을 `46/54`에서 `44/56`으로 조정하고 우측 최소 폭을 확대해 리포트 패널 가용 폭 확보.
+- 우측 스크롤바 가시성 강화
+  - 스크롤 주체를 메시지 내부(`.messages`)에서 우측 패널 컨테이너(`.rightPane`)로 이동.
+  - `overflow-y: scroll` + `scrollbar-gutter: stable both-edges` 적용으로 스크롤 인지성과 폭 안정성 강화.
+  - 파이어폭스/웹킷 모두에서 눈에 띄는 커스텀 스크롤바 트랙/썸 스타일 적용.
+- 기본 카드 설명 심화
+  - 카드별 출력 정보를 `포지션 의미 + 카드 본문(최대 3문장) + 키워드 태그(최대 5개)`로 확장.
+  - `getCardBaseDescription()`를 개선해 `description/summary`를 정규화 후 결합, 텍스트 길이가 짧을 때 요약을 보강하도록 로직 추가.
+
+#### 효과
+- 데스크톱에서 좌우 패널이 덜 답답하게 보이며 긴 리딩 텍스트 가독성 향상.
+- 우측 패널이 스크롤 가능 영역임을 즉시 인지 가능하고, 탭/메시지 길이 변화 시 폭 점프가 줄어듦.
+- 좌하단 기본 카드 설명이 단순 요약을 넘어 맥락/키워드까지 제공해 학습 밀도 상승.
+
+#### 검증
+- `npm run build --prefix apps/web` 통과.
+- 상세 변경 요약: `docs/RELEASE_NOTES_v6.3.16.md`
+
 ### 하이브리드 리딩 fallback 저감 안정화 (v6.3.15)
 
 #### 변경 파일

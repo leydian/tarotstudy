@@ -144,7 +144,23 @@ export function TarotMastery() {
 
   const getCardBaseDescription = (card?: Card) => {
     if (!card) return '';
-    return (card.summary || card.description || '').split('\n')[0].trim();
+
+    const fullText = (card.description || card.summary || '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    const summaryText = (card.summary || '')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    const sentences = fullText.split(/(?<=[.!?])\s+/).filter(Boolean);
+    let detailed = sentences.slice(0, 3).join(' ').trim();
+
+    if (detailed.length < 90 && summaryText && !detailed.includes(summaryText)) {
+      detailed = `${detailed} ${summaryText}`.trim();
+    }
+    if (!detailed) detailed = fullText || summaryText;
+
+    return detailed;
   };
 
   const verdictLabelKo = (label?: 'YES' | 'NO' | 'MAYBE') => {
@@ -326,7 +342,15 @@ export function TarotMastery() {
                             <span className={styles.cardBasicsPos}>{info.posLabel}</span>
                             <strong className={styles.cardBasicsName}>{card.nameKo}</strong>
                           </div>
+                          <p className={styles.cardBasicsContext}>{info.posDesc}</p>
                           <p className={styles.cardBasicsDesc}>{getCardBaseDescription(card)}</p>
+                          {card.keywords && card.keywords.length > 0 && (
+                            <div className={styles.cardBasicsKeywords}>
+                              {card.keywords.slice(0, 5).map((k) => (
+                                <span key={k} className={styles.cardBasicsKeyword}>#{k}</span>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       );
                     })}
