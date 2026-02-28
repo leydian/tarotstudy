@@ -2,6 +2,41 @@
 
 ## [2026-02-28]
 
+### 웹 라이트 테마 도입 + 대비 미세튜닝 (v6.3.58)
+
+#### 변경 파일
+- `apps/web/src/App.tsx`
+- `apps/web/src/App.module.css`
+- `apps/web/src/styles/theme.css`
+- `apps/web/src/pages/Cards.module.css`
+- `apps/web/src/pages/TarotMastery.module.css`
+- `apps/web/src/pages/Home.module.css`
+- `apps/web/src/components/reading/MessageBubble.module.css`
+- `docs/RELEASE_NOTES_v6.3.58.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 라이트/다크 테마 전환 기능 추가
+  - `App.tsx`에 테마 상태(`dark|light`)와 토글 버튼(Sun/Moon) 추가.
+  - 초기 로딩 시 `localStorage.theme` 우선 적용, 없으면 `prefers-color-scheme` 기반 기본값 결정.
+  - `document.documentElement[data-theme]` 속성으로 전역 테마 적용.
+- 전역 토큰 체계 확장
+  - `theme.css`에 라이트 전용 토큰 세트(`[data-theme='light']`) 추가.
+  - 배경/패널/모달/스크롤/텍스트 대비/상태색(성공·경고 등) 토큰을 분리.
+  - 기존 다크 하드코딩 값을 공통 토큰으로 승격해 테마 간 일관성 확보.
+- 핵심 화면 테마 연동
+  - `App.module.css`: 헤더/모바일 네비 배경을 토큰 기반으로 전환, 테마 토글 버튼 스타일 추가.
+  - `TarotMastery.module.css`: 패널/입력영역/스크롤바/모바일 sticky 배경을 토큰화.
+  - `Cards.module.css`: 카드/검색/모달 배경, 상태 박스/라벨 색상, 스크롤바를 토큰 기반으로 정리.
+  - `Home.module.css`: 히어로 카드/글로우/CTA 대비를 테마 토큰으로 전환.
+  - `MessageBubble.module.css`: user/bot/action 버블 색/그림자 토큰화로 라이트 가독성 보강.
+- 라이트 테마 미세튜닝
+  - 라이트 모드에서 저대비 영역(버블·CTA·모달 상태색) 중심으로 색 강도 조정.
+  - `--text-on-accent` 통일로 강조 배경 위 텍스트 가독성 안정화.
+
+#### 검증
+- `npm run build --prefix apps/web` 통과
+
 ### 운영/유지보수 최적화: 품질 집계·임계치 확장·런북 도입 (v6.3.57)
 
 #### 변경 파일

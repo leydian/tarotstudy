@@ -26,7 +26,7 @@
   padding: 0.75rem 0;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  background: rgba(10, 10, 12, 0.7);
+  background: var(--surface-elevated);
   margin-bottom: 1.5rem;
 }
 
@@ -95,7 +95,7 @@
 
 .filterTabActive {
   background: var(--accent-gold);
-  color: #0a0a0c;
+  color: var(--text-on-accent);
   border-color: var(--accent-gold);
   font-weight: 600;
 }
@@ -126,7 +126,7 @@
   border-radius: 20px;
   padding: 1rem;
   border: 1px solid var(--border-gold-faint);
-  background: linear-gradient(145deg, #1e1e1e, #141414);
+  background: var(--surface-card-gradient);
   backdrop-filter: blur(10px);
   box-shadow: var(--shadow-soft);
   transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
@@ -143,7 +143,7 @@
   aspect-ratio: 2 / 3.5;
   overflow: hidden;
   border-radius: 8px;
-  background-color: #000;
+  background-color: var(--surface-image-bg);
   transition: transform 0.35s ease;
 }
 
@@ -220,7 +220,7 @@
 .modalOverlay {
   position: fixed;
   inset: 0;
-  background-color: rgba(0, 0, 0, 0.92);
+  background-color: var(--surface-modal-overlay);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -230,7 +230,7 @@
 
 .modal {
   position: relative;
-  background-color: #121212;
+  background-color: var(--surface-modal-bg);
   width: 95%;
   max-width: 1200px;
   height: 90vh;
@@ -238,26 +238,26 @@
   overflow: hidden;
   display: flex;
   flex-direction: row;
-  border: 1px solid #2a2a2a;
-  box-shadow: 0 0 60px rgba(0, 0, 0, 1);
+  border: 1px solid var(--surface-modal-border);
+  box-shadow: var(--shadow-modal);
 }
 
 /* ── MODAL IMAGE PANEL ── */
 .modalImagePanel {
   flex: 0 0 360px;
-  background-color: #0a0a0a;
+  background-color: var(--surface-modal-side);
   padding: 2rem;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  border-right: 1px solid #1e1e1e;
+  border-right: 1px solid var(--surface-modal-divider);
 }
 
 .modalImage {
   width: 100%;
   border-radius: 10px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+  box-shadow: var(--shadow-image);
 }
 
 .modalCardMeta {
@@ -303,10 +303,10 @@
   padding: 3rem;
   overflow-y: auto;
   line-height: 1.8;
-  color: #e0e0e0;
+  color: var(--text-primary);
   font-family: 'Noto Serif KR', serif;
   scrollbar-width: thin;
-  scrollbar-color: #333 transparent;
+  scrollbar-color: var(--modal-text-scrollbar-thumb) transparent;
 }
 
 .modalTextPanel::-webkit-scrollbar {
@@ -314,7 +314,7 @@
 }
 
 .modalTextPanel::-webkit-scrollbar-thumb {
-  background-color: #333;
+  background-color: var(--modal-text-scrollbar-thumb);
   border-radius: 10px;
 }
 
@@ -371,7 +371,7 @@
   border-radius: 10px;
   margin: 0;
   font-size: 0.95rem;
-  color: #ccc;
+  color: var(--text-secondary);
   white-space: pre-wrap;
   line-height: 1.8;
 }
@@ -384,19 +384,19 @@
 }
 
 .uprightBox {
-  border: 1px solid rgba(105, 219, 124, 0.2);
+  border: 1px solid var(--status-up-border);
   padding: 1.5rem;
   border-radius: 10px;
 }
 
 .reversedBox {
-  border: 1px solid rgba(255, 107, 107, 0.2);
+  border: 1px solid var(--status-down-border);
   padding: 1.5rem;
   border-radius: 10px;
 }
 
 .uprightTitle {
-  color: #69db7c;
+  color: var(--status-up);
   margin-bottom: 1.5rem;
   text-align: center;
   margin-top: 0;
@@ -404,7 +404,7 @@
 }
 
 .reversedTitle {
-  color: #ff6b6b;
+  color: var(--status-down);
   margin-bottom: 1.5rem;
   text-align: center;
   margin-top: 0;
@@ -421,9 +421,9 @@
   font-weight: 600;
 }
 
-.labelLove { color: #ff6b6b; }
-.labelCareer { color: #4dabf7; }
-.labelFinance { color: #ffd43b; }
+.labelLove { color: var(--status-down); }
+.labelCareer { color: var(--status-info); }
+.labelFinance { color: var(--status-warn); }
 
 .adviceBox {
   margin-top: 0.75rem;
@@ -434,20 +434,20 @@
 }
 
 .adviceBoxUpright {
-  background-color: rgba(105, 219, 124, 0.05);
+  background-color: var(--status-up-bg);
 }
 
 .adviceBoxReversed {
-  background-color: rgba(255, 107, 107, 0.05);
+  background-color: var(--status-down-bg);
 }
 
-.adviceLabelUpright { color: #69db7c; font-weight: 600; }
-.adviceLabelReversed { color: #ff6b6b; font-weight: 600; }
+.adviceLabelUpright { color: var(--status-up); font-weight: 600; }
+.adviceLabelReversed { color: var(--status-down); font-weight: 600; }
 
 .reversedSummary {
   margin-bottom: 1rem;
   font-style: italic;
-  color: #aaa;
+  color: var(--text-muted);
   font-size: 0.9rem;
 }
 
@@ -506,7 +506,7 @@
     flex: none;
     width: 100%;
     border-right: none;
-    border-bottom: 1px solid #1e1e1e;
+    border-bottom: 1px solid var(--surface-modal-divider);
     padding: 1.25rem;
   }
 

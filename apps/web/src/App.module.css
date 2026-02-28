@@ -15,7 +15,7 @@
   justify-content: space-between;
   padding: 0 clamp(1rem, 4vw, 3rem);
   border-bottom: 1px solid var(--border-gold);
-  background: rgba(10, 10, 12, 0.85);
+  background: var(--surface-elevated);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
 }
@@ -63,7 +63,7 @@
 
 .navLink:hover {
   color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--glass-subtle);
 }
 
 .navLink.active {
@@ -95,8 +95,33 @@
 
 .navLinkPrimary.active {
   background: var(--accent-gold);
-  color: #0a0a0c;
+  color: var(--text-on-accent);
   border-color: var(--accent-gold);
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.themeToggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: var(--glass-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
+}
+
+.themeToggle:hover {
+  color: var(--accent-gold);
+  border-color: var(--border-gold);
 }
 
 /* ── HAMBURGER ── */
@@ -127,7 +152,7 @@
   flex-direction: column;
   gap: 0.25rem;
   padding: 0.75rem clamp(1rem, 4vw, 3rem);
-  background: rgba(10, 10, 12, 0.97);
+  background: var(--surface-elevated-strong);
   border-bottom: 1px solid var(--border-gold);
   animation: slideDown 0.2s ease;
 }
@@ -151,7 +176,7 @@
 
 .mobileNavLink:hover {
   color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--glass-subtle);
 }
 
 .mobileNavLink.active {
@@ -205,6 +230,11 @@
 
   .hamburger {
     display: flex;
+    width: 44px;
+    height: 44px;
+  }
+
+  .themeToggle {
     width: 44px;
     height: 44px;
   }
