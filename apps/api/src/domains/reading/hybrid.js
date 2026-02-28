@@ -14,8 +14,9 @@ const NEGATIVE_IDS = new Set([
 ]);
 
 const DEFAULT_ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL || 'claude-haiku-4-5-20251001';
-const ANTHROPIC_TIMEOUT_MS = Number(process.env.ANTHROPIC_TIMEOUT_MS || 10000);
-const ANTHROPIC_RETRY_TIMEOUT_MS = Number(process.env.ANTHROPIC_RETRY_TIMEOUT_MS || 7000);
+const ANTHROPIC_TIMEOUT_MS = Number(process.env.ANTHROPIC_TIMEOUT_MS || 60000);
+const ANTHROPIC_RETRY_TIMEOUT_MS = Number(process.env.ANTHROPIC_RETRY_TIMEOUT_MS || 25000);
+const ANTHROPIC_REPAIR_TIMEOUT_MS = Number(process.env.ANTHROPIC_REPAIR_TIMEOUT_MS || 12000);
 
 const getYesNoScore = (cardId) => {
   if (POSITIVE_IDS.has(cardId)) return 1;
@@ -29,6 +30,7 @@ const normalizeVerdictLabel = (label) => {
   if (label === 'YES' || label === 'NO' || label === 'MAYBE') return label;
   return 'MAYBE';
 };
+const isValidVerdictLabel = (label) => label === 'YES' || label === 'NO' || label === 'MAYBE';
 
 const detectResponseMode = (questionType, questionLength) => {
   if (questionType === 'light' || (questionType === 'binary' && questionLength <= 20)) return 'concise';
@@ -185,18 +187,45 @@ const buildPrompt = ({ question, facts, category, timeframe, binaryEntities, ses
   ].join('\n');
 };
 
+const buildRepairPrompt = ({ question, facts, category, timeframe, binaryEntities, sessionContext }) => {
+  const context = {
+    question,
+    category,
+    timeframe,
+    binaryEntities,
+    sessionContext: sessionContext || null,
+    facts
+  };
+
+  return [
+    '당신은 JSON 정규화 도우미입니다.',
+    '반드시 JSON 객체 하나만 출력하세요. 설명, 마크다운, 코드펜스는 금지합니다.',
+    '출력 스키마:',
+    '{"fullNarrative":string, "summary":string,"verdict":{"label":"YES|NO|MAYBE","rationale":string,"recommendedOption":"A|B|EITHER|NONE"},"evidence":[{"cardId":string,"positionLabel":string,"claim":string,"rationale":string,"caution":string}],"counterpoints":[string],"actions":[string]}',
+    '요구사항:',
+    '- evidence 길이는 facts 길이와 반드시 같아야 합니다.',
+    '- evidence.cardId는 반드시 facts 안의 cardId만 사용하세요.',
+    '- summary와 verdict.rationale은 빈 문자열이면 안 됩니다.',
+    `입력 데이터: ${JSON.stringify(context)}`
+  ].join('\n');
+};
+
 const extractJsonObject = (text) => {
   const trimmed = String(text || '').trim();
   if (!trimmed) return null;
+  const withoutFence = trimmed
+    .replace(/^```(?:json)?\s*/i, '')
+    .replace(/\s*```$/i, '')
+    .trim();
 
   try {
-    return JSON.parse(trimmed);
+    return JSON.parse(withoutFence);
   } catch {
-    const start = trimmed.indexOf('{');
-    const end = trimmed.lastIndexOf('}');
+    const start = withoutFence.indexOf('{');
+    const end = withoutFence.lastIndexOf('}');
     if (start === -1 || end === -1 || end <= start) return null;
     try {
-      return JSON.parse(trimmed.slice(start, end + 1));
+      return JSON.parse(withoutFence.slice(start, end + 1));
     } catch {
       return null;
     }
@@ -205,13 +234,23 @@ const extractJsonObject = (text) => {
 
 const mapAnthropicReason = (status) => {
   if (status === 404) return 'model_not_found';
+  if (status === 401 || status === 403) return 'anthropic_auth_error';
+  if (status === 429) return 'anthropic_rate_limited';
   if (status >= 500) return 'anthropic_http_error';
   return 'anthropic_http_error';
 };
 
+const shouldRetryAnthropic = (reason, status) => {
+  if (reason === 'anthropic_timeout') return true;
+  if (reason === 'anthropic_fetch_error') return true;
+  if (reason === 'anthropic_parse_error') return true;
+  if (reason === 'anthropic_http_error' && status >= 500) return true;
+  return false;
+};
+
 const callAnthropic = async (prompt, options = {}) => {
   const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) return { report: null, reason: 'model_unavailable' };
+  if (!apiKey) return { report: null, reason: 'model_unavailable', status: null };
 
   const {
     maxTokens = 1100,
@@ -245,12 +284,12 @@ const callAnthropic = async (prompt, options = {}) => {
         console.error(
           `[Anthropic API] Error status=${response.status} model=${DEFAULT_ANTHROPIC_MODEL} body=${errorText}`
         );
-        return { report: null, reason: mapAnthropicReason(response.status) };
+        return { report: null, reason: mapAnthropicReason(response.status), status: response.status };
       }
 
       const data = await response.json();
       const report = extractJsonObject(data?.content?.[0]?.text);
-      return { report, reason: report ? null : 'model_unavailable' };
+      return { report, reason: report ? null : 'anthropic_parse_error', status: response.status };
     } finally {
       clearTimeout(timeout);
     }
@@ -260,38 +299,49 @@ const callAnthropic = async (prompt, options = {}) => {
       `[Anthropic API] Fetch Error model=${DEFAULT_ANTHROPIC_MODEL} timeout_ms=${timeoutMs} timed_out=${isTimeout} message=${error?.message || 'unknown'} cause=${error?.cause?.code || error?.cause?.message || 'none'}`
     );
     const reason = isTimeout ? 'anthropic_timeout' : 'anthropic_fetch_error';
-    return { report: null, reason };
+    return { report: null, reason, status: null };
   }
 };
 
 const verifyReport = (report, facts, binaryEntities) => {
   const issues = [];
-  let unsupportedClaimCount = 0;
 
   if (!report || typeof report !== 'object') {
     return { valid: false, issues: ['report_missing'], unsupportedClaimCount: 1, consistencyScore: 0 };
+  }
+
+  if (!sanitizeText(report.summary)) {
+    issues.push('summary_missing');
+  }
+
+  if (!report.verdict || !isValidVerdictLabel(report.verdict.label)) {
+    issues.push('verdict_missing');
   }
 
   if (!Array.isArray(report.evidence) || report.evidence.length !== facts.length) {
     issues.push('evidence_length_mismatch');
   }
 
-  const knownIds = new Set(facts.map((f) => f.cardId));
+  let unsupportedClaimCount = 0;
+  let hasLowQualityEvidence = false;
   if (Array.isArray(report.evidence)) {
     for (const item of report.evidence) {
-      if (!knownIds.has(item?.cardId)) {
+      if (!sanitizeText(item?.claim) || !sanitizeText(item?.rationale)) {
         unsupportedClaimCount += 1;
-        issues.push('unknown_card_claim');
+        hasLowQualityEvidence = true;
       }
     }
   }
+  if (hasLowQualityEvidence) issues.push('evidence_quality_low');
 
   const issuePenalty = Math.min(issues.length * 8, 60);
   const unsupportedPenalty = Math.min(unsupportedClaimCount * 20, 40);
   const consistencyScore = Math.max(0, 100 - issuePenalty - unsupportedPenalty);
+  const criticalIssueSet = new Set(['summary_missing', 'verdict_missing', 'evidence_length_mismatch']);
+  const hasCriticalIssue = issues.some((issue) => criticalIssueSet.has(issue));
 
   return {
-    valid: issues.length === 0 && unsupportedClaimCount === 0,
+    valid: !hasCriticalIssue,
     issues,
     unsupportedClaimCount,
     consistencyScore
@@ -299,13 +349,23 @@ const verifyReport = (report, facts, binaryEntities) => {
 };
 
 const normalizeReport = (report, facts, fallback) => {
-  const normalizedEvidence = (Array.isArray(report?.evidence) ? report.evidence : fallback.evidence).map((item, idx) => ({
-    cardId: facts[idx]?.cardId || item?.cardId || '',
-    positionLabel: sanitizeText(item?.positionLabel || facts[idx]?.positionLabel || `단계 ${idx + 1}`),
-    claim: sanitizeText(item?.claim || ''),
-    rationale: sanitizeText(item?.rationale || ''),
-    caution: sanitizeText(item?.caution || facts[idx]?.advice || '과도한 단정은 피하세요.')
-  }));
+  const sourceEvidence = Array.isArray(report?.evidence) ? report.evidence : [];
+  const normalizedEvidence = facts.map((fact, idx) => {
+    const byCardId = sourceEvidence.find((item) => item?.cardId === fact.cardId);
+    const byIndex = sourceEvidence[idx];
+    const fallbackItem = fallback.evidence[idx] || {};
+    const item = byCardId || byIndex || fallbackItem;
+    const claim = sanitizeText(item?.claim || fallbackItem?.claim || '');
+    const rationale = sanitizeText(item?.rationale || fallbackItem?.rationale || '');
+
+    return {
+      cardId: fact.cardId,
+      positionLabel: sanitizeText(item?.positionLabel || fact.positionLabel || `단계 ${idx + 1}`),
+      claim,
+      rationale,
+      caution: sanitizeText(item?.caution || fact.advice || fallbackItem?.caution || '과도한 단정은 피하세요.')
+    };
+  });
 
   return {
     fullNarrative: report?.fullNarrative || null,
@@ -386,6 +446,23 @@ const detectQuestionType = ({ question, category, cardCount, binaryEntities }) =
   return 'deep';
 };
 
+const mapFailureStage = ({ fallbackReason, qualityValid, modelReport }) => {
+  if (!qualityValid && modelReport) return 'validation';
+  if (!fallbackReason) return null;
+  if (fallbackReason === 'anthropic_timeout' || fallbackReason === 'anthropic_fetch_error') return 'network';
+  if (fallbackReason === 'anthropic_parse_error') return 'parse';
+  if (
+    fallbackReason === 'model_not_found' ||
+    fallbackReason === 'anthropic_http_error' ||
+    fallbackReason === 'anthropic_auth_error' ||
+    fallbackReason === 'anthropic_rate_limited'
+  ) return 'http';
+  if (fallbackReason === 'model_unavailable') return 'model_unavailable';
+  if (fallbackReason === 'engine_fatal_error') return 'engine';
+  if (fallbackReason === 'validation_failed') return 'validation';
+  return 'unknown';
+};
+
 export const generateReadingHybrid = async ({
   cards,
   question,
@@ -429,32 +506,85 @@ export const generateReadingHybrid = async ({
   let modelReport = null;
   let fallbackReason = null;
   let path = 'fallback';
+  let failureStage = null;
   const startedAt = Date.now();
   let anthropicPrimaryMs = null;
   let anthropicRetryMs = null;
+  let anthropicRepairMs = null;
+  const attempts = {
+    primary: { attempted: false, success: false, reason: null, status: null, durationMs: null },
+    retry: { attempted: false, success: false, reason: null, status: null, durationMs: null },
+    repair: { attempted: false, success: false, reason: null, status: null, durationMs: null }
+  };
+  let parseFailureSeen = false;
 
   try {
     const primaryConfig = getAnthropicConfig(responseMode, false);
+    attempts.primary.attempted = true;
     const primaryStartedAt = Date.now();
     const antResult = await callAnthropic(prompt, primaryConfig);
     anthropicPrimaryMs = Date.now() - primaryStartedAt;
+    attempts.primary.durationMs = anthropicPrimaryMs;
+    attempts.primary.success = !!antResult.report;
+    attempts.primary.reason = antResult.reason || null;
+    attempts.primary.status = antResult.status ?? null;
     modelReport = antResult.report;
     if (modelReport) {
       apiUsed = 'anthropic';
       path = 'anthropic_primary';
     } else {
       fallbackReason = antResult.reason;
-      const retryConfig = getAnthropicConfig(responseMode, true);
-      const retryStartedAt = Date.now();
-      const antRetryResult = await callAnthropic(prompt, retryConfig);
-      anthropicRetryMs = Date.now() - retryStartedAt;
-      modelReport = antRetryResult.report;
-      if (modelReport) {
-        apiUsed = 'anthropic';
-        fallbackReason = null;
-        path = 'anthropic_retry';
-      } else {
-        fallbackReason = antRetryResult.reason || fallbackReason;
+      parseFailureSeen = parseFailureSeen || fallbackReason === 'anthropic_parse_error';
+      if (shouldRetryAnthropic(antResult.reason, antResult.status)) {
+        const retryConfig = getAnthropicConfig(responseMode, true);
+        attempts.retry.attempted = true;
+        const retryStartedAt = Date.now();
+        const antRetryResult = await callAnthropic(prompt, retryConfig);
+        anthropicRetryMs = Date.now() - retryStartedAt;
+        attempts.retry.durationMs = anthropicRetryMs;
+        attempts.retry.success = !!antRetryResult.report;
+        attempts.retry.reason = antRetryResult.reason || null;
+        attempts.retry.status = antRetryResult.status ?? null;
+        modelReport = antRetryResult.report;
+        if (modelReport) {
+          apiUsed = 'anthropic';
+          fallbackReason = null;
+          path = 'anthropic_retry';
+        } else {
+          fallbackReason = antRetryResult.reason || fallbackReason;
+          parseFailureSeen = parseFailureSeen || fallbackReason === 'anthropic_parse_error';
+        }
+      }
+
+      if (!modelReport && parseFailureSeen) {
+        const repairPrompt = buildRepairPrompt({
+          question: safeQuestion,
+          facts,
+          category,
+          timeframe,
+          binaryEntities,
+          sessionContext
+        });
+        attempts.repair.attempted = true;
+        const repairStartedAt = Date.now();
+        const repairResult = await callAnthropic(repairPrompt, {
+          maxTokens: 520,
+          timeoutMs: ANTHROPIC_REPAIR_TIMEOUT_MS,
+          temperature: 0.2
+        });
+        anthropicRepairMs = Date.now() - repairStartedAt;
+        attempts.repair.durationMs = anthropicRepairMs;
+        attempts.repair.success = !!repairResult.report;
+        attempts.repair.reason = repairResult.reason || null;
+        attempts.repair.status = repairResult.status ?? null;
+        modelReport = repairResult.report;
+        if (modelReport) {
+          apiUsed = 'anthropic';
+          fallbackReason = null;
+          path = 'anthropic_retry';
+        } else {
+          fallbackReason = repairResult.reason || fallbackReason;
+        }
       }
     }
   } catch (err) {
@@ -473,6 +603,11 @@ export const generateReadingHybrid = async ({
     path = 'fallback';
     if (!fallbackReason && !quality.valid) fallbackReason = 'validation_failed';
     if (!fallbackReason) fallbackReason = 'model_unavailable';
+    failureStage = mapFailureStage({
+      fallbackReason,
+      qualityValid: quality.valid,
+      modelReport: !!modelReport
+    });
   }
 
   const legacyFromV3 = generateReadingV3(cards, safeQuestion, timeframe, category);
@@ -519,8 +654,11 @@ export const generateReadingHybrid = async ({
       timings: {
         totalMs,
         anthropicPrimaryMs,
-        anthropicRetryMs
+        anthropicRetryMs,
+        anthropicRepairMs
       },
+      attempts,
+      failureStage,
       fallbackReason: fallbackReason || null
     }
   };

@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "node --watch src/index.js",
     "start": "node src/index.js",
-    "test:persona": "node tests/validate-persona-regression.js"
+    "test:persona": "node tests/validate-persona-regression.js",
+    "test:hybrid": "node tests/hybrid-resilience.js"
   },
   "dependencies": {
     "express": "^4.18.2",
