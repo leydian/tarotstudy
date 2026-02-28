@@ -113,8 +113,8 @@ const inferDomainTag = ({ question = '', category = 'general', questionType }) =
 
 export const inferQuestionProfile = ({ question = '', category = 'general', binaryEntities = null } = {}) => {
   const safeQuestion = String(question || '');
-  const readingKind = includesKeyword(safeQuestion, FORTUNE_KEYWORDS) ? 'overall_fortune' : 'general_reading';
-  const fortunePeriod = inferFortunePeriod(safeQuestion);
+  const wantsOverallFortune = includesKeyword(safeQuestion, FORTUNE_KEYWORDS);
+  const inferredFortunePeriod = inferFortunePeriod(safeQuestion);
   const roughQuestionType = detectQuestionType({
     question: safeQuestion,
     category,
@@ -123,6 +123,12 @@ export const inferQuestionProfile = ({ question = '', category = 'general', bina
   });
   const domainTag = inferDomainTag({ question: safeQuestion, category, questionType: roughQuestionType });
   const riskLevel = inferRiskLevel(safeQuestion);
+  const readingKind = domainTag === 'health'
+    ? 'general_reading'
+    : (wantsOverallFortune ? 'overall_fortune' : 'general_reading');
+  const fortunePeriod = readingKind === 'overall_fortune'
+    ? (inferredFortunePeriod || 'week')
+    : null;
   const recommendedSpreadId = inferRecommendedSpreadId({
     question: safeQuestion,
     category,

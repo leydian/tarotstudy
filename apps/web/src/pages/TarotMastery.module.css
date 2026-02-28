@@ -131,6 +131,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 10px 10px 8px;
   background-color: rgba(0, 0, 0, 0.2);
   z-index: 5;
 }
@@ -646,6 +647,7 @@
   .leftPaneViewport {
     min-height: auto;
     flex: initial;
+    overflow: visible;
   }
 
   .rightPane {
@@ -661,11 +663,12 @@
     min-height: 240px !important;
     height: auto;
     border-radius: 16px;
+    padding: 1.35rem 0.6rem 0.95rem;
   }
 
   .messages {
     min-height: 0;
-    padding: 1rem 0.95rem 0.75rem;
+    padding: 1rem 0.95rem calc(6.4rem + env(safe-area-inset-bottom));
     gap: 1.1rem;
   }
 
@@ -717,6 +720,7 @@
   }
 
   .studyGrid { grid-template-columns: 1fr; max-width: 100%; }
+  .cardBasicsList { overflow: visible; }
   .tabHeader { width: 100%; }
   .tabBtn { flex: 1; padding: 10px 0; font-size: 1rem; min-height: 44px; }
 

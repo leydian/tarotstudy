@@ -83,6 +83,7 @@ export function TarotMastery() {
   const [revealedIdx, setRevealedIdx] = useState<number[]>([]);
   const [reading, setReading] = useState<ReadingResponse | null>(null);
   const [collapsedSections, setCollapsedSections] = useState({
+    narrative: false,
     fortune: false,
     health: false,
     guidance: false,
@@ -105,6 +106,7 @@ export function TarotMastery() {
     if (step !== 'result') return;
     const isMobile = typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches;
     setCollapsedSections({
+      narrative: isMobile,
       fortune: false,
       health: false,
       guidance: isMobile,
@@ -145,7 +147,7 @@ export function TarotMastery() {
     revealTimersRef.current.forEach((timerId) => window.clearTimeout(timerId));
     revealTimersRef.current = [];
   };
-  const toggleSection = (section: 'fortune' | 'health' | 'guidance' | 'counterpoints') => {
+  const toggleSection = (section: 'narrative' | 'fortune' | 'health' | 'guidance' | 'counterpoints') => {
     setCollapsedSections((prev) => ({ ...prev, [section]: !prev[section] }));
   };
 
@@ -463,6 +465,8 @@ export function TarotMastery() {
     const isMobileViewport = viewport.width > 0 && viewport.width <= 768;
     const minScale = isMobileViewport ? 0.12 : 0.16;
     const maxScale = 0.52;
+    const topSafeInset = isMobileViewport ? 36 : 10;
+    const bottomSafeInset = isMobileViewport ? 24 : 10;
 
     let minX = Number.POSITIVE_INFINITY;
     let maxX = Number.NEGATIVE_INFINITY;
@@ -490,8 +494,11 @@ export function TarotMastery() {
     const centerX = (minX + maxX) / 2;
     const centerY = (minY + maxY) / 2;
     const offsetX = -centerX * scale;
-    const offsetY = -centerY * scale;
-    const areaHeight = Math.max(280, Math.min(640, Math.round(contentHeight * scale + padding)));
+    const offsetY = (-centerY * scale) + ((topSafeInset - bottomSafeInset) / 2);
+    const areaHeight = Math.max(
+      isMobileViewport ? 300 : 280,
+      Math.min(700, Math.round(contentHeight * scale + padding + topSafeInset + bottomSafeInset))
+    );
 
     return { scale, offsetX, offsetY, areaHeight };
   };
@@ -514,6 +521,7 @@ export function TarotMastery() {
     setDrawnCards([]);
     setSpreadLayout(null);
     setCollapsedSections({
+      narrative: false,
       fortune: false,
       health: false,
       guidance: false,
@@ -524,6 +532,14 @@ export function TarotMastery() {
   const isCompactBinaryReading = reading?.meta?.questionType === 'binary' && reading?.meta?.responseMode === 'concise';
   const isHealthContext = reading?.meta?.domainTag === 'health';
   const isOverallFortune = reading?.meta?.readingKind === 'overall_fortune';
+  const hasFortunePayload = !!(
+    reading?.report?.fortune
+    && reading.report.fortune.energy
+    && reading.report.fortune.workFinance
+    && reading.report.fortune.love
+    && reading.report.fortune.healthMind
+    && reading.report.fortune.message
+  );
   const trendLabelKo = (label?: 'UP' | 'BALANCED' | 'CAUTION') => {
     if (label === 'UP') return '상승';
     if (label === 'CAUTION') return '주의';
@@ -715,12 +731,25 @@ export function TarotMastery() {
                             </div>
 
                             <div className={styles.masterReport}>
-                              <h3 className={styles.masterReportTitle}>운명의 마스터 리포트</h3>
-                              <div className={styles.masterReportText}>
-                                {reading.conclusion.split('\n\n').map((para, i) => (
-                                  <p key={i} style={{ marginBottom: '1rem' }}>{para}</p>
-                                ))}
+                              <div className={styles.sectionHeader}>
+                                <h3 className={styles.masterReportTitle}>운명의 마스터 리포트</h3>
+                                <button
+                                  type="button"
+                                  className={styles.sectionToggleBtn}
+                                  onClick={() => toggleSection('narrative')}
+                                  aria-expanded={!collapsedSections.narrative}
+                                >
+                                  {collapsedSections.narrative ? '펼치기' : '접기'}
+                                  {collapsedSections.narrative ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+                                </button>
                               </div>
+                              {!collapsedSections.narrative && (
+                                <div className={styles.masterReportText}>
+                                  {reading.conclusion.split('\n\n').map((para, i) => (
+                                    <p key={i} style={{ marginBottom: '1rem' }}>{para}</p>
+                                  ))}
+                                </div>
+                              )}
 
                               {reading.report && (
                                 <div className={styles.reportSummaryBox}>
@@ -751,7 +780,7 @@ export function TarotMastery() {
                               )}
                             </div>
 
-                            {isOverallFortune && reading.report?.fortune && (
+                            {isOverallFortune && hasFortunePayload && reading.report?.fortune && (
                               <div className={styles.counterpointBox}>
                                 <div className={styles.sectionHeader}>
                                   <h4 className={styles.counterpointTitle}>

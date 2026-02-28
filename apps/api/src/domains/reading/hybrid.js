@@ -111,6 +111,94 @@ const sanitizeListItems = (items, kind) => {
   ];
 };
 
+const FORTUNE_SECTION_KEYS = ['energy', 'workFinance', 'love', 'healthMind'];
+const FORTUNE_SECTION_LABELS = {
+  energy: '전체 에너지',
+  workFinance: '일·재물운',
+  love: '애정운',
+  healthMind: '건강·마음'
+};
+
+const normalizeFortunePeriod = (value) => {
+  if (value === 'today' || value === 'week' || value === 'month' || value === 'year') return value;
+  return 'week';
+};
+
+const normalizeTrendLabel = (value, verdictLabel = 'MAYBE') => {
+  if (value === 'UP' || value === 'BALANCED' || value === 'CAUTION') return value;
+  return toTrendLabel(verdictLabel);
+};
+
+const buildFortuneDefaults = (period) => ({
+  energy: `${periodLabelKo(period)}의 전체 에너지는 핵심 우선순위를 정리할수록 안정됩니다.`,
+  workFinance: `${periodLabelKo(period)} 일·재물운은 급한 결정보다 점검과 누적 실행이 유리합니다.`,
+  love: `${periodLabelKo(period)} 애정운은 솔직한 대화와 기대치 조율이 흐름을 부드럽게 만듭니다.`,
+  healthMind: `${periodLabelKo(period)} 건강·마음은 수면과 휴식 리듬을 지킬수록 회복 탄력이 커집니다.`,
+  message: '지금의 흐름을 믿되, 속도보다 리듬을 지켜 보세요.'
+});
+
+const normalizeFortune = (fortune, fallbackFortune, verdictLabel = 'MAYBE') => {
+  if (!fortune && !fallbackFortune) return null;
+  const source = fortune || {};
+  const fallback = fallbackFortune || {};
+  const period = normalizeFortunePeriod(source.period || fallback.period);
+  const defaults = buildFortuneDefaults(period);
+  return {
+    period,
+    trendLabel: normalizeTrendLabel(source.trendLabel || fallback.trendLabel, verdictLabel),
+    energy: sanitizeText(source.energy || fallback.energy || defaults.energy),
+    workFinance: sanitizeText(source.workFinance || fallback.workFinance || defaults.workFinance),
+    love: sanitizeText(source.love || fallback.love || defaults.love),
+    healthMind: sanitizeText(source.healthMind || fallback.healthMind || defaults.healthMind),
+    message: sanitizeText(source.message || fallback.message || defaults.message)
+  };
+};
+
+const enforceFortuneSectionDiversity = (report) => {
+  if (!report?.fortune) return report;
+  const fortune = { ...report.fortune };
+  const period = normalizeFortunePeriod(fortune.period);
+  const defaults = buildFortuneDefaults(period);
+  const evidenceClaims = (report.evidence || [])
+    .map((item) => sanitizeText(item?.claim || '').replace(/\.$/, ''))
+    .filter(Boolean);
+
+  const fallbackByKey = {
+    energy: evidenceClaims[0]
+      ? `전체 에너지 흐름을 보면, ${evidenceClaims[0]}`
+      : defaults.energy,
+    workFinance: evidenceClaims[1]
+      ? `일·재물운은 ${evidenceClaims[1]} 기조를 보입니다.`
+      : defaults.workFinance,
+    love: evidenceClaims[2]
+      ? `애정운은 ${evidenceClaims[2]} 메시지를 보냅니다.`
+      : defaults.love,
+    healthMind: evidenceClaims[evidenceClaims.length - 1]
+      ? `건강·마음 영역은 ${evidenceClaims[evidenceClaims.length - 1]} 흐름이 읽힙니다.`
+      : defaults.healthMind
+  };
+
+  const used = new Set();
+  for (const key of FORTUNE_SECTION_KEYS) {
+    const raw = sanitizeText(fortune[key] || '');
+    let nextText = raw || fallbackByKey[key];
+    let normalized = normalizeCompareText(nextText);
+    if (!normalized || used.has(normalized)) {
+      nextText = fallbackByKey[key];
+      normalized = normalizeCompareText(nextText);
+    }
+    if (!normalized || used.has(normalized)) {
+      nextText = `${fallbackByKey[key]} ${FORTUNE_SECTION_LABELS[key]} 조율에 집중해 보세요.`;
+      normalized = normalizeCompareText(nextText);
+    }
+    used.add(normalized);
+    fortune[key] = nextText;
+  }
+  fortune.period = period;
+  fortune.message = sanitizeText(fortune.message || defaults.message);
+  return { ...report, fortune };
+};
+
 const buildDistinctRationale = (report) => {
   const firstClaim = sanitizeText(report?.evidence?.[0]?.claim || '').replace(/\.$/, '');
   if (firstClaim) return `핵심 카드 흐름으로 보면, ${firstClaim} 쪽에 무게가 실립니다.`;
@@ -192,6 +280,15 @@ const postProcessReport = (report) => {
     next.evidence = enforceEvidenceQuality(next.evidence);
     if (JSON.stringify(next.evidence) !== before) {
       qualityFlags.push('evidence_quality_rewritten');
+    }
+  }
+
+  if (next.fortune) {
+    const before = JSON.stringify(next.fortune);
+    next.fortune = normalizeFortune(next.fortune, null, next.verdict?.label);
+    next.fortune = enforceFortuneSectionDiversity(next).fortune;
+    if (JSON.stringify(next.fortune) !== before) {
+      qualityFlags.push('fortune_section_rewritten');
     }
   }
 
@@ -849,7 +946,7 @@ const normalizeReport = (report, facts, fallback) => {
       rationale: sanitizeText(report?.verdict?.rationale || fallback.verdict.rationale),
       recommendedOption: report?.verdict?.recommendedOption || 'NONE'
     },
-    fortune: report?.fortune || fallback.fortune || null,
+    fortune: normalizeFortune(report?.fortune, fallback.fortune, report?.verdict?.label || fallback.verdict.label),
     evidence: normalizedEvidence,
     counterpoints: (Array.isArray(report?.counterpoints) ? report.counterpoints : fallback.counterpoints)
       .map(sanitizeText)
@@ -944,12 +1041,15 @@ export const generateReadingHybrid = async ({
     binaryEntities
   });
   const questionType = resolvedProfile.questionType;
+  const resolvedFortunePeriod = resolvedProfile.readingKind === 'overall_fortune'
+    ? (resolvedProfile.fortunePeriod || 'week')
+    : null;
   const responseMode = detectResponseMode(
     questionType,
     safeQuestion.length,
     resolvedProfile.domainTag,
     resolvedProfile.readingKind,
-    resolvedProfile.fortunePeriod
+    resolvedFortunePeriod
   );
   const facts = buildCardFacts(cards, category);
 
@@ -962,7 +1062,7 @@ export const generateReadingHybrid = async ({
     domainTag: resolvedProfile.domainTag,
     riskLevel: resolvedProfile.riskLevel,
     readingKind: resolvedProfile.readingKind,
-    fortunePeriod: resolvedProfile.fortunePeriod
+    fortunePeriod: resolvedFortunePeriod
   });
 
   const prompt = buildPrompt({
@@ -977,7 +1077,7 @@ export const generateReadingHybrid = async ({
     domainTag: resolvedProfile.domainTag,
     riskLevel: resolvedProfile.riskLevel,
     readingKind: resolvedProfile.readingKind,
-    fortunePeriod: resolvedProfile.fortunePeriod
+    fortunePeriod: resolvedFortunePeriod
   });
 
   let apiUsed = 'none';
@@ -1147,7 +1247,7 @@ export const generateReadingHybrid = async ({
       domainTag: resolvedProfile.domainTag,
       riskLevel: resolvedProfile.riskLevel,
       readingKind: resolvedProfile.readingKind,
-      fortunePeriod: resolvedProfile.fortunePeriod || null,
+      fortunePeriod: resolvedFortunePeriod,
       trendLabel: normalized?.fortune?.trendLabel || null,
       recommendedSpreadId: resolvedProfile.recommendedSpreadId,
       responseMode,

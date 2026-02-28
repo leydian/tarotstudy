@@ -119,5 +119,7 @@
   .cardMedium { width: 72px;  height: 130px; }
   .cardLarge  { width: 100px; height: 175px; }
   .posLabel   { font-size: 0.58rem; }
-  .cardName   { font-size: 0.72rem; }
+  .cardName   { font-size: 0.7rem; line-height: 1.2; }
+  .wrapper    { gap: 0.55rem; }
+  .labelArea  { max-width: 80px; }
 }

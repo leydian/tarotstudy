@@ -2,6 +2,42 @@
 
 ## [2026-02-28]
 
+### 리딩 일관성/건강 안전 우선/모바일 안정화 (v6.3.34)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/questionType.js`
+- `apps/api/src/domains/reading/hybrid.js`
+- `apps/api/tests/hybrid-resilience.js`
+- `apps/web/src/pages/TarotMastery.tsx`
+- `apps/web/src/pages/TarotMastery.module.css`
+- `apps/web/src/components/common/TarotCard.module.css`
+- `docs/RELEASE_NOTES_v6.3.34.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 질문 프로파일 안전 우선 정책 고정
+  - 건강 맥락에서는 운세 키워드가 있어도 `readingKind=general_reading`을 우선 적용.
+  - `overall_fortune`의 `fortunePeriod` 기본값을 `week`로 보정.
+- 하이브리드 리딩 품질 일관성 강화
+  - 운세 섹션 정규화(`period/trend/문구`) 로직 추가.
+  - `energy/workFinance/love/healthMind` 문구 중복 붕괴 시 카드 근거 기반으로 자동 재작성.
+  - 운세 보정 발생 시 `qualityFlags`에 `fortune_section_rewritten` 기록.
+- 건강 가드레일 회귀 검증 보강
+  - 운세 질문 + 건강 증상 혼합 시 health 우선 정책 적용 여부 테스트 추가.
+- 모바일 UI 안정화
+  - 마스터 리포트 본문 접기/펼치기 추가.
+  - 운세 섹션은 필수 payload 완전성 체크 후 노출.
+  - 카드 스프레드 safe inset/padding 보정, 메시지 하단 패딩 확장, 카드 라벨 밀도 조정.
+
+#### 검증
+- `node apps/api/tests/overall-fortune-regression.js` 통과
+- `node apps/api/tests/hybrid-resilience.js` 통과
+- `node apps/web/tests/validate-reading-flow-contract.js` 통과
+- `node apps/web/tests/validate-ui-contract.js` 통과
+- `npm run build --prefix apps/web` 통과
+
+## [2026-02-28]
+
 ### 메트릭 필터링/ops 고도화/릴리스 생성 자동화 (v6.3.33)
 
 #### 변경 파일

@@ -248,6 +248,48 @@ const testHealthGuardrailOverridesUnsafeVerdict = async () => {
   });
 };
 
+const testHealthOverridesOverallFortuneIntent = async () => {
+  const cards = buildCards(['c04', 'm05', 's02']);
+  const report = {
+    fullNarrative: '운세 질문처럼 보이지만 증상 질문이 포함된 케이스입니다.',
+    summary: '오늘의 흐름은 매우 좋습니다.',
+    verdict: { label: 'YES', rationale: '바로 진행하세요.', recommendedOption: 'A' },
+    fortune: {
+      period: 'today',
+      trendLabel: 'UP',
+      energy: '상승',
+      workFinance: '상승',
+      love: '상승',
+      healthMind: '상승',
+      message: '가속하세요.'
+    },
+    evidence: cards.map((card) => ({
+      cardId: card.id,
+      positionLabel: card.positionLabel,
+      claim: `${card.nameKo} 카드가 긍정 신호를 보냅니다.`,
+      rationale: '좋은 흐름입니다.',
+      caution: '없음'
+    })),
+    counterpoints: ['없음'],
+    actions: ['바로 시작하세요.']
+  };
+
+  await withFetchSequence([anthResponse(JSON.stringify(report))], async () => {
+    const result = await generateReadingHybrid({
+      cards,
+      question: '오늘의 종합 운세는? 근데 배탈이 나서 저녁을 굶을지 고민이야',
+      timeframe: 'daily',
+      category: 'general'
+    });
+
+    assert.equal(result.meta?.domainTag, 'health');
+    assert.equal(result.meta?.readingKind, 'general_reading', 'health 질문은 overall_fortune보다 안전 모드를 우선해야 합니다.');
+    assert.equal(result.meta?.fortunePeriod, null);
+    assert.equal(result.report?.verdict?.label, 'MAYBE');
+    assert.equal(result.report?.verdict?.recommendedOption, 'NONE');
+  });
+};
+
 const testEvidenceQualityRewrite = async () => {
   const cards = buildCards(['m12', 'm15', 's08']);
   const lowQualityReport = {
@@ -298,6 +340,7 @@ try {
   await testDuplicateSummaryRationaleRewrite();
   await testCounterpointContaminationFilter();
   await testHealthGuardrailOverridesUnsafeVerdict();
+  await testHealthOverridesOverallFortuneIntent();
   await testEvidenceQualityRewrite();
   console.log('Hybrid resilience tests passed.');
 } finally {
