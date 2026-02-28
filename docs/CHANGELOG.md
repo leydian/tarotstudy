@@ -2,6 +2,26 @@
 
 ## [2026-02-28]
 
+### 운명의 마스터 리포트 상세화: 본문 우선 결론 조립기 도입 (v6.3.66)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `docs/RELEASE_NOTES_v6.3.66.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 결론 생성 공통 함수 `buildMasterReportConclusion()`을 추가해 리포트 본문 조립 로직을 표준화.
+- `fullNarrative`가 존재하면 결론에 우선 노출하도록 변경해 단문 요약으로 축약되는 경향을 완화.
+- `fullNarrative` 부재 시에도 질문 요약 + `[운명의 서사 분석]`(카드 근거 2개) + `[운명의 판정]` 구조로 자동 보강.
+- `overall_fortune`에서는 결론 내부에 `[운세 세부 흐름]`(전체/일·재물/애정/건강·마음/메시지) 블록을 포함.
+- 오케스트레이터의 `finalConclusion` 선택 로직을 상세 결론 우선으로 변경하고, 비어 있을 때만 기존 축약 결론 사용.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run build --prefix apps/web` 통과
+
 ### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
 
 #### 변경 파일
@@ -656,6 +676,26 @@
 
 ## [2026-02-28]
 
+### 운명의 마스터 리포트 상세화: 본문 우선 결론 조립기 도입 (v6.3.66)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `docs/RELEASE_NOTES_v6.3.66.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 결론 생성 공통 함수 `buildMasterReportConclusion()`을 추가해 리포트 본문 조립 로직을 표준화.
+- `fullNarrative`가 존재하면 결론에 우선 노출하도록 변경해 단문 요약으로 축약되는 경향을 완화.
+- `fullNarrative` 부재 시에도 질문 요약 + `[운명의 서사 분석]`(카드 근거 2개) + `[운명의 판정]` 구조로 자동 보강.
+- `overall_fortune`에서는 결론 내부에 `[운세 세부 흐름]`(전체/일·재물/애정/건강·마음/메시지) 블록을 포함.
+- 오케스트레이터의 `finalConclusion` 선택 로직을 상세 결론 우선으로 변경하고, 비어 있을 때만 기존 축약 결론 사용.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run build --prefix apps/web` 통과
+
 ### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
 
 #### 변경 파일
@@ -741,6 +781,26 @@
 
 ## [2026-02-28]
 
+### 운명의 마스터 리포트 상세화: 본문 우선 결론 조립기 도입 (v6.3.66)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `docs/RELEASE_NOTES_v6.3.66.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 결론 생성 공통 함수 `buildMasterReportConclusion()`을 추가해 리포트 본문 조립 로직을 표준화.
+- `fullNarrative`가 존재하면 결론에 우선 노출하도록 변경해 단문 요약으로 축약되는 경향을 완화.
+- `fullNarrative` 부재 시에도 질문 요약 + `[운명의 서사 분석]`(카드 근거 2개) + `[운명의 판정]` 구조로 자동 보강.
+- `overall_fortune`에서는 결론 내부에 `[운세 세부 흐름]`(전체/일·재물/애정/건강·마음/메시지) 블록을 포함.
+- 오케스트레이터의 `finalConclusion` 선택 로직을 상세 결론 우선으로 변경하고, 비어 있을 때만 기존 축약 결론 사용.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run build --prefix apps/web` 통과
+
 ### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
 
 #### 변경 파일
@@ -808,6 +868,26 @@
 - `npm run test:ui-flow --prefix apps/web` 통과
 
 ## [2026-02-28]
+
+### 운명의 마스터 리포트 상세화: 본문 우선 결론 조립기 도입 (v6.3.66)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `docs/RELEASE_NOTES_v6.3.66.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 결론 생성 공통 함수 `buildMasterReportConclusion()`을 추가해 리포트 본문 조립 로직을 표준화.
+- `fullNarrative`가 존재하면 결론에 우선 노출하도록 변경해 단문 요약으로 축약되는 경향을 완화.
+- `fullNarrative` 부재 시에도 질문 요약 + `[운명의 서사 분석]`(카드 근거 2개) + `[운명의 판정]` 구조로 자동 보강.
+- `overall_fortune`에서는 결론 내부에 `[운세 세부 흐름]`(전체/일·재물/애정/건강·마음/메시지) 블록을 포함.
+- 오케스트레이터의 `finalConclusion` 선택 로직을 상세 결론 우선으로 변경하고, 비어 있을 때만 기존 축약 결론 사용.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run build --prefix apps/web` 통과
 
 ### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
 
@@ -877,6 +957,26 @@
 - `npm run test:ui-flow --prefix apps/web` 통과
 
 ## [2026-02-28]
+
+### 운명의 마스터 리포트 상세화: 본문 우선 결론 조립기 도입 (v6.3.66)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `docs/RELEASE_NOTES_v6.3.66.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 결론 생성 공통 함수 `buildMasterReportConclusion()`을 추가해 리포트 본문 조립 로직을 표준화.
+- `fullNarrative`가 존재하면 결론에 우선 노출하도록 변경해 단문 요약으로 축약되는 경향을 완화.
+- `fullNarrative` 부재 시에도 질문 요약 + `[운명의 서사 분석]`(카드 근거 2개) + `[운명의 판정]` 구조로 자동 보강.
+- `overall_fortune`에서는 결론 내부에 `[운세 세부 흐름]`(전체/일·재물/애정/건강·마음/메시지) 블록을 포함.
+- 오케스트레이터의 `finalConclusion` 선택 로직을 상세 결론 우선으로 변경하고, 비어 있을 때만 기존 축약 결론 사용.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run build --prefix apps/web` 통과
 
 ### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
 
@@ -957,6 +1057,26 @@
 
 ## [2026-02-28]
 
+### 운명의 마스터 리포트 상세화: 본문 우선 결론 조립기 도입 (v6.3.66)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `docs/RELEASE_NOTES_v6.3.66.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 결론 생성 공통 함수 `buildMasterReportConclusion()`을 추가해 리포트 본문 조립 로직을 표준화.
+- `fullNarrative`가 존재하면 결론에 우선 노출하도록 변경해 단문 요약으로 축약되는 경향을 완화.
+- `fullNarrative` 부재 시에도 질문 요약 + `[운명의 서사 분석]`(카드 근거 2개) + `[운명의 판정]` 구조로 자동 보강.
+- `overall_fortune`에서는 결론 내부에 `[운세 세부 흐름]`(전체/일·재물/애정/건강·마음/메시지) 블록을 포함.
+- 오케스트레이터의 `finalConclusion` 선택 로직을 상세 결론 우선으로 변경하고, 비어 있을 때만 기존 축약 결론 사용.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run build --prefix apps/web` 통과
+
 ### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
 
 #### 변경 파일
@@ -1024,6 +1144,26 @@
 - `npm run build --prefix apps/web` 통과
 
 ## [2026-02-28]
+
+### 운명의 마스터 리포트 상세화: 본문 우선 결론 조립기 도입 (v6.3.66)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `docs/RELEASE_NOTES_v6.3.66.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 결론 생성 공통 함수 `buildMasterReportConclusion()`을 추가해 리포트 본문 조립 로직을 표준화.
+- `fullNarrative`가 존재하면 결론에 우선 노출하도록 변경해 단문 요약으로 축약되는 경향을 완화.
+- `fullNarrative` 부재 시에도 질문 요약 + `[운명의 서사 분석]`(카드 근거 2개) + `[운명의 판정]` 구조로 자동 보강.
+- `overall_fortune`에서는 결론 내부에 `[운세 세부 흐름]`(전체/일·재물/애정/건강·마음/메시지) 블록을 포함.
+- 오케스트레이터의 `finalConclusion` 선택 로직을 상세 결론 우선으로 변경하고, 비어 있을 때만 기존 축약 결론 사용.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run build --prefix apps/web` 통과
 
 ### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
 
@@ -1098,6 +1238,26 @@
 
 ## [2026-02-28]
 
+### 운명의 마스터 리포트 상세화: 본문 우선 결론 조립기 도입 (v6.3.66)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `docs/RELEASE_NOTES_v6.3.66.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 결론 생성 공통 함수 `buildMasterReportConclusion()`을 추가해 리포트 본문 조립 로직을 표준화.
+- `fullNarrative`가 존재하면 결론에 우선 노출하도록 변경해 단문 요약으로 축약되는 경향을 완화.
+- `fullNarrative` 부재 시에도 질문 요약 + `[운명의 서사 분석]`(카드 근거 2개) + `[운명의 판정]` 구조로 자동 보강.
+- `overall_fortune`에서는 결론 내부에 `[운세 세부 흐름]`(전체/일·재물/애정/건강·마음/메시지) 블록을 포함.
+- 오케스트레이터의 `finalConclusion` 선택 로직을 상세 결론 우선으로 변경하고, 비어 있을 때만 기존 축약 결론 사용.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run build --prefix apps/web` 통과
+
 ### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
 
 #### 변경 파일
@@ -1167,6 +1327,26 @@
 - `node apps/api/tests/overall-fortune-regression.js` 통과
 
 ## [2026-02-28]
+
+### 운명의 마스터 리포트 상세화: 본문 우선 결론 조립기 도입 (v6.3.66)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `docs/RELEASE_NOTES_v6.3.66.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 결론 생성 공통 함수 `buildMasterReportConclusion()`을 추가해 리포트 본문 조립 로직을 표준화.
+- `fullNarrative`가 존재하면 결론에 우선 노출하도록 변경해 단문 요약으로 축약되는 경향을 완화.
+- `fullNarrative` 부재 시에도 질문 요약 + `[운명의 서사 분석]`(카드 근거 2개) + `[운명의 판정]` 구조로 자동 보강.
+- `overall_fortune`에서는 결론 내부에 `[운세 세부 흐름]`(전체/일·재물/애정/건강·마음/메시지) 블록을 포함.
+- 오케스트레이터의 `finalConclusion` 선택 로직을 상세 결론 우선으로 변경하고, 비어 있을 때만 기존 축약 결론 사용.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run build --prefix apps/web` 통과
 
 ### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
 
@@ -1238,6 +1418,26 @@
 - `node apps/api/tests/overall-fortune-regression.js` 통과
 
 ## [2026-02-28]
+
+### 운명의 마스터 리포트 상세화: 본문 우선 결론 조립기 도입 (v6.3.66)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `docs/RELEASE_NOTES_v6.3.66.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 결론 생성 공통 함수 `buildMasterReportConclusion()`을 추가해 리포트 본문 조립 로직을 표준화.
+- `fullNarrative`가 존재하면 결론에 우선 노출하도록 변경해 단문 요약으로 축약되는 경향을 완화.
+- `fullNarrative` 부재 시에도 질문 요약 + `[운명의 서사 분석]`(카드 근거 2개) + `[운명의 판정]` 구조로 자동 보강.
+- `overall_fortune`에서는 결론 내부에 `[운세 세부 흐름]`(전체/일·재물/애정/건강·마음/메시지) 블록을 포함.
+- 오케스트레이터의 `finalConclusion` 선택 로직을 상세 결론 우선으로 변경하고, 비어 있을 때만 기존 축약 결론 사용.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run build --prefix apps/web` 통과
 
 ### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
 
@@ -1311,6 +1511,26 @@
 
 ## [2026-02-28]
 
+### 운명의 마스터 리포트 상세화: 본문 우선 결론 조립기 도입 (v6.3.66)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `docs/RELEASE_NOTES_v6.3.66.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 결론 생성 공통 함수 `buildMasterReportConclusion()`을 추가해 리포트 본문 조립 로직을 표준화.
+- `fullNarrative`가 존재하면 결론에 우선 노출하도록 변경해 단문 요약으로 축약되는 경향을 완화.
+- `fullNarrative` 부재 시에도 질문 요약 + `[운명의 서사 분석]`(카드 근거 2개) + `[운명의 판정]` 구조로 자동 보강.
+- `overall_fortune`에서는 결론 내부에 `[운세 세부 흐름]`(전체/일·재물/애정/건강·마음/메시지) 블록을 포함.
+- 오케스트레이터의 `finalConclusion` 선택 로직을 상세 결론 우선으로 변경하고, 비어 있을 때만 기존 축약 결론 사용.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run build --prefix apps/web` 통과
+
 ### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
 
 #### 변경 파일
@@ -1382,6 +1602,26 @@
 
 ## [2026-02-28]
 
+### 운명의 마스터 리포트 상세화: 본문 우선 결론 조립기 도입 (v6.3.66)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `docs/RELEASE_NOTES_v6.3.66.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 결론 생성 공통 함수 `buildMasterReportConclusion()`을 추가해 리포트 본문 조립 로직을 표준화.
+- `fullNarrative`가 존재하면 결론에 우선 노출하도록 변경해 단문 요약으로 축약되는 경향을 완화.
+- `fullNarrative` 부재 시에도 질문 요약 + `[운명의 서사 분석]`(카드 근거 2개) + `[운명의 판정]` 구조로 자동 보강.
+- `overall_fortune`에서는 결론 내부에 `[운세 세부 흐름]`(전체/일·재물/애정/건강·마음/메시지) 블록을 포함.
+- 오케스트레이터의 `finalConclusion` 선택 로직을 상세 결론 우선으로 변경하고, 비어 있을 때만 기존 축약 결론 사용.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run build --prefix apps/web` 통과
+
 ### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
 
 #### 변경 파일
@@ -1451,6 +1691,26 @@
 - `npm run build --prefix apps/web` 통과
 
 ## [2026-02-28]
+
+### 운명의 마스터 리포트 상세화: 본문 우선 결론 조립기 도입 (v6.3.66)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `docs/RELEASE_NOTES_v6.3.66.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 결론 생성 공통 함수 `buildMasterReportConclusion()`을 추가해 리포트 본문 조립 로직을 표준화.
+- `fullNarrative`가 존재하면 결론에 우선 노출하도록 변경해 단문 요약으로 축약되는 경향을 완화.
+- `fullNarrative` 부재 시에도 질문 요약 + `[운명의 서사 분석]`(카드 근거 2개) + `[운명의 판정]` 구조로 자동 보강.
+- `overall_fortune`에서는 결론 내부에 `[운세 세부 흐름]`(전체/일·재물/애정/건강·마음/메시지) 블록을 포함.
+- 오케스트레이터의 `finalConclusion` 선택 로직을 상세 결론 우선으로 변경하고, 비어 있을 때만 기존 축약 결론 사용.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run build --prefix apps/web` 통과
 
 ### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
 
@@ -1524,6 +1784,26 @@
 - `npm run build --prefix apps/web` 통과
 
 ## [2026-02-28]
+
+### 운명의 마스터 리포트 상세화: 본문 우선 결론 조립기 도입 (v6.3.66)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `docs/RELEASE_NOTES_v6.3.66.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 결론 생성 공통 함수 `buildMasterReportConclusion()`을 추가해 리포트 본문 조립 로직을 표준화.
+- `fullNarrative`가 존재하면 결론에 우선 노출하도록 변경해 단문 요약으로 축약되는 경향을 완화.
+- `fullNarrative` 부재 시에도 질문 요약 + `[운명의 서사 분석]`(카드 근거 2개) + `[운명의 판정]` 구조로 자동 보강.
+- `overall_fortune`에서는 결론 내부에 `[운세 세부 흐름]`(전체/일·재물/애정/건강·마음/메시지) 블록을 포함.
+- 오케스트레이터의 `finalConclusion` 선택 로직을 상세 결론 우선으로 변경하고, 비어 있을 때만 기존 축약 결론 사용.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run build --prefix apps/web` 통과
 
 ### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
 
@@ -1600,6 +1880,26 @@
 - `npm run build --prefix apps/web` 통과
 
 ## [2026-02-28]
+
+### 운명의 마스터 리포트 상세화: 본문 우선 결론 조립기 도입 (v6.3.66)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `docs/RELEASE_NOTES_v6.3.66.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 결론 생성 공통 함수 `buildMasterReportConclusion()`을 추가해 리포트 본문 조립 로직을 표준화.
+- `fullNarrative`가 존재하면 결론에 우선 노출하도록 변경해 단문 요약으로 축약되는 경향을 완화.
+- `fullNarrative` 부재 시에도 질문 요약 + `[운명의 서사 분석]`(카드 근거 2개) + `[운명의 판정]` 구조로 자동 보강.
+- `overall_fortune`에서는 결론 내부에 `[운세 세부 흐름]`(전체/일·재물/애정/건강·마음/메시지) 블록을 포함.
+- 오케스트레이터의 `finalConclusion` 선택 로직을 상세 결론 우선으로 변경하고, 비어 있을 때만 기존 축약 결론 사용.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run build --prefix apps/web` 통과
 
 ### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
 
@@ -1681,6 +1981,26 @@
 - `npm run build --prefix apps/web` 통과
 
 ## [2026-02-28]
+
+### 운명의 마스터 리포트 상세화: 본문 우선 결론 조립기 도입 (v6.3.66)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `docs/RELEASE_NOTES_v6.3.66.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 결론 생성 공통 함수 `buildMasterReportConclusion()`을 추가해 리포트 본문 조립 로직을 표준화.
+- `fullNarrative`가 존재하면 결론에 우선 노출하도록 변경해 단문 요약으로 축약되는 경향을 완화.
+- `fullNarrative` 부재 시에도 질문 요약 + `[운명의 서사 분석]`(카드 근거 2개) + `[운명의 판정]` 구조로 자동 보강.
+- `overall_fortune`에서는 결론 내부에 `[운세 세부 흐름]`(전체/일·재물/애정/건강·마음/메시지) 블록을 포함.
+- 오케스트레이터의 `finalConclusion` 선택 로직을 상세 결론 우선으로 변경하고, 비어 있을 때만 기존 축약 결론 사용.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run build --prefix apps/web` 통과
 
 ### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
 
@@ -1766,6 +2086,26 @@
 - `npm run build --prefix apps/web` 통과
 
 ## [2026-02-28]
+
+### 운명의 마스터 리포트 상세화: 본문 우선 결론 조립기 도입 (v6.3.66)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `docs/RELEASE_NOTES_v6.3.66.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 결론 생성 공통 함수 `buildMasterReportConclusion()`을 추가해 리포트 본문 조립 로직을 표준화.
+- `fullNarrative`가 존재하면 결론에 우선 노출하도록 변경해 단문 요약으로 축약되는 경향을 완화.
+- `fullNarrative` 부재 시에도 질문 요약 + `[운명의 서사 분석]`(카드 근거 2개) + `[운명의 판정]` 구조로 자동 보강.
+- `overall_fortune`에서는 결론 내부에 `[운세 세부 흐름]`(전체/일·재물/애정/건강·마음/메시지) 블록을 포함.
+- 오케스트레이터의 `finalConclusion` 선택 로직을 상세 결론 우선으로 변경하고, 비어 있을 때만 기존 축약 결론 사용.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run build --prefix apps/web` 통과
 
 ### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
 
@@ -1859,6 +2199,26 @@
 
 ## [2026-02-28]
 
+### 운명의 마스터 리포트 상세화: 본문 우선 결론 조립기 도입 (v6.3.66)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `docs/RELEASE_NOTES_v6.3.66.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 결론 생성 공통 함수 `buildMasterReportConclusion()`을 추가해 리포트 본문 조립 로직을 표준화.
+- `fullNarrative`가 존재하면 결론에 우선 노출하도록 변경해 단문 요약으로 축약되는 경향을 완화.
+- `fullNarrative` 부재 시에도 질문 요약 + `[운명의 서사 분석]`(카드 근거 2개) + `[운명의 판정]` 구조로 자동 보강.
+- `overall_fortune`에서는 결론 내부에 `[운세 세부 흐름]`(전체/일·재물/애정/건강·마음/메시지) 블록을 포함.
+- 오케스트레이터의 `finalConclusion` 선택 로직을 상세 결론 우선으로 변경하고, 비어 있을 때만 기존 축약 결론 사용.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run build --prefix apps/web` 통과
+
 ### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
 
 #### 변경 파일
@@ -1940,6 +2300,26 @@
 - `npm run metrics:report --prefix apps/api` 통과(샘플 로그)
 
 ## [2026-02-28]
+
+### 운명의 마스터 리포트 상세화: 본문 우선 결론 조립기 도입 (v6.3.66)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `docs/RELEASE_NOTES_v6.3.66.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 결론 생성 공통 함수 `buildMasterReportConclusion()`을 추가해 리포트 본문 조립 로직을 표준화.
+- `fullNarrative`가 존재하면 결론에 우선 노출하도록 변경해 단문 요약으로 축약되는 경향을 완화.
+- `fullNarrative` 부재 시에도 질문 요약 + `[운명의 서사 분석]`(카드 근거 2개) + `[운명의 판정]` 구조로 자동 보강.
+- `overall_fortune`에서는 결론 내부에 `[운세 세부 흐름]`(전체/일·재물/애정/건강·마음/메시지) 블록을 포함.
+- 오케스트레이터의 `finalConclusion` 선택 로직을 상세 결론 우선으로 변경하고, 비어 있을 때만 기존 축약 결론 사용.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run build --prefix apps/web` 통과
 
 ### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
 
@@ -2031,6 +2411,26 @@
 
 ## [2026-02-28]
 
+### 운명의 마스터 리포트 상세화: 본문 우선 결론 조립기 도입 (v6.3.66)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `docs/RELEASE_NOTES_v6.3.66.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 결론 생성 공통 함수 `buildMasterReportConclusion()`을 추가해 리포트 본문 조립 로직을 표준화.
+- `fullNarrative`가 존재하면 결론에 우선 노출하도록 변경해 단문 요약으로 축약되는 경향을 완화.
+- `fullNarrative` 부재 시에도 질문 요약 + `[운명의 서사 분석]`(카드 근거 2개) + `[운명의 판정]` 구조로 자동 보강.
+- `overall_fortune`에서는 결론 내부에 `[운세 세부 흐름]`(전체/일·재물/애정/건강·마음/메시지) 블록을 포함.
+- 오케스트레이터의 `finalConclusion` 선택 로직을 상세 결론 우선으로 변경하고, 비어 있을 때만 기존 축약 결론 사용.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run build --prefix apps/web` 통과
+
 ### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
 
 #### 변경 파일
@@ -2117,6 +2517,26 @@
 - 상세 변경 요약: `docs/RELEASE_NOTES_v6.3.28.md`
 
 ## [2026-02-28]
+
+### 운명의 마스터 리포트 상세화: 본문 우선 결론 조립기 도입 (v6.3.66)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `docs/RELEASE_NOTES_v6.3.66.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 결론 생성 공통 함수 `buildMasterReportConclusion()`을 추가해 리포트 본문 조립 로직을 표준화.
+- `fullNarrative`가 존재하면 결론에 우선 노출하도록 변경해 단문 요약으로 축약되는 경향을 완화.
+- `fullNarrative` 부재 시에도 질문 요약 + `[운명의 서사 분석]`(카드 근거 2개) + `[운명의 판정]` 구조로 자동 보강.
+- `overall_fortune`에서는 결론 내부에 `[운세 세부 흐름]`(전체/일·재물/애정/건강·마음/메시지) 블록을 포함.
+- 오케스트레이터의 `finalConclusion` 선택 로직을 상세 결론 우선으로 변경하고, 비어 있을 때만 기존 축약 결론 사용.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run build --prefix apps/web` 통과
 
 ### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
 
@@ -2236,6 +2656,26 @@
 
 ## [2026-02-28]
 
+### 운명의 마스터 리포트 상세화: 본문 우선 결론 조립기 도입 (v6.3.66)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `docs/RELEASE_NOTES_v6.3.66.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 결론 생성 공통 함수 `buildMasterReportConclusion()`을 추가해 리포트 본문 조립 로직을 표준화.
+- `fullNarrative`가 존재하면 결론에 우선 노출하도록 변경해 단문 요약으로 축약되는 경향을 완화.
+- `fullNarrative` 부재 시에도 질문 요약 + `[운명의 서사 분석]`(카드 근거 2개) + `[운명의 판정]` 구조로 자동 보강.
+- `overall_fortune`에서는 결론 내부에 `[운세 세부 흐름]`(전체/일·재물/애정/건강·마음/메시지) 블록을 포함.
+- 오케스트레이터의 `finalConclusion` 선택 로직을 상세 결론 우선으로 변경하고, 비어 있을 때만 기존 축약 결론 사용.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run build --prefix apps/web` 통과
+
 ### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
 
 #### 변경 파일
@@ -2334,6 +2774,26 @@
 
 ## [2026-02-28]
 
+### 운명의 마스터 리포트 상세화: 본문 우선 결론 조립기 도입 (v6.3.66)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `docs/RELEASE_NOTES_v6.3.66.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 결론 생성 공통 함수 `buildMasterReportConclusion()`을 추가해 리포트 본문 조립 로직을 표준화.
+- `fullNarrative`가 존재하면 결론에 우선 노출하도록 변경해 단문 요약으로 축약되는 경향을 완화.
+- `fullNarrative` 부재 시에도 질문 요약 + `[운명의 서사 분석]`(카드 근거 2개) + `[운명의 판정]` 구조로 자동 보강.
+- `overall_fortune`에서는 결론 내부에 `[운세 세부 흐름]`(전체/일·재물/애정/건강·마음/메시지) 블록을 포함.
+- 오케스트레이터의 `finalConclusion` 선택 로직을 상세 결론 우선으로 변경하고, 비어 있을 때만 기존 축약 결론 사용.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run build --prefix apps/web` 통과
+
 ### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
 
 #### 변경 파일
@@ -2410,6 +2870,26 @@
 - 상세 변경 요약: `docs/RELEASE_NOTES_v6.3.24.md`
 
 ## [2026-02-28]
+
+### 운명의 마스터 리포트 상세화: 본문 우선 결론 조립기 도입 (v6.3.66)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `docs/RELEASE_NOTES_v6.3.66.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 결론 생성 공통 함수 `buildMasterReportConclusion()`을 추가해 리포트 본문 조립 로직을 표준화.
+- `fullNarrative`가 존재하면 결론에 우선 노출하도록 변경해 단문 요약으로 축약되는 경향을 완화.
+- `fullNarrative` 부재 시에도 질문 요약 + `[운명의 서사 분석]`(카드 근거 2개) + `[운명의 판정]` 구조로 자동 보강.
+- `overall_fortune`에서는 결론 내부에 `[운세 세부 흐름]`(전체/일·재물/애정/건강·마음/메시지) 블록을 포함.
+- 오케스트레이터의 `finalConclusion` 선택 로직을 상세 결론 우선으로 변경하고, 비어 있을 때만 기존 축약 결론 사용.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run build --prefix apps/web` 통과
 
 ### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
 
@@ -2502,6 +2982,26 @@
 
 ## [2026-02-28]
 
+### 운명의 마스터 리포트 상세화: 본문 우선 결론 조립기 도입 (v6.3.66)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `docs/RELEASE_NOTES_v6.3.66.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 결론 생성 공통 함수 `buildMasterReportConclusion()`을 추가해 리포트 본문 조립 로직을 표준화.
+- `fullNarrative`가 존재하면 결론에 우선 노출하도록 변경해 단문 요약으로 축약되는 경향을 완화.
+- `fullNarrative` 부재 시에도 질문 요약 + `[운명의 서사 분석]`(카드 근거 2개) + `[운명의 판정]` 구조로 자동 보강.
+- `overall_fortune`에서는 결론 내부에 `[운세 세부 흐름]`(전체/일·재물/애정/건강·마음/메시지) 블록을 포함.
+- 오케스트레이터의 `finalConclusion` 선택 로직을 상세 결론 우선으로 변경하고, 비어 있을 때만 기존 축약 결론 사용.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run build --prefix apps/web` 통과
+
 ### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
 
 #### 변경 파일
@@ -2586,6 +3086,26 @@
 
 ## [2026-02-28]
 
+### 운명의 마스터 리포트 상세화: 본문 우선 결론 조립기 도입 (v6.3.66)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `docs/RELEASE_NOTES_v6.3.66.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 결론 생성 공통 함수 `buildMasterReportConclusion()`을 추가해 리포트 본문 조립 로직을 표준화.
+- `fullNarrative`가 존재하면 결론에 우선 노출하도록 변경해 단문 요약으로 축약되는 경향을 완화.
+- `fullNarrative` 부재 시에도 질문 요약 + `[운명의 서사 분석]`(카드 근거 2개) + `[운명의 판정]` 구조로 자동 보강.
+- `overall_fortune`에서는 결론 내부에 `[운세 세부 흐름]`(전체/일·재물/애정/건강·마음/메시지) 블록을 포함.
+- 오케스트레이터의 `finalConclusion` 선택 로직을 상세 결론 우선으로 변경하고, 비어 있을 때만 기존 축약 결론 사용.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run build --prefix apps/web` 통과
+
 ### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
 
 #### 변경 파일
@@ -2664,6 +3184,26 @@
 - 상세 변경 요약: `docs/RELEASE_NOTES_v6.3.21.md`
 
 ## [2026-02-28]
+
+### 운명의 마스터 리포트 상세화: 본문 우선 결론 조립기 도입 (v6.3.66)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `docs/RELEASE_NOTES_v6.3.66.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 결론 생성 공통 함수 `buildMasterReportConclusion()`을 추가해 리포트 본문 조립 로직을 표준화.
+- `fullNarrative`가 존재하면 결론에 우선 노출하도록 변경해 단문 요약으로 축약되는 경향을 완화.
+- `fullNarrative` 부재 시에도 질문 요약 + `[운명의 서사 분석]`(카드 근거 2개) + `[운명의 판정]` 구조로 자동 보강.
+- `overall_fortune`에서는 결론 내부에 `[운세 세부 흐름]`(전체/일·재물/애정/건강·마음/메시지) 블록을 포함.
+- 오케스트레이터의 `finalConclusion` 선택 로직을 상세 결론 우선으로 변경하고, 비어 있을 때만 기존 축약 결론 사용.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run build --prefix apps/web` 통과
 
 ### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
 
@@ -2838,6 +3378,26 @@
 
 ## [2026-02-28]
 
+### 운명의 마스터 리포트 상세화: 본문 우선 결론 조립기 도입 (v6.3.66)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `docs/RELEASE_NOTES_v6.3.66.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 결론 생성 공통 함수 `buildMasterReportConclusion()`을 추가해 리포트 본문 조립 로직을 표준화.
+- `fullNarrative`가 존재하면 결론에 우선 노출하도록 변경해 단문 요약으로 축약되는 경향을 완화.
+- `fullNarrative` 부재 시에도 질문 요약 + `[운명의 서사 분석]`(카드 근거 2개) + `[운명의 판정]` 구조로 자동 보강.
+- `overall_fortune`에서는 결론 내부에 `[운세 세부 흐름]`(전체/일·재물/애정/건강·마음/메시지) 블록을 포함.
+- 오케스트레이터의 `finalConclusion` 선택 로직을 상세 결론 우선으로 변경하고, 비어 있을 때만 기존 축약 결론 사용.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run build --prefix apps/web` 통과
+
 ### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
 
 #### 변경 파일
@@ -2949,6 +3509,26 @@
 
 ## [2026-02-28]
 
+### 운명의 마스터 리포트 상세화: 본문 우선 결론 조립기 도입 (v6.3.66)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `docs/RELEASE_NOTES_v6.3.66.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 결론 생성 공통 함수 `buildMasterReportConclusion()`을 추가해 리포트 본문 조립 로직을 표준화.
+- `fullNarrative`가 존재하면 결론에 우선 노출하도록 변경해 단문 요약으로 축약되는 경향을 완화.
+- `fullNarrative` 부재 시에도 질문 요약 + `[운명의 서사 분석]`(카드 근거 2개) + `[운명의 판정]` 구조로 자동 보강.
+- `overall_fortune`에서는 결론 내부에 `[운세 세부 흐름]`(전체/일·재물/애정/건강·마음/메시지) 블록을 포함.
+- 오케스트레이터의 `finalConclusion` 선택 로직을 상세 결론 우선으로 변경하고, 비어 있을 때만 기존 축약 결론 사용.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run build --prefix apps/web` 통과
+
 ### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
 
 #### 변경 파일
@@ -3010,6 +3590,26 @@
 - 상세 변경 요약: `docs/RELEASE_NOTES_v6.3.14.md`
 
 ## [2026-02-28]
+
+### 운명의 마스터 리포트 상세화: 본문 우선 결론 조립기 도입 (v6.3.66)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `docs/RELEASE_NOTES_v6.3.66.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 결론 생성 공통 함수 `buildMasterReportConclusion()`을 추가해 리포트 본문 조립 로직을 표준화.
+- `fullNarrative`가 존재하면 결론에 우선 노출하도록 변경해 단문 요약으로 축약되는 경향을 완화.
+- `fullNarrative` 부재 시에도 질문 요약 + `[운명의 서사 분석]`(카드 근거 2개) + `[운명의 판정]` 구조로 자동 보강.
+- `overall_fortune`에서는 결론 내부에 `[운세 세부 흐름]`(전체/일·재물/애정/건강·마음/메시지) 블록을 포함.
+- 오케스트레이터의 `finalConclusion` 선택 로직을 상세 결론 우선으로 변경하고, 비어 있을 때만 기존 축약 결론 사용.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run build --prefix apps/web` 통과
 
 ### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
 
@@ -3080,6 +3680,26 @@
 
 ## [2026-02-28]
 
+### 운명의 마스터 리포트 상세화: 본문 우선 결론 조립기 도입 (v6.3.66)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `docs/RELEASE_NOTES_v6.3.66.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 결론 생성 공통 함수 `buildMasterReportConclusion()`을 추가해 리포트 본문 조립 로직을 표준화.
+- `fullNarrative`가 존재하면 결론에 우선 노출하도록 변경해 단문 요약으로 축약되는 경향을 완화.
+- `fullNarrative` 부재 시에도 질문 요약 + `[운명의 서사 분석]`(카드 근거 2개) + `[운명의 판정]` 구조로 자동 보강.
+- `overall_fortune`에서는 결론 내부에 `[운세 세부 흐름]`(전체/일·재물/애정/건강·마음/메시지) 블록을 포함.
+- 오케스트레이터의 `finalConclusion` 선택 로직을 상세 결론 우선으로 변경하고, 비어 있을 때만 기존 축약 결론 사용.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run build --prefix apps/web` 통과
+
 ### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
 
 #### 변경 파일
@@ -3144,6 +3764,26 @@
 - 상세 변경 요약: `docs/RELEASE_NOTES_v6.3.12.md`
 
 ## [2026-02-28]
+
+### 운명의 마스터 리포트 상세화: 본문 우선 결론 조립기 도입 (v6.3.66)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `docs/RELEASE_NOTES_v6.3.66.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 결론 생성 공통 함수 `buildMasterReportConclusion()`을 추가해 리포트 본문 조립 로직을 표준화.
+- `fullNarrative`가 존재하면 결론에 우선 노출하도록 변경해 단문 요약으로 축약되는 경향을 완화.
+- `fullNarrative` 부재 시에도 질문 요약 + `[운명의 서사 분석]`(카드 근거 2개) + `[운명의 판정]` 구조로 자동 보강.
+- `overall_fortune`에서는 결론 내부에 `[운세 세부 흐름]`(전체/일·재물/애정/건강·마음/메시지) 블록을 포함.
+- 오케스트레이터의 `finalConclusion` 선택 로직을 상세 결론 우선으로 변경하고, 비어 있을 때만 기존 축약 결론 사용.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run build --prefix apps/web` 통과
 
 ### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
 
@@ -3210,6 +3850,26 @@
 
 ## [2026-02-28]
 
+### 운명의 마스터 리포트 상세화: 본문 우선 결론 조립기 도입 (v6.3.66)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `docs/RELEASE_NOTES_v6.3.66.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 결론 생성 공통 함수 `buildMasterReportConclusion()`을 추가해 리포트 본문 조립 로직을 표준화.
+- `fullNarrative`가 존재하면 결론에 우선 노출하도록 변경해 단문 요약으로 축약되는 경향을 완화.
+- `fullNarrative` 부재 시에도 질문 요약 + `[운명의 서사 분석]`(카드 근거 2개) + `[운명의 판정]` 구조로 자동 보강.
+- `overall_fortune`에서는 결론 내부에 `[운세 세부 흐름]`(전체/일·재물/애정/건강·마음/메시지) 블록을 포함.
+- 오케스트레이터의 `finalConclusion` 선택 로직을 상세 결론 우선으로 변경하고, 비어 있을 때만 기존 축약 결론 사용.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run build --prefix apps/web` 통과
+
 ### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
 
 #### 변경 파일
@@ -3274,6 +3934,26 @@
 - 상세 변경 요약: `docs/RELEASE_NOTES_v6.3.10.md`
 
 ## [2026-02-28]
+
+### 운명의 마스터 리포트 상세화: 본문 우선 결론 조립기 도입 (v6.3.66)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `docs/RELEASE_NOTES_v6.3.66.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 결론 생성 공통 함수 `buildMasterReportConclusion()`을 추가해 리포트 본문 조립 로직을 표준화.
+- `fullNarrative`가 존재하면 결론에 우선 노출하도록 변경해 단문 요약으로 축약되는 경향을 완화.
+- `fullNarrative` 부재 시에도 질문 요약 + `[운명의 서사 분석]`(카드 근거 2개) + `[운명의 판정]` 구조로 자동 보강.
+- `overall_fortune`에서는 결론 내부에 `[운세 세부 흐름]`(전체/일·재물/애정/건강·마음/메시지) 블록을 포함.
+- 오케스트레이터의 `finalConclusion` 선택 로직을 상세 결론 우선으로 변경하고, 비어 있을 때만 기존 축약 결론 사용.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run build --prefix apps/web` 통과
 
 ### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
 
@@ -3354,6 +4034,26 @@
 
 ## [2026-02-28]
 
+### 운명의 마스터 리포트 상세화: 본문 우선 결론 조립기 도입 (v6.3.66)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `docs/RELEASE_NOTES_v6.3.66.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 결론 생성 공통 함수 `buildMasterReportConclusion()`을 추가해 리포트 본문 조립 로직을 표준화.
+- `fullNarrative`가 존재하면 결론에 우선 노출하도록 변경해 단문 요약으로 축약되는 경향을 완화.
+- `fullNarrative` 부재 시에도 질문 요약 + `[운명의 서사 분석]`(카드 근거 2개) + `[운명의 판정]` 구조로 자동 보강.
+- `overall_fortune`에서는 결론 내부에 `[운세 세부 흐름]`(전체/일·재물/애정/건강·마음/메시지) 블록을 포함.
+- 오케스트레이터의 `finalConclusion` 선택 로직을 상세 결론 우선으로 변경하고, 비어 있을 때만 기존 축약 결론 사용.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run build --prefix apps/web` 통과
+
 ### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
 
 #### 변경 파일
@@ -3424,6 +4124,26 @@
 
 ## [2026-02-28]
 
+### 운명의 마스터 리포트 상세화: 본문 우선 결론 조립기 도입 (v6.3.66)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `docs/RELEASE_NOTES_v6.3.66.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 결론 생성 공통 함수 `buildMasterReportConclusion()`을 추가해 리포트 본문 조립 로직을 표준화.
+- `fullNarrative`가 존재하면 결론에 우선 노출하도록 변경해 단문 요약으로 축약되는 경향을 완화.
+- `fullNarrative` 부재 시에도 질문 요약 + `[운명의 서사 분석]`(카드 근거 2개) + `[운명의 판정]` 구조로 자동 보강.
+- `overall_fortune`에서는 결론 내부에 `[운세 세부 흐름]`(전체/일·재물/애정/건강·마음/메시지) 블록을 포함.
+- 오케스트레이터의 `finalConclusion` 선택 로직을 상세 결론 우선으로 변경하고, 비어 있을 때만 기존 축약 결론 사용.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run build --prefix apps/web` 통과
+
 ### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
 
 #### 변경 파일
@@ -3492,6 +4212,26 @@
 
 ## [2026-02-28]
 
+### 운명의 마스터 리포트 상세화: 본문 우선 결론 조립기 도입 (v6.3.66)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `docs/RELEASE_NOTES_v6.3.66.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 결론 생성 공통 함수 `buildMasterReportConclusion()`을 추가해 리포트 본문 조립 로직을 표준화.
+- `fullNarrative`가 존재하면 결론에 우선 노출하도록 변경해 단문 요약으로 축약되는 경향을 완화.
+- `fullNarrative` 부재 시에도 질문 요약 + `[운명의 서사 분석]`(카드 근거 2개) + `[운명의 판정]` 구조로 자동 보강.
+- `overall_fortune`에서는 결론 내부에 `[운세 세부 흐름]`(전체/일·재물/애정/건강·마음/메시지) 블록을 포함.
+- 오케스트레이터의 `finalConclusion` 선택 로직을 상세 결론 우선으로 변경하고, 비어 있을 때만 기존 축약 결론 사용.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run build --prefix apps/web` 통과
+
 ### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
 
 #### 변경 파일
@@ -3554,6 +4294,26 @@
 - 상세 변경 요약: `docs/RELEASE_NOTES_v6.3.6.md`
 
 ## [2026-02-28]
+
+### 운명의 마스터 리포트 상세화: 본문 우선 결론 조립기 도입 (v6.3.66)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `docs/RELEASE_NOTES_v6.3.66.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 결론 생성 공통 함수 `buildMasterReportConclusion()`을 추가해 리포트 본문 조립 로직을 표준화.
+- `fullNarrative`가 존재하면 결론에 우선 노출하도록 변경해 단문 요약으로 축약되는 경향을 완화.
+- `fullNarrative` 부재 시에도 질문 요약 + `[운명의 서사 분석]`(카드 근거 2개) + `[운명의 판정]` 구조로 자동 보강.
+- `overall_fortune`에서는 결론 내부에 `[운세 세부 흐름]`(전체/일·재물/애정/건강·마음/메시지) 블록을 포함.
+- 오케스트레이터의 `finalConclusion` 선택 로직을 상세 결론 우선으로 변경하고, 비어 있을 때만 기존 축약 결론 사용.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run build --prefix apps/web` 통과
 
 ### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
 
@@ -3618,6 +4378,26 @@
 
 ## [2026-02-28]
 
+### 운명의 마스터 리포트 상세화: 본문 우선 결론 조립기 도입 (v6.3.66)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `docs/RELEASE_NOTES_v6.3.66.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 결론 생성 공통 함수 `buildMasterReportConclusion()`을 추가해 리포트 본문 조립 로직을 표준화.
+- `fullNarrative`가 존재하면 결론에 우선 노출하도록 변경해 단문 요약으로 축약되는 경향을 완화.
+- `fullNarrative` 부재 시에도 질문 요약 + `[운명의 서사 분석]`(카드 근거 2개) + `[운명의 판정]` 구조로 자동 보강.
+- `overall_fortune`에서는 결론 내부에 `[운세 세부 흐름]`(전체/일·재물/애정/건강·마음/메시지) 블록을 포함.
+- 오케스트레이터의 `finalConclusion` 선택 로직을 상세 결론 우선으로 변경하고, 비어 있을 때만 기존 축약 결론 사용.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run build --prefix apps/web` 통과
+
 ### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
 
 #### 변경 파일
@@ -3680,6 +4460,26 @@
 
 ## [2026-02-28]
 
+### 운명의 마스터 리포트 상세화: 본문 우선 결론 조립기 도입 (v6.3.66)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `docs/RELEASE_NOTES_v6.3.66.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 결론 생성 공통 함수 `buildMasterReportConclusion()`을 추가해 리포트 본문 조립 로직을 표준화.
+- `fullNarrative`가 존재하면 결론에 우선 노출하도록 변경해 단문 요약으로 축약되는 경향을 완화.
+- `fullNarrative` 부재 시에도 질문 요약 + `[운명의 서사 분석]`(카드 근거 2개) + `[운명의 판정]` 구조로 자동 보강.
+- `overall_fortune`에서는 결론 내부에 `[운세 세부 흐름]`(전체/일·재물/애정/건강·마음/메시지) 블록을 포함.
+- 오케스트레이터의 `finalConclusion` 선택 로직을 상세 결론 우선으로 변경하고, 비어 있을 때만 기존 축약 결론 사용.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run build --prefix apps/web` 통과
+
 ### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
 
 #### 변경 파일
@@ -3741,6 +4541,26 @@
 
 ## [2026-02-28]
 
+### 운명의 마스터 리포트 상세화: 본문 우선 결론 조립기 도입 (v6.3.66)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `docs/RELEASE_NOTES_v6.3.66.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 결론 생성 공통 함수 `buildMasterReportConclusion()`을 추가해 리포트 본문 조립 로직을 표준화.
+- `fullNarrative`가 존재하면 결론에 우선 노출하도록 변경해 단문 요약으로 축약되는 경향을 완화.
+- `fullNarrative` 부재 시에도 질문 요약 + `[운명의 서사 분석]`(카드 근거 2개) + `[운명의 판정]` 구조로 자동 보강.
+- `overall_fortune`에서는 결론 내부에 `[운세 세부 흐름]`(전체/일·재물/애정/건강·마음/메시지) 블록을 포함.
+- 오케스트레이터의 `finalConclusion` 선택 로직을 상세 결론 우선으로 변경하고, 비어 있을 때만 기존 축약 결론 사용.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run build --prefix apps/web` 통과
+
 ### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
 
 #### 변경 파일
@@ -3801,6 +4621,26 @@
 
 ## [2026-02-28]
 
+### 운명의 마스터 리포트 상세화: 본문 우선 결론 조립기 도입 (v6.3.66)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `docs/RELEASE_NOTES_v6.3.66.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 결론 생성 공통 함수 `buildMasterReportConclusion()`을 추가해 리포트 본문 조립 로직을 표준화.
+- `fullNarrative`가 존재하면 결론에 우선 노출하도록 변경해 단문 요약으로 축약되는 경향을 완화.
+- `fullNarrative` 부재 시에도 질문 요약 + `[운명의 서사 분석]`(카드 근거 2개) + `[운명의 판정]` 구조로 자동 보강.
+- `overall_fortune`에서는 결론 내부에 `[운세 세부 흐름]`(전체/일·재물/애정/건강·마음/메시지) 블록을 포함.
+- 오케스트레이터의 `finalConclusion` 선택 로직을 상세 결론 우선으로 변경하고, 비어 있을 때만 기존 축약 결론 사용.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run build --prefix apps/web` 통과
+
 ### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
 
 #### 변경 파일
@@ -3860,6 +4700,26 @@
 - 상세 변경 요약: `docs/RELEASE_NOTES_v6.3.1.md`
 
 ## [2026-02-28]
+
+### 운명의 마스터 리포트 상세화: 본문 우선 결론 조립기 도입 (v6.3.66)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `docs/RELEASE_NOTES_v6.3.66.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 결론 생성 공통 함수 `buildMasterReportConclusion()`을 추가해 리포트 본문 조립 로직을 표준화.
+- `fullNarrative`가 존재하면 결론에 우선 노출하도록 변경해 단문 요약으로 축약되는 경향을 완화.
+- `fullNarrative` 부재 시에도 질문 요약 + `[운명의 서사 분석]`(카드 근거 2개) + `[운명의 판정]` 구조로 자동 보강.
+- `overall_fortune`에서는 결론 내부에 `[운세 세부 흐름]`(전체/일·재물/애정/건강·마음/메시지) 블록을 포함.
+- 오케스트레이터의 `finalConclusion` 선택 로직을 상세 결론 우선으로 변경하고, 비어 있을 때만 기존 축약 결론 사용.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run build --prefix apps/web` 통과
 
 ### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
 
@@ -3938,6 +4798,26 @@
 
 ## [2026-02-28]
 
+### 운명의 마스터 리포트 상세화: 본문 우선 결론 조립기 도입 (v6.3.66)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `docs/RELEASE_NOTES_v6.3.66.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 결론 생성 공통 함수 `buildMasterReportConclusion()`을 추가해 리포트 본문 조립 로직을 표준화.
+- `fullNarrative`가 존재하면 결론에 우선 노출하도록 변경해 단문 요약으로 축약되는 경향을 완화.
+- `fullNarrative` 부재 시에도 질문 요약 + `[운명의 서사 분석]`(카드 근거 2개) + `[운명의 판정]` 구조로 자동 보강.
+- `overall_fortune`에서는 결론 내부에 `[운세 세부 흐름]`(전체/일·재물/애정/건강·마음/메시지) 블록을 포함.
+- 오케스트레이터의 `finalConclusion` 선택 로직을 상세 결론 우선으로 변경하고, 비어 있을 때만 기존 축약 결론 사용.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run build --prefix apps/web` 통과
+
 ### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
 
 #### 변경 파일
@@ -4007,6 +4887,26 @@
 
 ## [2026-02-28]
 
+### 운명의 마스터 리포트 상세화: 본문 우선 결론 조립기 도입 (v6.3.66)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `docs/RELEASE_NOTES_v6.3.66.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 결론 생성 공통 함수 `buildMasterReportConclusion()`을 추가해 리포트 본문 조립 로직을 표준화.
+- `fullNarrative`가 존재하면 결론에 우선 노출하도록 변경해 단문 요약으로 축약되는 경향을 완화.
+- `fullNarrative` 부재 시에도 질문 요약 + `[운명의 서사 분석]`(카드 근거 2개) + `[운명의 판정]` 구조로 자동 보강.
+- `overall_fortune`에서는 결론 내부에 `[운세 세부 흐름]`(전체/일·재물/애정/건강·마음/메시지) 블록을 포함.
+- 오케스트레이터의 `finalConclusion` 선택 로직을 상세 결론 우선으로 변경하고, 비어 있을 때만 기존 축약 결론 사용.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run build --prefix apps/web` 통과
+
 ### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
 
 #### 변경 파일
@@ -4067,6 +4967,26 @@
 - 네트워크 단절 시 `dns_error` 또는 `network_error` 감지 확인.
 
 ## [2026-02-28]
+
+### 운명의 마스터 리포트 상세화: 본문 우선 결론 조립기 도입 (v6.3.66)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `docs/RELEASE_NOTES_v6.3.66.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 결론 생성 공통 함수 `buildMasterReportConclusion()`을 추가해 리포트 본문 조립 로직을 표준화.
+- `fullNarrative`가 존재하면 결론에 우선 노출하도록 변경해 단문 요약으로 축약되는 경향을 완화.
+- `fullNarrative` 부재 시에도 질문 요약 + `[운명의 서사 분석]`(카드 근거 2개) + `[운명의 판정]` 구조로 자동 보강.
+- `overall_fortune`에서는 결론 내부에 `[운세 세부 흐름]`(전체/일·재물/애정/건강·마음/메시지) 블록을 포함.
+- 오케스트레이터의 `finalConclusion` 선택 로직을 상세 결론 우선으로 변경하고, 비어 있을 때만 기존 축약 결론 사용.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run build --prefix apps/web` 통과
 
 ### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
 
@@ -4132,6 +5052,26 @@
 
 ## [2026-02-28]
 
+### 운명의 마스터 리포트 상세화: 본문 우선 결론 조립기 도입 (v6.3.66)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `docs/RELEASE_NOTES_v6.3.66.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 결론 생성 공통 함수 `buildMasterReportConclusion()`을 추가해 리포트 본문 조립 로직을 표준화.
+- `fullNarrative`가 존재하면 결론에 우선 노출하도록 변경해 단문 요약으로 축약되는 경향을 완화.
+- `fullNarrative` 부재 시에도 질문 요약 + `[운명의 서사 분석]`(카드 근거 2개) + `[운명의 판정]` 구조로 자동 보강.
+- `overall_fortune`에서는 결론 내부에 `[운세 세부 흐름]`(전체/일·재물/애정/건강·마음/메시지) 블록을 포함.
+- 오케스트레이터의 `finalConclusion` 선택 로직을 상세 결론 우선으로 변경하고, 비어 있을 때만 기존 축약 결론 사용.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run build --prefix apps/web` 통과
+
 ### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
 
 #### 변경 파일
@@ -4191,6 +5131,26 @@
 - `.env` 파일의 추적 제외 상태(Untracked) 재검증.
 
 ## [2026-02-28]
+
+### 운명의 마스터 리포트 상세화: 본문 우선 결론 조립기 도입 (v6.3.66)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `docs/RELEASE_NOTES_v6.3.66.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 결론 생성 공통 함수 `buildMasterReportConclusion()`을 추가해 리포트 본문 조립 로직을 표준화.
+- `fullNarrative`가 존재하면 결론에 우선 노출하도록 변경해 단문 요약으로 축약되는 경향을 완화.
+- `fullNarrative` 부재 시에도 질문 요약 + `[운명의 서사 분석]`(카드 근거 2개) + `[운명의 판정]` 구조로 자동 보강.
+- `overall_fortune`에서는 결론 내부에 `[운세 세부 흐름]`(전체/일·재물/애정/건강·마음/메시지) 블록을 포함.
+- 오케스트레이터의 `finalConclusion` 선택 로직을 상세 결론 우선으로 변경하고, 비어 있을 때만 기존 축약 결론 사용.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run build --prefix apps/web` 통과
 
 ### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
 
@@ -4259,6 +5219,26 @@
 
 ## [2026-02-28]
 
+### 운명의 마스터 리포트 상세화: 본문 우선 결론 조립기 도입 (v6.3.66)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `docs/RELEASE_NOTES_v6.3.66.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 결론 생성 공통 함수 `buildMasterReportConclusion()`을 추가해 리포트 본문 조립 로직을 표준화.
+- `fullNarrative`가 존재하면 결론에 우선 노출하도록 변경해 단문 요약으로 축약되는 경향을 완화.
+- `fullNarrative` 부재 시에도 질문 요약 + `[운명의 서사 분석]`(카드 근거 2개) + `[운명의 판정]` 구조로 자동 보강.
+- `overall_fortune`에서는 결론 내부에 `[운세 세부 흐름]`(전체/일·재물/애정/건강·마음/메시지) 블록을 포함.
+- 오케스트레이터의 `finalConclusion` 선택 로직을 상세 결론 우선으로 변경하고, 비어 있을 때만 기존 축약 결론 사용.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run build --prefix apps/web` 통과
+
 ### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
 
 #### 변경 파일
@@ -4319,6 +5299,26 @@
 - UI/UX 테마 일관성 확인.
 
 ## [2026-02-28]
+
+### 운명의 마스터 리포트 상세화: 본문 우선 결론 조립기 도입 (v6.3.66)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/renderer.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `docs/RELEASE_NOTES_v6.3.66.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 결론 생성 공통 함수 `buildMasterReportConclusion()`을 추가해 리포트 본문 조립 로직을 표준화.
+- `fullNarrative`가 존재하면 결론에 우선 노출하도록 변경해 단문 요약으로 축약되는 경향을 완화.
+- `fullNarrative` 부재 시에도 질문 요약 + `[운명의 서사 분석]`(카드 근거 2개) + `[운명의 판정]` 구조로 자동 보강.
+- `overall_fortune`에서는 결론 내부에 `[운세 세부 흐름]`(전체/일·재물/애정/건강·마음/메시지) 블록을 포함.
+- 오케스트레이터의 `finalConclusion` 선택 로직을 상세 결론 우선으로 변경하고, 비어 있을 때만 기존 축약 결론 사용.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run build --prefix apps/web` 통과
 
 ### LLM 안정성 강화: 타임아웃·재시도·원인분류·모델 failover 도입 (v6.3.65)
 

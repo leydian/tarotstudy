@@ -1,5 +1,43 @@
 import { normalizeVerdictLabel } from './report/verdict-policy.js';
 
+const lineText = (value) => String(value || '').replace(/\s+/g, ' ').trim();
+
+const buildMasterReportConclusion = ({ report, question, facts, readingKind = 'general_reading' }) => {
+  const lines = ['사서인 제가 읽어낸 이번 리딩의 결론입니다.'];
+  const narrative = String(report?.fullNarrative || '').trim();
+
+  if (narrative) {
+    lines.push(narrative);
+  } else {
+    lines.push(`질문 "${question}"에 대한 흐름을 정리하면, ${lineText(report?.summary)}`);
+    const evidenceBridge = (Array.isArray(report?.evidence) ? report.evidence : [])
+      .slice(0, 2)
+      .map((item) => {
+        const cardName = facts.find((f) => f.cardId === item.cardId)?.cardNameKo || item.cardId;
+        return `${item.positionLabel}의 ${cardName}은(는) ${lineText(item.claim)}`;
+      });
+    if (evidenceBridge.length > 0) {
+      lines.push(`[운명의 서사 분석]\n${evidenceBridge.join('\n')}`);
+    }
+  }
+
+  if (readingKind === 'overall_fortune' && report?.fortune) {
+    lines.push(
+      [
+        '[운세 세부 흐름]',
+        `전체 에너지: ${lineText(report.fortune.energy)}`,
+        `일·재물운: ${lineText(report.fortune.workFinance)}`,
+        `애정운: ${lineText(report.fortune.love)}`,
+        `건강·마음: ${lineText(report.fortune.healthMind)}`,
+        `메시지: ${lineText(report.fortune.message)}`
+      ].join('\n')
+    );
+  }
+
+  lines.push(`[운명의 판정] ${report?.verdict?.label || 'MAYBE'} - ${lineText(report?.verdict?.rationale)}`);
+  return lines.filter(Boolean).join('\n\n');
+};
+
 const toLegacyResponse = ({ report, question, facts }) => {
   const evidenceStrings = report.evidence.map((item) => (
     `[${item.positionLabel}: ${facts.find((f) => f.cardId === item.cardId)?.cardNameKo || item.cardId}]\n\n` +
@@ -10,12 +48,11 @@ const toLegacyResponse = ({ report, question, facts }) => {
 
   const action = report.actions.map((item, idx) => `[운명의 지침 ${idx + 1}] ${item}`);
 
-  const conclusion = [
-    '사서인 제가 읽어낸 이번 리딩의 결론입니다.',
-    `질문하신 "${question}"에 대하여, ${report.summary}`,
-    '',
-    `[운명의 판정] ${report.verdict.label} - ${report.verdict.rationale}`
-  ].join('\n');
+  const conclusion = buildMasterReportConclusion({
+    report,
+    question,
+    facts
+  });
 
   return {
     conclusion,
@@ -64,6 +101,7 @@ const mapFailureStage = ({ fallbackReason, qualityValid, modelReport }) => {
 };
 
 export {
+  buildMasterReportConclusion,
   toLegacyResponse,
   extractBinaryEntities,
   mapFailureStage

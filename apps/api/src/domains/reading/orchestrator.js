@@ -33,6 +33,7 @@ import {
 } from './quality-guard.js';
 import {
   toLegacyResponse,
+  buildMasterReportConclusion,
   extractBinaryEntities,
   mapFailureStage
 } from './renderer.js';
@@ -312,9 +313,13 @@ export const generateReadingHybrid = async ({
 
   const isOverallFortune = resolvedProfile.readingKind === 'overall_fortune';
   const isCompactQuestion = isOverallFortune || questionType === 'light' || (questionType === 'binary' && safeQuestion.length <= 20);
-  const finalConclusion = isCompactQuestion
-    ? finalized.report.summary
-    : legacy.conclusion;
+  const detailedConclusion = buildMasterReportConclusion({
+    report: finalized.report,
+    question: safeQuestion,
+    facts,
+    readingKind: resolvedProfile.readingKind
+  });
+  const finalConclusion = detailedConclusion || (isCompactQuestion ? finalized.report.summary : legacy.conclusion);
 
   const compactEvidence = finalized.report.evidence.map((item) => {
     const cardName = facts.find((f) => f.cardId === item.cardId)?.cardNameKo || item.cardId;
