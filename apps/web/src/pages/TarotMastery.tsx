@@ -144,6 +144,17 @@ export function TarotMastery() {
     return '유보';
   };
 
+  const getSpreadRenderConfig = (spread: Spread) => {
+    const maxAbsX = Math.max(...spread.positions.map((p) => Math.abs(p.x)), 1);
+    const maxAbsY = Math.max(...spread.positions.map((p) => Math.abs(p.y)), 1);
+    const maxAbs = Math.max(maxAbsX, maxAbsY);
+
+    // Keep large spreads visible without pushing the result panel out of view.
+    const scale = Math.min(0.5, Math.max(0.28, 240 / maxAbs));
+    const areaHeight = Math.min(420, Math.max(280, (maxAbsY * 2 * scale) + 120));
+    return { scale, areaHeight };
+  };
+
   const inferQuestionType = (question: string) => {
     const relationshipKeywords = ['속마음', '그 사람', '연애', '사랑', '재회', '커플', '썸', '이별'];
     const careerKeywords = ['이직', '회사', '상사', '퇴사', '연봉', '업무', '커리어', '취업', '면접', '직장', '프로젝트'];
@@ -207,12 +218,14 @@ export function TarotMastery() {
         <div className={styles.mainContent}>
           {/* 상단 고정 카드 스프레드 */}
           {(step === 'reading' || step === 'result') && spreadLayout && (
+            (() => {
+              const renderConfig = getSpreadRenderConfig(spreadLayout);
+              return (
             <div 
               className={styles.topSpreadArea}
               style={{ 
-                minHeight: (spreadLayout.positions && spreadLayout.positions.length > 0)
-                  ? Math.max(300, (Math.max(...spreadLayout.positions.map(p => Math.abs(p.y))) * 2 * 0.5) + 200) + 'px'
-                  : '300px'
+                minHeight: `${renderConfig.areaHeight}px`,
+                maxHeight: '48vh'
               }}
             >
               <div className={styles.spreadCenter}>
@@ -222,8 +235,8 @@ export function TarotMastery() {
                     className={styles.cardPosition}
                     style={{
                       position: 'absolute',
-                      left: `${pos.x * 0.5}px`,
-                      top: `${pos.y * 0.5}px`,
+                      left: `${pos.x * renderConfig.scale}px`,
+                      top: `${pos.y * renderConfig.scale}px`,
                       transform: 'translate(-50%, -50%)',
                       transition: 'all 0.5s ease-out'
                     }}
@@ -238,6 +251,8 @@ export function TarotMastery() {
                 ))}
               </div>
             </div>
+              );
+            })()
           )}
 
           {/* 메시지 및 결과 영역 */}
