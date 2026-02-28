@@ -2,6 +2,29 @@
 
 ## [2026-02-28]
 
+### 개발 방식 표준화 문서 도입 (v6.3.5)
+
+#### 변경 파일
+- `docs/DEVELOPMENT_WORKFLOW.md`
+- `README.md`
+- `.github/pull_request_template.md`
+
+#### 변경 사항
+- AGENTS/CLAUDE 원칙을 웹 앱 실무 절차로 고정한 `Development Workflow Standard` 문서 추가.
+- README에 개발 워크플로우 표준 문서 링크 추가.
+- PR 템플릿에 `Scope & Success`, `Facts/Assumptions/Open Questions` 섹션 추가.
+
+#### 효과
+- 구현 전 범위/성공조건 명시가 일관화되어 요구사항 누락 감소.
+- 실패 대응 루프(증상-가설-검증-수정-재검증)와 문서 동기화 규칙을 작업 표준으로 정착.
+- 리뷰 단계에서 사실/가정/미해결 이슈가 분리되어 의사결정 속도 향상.
+
+#### 상세 문서
+- `docs/RELEASE_NOTES_v6.3.5.md`
+
+
+## [2026-02-28]
+
 ### Anthropic 호출 안정화: 모델/타임아웃 재정렬 (v6.3.4)
 
 #### 변경 파일
