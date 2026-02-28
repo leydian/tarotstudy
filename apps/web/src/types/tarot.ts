@@ -49,7 +49,7 @@ export interface ReadingResponse {
   action: string[];
   yesNoVerdict: 'YES' | 'NO' | 'MAYBE';
   mode?: 'legacy' | 'hybrid';
-  apiUsed?: 'anthropic' | 'openai' | 'fallback' | 'none';
+  apiUsed?: 'anthropic' | 'fallback' | 'none' | 'openai';
   fallbackUsed?: boolean;
   fallbackReason?: string | null;
   report?: {
@@ -79,6 +79,13 @@ export interface ReadingResponse {
     serverRevision?: string;
     serverTimestamp?: string;
     questionType?: string;
+    responseMode?: 'concise' | 'balanced' | 'creative';
+    path?: 'anthropic_primary' | 'anthropic_retry' | 'fallback';
+    timings?: {
+      totalMs: number;
+      anthropicPrimaryMs?: number | null;
+      anthropicRetryMs?: number | null;
+    };
     fallbackReason?: string | null;
   };
 }

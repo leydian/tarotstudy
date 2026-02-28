@@ -2,6 +2,45 @@
 
 ## [2026-02-28]
 
+### Claude 전용 엔진 전환 + 응답 다양성/속도 최적화 (v6.3.9)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/hybrid.js`
+- `apps/web/src/types/tarot.ts`
+- `apps/web/src/pages/TarotMastery.tsx`
+- `docs/CHANGELOG.md`
+- `docs/RELEASE_NOTES_v6.3.9.md`
+
+#### 변경 사항
+- 하이브리드 엔진을 **Claude 전용 경로**로 전환.
+  - OpenAI 호출 경로 및 관련 분기 제거.
+  - Anthropic 1차 실패 시 1회 재시도 후 deterministic fallback으로 전환.
+- 응답 속도 개선을 위한 Anthropic 호출 파라미터 튜닝:
+  - 기본 타임아웃: `60000ms -> 10000ms`
+  - 재시도 타임아웃: `7000ms` 추가
+  - 모드별 `max_tokens`/`temperature` 동적 적용.
+- 응답 다양성 자동 모드 도입:
+  - `responseMode: concise | balanced | creative`
+  - 질문 유형/길이에 따라 프롬프트 스타일 가이드 자동 선택.
+- 운영 진단 메타 확장:
+  - `meta.responseMode`
+  - `meta.path` (`anthropic_primary`, `anthropic_retry`, `fallback`)
+  - `meta.timings` (`totalMs`, `anthropicPrimaryMs`, `anthropicRetryMs`)
+- 프론트 결과 화면 진단 배지 확장:
+  - `responseMode`, `path`, `totalMs` 표시 추가.
+
+#### 효과
+- OpenAI 비사용 정책을 코드 레벨에서 강제.
+- 짧은 질문은 더 빠르고 간결하게, 깊은 질문은 표현 다양성을 유지하도록 자동 최적화.
+- 요청 단위 처리 경로/지연시간이 노출되어 성능 디버깅 및 운영 관측성 향상.
+
+#### 검증
+- `npm run test:persona --prefix apps/api` 통과.
+- `npm run build --prefix apps/web` 통과.
+- 상세 변경 요약: `docs/RELEASE_NOTES_v6.3.9.md`
+
+## [2026-02-28]
+
 ### 초간단 질문 간결 모드 및 2카드 스프레드 최적화 (v6.3.8)
 
 #### 변경 파일

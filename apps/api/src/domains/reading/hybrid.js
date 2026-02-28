@@ -13,9 +13,9 @@ const NEGATIVE_IDS = new Set([
   'w09', 'w10', 'c05', 'c08', 'p05'
 ]);
 
-const DEFAULT_OPENAI_MODEL = process.env.READING_MODEL || 'gpt-4o-mini';
 const DEFAULT_ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL || 'claude-haiku-4-5-20251001';
-const ANTHROPIC_TIMEOUT_MS = Number(process.env.ANTHROPIC_TIMEOUT_MS || 60000);
+const ANTHROPIC_TIMEOUT_MS = Number(process.env.ANTHROPIC_TIMEOUT_MS || 10000);
+const ANTHROPIC_RETRY_TIMEOUT_MS = Number(process.env.ANTHROPIC_RETRY_TIMEOUT_MS || 7000);
 
 const getYesNoScore = (cardId) => {
   if (POSITIVE_IDS.has(cardId)) return 1;
@@ -28,6 +28,23 @@ const sanitizeText = (value) => String(value || '').replace(/\s+/g, ' ').trim();
 const normalizeVerdictLabel = (label) => {
   if (label === 'YES' || label === 'NO' || label === 'MAYBE') return label;
   return 'MAYBE';
+};
+
+const detectResponseMode = (questionType, questionLength) => {
+  if (questionType === 'light' || (questionType === 'binary' && questionLength <= 20)) return 'concise';
+  if ((questionType === 'emotional' || questionType === 'relationship') && questionLength >= 25) return 'creative';
+  return 'balanced';
+};
+
+const getAnthropicConfig = (responseMode, isRetry = false) => {
+  const tokenBase = responseMode === 'concise' ? 500 : (responseMode === 'creative' ? 1300 : 1100);
+  const maxTokens = isRetry ? Math.max(300, Math.floor(tokenBase * 0.8)) : tokenBase;
+  const temperature = responseMode === 'concise' ? 0.25 : (responseMode === 'creative' ? 0.7 : 0.45);
+  return {
+    maxTokens,
+    timeoutMs: isRetry ? ANTHROPIC_RETRY_TIMEOUT_MS : ANTHROPIC_TIMEOUT_MS,
+    temperature
+  };
 };
 
 const pickMeaningByCategory = (card, category) => {
@@ -121,7 +138,7 @@ const buildDeterministicReport = ({ question, facts, category, binaryEntities })
   return { summary, verdict, evidence, counterpoints, actions, fullNarrative: null };
 };
 
-const buildPrompt = ({ question, facts, category, timeframe, binaryEntities, sessionContext }) => {
+const buildPrompt = ({ question, facts, category, timeframe, binaryEntities, sessionContext, responseMode }) => {
   const context = {
     question,
     category,
@@ -131,27 +148,39 @@ const buildPrompt = ({ question, facts, category, timeframe, binaryEntities, ses
     facts
   };
 
-  const isLight = question.length < 15 && ['커피', '메뉴', '점심', '저녁', '야식', '걷기', '버스', '지하철', '옷', '신발', '살까', '말까', '먹을까', '마실까'].some(k => question.includes(k));
-
-  const styleGuard = isLight
+  const styleGuide = responseMode === 'concise'
     ? [
+        '응답 모드: concise',
         '길이 제한:',
         '- fullNarrative는 2문단 이내, 문단당 2문장 이내.',
+        '- evidence는 핵심 주장만 간결하게 작성.',
+        '- actions는 짧고 실행 가능한 문장으로 작성.',
         '- 과장된 비유/장황한 세계관 설명 금지.',
         '- 질문에 대한 직접 결론 1문장을 반드시 포함.',
       ].join('\n')
-    : '';
+    : responseMode === 'creative'
+      ? [
+          '응답 모드: creative',
+          '- 이미지감 있는 표현과 어휘 변주를 사용하세요.',
+          '- 같은 어구 반복을 피하고 카드별 표현을 다르게 구성하세요.',
+          '- 결론은 질문에 대한 실천 방향이 분명해야 합니다.'
+        ].join('\n')
+      : [
+          '응답 모드: balanced',
+          '- 명확하고 안정적인 어조로 카드 근거를 구조적으로 설명하세요.',
+          '- 감성적 표현과 실천 지침의 균형을 유지하세요.'
+        ].join('\n');
 
   return [
     '당신은 아르카나 도서관의 지혜로운 사서이자 타로 전문가입니다.',
     '반드시 JSON만 출력하고, 카드의 상징에 기반한 따뜻하고 통찰력 있는 분석을 제공하세요.',
-    `이 질문은 ${isLight ? '일상적이고 가벼운' : '진중하고 깊이 있는'} 고민입니다. 그에 맞춰 어휘의 무게를 조절하세요.`,
+    `이 질문은 ${responseMode === 'concise' ? '일상적이고 가벼운' : '진중하고 깊이 있는'} 고민입니다. 그에 맞춰 어휘의 무게를 조절하세요.`,
     '출력 스키마:',
     '{"fullNarrative":string, "summary":string,"verdict":{"label":"YES|NO|MAYBE","rationale":string,"recommendedOption":"A|B|EITHER|NONE"},"evidence":[{"cardId":string,"positionLabel":string,"claim":string,"rationale":string,"caution":string}],"counterpoints":[string],"actions":[string]}',
     '- fullNarrative: 사서의 말투로 작성된 3~4문단의 전체 리딩 서사. 카드 개별 해석과 종합 결론을 자연스럽게 연결하세요. 문법과 조사를 완벽하게 처리하세요.',
     '- evidence.claim: 카드의 상징과 현재 상황을 연결하는 문장.',
     '한국어로 작성하고 사서의 우아한 말투를 유지하세요.',
-    styleGuard,
+    styleGuide,
     `입력 데이터: ${JSON.stringify(context)}`
   ].join('\n');
 };
@@ -180,18 +209,19 @@ const mapAnthropicReason = (status) => {
   return 'anthropic_http_error';
 };
 
-const mapOpenAIReason = (status) => {
-  if (status >= 500) return 'openai_http_error';
-  return 'openai_http_error';
-};
-
-const callAnthropic = async (prompt) => {
+const callAnthropic = async (prompt, options = {}) => {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return { report: null, reason: 'model_unavailable' };
 
+  const {
+    maxTokens = 1100,
+    timeoutMs = ANTHROPIC_TIMEOUT_MS,
+    temperature = 0.45
+  } = options;
+
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), ANTHROPIC_TIMEOUT_MS);
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
     try {
       const response = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
@@ -202,7 +232,8 @@ const callAnthropic = async (prompt) => {
         },
         body: JSON.stringify({
           model: DEFAULT_ANTHROPIC_MODEL,
-          max_tokens: 4096,
+          max_tokens: maxTokens,
+          temperature,
           messages: [{ role: 'user', content: prompt }],
           system: '아르카나 도서관의 사서로서 따뜻하고 신비로운 분위기를 유지하며 JSON만 반환하세요.'
         }),
@@ -226,51 +257,9 @@ const callAnthropic = async (prompt) => {
   } catch (error) {
     const isTimeout = error?.name === 'AbortError' || error?.message?.includes('aborted');
     console.error(
-      `[Anthropic API] Fetch Error model=${DEFAULT_ANTHROPIC_MODEL} timeout_ms=${ANTHROPIC_TIMEOUT_MS} timed_out=${isTimeout} message=${error?.message || 'unknown'} cause=${error?.cause?.code || error?.cause?.message || 'none'}`
+      `[Anthropic API] Fetch Error model=${DEFAULT_ANTHROPIC_MODEL} timeout_ms=${timeoutMs} timed_out=${isTimeout} message=${error?.message || 'unknown'} cause=${error?.cause?.code || error?.cause?.message || 'none'}`
     );
     const reason = isTimeout ? 'anthropic_timeout' : 'anthropic_fetch_error';
-    return { report: null, reason };
-  }
-};
-
-const callOpenAI = async (prompt) => {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) return { report: null, reason: 'model_unavailable' };
-
-  try {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({
-        model: DEFAULT_OPENAI_MODEL,
-        temperature: 0.4,
-        messages: [
-          {
-            role: 'system',
-            content: '아르카나 도서관의 사서로서 따뜻하고 신비로운 분위기를 유지하며 JSON만 반환하세요.'
-          },
-          {
-            role: 'user',
-            content: prompt
-          }
-        ]
-      })
-    });
-
-    if (!response.ok) {
-      console.error(`[OpenAI API] HTTP Error ${response.status}`);
-      return { report: null, reason: mapOpenAIReason(response.status) };
-    }
-    const data = await response.json();
-    const text = data?.choices?.[0]?.message?.content;
-    const report = extractJsonObject(text);
-    return { report, reason: report ? null : 'model_unavailable' };
-  } catch (error) {
-    console.error('[OpenAI API] Error:', error.message);
-    const reason = 'openai_http_error';
     return { report: null, reason };
   }
 };
@@ -416,6 +405,7 @@ export const generateReadingHybrid = async ({
     cardCount: cards.length,
     binaryEntities
   });
+  const responseMode = detectResponseMode(questionType, safeQuestion.length);
   const facts = buildCardFacts(cards, category);
 
   const deterministic = buildDeterministicReport({
@@ -431,32 +421,40 @@ export const generateReadingHybrid = async ({
     category,
     timeframe,
     binaryEntities,
-    sessionContext
+    sessionContext,
+    responseMode
   });
 
   let apiUsed = 'none';
   let modelReport = null;
   let fallbackReason = null;
+  let path = 'fallback';
+  const startedAt = Date.now();
+  let anthropicPrimaryMs = null;
+  let anthropicRetryMs = null;
 
   try {
-    // 1. Anthropic 시도
-    const antResult = await callAnthropic(prompt);
+    const primaryConfig = getAnthropicConfig(responseMode, false);
+    const primaryStartedAt = Date.now();
+    const antResult = await callAnthropic(prompt, primaryConfig);
+    anthropicPrimaryMs = Date.now() - primaryStartedAt;
     modelReport = antResult.report;
     if (modelReport) {
       apiUsed = 'anthropic';
+      path = 'anthropic_primary';
     } else {
       fallbackReason = antResult.reason;
-    }
-
-    // 2. OpenAI 시도 (Anthropic 실패 시)
-    if (!modelReport) {
-      const gptResult = await callOpenAI(prompt);
-      modelReport = gptResult.report;
+      const retryConfig = getAnthropicConfig(responseMode, true);
+      const retryStartedAt = Date.now();
+      const antRetryResult = await callAnthropic(prompt, retryConfig);
+      anthropicRetryMs = Date.now() - retryStartedAt;
+      modelReport = antRetryResult.report;
       if (modelReport) {
-        apiUsed = 'openai';
-        fallbackReason = null; // GPT 성공 시 이전 에러 무시
+        apiUsed = 'anthropic';
+        fallbackReason = null;
+        path = 'anthropic_retry';
       } else {
-        fallbackReason = fallbackReason || gptResult.reason;
+        fallbackReason = antRetryResult.reason || fallbackReason;
       }
     }
   } catch (err) {
@@ -472,6 +470,7 @@ export const generateReadingHybrid = async ({
   if (fallbackUsed) {
     normalized = deterministic;
     apiUsed = 'fallback';
+    path = 'fallback';
     if (!fallbackReason && !quality.valid) fallbackReason = 'validation_failed';
     if (!fallbackReason) fallbackReason = 'model_unavailable';
   }
@@ -492,6 +491,7 @@ export const generateReadingHybrid = async ({
   const compactActions = (normalized.actions.length > 0 ? normalized.actions : deterministic.actions)
     .slice(0, 2)
     .map((item, idx) => `[운명의 지침 ${idx + 1}] ${item}`);
+  const totalMs = Date.now() - startedAt;
 
   return {
     conclusion: finalConclusion,
@@ -514,6 +514,13 @@ export const generateReadingHybrid = async ({
       serverRevision,
       serverTimestamp: new Date().toISOString(),
       questionType,
+      responseMode,
+      path,
+      timings: {
+        totalMs,
+        anthropicPrimaryMs,
+        anthropicRetryMs
+      },
       fallbackReason: fallbackReason || null
     }
   };

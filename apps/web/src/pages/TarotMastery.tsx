@@ -150,8 +150,15 @@ export function TarotMastery() {
 
   const apiUsedLabel = (apiUsed?: 'anthropic' | 'openai' | 'fallback' | 'none') => {
     if (apiUsed === 'anthropic') return 'Anthropic';
-    if (apiUsed === 'openai') return 'OpenAI';
-    if (apiUsed === 'fallback') return 'Fallback(v3)';
+    if (apiUsed === 'openai') return 'OpenAI(legacy)';
+    if (apiUsed === 'fallback') return 'Fallback';
+    return 'Unknown';
+  };
+
+  const responseModeLabel = (mode?: 'concise' | 'balanced' | 'creative') => {
+    if (mode === 'concise') return 'Concise';
+    if (mode === 'creative') return 'Creative';
+    if (mode === 'balanced') return 'Balanced';
     return 'Unknown';
   };
 
@@ -313,6 +320,15 @@ export function TarotMastery() {
                           </span>
                           <span className={styles.diagnosticPill}>
                             fallbackReason: {reading.meta?.fallbackReason ?? reading.fallbackReason ?? 'unavailable'}
+                          </span>
+                          <span className={styles.diagnosticPill}>
+                            responseMode: {responseModeLabel(reading.meta?.responseMode)}
+                          </span>
+                          <span className={styles.diagnosticPill}>
+                            path: {reading.meta?.path || 'unknown'}
+                          </span>
+                          <span className={styles.diagnosticPill}>
+                            totalMs: {reading.meta?.timings?.totalMs ?? 'unknown'}
                           </span>
                           <span className={styles.diagnosticPill}>
                             serverRevision: {reading.meta?.serverRevision || 'unknown'}
