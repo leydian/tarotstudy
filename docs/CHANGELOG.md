@@ -2,6 +2,64 @@
 
 ## [2026-02-28]
 
+### 풀 리팩터: reading 모듈 세분화 + profile 경로 분리 (v6.3.52)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/report-builder.js`
+- `apps/api/src/domains/reading/prompt-builder.js`
+- `apps/api/src/domains/reading/model-client.js`
+- `apps/api/src/domains/reading/engine-helpers.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `apps/api/src/domains/reading/profile/question-type.js`
+- `apps/api/src/domains/reading/questionType.js`
+- `docs/RELEASE_NOTES_v6.3.52.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- reading 엔진 파일 세분화
+  - 기존 대형 helper 로직을 `report-builder/prompt-builder/model-client`로 분리.
+  - `engine-helpers.js`는 모듈 집약 재수출 레이어로 축소.
+  - `orchestrator.js`는 흐름 제어/최종 조립 중심으로 유지.
+- question profile 경로 분리
+  - 기존 `questionType.js` 구현을 `profile/question-type.js`로 이동.
+  - `questionType.js`는 호환 재수출 레이어로 전환(기존 import 경로 유지).
+- 계약/동작 보존
+  - `generateReadingHybrid` 공개 시그니처 유지.
+  - `/api/reading`, `/api/v2/reading` 계약 필드 유지.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:persona --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `node apps/api/tests/fallback-minimization.js` 통과
+- `node apps/api/tests/question-profile-v2.js` 통과
+- `node apps/api/tests/reading-v2-contract.js` 통과
+- `npm run build --prefix apps/web` 통과
+
+### 1차 분할: 오케스트레이터 헬퍼 추출 (v6.3.51)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/engine-helpers.js`
+- `apps/api/src/domains/reading/orchestrator.js`
+- `docs/RELEASE_NOTES_v6.3.51.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 리딩 엔진 1차 분할 적용
+  - `orchestrator.js` 내부의 대형 헬퍼(상수/문구 유틸/리포트 생성/프롬프트/모델 호출/정규화 보조)를 `engine-helpers.js`로 추출.
+  - `orchestrator.js`는 검증/폴백 결정/최종 조립 중심의 흐름 제어 파일로 축소.
+- 공개 계약 유지
+  - `generateReadingHybrid` 시그니처와 응답 스키마는 변경 없음.
+  - 기존 테스트 import 경로(`domains/reading/hybrid.js`)와 API 동작은 유지.
+
+#### 검증
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:persona --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `node apps/api/tests/question-profile-v2.js` 통과
+- `node apps/api/tests/reading-v2-contract.js` 통과
+- `npm run build --prefix apps/web` 통과
+
 ### 리딩 오케스트레이터 분리 + legacy 모드 제거 (v6.3.50)
 
 #### 변경 파일
