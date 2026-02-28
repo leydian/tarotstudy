@@ -2,6 +2,27 @@
 
 ## [2026-02-28]
 
+### 성소 패널 높이 고정으로 리딩 길이 무한 확장 방지 (v6.3.64)
+
+#### 변경 파일
+- `apps/web/src/pages/TarotMastery.module.css`
+- `docs/RELEASE_NOTES_v6.3.64.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 데스크탑/태블릿 성소 높이 정책 고정
+  - `.page`에 데스크탑 기준 높이(`height: calc(100vh - 88px)`)를 부여해 패널 레이아웃 기준점을 고정.
+  - `@supports (height: 100dvh)` 환경에서는 `height: calc(100dvh - 88px)`를 사용해 브라우저 UI 변동 대응.
+- sanctuary 높이 제약 재정의
+  - 기존 `min-height` 중심 정책을 `height + max-height + min-height:0` 조합으로 전환.
+  - `<=1024px` 구간도 동일하게 `height/max-height`를 명시해 콘텐츠 길이에 따라 패널이 계속 커지는 현상 차단.
+- 결과
+  - 리딩이 길어져도 성소 우측 패널(`rightPane`) 내에서 스크롤되고, 페이지 전체가 길어지는 현상이 완화.
+  - 모바일(`<=768px`)은 기존 의도대로 유동 높이(`height:auto`)를 유지.
+
+#### 검증
+- `npm run build --prefix apps/web` 통과
+
 ### 종합운세 마스터 리포트 길이 확장 + 조사 오류 보정 (v6.3.63)
 
 #### 변경 파일

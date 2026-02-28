@@ -4,6 +4,7 @@
   display: flex;
   flex-direction: column;
   padding: 0 1.25rem 1rem;
+  height: calc(100vh - 88px);
   min-height: 0;
 }
 
@@ -20,7 +21,9 @@
   border: 1px solid var(--border-subtle);
   border-bottom: none;
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
-  min-height: min(960px, calc(100dvh - 150px));
+  height: 100%;
+  max-height: min(960px, calc(100dvh - 150px));
+  min-height: 0;
 }
 
 /* ── PANEL HEADER ── */
@@ -260,7 +263,9 @@
   }
 
   .sanctuary {
-    min-height: min(860px, calc(100dvh - 120px));
+    height: min(860px, calc(100dvh - 120px));
+    max-height: min(860px, calc(100dvh - 120px));
+    min-height: 0;
   }
 
   .workspaceGrid {
@@ -870,7 +875,7 @@
 }
 
 @supports (height: 100dvh) {
-  .page { min-height: calc(100dvh - 88px); }
+  .page { height: calc(100dvh - 88px); min-height: 0; }
   @media (max-width: 768px) {
     .page {
       height: auto;
