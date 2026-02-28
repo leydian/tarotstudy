@@ -9,7 +9,9 @@
     "test:persona": "node tests/validate-persona-regression.js",
     "test:hybrid": "node tests/hybrid-resilience.js",
     "test:fortune": "node tests/overall-fortune-regression.js",
-    "metrics:report": "node scripts/aggregate-metrics.js"
+    "test:metrics": "node tests/metrics-aggregation.js",
+    "metrics:report": "node scripts/aggregate-metrics.js",
+    "metrics:check": "node scripts/check-metrics-thresholds.js"
   },
   "dependencies": {
     "express": "^4.18.2",

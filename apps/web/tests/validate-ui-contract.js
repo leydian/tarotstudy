@@ -11,6 +11,7 @@ const read = (relativePath) => fs.readFileSync(path.join(srcRoot, relativePath),
 
 const tarotMastery = read('TarotMastery.tsx');
 const cardsPage = read('Cards.tsx');
+const appSource = fs.readFileSync(path.resolve(__dirname, '../src/App.tsx'), 'utf8');
 
 const quickFortunes = ['today', 'week', 'month', 'year'];
 for (const id of quickFortunes) {
@@ -30,6 +31,8 @@ assert.ok(
 
 assert.ok(cardsPage.includes('aria-label="카드 검색"'), 'Cards search input aria-label is missing');
 assert.ok(cardsPage.includes('aria-pressed={filter === key}'), 'Cards filter button aria-pressed is missing');
+assert.ok(appSource.includes('to="/ops"'), 'Ops dashboard route link is missing');
+assert.ok(appSource.includes('path="/ops"'), 'Ops dashboard route is missing');
 
 assert.ok(
   tarotMastery.includes("const handleQuickFortune = async (question: string) =>"),

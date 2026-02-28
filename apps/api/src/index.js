@@ -8,6 +8,12 @@ import { spreads, getSpreadById } from './data/spreads.js';
 import { generateReadingV3 } from './domains/reading/v3.js';
 import { generateReadingHybrid } from './domains/reading/hybrid.js';
 import { inferQuestionProfile } from './domains/reading/questionType.js';
+import {
+  resolveMetricLogPath,
+  readMetricsFromFile,
+  aggregateMetrics,
+  evaluateThresholds
+} from './ops/metrics.js';
 
 dotenv.config();
 
@@ -208,6 +214,39 @@ app.post('/api/analytics', (req, res) => {
     `[Analytics] event=${eventName} session=${sessionId} ts=${timestamp || new Date().toISOString()} context=${JSON.stringify(context || {})}`
   );
   return res.status(202).json({ ok: true });
+});
+
+app.get('/api/admin/metrics', (req, res) => {
+  const configuredKey = process.env.ADMIN_METRICS_KEY || '';
+  const isProd = process.env.NODE_ENV === 'production';
+  if (isProd && !configuredKey) {
+    return res.status(503).json({
+      ok: false,
+      error: 'Admin metrics endpoint is disabled: ADMIN_METRICS_KEY is not configured'
+    });
+  }
+  const requestKey = req.headers['x-admin-key'];
+  if (configuredKey && requestKey !== configuredKey) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  try {
+    const inputPath = resolveMetricLogPath(process.env.TAROT_METRIC_LOG_PATH);
+    const metrics = readMetricsFromFile(inputPath);
+    const report = aggregateMetrics(metrics, inputPath);
+    const status = evaluateThresholds(report);
+    return res.json({
+      ok: true,
+      generatedAt: new Date().toISOString(),
+      report,
+      status
+    });
+  } catch (error) {
+    return res.status(400).json({
+      ok: false,
+      error: error?.message || 'Failed to aggregate metrics'
+    });
+  }
 });
 
 // 헬스 체크

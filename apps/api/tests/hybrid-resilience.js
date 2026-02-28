@@ -248,6 +248,49 @@ const testHealthGuardrailOverridesUnsafeVerdict = async () => {
   });
 };
 
+const testEvidenceQualityRewrite = async () => {
+  const cards = buildCards(['m12', 'm15', 's08']);
+  const lowQualityReport = {
+    fullNarrative: '품질 저하 케이스 테스트',
+    summary: '지금은 조건을 한 번 더 점검해야 합니다.',
+    verdict: { label: 'MAYBE', rationale: '판단을 서두르지 마세요.', recommendedOption: 'NONE' },
+    evidence: cards.map((card) => ({
+      cardId: card.id,
+      positionLabel: card.positionLabel,
+      claim: `${card.nameKo}(역방향)`,
+      rationale: '좋은 시점입니다.',
+      caution: '[운명의 지침 1] 즉시 행동'
+    })),
+    counterpoints: ['조건 점검이 필요합니다.'],
+    actions: ['속도를 늦춰 보세요.']
+  };
+
+  await withFetchSequence([anthResponse(JSON.stringify(lowQualityReport))], async () => {
+    const result = await generateReadingHybrid({
+      cards,
+      question: '이 선택을 바로 실행해도 될까요?',
+      timeframe: 'daily',
+      category: 'general'
+    });
+
+    assert.equal(result.fallbackUsed, false);
+    assert.ok(Array.isArray(result.report?.evidence));
+    const evidence = result.report.evidence;
+    assert.equal(evidence.length, cards.length);
+    assert.equal(
+      evidence.some((item) => /좋은 시점/.test(item.rationale)),
+      false,
+      '역방향 claim의 낙관적 rationale은 rewrite 되어야 합니다.'
+    );
+    assert.equal(
+      evidence.some((item) => /\[운명의\s*지침/i.test(item.caution)),
+      false,
+      'evidence caution 오염 prefix는 제거되어야 합니다.'
+    );
+    assert.ok((result.meta?.qualityFlags || []).includes('evidence_quality_rewritten'));
+  });
+};
+
 try {
   await testParseRepairPath();
   await testEvidenceNormalization();
@@ -255,6 +298,7 @@ try {
   await testDuplicateSummaryRationaleRewrite();
   await testCounterpointContaminationFilter();
   await testHealthGuardrailOverridesUnsafeVerdict();
+  await testEvidenceQualityRewrite();
   console.log('Hybrid resilience tests passed.');
 } finally {
   global.fetch = originalFetch;

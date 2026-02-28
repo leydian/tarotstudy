@@ -2,6 +2,103 @@
 
 ## [2026-02-28]
 
+### 운영 보안/단위테스트/야간 모니터링 고도화 (v6.3.32)
+
+#### 변경 파일
+- `.github/workflows/nightly-metrics-check.yml`
+- `.github/workflows/quality-gate.yml`
+- `apps/api/src/index.js`
+- `apps/web/package.json`
+- `apps/web/vite.config.ts`
+- `apps/web/tests/setup.ts`
+- `apps/web/tests/OpsDashboard.test.tsx`
+- `apps/web/tests/TarotMastery.test.tsx`
+- `apps/web/src/legacy/README.md`
+- `apps/web/src/legacy/ChatReading.tsx`
+- `apps/web/src/legacy/Reading.tsx`
+- `apps/web/src/legacy/StudyReading.tsx`
+- `docs/OPERATIONS_METRICS.md`
+- `docs/QUALITY_GATE.md`
+- `docs/RELEASE_NOTES_v6.3.32.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 운영 보안
+  - 운영 환경에서 `ADMIN_METRICS_KEY` 미설정 시 `/api/admin/metrics` 비활성화(503).
+- 야간 모니터링
+  - `nightly-metrics-check` 워크플로 추가.
+  - 로그 파일 부재 시 skip 처리로 CI 오탐 방지.
+- 테스트 체계 확장
+  - Vitest + RTL 기반 웹 단위테스트 도입.
+  - `TarotMastery`, `OpsDashboard` 렌더/흐름 핵심 케이스 검증.
+  - quality-gate에 `test:unit` 추가.
+- 코드 정리
+  - 라우트 미사용 페이지를 `legacy` 폴더로 이동하여 메인 코드 경량화.
+
+#### 검증
+- `npm run test:persona --prefix apps/api` 통과
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run test:metrics --prefix apps/api` 통과
+- `npm run test:ui-contract --prefix apps/web` 통과
+- `npm run test:ui-flow --prefix apps/web` 통과
+- `npm run test:unit --prefix apps/web` 통과
+- `npm run build --prefix apps/web` 통과
+
+## [2026-02-28]
+
+### 운영 임계치/흐름 회귀/내부 대시보드 확장 (v6.3.31)
+
+#### 변경 파일
+- `.github/workflows/quality-gate.yml`
+- `apps/api/package.json`
+- `apps/api/scripts/aggregate-metrics.js`
+- `apps/api/scripts/check-metrics-thresholds.js`
+- `apps/api/src/domains/reading/hybrid.js`
+- `apps/api/src/index.js`
+- `apps/api/src/ops/metrics.js`
+- `apps/api/tests/hybrid-resilience.js`
+- `apps/api/tests/metrics-aggregation.js`
+- `apps/web/package.json`
+- `apps/web/src/App.tsx`
+- `apps/web/src/pages/OpsDashboard.tsx`
+- `apps/web/src/pages/OpsDashboard.module.css`
+- `apps/web/tests/validate-ui-contract.js`
+- `apps/web/tests/validate-reading-flow-contract.js`
+- `docs/OPERATIONS_METRICS.md`
+- `docs/QUALITY_GATE.md`
+- `docs/RELEASE_NOTES_v6.3.31.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 임계치 운영
+  - 메트릭 파싱/집계/임계치 평가를 `src/ops/metrics.js`로 공통화.
+  - `metrics:check` 추가로 critical 임계치 초과 시 CI/운영 단계에서 즉시 탐지 가능.
+- 흐름 회귀 강화
+  - 웹 `test:ui-flow` 추가(질문→리딩→결과→리셋 계약).
+  - API `test:metrics` 추가(집계/임계치 평가 로직 회귀 방지).
+  - CI 게이트에 `test:metrics`, `test:ui-flow` 편입.
+- 텍스트 품질 강화
+  - evidence 품질 후처리(`enforceEvidenceQuality`)로 오염/모순/단조화 자동 보정.
+  - `qualityFlags`에 rewrite 흔적 기록.
+  - hybrid 회복력 테스트에 evidence 품질 보정 케이스 추가.
+- 내부 운영 대시보드
+  - `/api/admin/metrics` 엔드포인트 추가(옵션 키 인증).
+  - 웹 `/ops` 페이지 추가(KPI, 임계치 상태, 분포 시각화).
+- 문서 체계 반영
+  - 운영 메트릭 가이드/품질 게이트/릴리스 노트 갱신.
+
+#### 검증
+- `npm run test:persona --prefix apps/api` 통과
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `npm run test:metrics --prefix apps/api` 통과
+- `npm run test:ui-contract --prefix apps/web` 통과
+- `npm run test:ui-flow --prefix apps/web` 통과
+- `npm run build --prefix apps/web` 통과
+
+## [2026-02-28]
+
 ### 운영 메트릭 집계/모바일 읽기성/회귀 검증 확장 (v6.3.30)
 
 #### 변경 파일

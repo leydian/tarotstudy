@@ -1,0 +1,39 @@
+name: Nightly Metrics Check
+
+on:
+  schedule:
+    - cron: '0 16 * * *' # 01:00 Asia/Seoul
+  workflow_dispatch:
+
+jobs:
+  metrics-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Aggregate Metrics (report-only)
+        run: |
+          if [ ! -f apps/api/tmp/metrics.log ]; then
+            echo "No metrics log file found in CI workspace. Skipping aggregation."
+            exit 0
+          fi
+          npm run metrics:report --prefix apps/api
+
+      - name: Threshold Check
+        run: |
+          if [ ! -f apps/api/tmp/metrics.log ]; then
+            echo "No metrics log file found in CI workspace. Skipping threshold check."
+            exit 0
+          fi
+          npm run metrics:check --prefix apps/api

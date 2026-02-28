@@ -32,8 +32,17 @@ jobs:
       - name: API overall-fortune regression
         run: npm run test:fortune --prefix apps/api
 
+      - name: API metrics aggregation
+        run: npm run test:metrics --prefix apps/api
+
       - name: Web UI contract regression
         run: npm run test:ui-contract --prefix apps/web
+
+      - name: Web reading flow regression
+        run: npm run test:ui-flow --prefix apps/web
+
+      - name: Web unit tests
+        run: npm run test:unit --prefix apps/web
 
       - name: Web build
         run: npm run build --prefix apps/web

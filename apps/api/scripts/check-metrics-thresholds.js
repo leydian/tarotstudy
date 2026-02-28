@@ -10,7 +10,13 @@ try {
   const metrics = readMetricsFromFile(inputPath);
   const report = aggregateMetrics(metrics, inputPath);
   const status = evaluateThresholds(report);
-  console.log(JSON.stringify({ ...report, status }, null, 2));
+
+  console.log(JSON.stringify({ report, status }, null, 2));
+
+  const hasCritical = status.issues.some((item) => item.level === 'critical');
+  if (hasCritical) {
+    process.exit(1);
+  }
 } catch (error) {
   console.error(error.message || error);
   process.exit(1);

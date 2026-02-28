@@ -119,6 +119,50 @@ const buildDistinctRationale = (report) => {
   return '판단을 서두르기보다 추가 신호를 확인한 뒤 결정을 내리는 편이 좋습니다.';
 };
 
+const normalizeEvidenceItem = (item, idx) => {
+  const positionLabel = sanitizeText(item?.positionLabel || `단계 ${idx + 1}`);
+  const claim = sanitizeText(item?.claim || '');
+  const rationale = sanitizeText(item?.rationale || '');
+  const caution = sanitizeText(item?.caution || '');
+  const isReversedClaim = /\(역방향\)/.test(claim);
+  const optimisticRationale = /좋은 시점|유리합니다|긍정|활성화되어/i.test(rationale);
+
+  const safeClaim = containsContamination(claim)
+    ? `${positionLabel} 흐름에서는 핵심 변수를 먼저 좁혀 판단하는 접근이 안정적입니다.`
+    : claim;
+  let safeRationale = containsContamination(rationale)
+    ? `${positionLabel} 맥락을 기준으로 속도보다 정확도를 우선해 점검하세요.`
+    : rationale;
+
+  if (isReversedClaim && optimisticRationale) {
+    safeRationale = `${positionLabel}에서는 과속을 피하고 조건을 한 단계씩 점검하는 편이 더 안전합니다.`;
+  }
+
+  const safeCaution = containsContamination(caution)
+    ? '불확실성이 클 때는 즉시 결론보다 조건 점검을 우선하세요.'
+    : caution;
+
+  return {
+    ...item,
+    positionLabel,
+    claim: safeClaim || `${positionLabel} 흐름을 보면 현재 선택의 핵심 조건을 먼저 정리할 필요가 있습니다.`,
+    rationale: safeRationale || `${positionLabel}에서 보이는 신호를 기준으로 우선순위를 조정해 보세요.`,
+    caution: safeCaution || '결정을 서두르기보다 확인 가능한 근거부터 점검하세요.'
+  };
+};
+
+const enforceEvidenceQuality = (evidence) => {
+  const normalized = (Array.isArray(evidence) ? evidence : []).map((item, idx) => normalizeEvidenceItem(item, idx));
+  const rationaleKeys = normalized.map((item) => normalizeCompareText(item.rationale)).filter(Boolean);
+  const allRationaleSame = rationaleKeys.length > 1 && new Set(rationaleKeys).size === 1;
+  if (!allRationaleSame) return normalized;
+
+  return normalized.map((item, idx) => ({
+    ...item,
+    rationale: `${item.rationale} (${item.positionLabel} 포지션 관점으로 보면 ${idx + 1}번째 신호의 우선순위를 함께 점검해 보세요.)`
+  }));
+};
+
 const postProcessReport = (report) => {
   const qualityFlags = [];
   const next = {
@@ -143,6 +187,13 @@ const postProcessReport = (report) => {
 
   next.counterpoints = sanitizeListItems(next.counterpoints, 'counterpoints');
   next.actions = sanitizeListItems(next.actions, 'actions');
+  if (Array.isArray(next.evidence)) {
+    const before = JSON.stringify(next.evidence);
+    next.evidence = enforceEvidenceQuality(next.evidence);
+    if (JSON.stringify(next.evidence) !== before) {
+      qualityFlags.push('evidence_quality_rewritten');
+    }
+  }
 
   if (next.counterpoints.some((item) => containsContamination(item))) {
     qualityFlags.push('counterpoint_contamination_detected');

@@ -41,16 +41,24 @@
 1. `npm run test:persona --prefix apps/api`
 2. `npm run test:hybrid --prefix apps/api`
 3. `npm run test:fortune --prefix apps/api`
-4. `npm run test:ui-contract --prefix apps/web`
-5. `npm run build --prefix apps/web`
-6. 수동 시나리오 확인
+4. `npm run test:metrics --prefix apps/api`
+5. `npm run test:ui-contract --prefix apps/web`
+6. `npm run test:ui-flow --prefix apps/web`
+7. `npm run test:unit --prefix apps/web`
+8. `npm run build --prefix apps/web`
+9. 수동 시나리오 확인
    - binary 질문
    - 감정 취약 질문
    - API 키 없는 환경 질문
    - `?debug=1`에서 진단 배지 노출 확인 / 일반 모드 비노출 확인
-7. 운영 메트릭 점검
+10. 운영 메트릭 점검
    - `npm run metrics:report --prefix apps/api`
    - fallbackRate / p95 / failureStage 분포를 릴리스 노트에 기록
+
+## 7. Nightly 모니터링
+- `.github/workflows/nightly-metrics-check.yml`에서 스케줄 실행합니다.
+- CI 워크스페이스에 메트릭 로그가 없으면 점검을 skip하고 종료합니다.
+- 로그 파일이 존재하면 `metrics:report` + `metrics:check`를 실행합니다.
 
 ## 6. CI 게이트
 - `.github/workflows/quality-gate.yml`에서 위 검증 절차를 PR/`main` push마다 실행합니다.

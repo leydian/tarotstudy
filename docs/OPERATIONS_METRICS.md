@@ -39,13 +39,32 @@ npm run metrics:report --prefix apps/api -- apps/api/tmp/metrics.log
 - `byFailureStage`, `byFallbackReason`
 - `byQuestionType`, `byReadingKind`, `byFortunePeriod`
 
-## 3) 운영 기준(권장)
+## 3) 임계치 자동 점검
+
+```bash
+npm run metrics:check --prefix apps/api
+```
+
+- WARN: 로그로만 알림
+- CRITICAL: 프로세스 exit code 1
+- 기본 임계치:
+  - fallbackRate warn/critical: 15% / 25%
+  - p95 warn/critical: 3500ms / 5000ms
+
+## 4) 내부 대시보드
+
+- API: `GET /api/admin/metrics`
+- 운영(`NODE_ENV=production`)에서는 `ADMIN_METRICS_KEY` 미설정 시 endpoint가 503으로 비활성화됩니다.
+- `ADMIN_METRICS_KEY` 설정 시 `x-admin-key` 헤더가 필요합니다.
+- 웹: `/ops` 페이지에서 KPI/임계치 상태/분포를 확인
+
+## 5) 운영 기준(권장)
 
 - fallback rate > 15%: 네트워크/API 상태 우선 점검
 - p95 totalMs > 3500ms: 모델 타임아웃/재시도 정책 점검
 - `anthropic_parse_error` 급증: 응답 파싱/repair 경로 점검
 
-## 4) 주간 리뷰 체크리스트
+## 6) 주간 리뷰 체크리스트
 
 1. 이번 주 fallback rate 추세는 증가/감소 중 무엇인가?
 2. 느린 요청의 질문 유형/도메인 편향이 존재하는가?
