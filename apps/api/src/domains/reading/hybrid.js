@@ -167,9 +167,13 @@ const callAnthropic = async (prompt) => {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return null;
 
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8000); // Vercel 10s 제한 내 graceful 폴백
+
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
+      signal: controller.signal,
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': apiKey,
@@ -188,13 +192,22 @@ const callAnthropic = async (prompt) => {
       })
     });
 
-    if (!response.ok) return null;
+    if (!response.ok) {
+      console.error('[Anthropic API] HTTP error:', response.status, response.statusText);
+      return null;
+    }
     const data = await response.json();
     const text = data?.content?.[0]?.text;
     return extractJsonObject(text);
   } catch (error) {
-    console.error('[Anthropic API] Error:', error);
+    if (error.name === 'AbortError') {
+      console.error('[Anthropic API] Timeout (8s exceeded)');
+    } else {
+      console.error('[Anthropic API] Error:', error);
+    }
     return null;
+  } finally {
+    clearTimeout(timeout);
   }
 };
 
@@ -202,9 +215,13 @@ const callOpenAI = async (prompt) => {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return null;
 
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8000);
+
   try {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
+      signal: controller.signal,
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${apiKey}`
@@ -225,13 +242,22 @@ const callOpenAI = async (prompt) => {
       })
     });
 
-    if (!response.ok) return null;
+    if (!response.ok) {
+      console.error('[OpenAI API] HTTP error:', response.status, response.statusText);
+      return null;
+    }
     const data = await response.json();
     const text = data?.choices?.[0]?.message?.content;
     return extractJsonObject(text);
   } catch (error) {
-    console.error('[OpenAI API] Error:', error);
+    if (error.name === 'AbortError') {
+      console.error('[OpenAI API] Timeout (8s exceeded)');
+    } else {
+      console.error('[OpenAI API] Error:', error);
+    }
     return null;
+  } finally {
+    clearTimeout(timeout);
   }
 };
 
