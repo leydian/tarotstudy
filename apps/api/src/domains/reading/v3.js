@@ -6,9 +6,24 @@ export const generateReadingV3 = (cards, question, timeframe = 'daily', category
   
   // 1. 질문 상황 및 객체 분석 (NLP-lite)
   const extractEntities = (q) => {
-    const binaryRegex = /(.+?)\s*(?:할까|갈까|탈까|먹을까|마실까|아니면|vs|또는|혹은)\s*(.+?)(?:할까|갈까|탈까|먹을까|마실까|\?|$)/;
+    // 1단계: 'A 아니면 B', 'A vs B' 패턴 처리
+    const splitRegex = /(.+?)\s*(?:아니면|vs|또는|혹은)\s*(.+?)(?:\?|$)/;
+    const splitMatch = q.match(splitRegex);
+    if (splitMatch) return [splitMatch[1].trim(), splitMatch[2].trim()];
+
+    // 2단계: 'A 할까 B 할까' 패턴 처리 (동사형)
+    const verbs = ['할까', '갈까', '탈까', '먹을까', '마실까', '살까', '될까'];
+    const verbPattern = verbs.join('|');
+    const binaryRegex = new RegExp(`(.+?)\\s*(?:${verbPattern})\\s*(.+?)(?:${verbPattern})(?:\\?|$)`);
     const match = q.match(binaryRegex);
-    if (match) return [match[1].trim().replace(/ /g, ''), match[2].trim().replace(/ /g, '')];
+    
+    if (match) {
+      // "걸어갈 때 버스 탈까 걸어갈까" 에서 앞부분의 '걸어갈 때' 같은 컨텍스트를 제거하고 
+      // 순수하게 '버스'와 '걸어' 만을 추출하기 위해 공백으로 자름
+      const a = match[1].split(' ').pop().trim();
+      const b = match[2].trim();
+      return [a, b];
+    }
     return null;
   };
 

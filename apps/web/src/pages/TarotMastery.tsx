@@ -42,9 +42,11 @@ export function TarotMastery() {
     try {
       const relationshipKeywords = ['속마음', '그 사람', '연애', '사랑', '재회', '커플', '썸'];
       const careerKeywords = ['이직', '회사', '상사', '퇴사', '연봉', '업무', '커리어', '취업', '면접', '직장', '프로젝트'];
+      const binaryKeywords = ['할까', '갈까', '탈까', '먹을까', '마실까', '살까', '아니면', 'vs', '또는', '혹은'];
       
       let targetCardCount = 3;
-      if (relationshipKeywords.some(k => userQuestion.includes(k))) targetCardCount = 7;
+      if (binaryKeywords.some(k => userQuestion.includes(k)) || userQuestion.includes(' 아니면 ')) targetCardCount = 2;
+      else if (relationshipKeywords.some(k => userQuestion.includes(k))) targetCardCount = 7;
       else if (careerKeywords.some(k => userQuestion.includes(k))) targetCardCount = 5;
       else if (userQuestion.length > 30) targetCardCount = 10;
 
