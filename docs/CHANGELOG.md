@@ -197,6 +197,27 @@
 
 ## [2026-02-28]
 
+### 하이브리드 리딩 엔진 v6.1.3: 정밀 진단 시스템(Diagnostic Layer) 도입
+
+#### 변경 사항
+- **에러 원인 세분화(Error Mapping) 구현 (`apps/api/src/domains/reading/hybrid.js`)**:
+    - `model_unavailable`로 통합 관리되던 에러 범주를 6가지 세부 원인으로 분리.
+    - `auth_failed` (401), `model_not_found` (404), `quota_exceeded` (429), `dns_error` (EAI_AGAIN), `validation_failed` 등을 명확히 구분.
+    - 리딩 실패 시 `fallbackReason` 필드를 통해 프론트엔드에 구체적인 실패 원인을 전달.
+
+- **API 호출부 구조 개선**:
+    - `callAnthropic`, `callOpenAI` 함수가 단순 결과(null)가 아닌 `{ report, reason }` 객체를 반환하도록 인터페이스 변경.
+    - HTTP 상태 코드에 따른 동적 에러 맵핑 로직(`mapErrorReason`) 추가.
+
+- **서버 로그 강화**:
+    - API 에러 발생 시 HTTP 상태 코드와 서버 응답 본문(Error Body)을 상세히 출력하여 Vercel 대시보드에서의 디버깅 편의성 증대.
+
+#### 검증
+- 존재하지 않는 모델명 호출 시 `model_not_found` 반환 확인.
+- 네트워크 단절 시 `dns_error` 또는 `network_error` 감지 확인.
+
+## [2026-02-28]
+
 ### 하이브리드 리딩 엔진 v6.1.2: 초안정성 강화 및 Vercel 최적화
 
 #### 변경 사항
