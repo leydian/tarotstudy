@@ -2,6 +2,51 @@
 
 ## [2026-02-28]
 
+### 맥락형 리딩 API v2 도입 (멀티의도/컨텍스트/안전강등) (v6.3.46)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/questionType.js`
+- `apps/api/src/index.js`
+- `apps/api/src/domains/reading/hybrid.js`
+- `apps/api/tests/question-profile-v2.js`
+- `apps/api/tests/reading-v2-contract.js`
+- `apps/web/src/services/tarotService.ts`
+- `apps/web/src/types/tarot.ts`
+- `apps/web/src/pages/TarotMastery.tsx`
+- `docs/RELEASE_NOTES_v6.3.46.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- API v2 엔드포인트 추가
+  - `POST /api/v2/question-profile`, `POST /api/v2/reading` 추가.
+  - v2 응답에 `analysis(intentBreakdown/domainDecision/readingDecision/safety)` 구조 포함.
+- 질문 프로파일링 고도화
+  - 멀티의도 분류 도입(top-3 의도).
+  - 질문 유형 사전 확장(기존 6 + 확장 8: finance/family/friendship/self_growth/spirituality/education/relocation/legal).
+  - 최근 5턴 컨텍스트 신호 반영.
+  - 개인정보 마스킹(이메일/전화/식별형 숫자 패턴) 적용.
+- 안전 강등 정책 적용
+  - `confidence < 0.48` 또는 `margin < 0.08` 시 보수 모드(`general_reading`) 강등.
+  - `health/legal` 도메인은 강제 보수 모드 유지.
+- 하이브리드 메타 정합성 개선
+  - `analysis`를 엔진 메타에 전달하고 실제 `responseMode`를 `analysis.readingDecision`에 반영.
+- 웹 연동
+  - 웹은 v2 우선 호출, 실패 시 v1 자동 폴백.
+  - `sessionContext.recentTurns`(최대 5턴) 전달로 맥락 입력 강화.
+  - 타입에 확장 domainTag 및 confidence/lowConfidence/contextUsed 반영.
+- 운영 계측 확장
+  - `intentTop1`, `downgraded`, `confidence`, `lowConfidence`, `contextUsed` 로깅 추가.
+
+#### 검증
+- `node apps/api/tests/question-profile-v2.js` 통과
+- `node apps/api/tests/reading-v2-contract.js` 통과
+- `node apps/api/tests/hybrid-resilience.js` 통과
+- `node apps/api/tests/overall-fortune-regression.js` 통과
+- `npm run test:ui-flow --prefix apps/web` 통과
+- `npm run build --prefix apps/web` 통과
+
+## [2026-02-28]
+
 ### 품질 플래그 단일화 + overall fortune UI 보정 축소 (v6.3.45)
 
 #### 변경 파일

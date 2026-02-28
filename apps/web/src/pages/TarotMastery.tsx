@@ -278,6 +278,13 @@ export function TarotMastery() {
         .filter(m => m.role === 'user')
         .slice(-3)
         .map(m => m.text);
+      const recentTurns = messages
+        .slice(-5)
+        .map((m) => ({
+          role: m.role === 'user' ? 'user' as const : 'assistant' as const,
+          text: m.text,
+          summary: m.text.split('\n')[0]
+        }));
 
       const readingData = await tarotApi.getReading(selectedCards.map(c => c.id), userQuestion, {
         mode: 'hybrid',
@@ -286,6 +293,7 @@ export function TarotMastery() {
         cardDraws,
         sessionContext: {
           recentQuestions,
+          recentTurns,
           questionProfile: {
             questionType: profile.questionType,
             domainTag: profile.domainTag,

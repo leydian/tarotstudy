@@ -6,7 +6,7 @@ import { cards, getCardById } from './data/cards.js';
 import { spreads, getSpreadById } from './data/spreads.js';
 import { generateReadingV3 } from './domains/reading/v3.js';
 import { generateReadingHybrid } from './domains/reading/hybrid.js';
-import { inferQuestionProfile } from './domains/reading/questionType.js';
+import { inferQuestionProfile, inferQuestionProfileV2 } from './domains/reading/questionType.js';
 import {
   appendMetricLine,
   resolveMetricLogPath,
@@ -42,7 +42,12 @@ const logReadingMetrics = (requestId, reading) => {
     domainTag: reading?.meta?.domainTag || null,
     readingKind: reading?.meta?.readingKind || null,
     fortunePeriod: reading?.meta?.fortunePeriod || null,
-    totalMs: reading?.meta?.timings?.totalMs ?? null
+    totalMs: reading?.meta?.timings?.totalMs ?? null,
+    confidence: reading?.meta?.confidence ?? null,
+    lowConfidence: !!reading?.meta?.lowConfidence,
+    contextUsed: !!reading?.meta?.contextUsed,
+    downgraded: !!reading?.analysis?.safety?.downgraded,
+    intentTop1: reading?.analysis?.intentBreakdown?.[0]?.intent || null
   };
   console.log(`[Tarot Metric] ${JSON.stringify(metric)}`);
   if (metricLogPath) {
@@ -84,6 +89,12 @@ app.get('/api/spreads', (req, res) => {
 app.post('/api/question-profile', (req, res) => {
   const { question = '', category = 'general' } = req.body || {};
   const profile = inferQuestionProfile({ question, category });
+  return res.json(profile);
+});
+
+app.post('/api/v2/question-profile', (req, res) => {
+  const { question = '', category = 'general', context = null } = req.body || {};
+  const profile = inferQuestionProfileV2({ question, category, context });
   return res.json(profile);
 });
 
@@ -207,6 +218,143 @@ app.post('/api/reading', async (req, res) => {
           fallbackReason: 'server_error'
         }
       });
+  }
+});
+
+app.post('/api/v2/reading', async (req, res) => {
+  const requestId = makeRequestId();
+  const {
+    cardIds,
+    cardDraws,
+    question,
+    timeframe,
+    category,
+    spreadId,
+    mode = 'hybrid',
+    sessionContext,
+    structure = 'evidence_report',
+    debug = false
+  } = req.body;
+
+  if ((!cardIds || !Array.isArray(cardIds) || cardIds.length === 0) && (!Array.isArray(cardDraws) || cardDraws.length === 0)) {
+    return res.status(400).json({ error: 'cardIds 또는 cardDraws 배열이 필요합니다.' });
+  }
+
+  const normalizedDraws = Array.isArray(cardDraws) && cardDraws.length > 0
+    ? cardDraws
+      .map((item) => ({
+        id: item?.id,
+        orientation: item?.orientation === 'reversed' ? 'reversed' : 'upright'
+      }))
+      .filter((item) => !!item.id)
+    : (cardIds || []).map((id) => ({ id, orientation: 'upright' }));
+
+  const selectedCards = normalizedDraws
+    .map((draw) => {
+      const card = getCardById(draw.id);
+      return card ? { ...card, orientation: draw.orientation } : null;
+    })
+    .filter(Boolean);
+  if (selectedCards.length === 0) {
+    return res.status(400).json({ error: '유효한 카드가 없습니다.' });
+  }
+
+  const spread = (spreadId ? getSpreadById(spreadId) : null)
+    || spreads.find(s => s.id === timeframe)
+    || spreads.find(s => s.positions.length === selectedCards.length)
+    || null;
+
+  const cardsWithPosition = selectedCards.map((card, idx) => ({
+    ...card,
+    positionLabel: spread?.positions?.[idx]?.label || `단계 ${idx + 1}`
+  }));
+
+  const questionProfile = inferQuestionProfileV2({
+    question: question || '나의 현재 상황은?',
+    category,
+    context: sessionContext || null
+  });
+
+  try {
+    if (mode === 'legacy') {
+      const reading = generateReadingV3(cardsWithPosition, question || '나의 현재 상황은?', timeframe, category);
+      return res.json({
+        ...reading,
+        mode: 'legacy',
+        fallbackUsed: false,
+        apiUsed: 'none',
+        fallbackReason: null,
+        analysis: questionProfile.analysis,
+        meta: {
+          requestId,
+          serverRevision,
+          serverTimestamp: new Date().toISOString(),
+          questionType: questionProfile.questionType,
+          domainTag: questionProfile.domainTag,
+          riskLevel: questionProfile.riskLevel,
+          readingKind: questionProfile.readingKind,
+          fortunePeriod: questionProfile.fortunePeriod || null,
+          recommendedSpreadId: questionProfile.recommendedSpreadId,
+          confidence: questionProfile.confidence,
+          lowConfidence: questionProfile.lowConfidence,
+          contextUsed: questionProfile.contextUsed,
+          fallbackReason: null
+        }
+      });
+    }
+
+    const reading = await generateReadingHybrid({
+      cards: cardsWithPosition,
+      question: question || '나의 현재 상황은?',
+      timeframe,
+      category,
+      sessionContext,
+      structure,
+      debug,
+      requestId,
+      serverRevision,
+      questionProfile
+    });
+
+    return res.json({
+      ...reading,
+      analysis: questionProfile.analysis,
+      meta: {
+        ...(reading.meta || {}),
+        confidence: questionProfile.confidence,
+        lowConfidence: questionProfile.lowConfidence,
+        contextUsed: questionProfile.contextUsed
+      }
+    });
+  } catch (error) {
+    console.error(
+      `[Tarot API] requestId=${requestId} Hybrid reading failed, fallback to legacy(v2):`,
+      error?.message || error
+    );
+    const reading = generateReadingV3(cardsWithPosition, question || '나의 현재 상황은?', timeframe, category);
+    return res.json({
+      ...reading,
+      mode: 'legacy',
+      fallbackUsed: true,
+      apiUsed: 'fallback',
+      fallbackReason: 'server_error',
+      analysis: questionProfile.analysis,
+      meta: {
+        requestId,
+        serverRevision,
+        serverTimestamp: new Date().toISOString(),
+        questionType: questionProfile.questionType,
+        domainTag: questionProfile.domainTag,
+        riskLevel: questionProfile.riskLevel,
+        readingKind: questionProfile.readingKind,
+        fortunePeriod: questionProfile.fortunePeriod || null,
+        recommendedSpreadId: questionProfile.recommendedSpreadId,
+        confidence: questionProfile.confidence,
+        lowConfidence: questionProfile.lowConfidence,
+        contextUsed: questionProfile.contextUsed,
+        fallbackReason: 'server_error'
+      }
+    });
   }
 });
 

@@ -1459,6 +1459,15 @@ export const generateReadingHybrid = async ({
     resolvedProfile.readingKind,
     resolvedFortunePeriod
   );
+  const resolvedAnalysis = resolvedProfile?.analysis
+    ? {
+        ...resolvedProfile.analysis,
+        readingDecision: {
+          ...(resolvedProfile.analysis.readingDecision || {}),
+          responseMode
+        }
+      }
+    : null;
   const facts = buildCardFacts(cards, category);
 
   const deterministic = buildDeterministicReport({
@@ -1673,6 +1682,7 @@ export const generateReadingHybrid = async ({
       attempts,
       failureStage,
       fallbackReason: fallbackReason || null,
+      analysis: resolvedAnalysis,
       qualityFlags: finalized.qualityFlags,
       ...(debug ? { modelQualityFlags } : {})
     }

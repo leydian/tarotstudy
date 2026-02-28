@@ -85,12 +85,33 @@ export interface ReadingResponse {
     unsupportedClaimCount: number;
     regenerationCount: number;
   };
+  analysis?: {
+    intentBreakdown: Array<{
+      intent: string;
+      score: number;
+      source: 'question' | 'context' | 'merged';
+    }>;
+    domainDecision: {
+      domainTag: string;
+      riskLevel: 'low' | 'medium' | 'high';
+      confidence: number;
+    };
+    readingDecision: {
+      readingKind: 'overall_fortune' | 'general_reading';
+      recommendedSpreadId: string;
+      responseMode: 'concise' | 'balanced' | 'creative' | null;
+    };
+    safety: {
+      downgraded: boolean;
+      reasons: string[];
+    };
+  };
   meta?: {
     requestId?: string;
     serverRevision?: string;
     serverTimestamp?: string;
     questionType?: string;
-    domainTag?: 'health' | 'relationship' | 'career' | 'emotional' | 'lifestyle' | 'general';
+    domainTag?: 'health' | 'relationship' | 'career' | 'emotional' | 'lifestyle' | 'general' | 'finance' | 'family' | 'education' | 'spirituality' | 'legal';
     riskLevel?: 'low' | 'medium' | 'high';
     readingKind?: 'overall_fortune' | 'general_reading';
     fortunePeriod?: 'today' | 'week' | 'month' | 'year' | null;
@@ -129,6 +150,10 @@ export interface ReadingResponse {
     };
     failureStage?: 'network' | 'parse' | 'http' | 'model_unavailable' | 'engine' | 'validation' | 'unknown' | null;
     fallbackReason?: string | null;
+    confidence?: number;
+    lowConfidence?: boolean;
+    contextUsed?: boolean;
+    analysis?: ReadingResponse['analysis'];
     qualityFlags?: string[];
   };
 }

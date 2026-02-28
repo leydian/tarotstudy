@@ -19,20 +19,32 @@ export const tarotApi = {
 
   async getQuestionProfile(question: string, category: string = 'general'): Promise<{
     questionType: 'binary' | 'relationship' | 'career' | 'emotional' | 'light' | 'deep';
-    domainTag: 'health' | 'relationship' | 'career' | 'emotional' | 'lifestyle' | 'general';
+    domainTag: 'health' | 'relationship' | 'career' | 'emotional' | 'lifestyle' | 'general' | 'finance' | 'family' | 'education' | 'spirituality' | 'legal';
     riskLevel: 'low' | 'medium' | 'high';
     readingKind: 'overall_fortune' | 'general_reading';
     fortunePeriod: 'today' | 'week' | 'month' | 'year' | null;
     recommendedSpreadId: string;
     targetCardCount: number;
+    confidence?: number;
+    lowConfidence?: boolean;
+    contextUsed?: boolean;
+    analysis?: ReadingResponse['analysis'];
   }> {
-    const res = await fetch(`${API_BASE}/question-profile`, {
+    const payload = { question, category, context: null };
+    const v2 = await fetch(`${API_BASE}/v2/question-profile`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if (v2.ok) return v2.json();
+
+    const v1 = await fetch(`${API_BASE}/question-profile`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ question, category })
     });
-    if (!res.ok) throw new Error('Failed to infer question profile');
-    return res.json();
+    if (!v1.ok) throw new Error('Failed to infer question profile');
+    return v1.json();
   },
 
   // AI 리딩 요청
@@ -45,6 +57,7 @@ export const tarotApi = {
       cardDraws?: Array<{ id: string; orientation?: 'upright' | 'reversed' }>;
       sessionContext?: {
         recentQuestions?: string[];
+        recentTurns?: Array<{ role: 'user' | 'assistant'; text: string; summary?: string }>;
         recentMood?: string;
         questionProfile?: {
           questionType?: string;
@@ -61,12 +74,20 @@ export const tarotApi = {
       debug?: boolean;
     }
   ): Promise<ReadingResponse> {
-    const res = await fetch(`${API_BASE}/reading`, {
+    const payload = { cardIds, question, ...options };
+    const v2 = await fetch(`${API_BASE}/v2/reading`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ cardIds, question, ...options }),
+      body: JSON.stringify(payload),
     });
-    if (!res.ok) throw new Error('Failed to get reading');
-    return res.json();
+    if (v2.ok) return v2.json();
+
+    const v1 = await fetch(`${API_BASE}/reading`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!v1.ok) throw new Error('Failed to get reading');
+    return v1.json();
   }
 };
