@@ -50,7 +50,8 @@ const logReadingMetrics = (requestId, reading) => {
     contextUsed: !!reading?.meta?.contextUsed,
     downgraded: !!reading?.analysis?.safety?.downgraded,
     intentTop1: reading?.analysis?.intentBreakdown?.[0]?.intent || null,
-    qualityScore: reading?.quality?.qualityScore ?? reading?.meta?.qualityScore ?? null
+    qualityScore: reading?.quality?.qualityScore ?? reading?.meta?.qualityScore ?? null,
+    qualityFlags: Array.isArray(reading?.meta?.qualityFlags) ? reading.meta.qualityFlags : []
   };
   console.log(`[Tarot Metric] ${JSON.stringify(metric)}`);
   if (metricLogPath) {
@@ -68,6 +69,7 @@ const logFeedbackMetric = (payload) => {
     timestamp: new Date().toISOString(),
     requestId: payload?.requestId || null,
     rating: payload?.rating || 'unknown',
+    reasonCode: payload?.reasonCode || 'none',
     reason: payload?.reason || null,
     questionType: payload?.questionType || null,
     responseMode: payload?.responseMode || null
@@ -324,6 +326,7 @@ app.post('/api/reading/feedback', (req, res) => {
   const {
     requestId = null,
     rating,
+    reasonCode = null,
     reason = '',
     questionType = null,
     responseMode = null
@@ -332,11 +335,17 @@ app.post('/api/reading/feedback', (req, res) => {
   if (!rating || !['up', 'down'].includes(String(rating))) {
     return res.status(400).json({ error: 'rating must be one of: up, down' });
   }
+  const normalizedReasonCode = reasonCode ? String(reasonCode).trim() : null;
+  const validReasonCodeSet = new Set(['repetition', 'too_long', 'not_relevant', 'tone_issue', 'other']);
+  if (normalizedReasonCode && !validReasonCodeSet.has(normalizedReasonCode)) {
+    return res.status(400).json({ error: 'reasonCode must be one of: repetition, too_long, not_relevant, tone_issue, other' });
+  }
 
   const normalizedReason = String(reason || '').trim().slice(0, 300);
   logFeedbackMetric({
     requestId: requestId ? String(requestId).trim() : null,
     rating: String(rating),
+    reasonCode: normalizedReasonCode || 'none',
     reason: normalizedReason || null,
     questionType: questionType ? String(questionType) : null,
     responseMode: responseMode ? String(responseMode) : null

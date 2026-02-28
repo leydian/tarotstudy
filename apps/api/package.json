@@ -11,7 +11,9 @@
     "test:fortune": "node tests/overall-fortune-regression.js",
     "test:metrics": "node tests/metrics-aggregation.js",
     "metrics:report": "node scripts/aggregate-metrics.js",
-    "metrics:check": "node scripts/check-metrics-thresholds.js"
+    "metrics:check": "node scripts/check-metrics-thresholds.js",
+    "metrics:quality-report": "node scripts/aggregate-quality-feedback.js",
+    "metrics:quality-check": "node scripts/check-quality-thresholds.js"
   },
   "dependencies": {
     "express": "^4.18.2",

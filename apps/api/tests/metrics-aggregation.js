@@ -1,10 +1,13 @@
 import assert from 'node:assert/strict';
 import {
   aggregateMetrics,
+  aggregateQualityFeedback,
   filterMetrics,
   filterMetricsByRange,
   evaluateThresholds,
-  DEFAULT_METRIC_THRESHOLDS
+  evaluateQualityThresholds,
+  DEFAULT_METRIC_THRESHOLDS,
+  DEFAULT_QUALITY_THRESHOLDS
 } from '../src/ops/metrics.js';
 
 const sample = [
@@ -64,5 +67,51 @@ assert.equal(recent[0].questionType, 'binary');
 
 const ranged = filterMetricsByRange(withTimestamp, Date.parse('2026-02-28T10:00:00.000Z'), Date.parse('2026-02-28T12:00:00.000Z'));
 assert.equal(ranged.length, 2);
+
+const qualityEvents = [
+  ...withTimestamp.map((item, idx) => ({
+    ...item,
+    requestId: `req-${idx + 1}`,
+    qualityScore: [82, 68, 74][idx],
+    qualityFlags: idx === 0 ? ['summary_verdict_overlap_high'] : []
+  })),
+  {
+    type: 'feedback_metric',
+    requestId: 'req-1',
+    rating: 'up',
+    reasonCode: 'none',
+    questionType: 'binary',
+    responseMode: 'concise'
+  },
+  {
+    type: 'feedback_metric',
+    requestId: 'req-2',
+    rating: 'down',
+    reasonCode: 'too_long',
+    questionType: 'career',
+    responseMode: 'balanced'
+  },
+  {
+    type: 'feedback_metric',
+    requestId: 'req-3',
+    rating: 'down',
+    reasonCode: 'not_relevant',
+    questionType: 'career',
+    responseMode: 'creative'
+  }
+];
+const qualityReport = aggregateQualityFeedback(qualityEvents, '/tmp/metrics.log');
+assert.equal(qualityReport.totalReadings, 3);
+assert.equal(qualityReport.totalFeedback, 3);
+assert.equal(qualityReport.avgQualityScore, 74.67);
+assert.equal(qualityReport.feedbackDownRatePct, 66.67);
+assert.equal(qualityReport.overlapFlagRatePct, 33.33);
+assert.equal(qualityReport.feedbackByReasonCode.too_long, 1);
+assert.equal(qualityReport.feedbackByReasonCode.not_relevant, 1);
+
+const qualityStatus = evaluateQualityThresholds(qualityReport, DEFAULT_QUALITY_THRESHOLDS);
+assert.equal(qualityStatus.ok, false);
+assert.ok(qualityStatus.issues.some((it) => it.metric === 'feedbackDownRatePct'));
+assert.ok(qualityStatus.issues.some((it) => it.metric === 'overlapFlagRatePct'));
 
 console.log('Metrics aggregation tests passed.');

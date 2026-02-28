@@ -53,12 +53,14 @@
    - `?debug=1`에서 진단 배지 노출 확인 / 일반 모드 비노출 확인
 10. 운영 메트릭 점검
    - `npm run metrics:report --prefix apps/api`
+   - `npm run metrics:quality-report --prefix apps/api`
    - fallbackRate / p95 / failureStage 분포를 릴리스 노트에 기록
+   - qualityScore / feedbackDownRate / overlapFlagRate를 함께 기록
 
 ## 7. Nightly 모니터링
 - `.github/workflows/nightly-metrics-check.yml`에서 스케줄 실행합니다.
 - CI 워크스페이스에 메트릭 로그가 없으면 점검을 skip하고 종료합니다.
-- 로그 파일이 존재하면 `metrics:report` + `metrics:check`를 실행합니다.
+- 로그 파일이 존재하면 `metrics:report` + `metrics:quality-report` + `metrics:check` + `metrics:quality-check`를 실행합니다.
 
 ## 6. CI 게이트
 - `.github/workflows/quality-gate.yml`에서 위 검증 절차를 PR/`main` push마다 실행합니다.
@@ -69,3 +71,13 @@
   - 계약 회귀
   - fallback 실패
   - 체감 품질 저하
+
+## 8. 품질 임계치
+- avgQualityScore warn/critical: `72 / 65`
+- feedbackDownRate warn/critical: `30% / 40%`
+- overlapFlagRate warn/critical: `15% / 25%`
+
+critical 임계치 초과 시 배포를 중단하고 아래 순서로 대응합니다.
+1. `docs/INCIDENT_RUNBOOK_READING.md` 절차에 따라 원인 분류
+2. 최근 품질 룰/응답 모드 변경분 우선 점검
+3. 필요한 경우 직전 안정 릴리즈로 롤백

@@ -122,6 +122,7 @@ export const tarotApi = {
   async sendReadingFeedback(payload: {
     requestId?: string | null;
     rating: 'up' | 'down';
+    reasonCode?: 'repetition' | 'too_long' | 'not_relevant' | 'tone_issue' | 'other';
     reason?: string;
     questionType?: string;
     responseMode?: 'concise' | 'balanced' | 'creative' | string;

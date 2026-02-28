@@ -35,6 +35,15 @@ jobs:
       - name: API metrics aggregation
         run: npm run test:metrics --prefix apps/api
 
+      - name: API metrics threshold checks (optional when logs exist)
+        run: |
+          if ! ls apps/api/tmp/metrics*.log* >/dev/null 2>&1; then
+            echo "No metrics logs in CI workspace. Skipping metrics threshold checks."
+            exit 0
+          fi
+          npm run metrics:check --prefix apps/api
+          npm run metrics:quality-check --prefix apps/api
+
       - name: Web UI contract regression
         run: npm run test:ui-contract --prefix apps/web
 

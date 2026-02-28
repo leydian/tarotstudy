@@ -2,6 +2,65 @@
 
 ## [2026-02-28]
 
+### 운영/유지보수 최적화: 품질 집계·임계치 확장·런북 도입 (v6.3.57)
+
+#### 변경 파일
+- `apps/api/src/ops/metrics.js`
+- `apps/api/scripts/aggregate-quality-feedback.js` (신규)
+- `apps/api/scripts/check-quality-thresholds.js` (신규)
+- `apps/api/scripts/aggregate-metrics.js`
+- `apps/api/scripts/check-metrics-thresholds.js`
+- `apps/api/package.json`
+- `apps/api/src/index.js`
+- `apps/api/tests/metrics-aggregation.js`
+- `.github/workflows/nightly-metrics-check.yml`
+- `.github/workflows/quality-gate.yml`
+- `apps/web/src/services/tarotService.ts`
+- `docs/OPERATIONS_METRICS.md`
+- `docs/QUALITY_GATE.md`
+- `docs/INCIDENT_RUNBOOK_READING.md` (신규)
+- `docs/RELEASE_NOTES_v6.3.57.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 메트릭 수집/보존 최적화
+  - 로그 파일을 일자별(`metrics-YYYY-MM-DD.log`)로 기록하도록 변경.
+  - 용량 초과 시 일자 파일 단위 `.1` 회전 유지.
+  - `TAROT_METRIC_RETENTION_DAYS` 기반 자동 보존 정리 추가.
+- 품질/피드백 집계 체계 확장
+  - `readEventsFromFile` 추가로 `reading_metric + feedback_metric` 통합 파싱 지원.
+  - `aggregateQualityFeedback`, `evaluateQualityThresholds` 추가.
+  - 신규 스크립트:
+    - `metrics:quality-report`
+    - `metrics:quality-check`
+- 임계치 운영 고도화
+  - 품질 임계치 기본값 추가:
+    - avgQualityScore: 72/65
+    - feedbackDownRate: 30/40
+    - overlapFlagRate: 15/25
+  - nightly/quality-gate workflow에서 품질 임계치 점검 단계 추가.
+- feedback API 확장
+  - `POST /api/reading/feedback`에 `reasonCode` enum 지원
+    (`repetition|too_long|not_relevant|tone_issue|other`).
+  - reading metric에 `qualityFlags` 기록 추가.
+- 문서/런북 정비
+  - 운영 메트릭 가이드 및 품질 게이트 문서에 품질 임계치/집계 명령 반영.
+  - 장애 대응 표준 문서(`INCIDENT_RUNBOOK_READING.md`) 신규 추가.
+
+#### 검증
+- `npm run test:metrics --prefix apps/api` 통과
+- `npm run metrics:report --prefix apps/api` 통과
+- `npm run metrics:check --prefix apps/api` 통과
+- `npm run metrics:quality-report --prefix apps/api` 통과
+- `npm run metrics:quality-check --prefix apps/api` 통과
+- `npm run test:hybrid --prefix apps/api` 통과
+- `npm run test:persona --prefix apps/api` 통과
+- `npm run test:fortune --prefix apps/api` 통과
+- `node apps/api/tests/fallback-minimization.js` 통과
+- `node apps/api/tests/question-profile-v2.js` 통과
+- `node apps/api/tests/reading-v2-contract.js` 통과
+- `npm run build --prefix apps/web` 통과
+
 ### 품질 체감 강화: 반복 억제 + 질문 맞춤 문장 + qualityScore/feedback API (v6.3.56)
 
 #### 변경 파일

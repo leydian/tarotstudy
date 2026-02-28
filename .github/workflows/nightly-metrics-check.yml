@@ -24,16 +24,18 @@ jobs:
 
       - name: Aggregate Metrics (report-only)
         run: |
-          if [ ! -f apps/api/tmp/metrics.log ]; then
+          if ! ls apps/api/tmp/metrics*.log* >/dev/null 2>&1; then
             echo "No metrics log file found in CI workspace. Skipping aggregation."
             exit 0
           fi
           npm run metrics:report --prefix apps/api
+          npm run metrics:quality-report --prefix apps/api
 
       - name: Threshold Check
         run: |
-          if [ ! -f apps/api/tmp/metrics.log ]; then
+          if ! ls apps/api/tmp/metrics*.log* >/dev/null 2>&1; then
             echo "No metrics log file found in CI workspace. Skipping threshold check."
             exit 0
           fi
           npm run metrics:check --prefix apps/api
+          npm run metrics:quality-check --prefix apps/api
