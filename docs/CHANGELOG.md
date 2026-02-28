@@ -2,6 +2,34 @@
 
 ## [2026-02-28]
 
+### 품질 플래그 단일화 + overall fortune UI 보정 축소 (v6.3.45)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/hybrid.js`
+- `apps/api/tests/hybrid-resilience.js`
+- `apps/web/src/pages/TarotMastery.tsx`
+- `docs/RELEASE_NOTES_v6.3.45.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- API 품질 플래그 단일화
+  - `postProcessReport()`에서 `summary_verdict_overlap_high` 플래그 기록 제거.
+  - 중복 시 실제 재작성이 필요한 경우 `auto_rewritten`만 기록.
+  - overlap 품질 판정은 `verifyReport()` 기준으로 단일화.
+- overall fortune UI 보정 책임 축소
+  - `getDistinctReportCopy()`의 중복 체크 기반 다단계 치환 제거.
+  - `verdict.rationale -> fortune.message -> workFinance -> love -> healthMind` 우선순위만 유지.
+  - 완전 빈값 방지를 위한 최소 fallback 문구만 유지.
+- 회귀 테스트 갱신
+  - summary/rationale 중복 재작성 케이스에서 `summary_verdict_overlap_high` 미잔존 검증 추가.
+
+#### 검증
+- `node apps/api/tests/hybrid-resilience.js` 통과
+- `node apps/api/tests/overall-fortune-regression.js` 통과
+- `npm run test:ui-flow --prefix apps/web` 통과
+
+## [2026-02-28]
+
 ### 후처리 최소화 + normalize 1차 보정 전환 (v6.3.44)
 
 #### 변경 파일

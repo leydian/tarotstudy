@@ -540,7 +540,6 @@ const postProcessReport = (report) => {
   }
 
   if (isHighOverlap(next.summary, next.verdict.rationale)) {
-    qualityFlags.push('summary_verdict_overlap_high');
     const sameText = normalizeCompareText(next.summary) === normalizeCompareText(next.verdict.rationale);
     const rationaleMissing = !sanitizeText(next.verdict.rationale);
     if (sameText || rationaleMissing) {

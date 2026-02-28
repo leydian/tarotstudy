@@ -174,6 +174,11 @@ const testDuplicateSummaryRationaleRewrite = async () => {
     assert.equal(result.fallbackUsed, false);
     assert.notEqual(result.report?.summary, result.report?.verdict?.rationale, 'summary/rationale 중복은 재작성되어야 합니다.');
     assert.ok(Array.isArray(result.meta?.qualityFlags), 'qualityFlags가 메타에 포함되어야 합니다.');
+    assert.equal(
+      (result.meta?.qualityFlags || []).includes('summary_verdict_overlap_high'),
+      false,
+      '중복이 재작성된 케이스는 verify 기준 overlap 플래그가 남지 않아야 합니다.'
+    );
   });
 };
 
