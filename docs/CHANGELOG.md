@@ -2,6 +2,47 @@
 
 ## [2026-02-28]
 
+### 라이트 테마 WCAG 1차 감사 자동화 + 대비 토큰 보정 (v6.3.59)
+
+#### 변경 파일
+- `apps/web/src/styles/theme.css`
+- `scripts/wcag-contrast-check.mjs` (신규)
+- `package.json`
+- `docs/WCAG_LIGHT_THEME_AUDIT_V1.md` (신규)
+- `docs/RELEASE_NOTES_v6.3.59.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- 라이트 테마 대비 취약 토큰 보정
+  - WCAG AA(일반 텍스트 4.5:1) 기준으로 라이트 팔레트 핵심 토큰을 재조정.
+  - 주요 보정:
+    - `--text-muted` `#7a6f5c -> #756a57`
+    - `--accent-gold` `#9f7b3d -> #7f612f`
+    - `--accent-gold-bright` `#7f612f -> #6f5428`
+    - `--accent-purple` `#7a6ea3 -> #6f6298`
+    - `--status-up` `#2f8f53 -> #267645`
+    - `--status-down` `#c34f4f -> #bf4a4a`
+    - `--status-warn` `#9a7428 -> #8a661f`
+- 대비 자동 점검 스크립트 추가
+  - `scripts/wcag-contrast-check.mjs` 신규 추가.
+  - dark/light 테마별 핵심 토큰 조합 대비를 계산해 기준 미달 시 CI 실패(exit 1) 처리.
+  - 점검 케이스:
+    - `text-primary/secondary/muted` vs `bg|surface|panel`
+    - `text-on-accent` vs `accent`
+    - 상태색(`up/down/info/warn`) vs `modal-bg`
+- 루트 스크립트 등록
+  - `package.json`에 `a11y:contrast` 추가.
+- 감사 문서 추가
+  - `docs/WCAG_LIGHT_THEME_AUDIT_V1.md`에
+    - 범위(Home/Cards modal/TarotMastery)
+    - 기준(WCAG 2.1 AA)
+    - 보정 토큰 내역
+    - 1차 결과 및 후속 제안(v2) 기록.
+
+#### 검증
+- `npm run a11y:contrast` 통과
+- `npm run build --prefix apps/web` 통과
+
 ### 웹 라이트 테마 도입 + 대비 미세튜닝 (v6.3.58)
 
 #### 변경 파일

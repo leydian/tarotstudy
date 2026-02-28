@@ -14,6 +14,7 @@
     "dev:web": "npm run dev -w @tarot/web",
     "install:all": "npm install",
     "build:web": "npm run build -w @tarot/web",
+    "a11y:contrast": "node scripts/wcag-contrast-check.mjs",
     "vercel-build": "npm run build:web",
     "build": "npm run build:web",
     "release:note": "node scripts/generate-release-note.js"
