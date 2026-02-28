@@ -523,42 +523,6 @@ const withCategorizedFlags = (flags = []) => {
   return [...new Set(next)];
 };
 
-const normalizeEvidenceItem = (item, idx) => {
-  const positionLabel = sanitizeText(item?.positionLabel || `단계 ${idx + 1}`);
-  const claim = sanitizeText(item?.claim || '');
-  const rationale = sanitizeText(item?.rationale || '');
-  const caution = sanitizeText(item?.caution || '');
-  const isReversedClaim = /\(역방향\)/.test(claim);
-  const optimisticRationale = /좋은 시점|유리합니다|긍정|활성화되어/i.test(rationale);
-
-  const safeClaim = containsContamination(claim)
-    ? `${positionLabel} 흐름에서는 핵심 변수를 먼저 좁혀 판단하는 접근이 안정적입니다.`
-    : claim;
-  let safeRationale = containsContamination(rationale)
-    ? `${positionLabel} 맥락을 기준으로 속도보다 정확도를 우선해 점검하세요.`
-    : rationale;
-
-  if (isReversedClaim && optimisticRationale) {
-    safeRationale = `${positionLabel}에서는 과속을 피하고 조건을 한 단계씩 점검하는 편이 더 안전합니다.`;
-  }
-
-  const safeCaution = containsContamination(caution)
-    ? '불확실성이 클 때는 즉시 결론보다 조건 점검을 우선하세요.'
-    : caution;
-
-  return {
-    ...item,
-    positionLabel,
-    claim: safeClaim || `${positionLabel} 흐름을 보면 현재 선택의 핵심 조건을 먼저 정리할 필요가 있습니다.`,
-    rationale: safeRationale || `${positionLabel}에서 보이는 신호를 기준으로 우선순위를 조정해 보세요.`,
-    caution: safeCaution || '결정을 서두르기보다 확인 가능한 근거부터 점검하세요.'
-  };
-};
-
-const enforceEvidenceQuality = (evidence) => {
-  return (Array.isArray(evidence) ? evidence : []).map((item, idx) => normalizeEvidenceItem(item, idx));
-};
-
 const postProcessReport = (report) => {
   const qualityFlags = [];
   const next = {
@@ -587,23 +551,16 @@ const postProcessReport = (report) => {
 
   next.counterpoints = sanitizeListItems(next.counterpoints, 'counterpoints');
   next.actions = sanitizeListItems(next.actions, 'actions');
-  if (Array.isArray(next.evidence)) {
-    const before = JSON.stringify(next.evidence);
-    next.evidence = enforceEvidenceQuality(next.evidence);
-    if (JSON.stringify(next.evidence) !== before) {
-      qualityFlags.push('evidence_quality_rewritten');
-    }
-  }
 
   if (next.fortune) {
     const before = JSON.stringify(next.fortune);
     const needsStructuralFix = isFortuneStructurallyInvalid(next.fortune) || hasFortuneContamination(next.fortune);
-    next.fortune = normalizeFortune(next.fortune, null, next.verdict?.label);
     if (needsStructuralFix) {
+      next.fortune = normalizeFortune(next.fortune, null, next.verdict?.label);
       next.fortune = enforceFortuneSectionDiversity(next).fortune;
-    }
-    if (needsStructuralFix && JSON.stringify(next.fortune) !== before) {
-      qualityFlags.push('fortune_section_rewritten');
+      if (JSON.stringify(next.fortune) !== before) {
+        qualityFlags.push('fortune_section_rewritten');
+      }
     }
   }
 
@@ -1338,15 +1295,29 @@ const normalizeReport = (report, facts, fallback) => {
     const byIndex = sourceEvidence[idx];
     const fallbackItem = fallback.evidence[idx] || {};
     const item = byCardId || byIndex || fallbackItem;
-    const claim = sanitizeText(item?.claim || fallbackItem?.claim || '');
-    const rationale = sanitizeText(item?.rationale || fallbackItem?.rationale || '');
+    const rawClaim = sanitizeText(item?.claim || fallbackItem?.claim || '');
+    const rawRationale = sanitizeText(item?.rationale || fallbackItem?.rationale || '');
+    const defaultClaim = sanitizeText(fallbackItem?.claim || `${fact.positionLabel} 흐름을 기준으로 핵심 조건을 먼저 점검해 보세요.`);
+    const defaultRationale = sanitizeText(fallbackItem?.rationale || `${fact.positionLabel} 신호를 바탕으로 우선순위를 좁혀 판단하세요.`);
+    const claim = (!rawClaim || containsContamination(rawClaim)) ? defaultClaim : rawClaim;
+    let rationale = (!rawRationale || containsContamination(rawRationale)) ? defaultRationale : rawRationale;
+    const isReversedClaim = /\(역방향\)/.test(claim);
+    const optimisticRationale = /좋은 시점|유리합니다|긍정|활성화되어/i.test(rationale);
+    if (isReversedClaim && optimisticRationale) {
+      rationale = defaultRationale;
+    }
+    const defaultCaution = sanitizeText(fallbackItem?.caution || fact.advice || '과도한 단정은 피하세요.');
+    const cautionCandidate = stripListPrefix(item?.caution || defaultCaution);
+    const caution = (!cautionCandidate || containsContamination(cautionCandidate))
+      ? defaultCaution
+      : cautionCandidate;
 
     return {
       cardId: fact.cardId,
       positionLabel: sanitizeText(item?.positionLabel || fact.positionLabel || `단계 ${idx + 1}`),
       claim,
       rationale,
-      caution: sanitizeText(item?.caution || fact.advice || fallbackItem?.caution || '과도한 단정은 피하세요.')
+      caution
     };
   });
 

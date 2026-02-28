@@ -2,6 +2,35 @@
 
 ## [2026-02-28]
 
+### 후처리 최소화 + normalize 1차 보정 전환 (v6.3.44)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/hybrid.js`
+- `apps/api/tests/hybrid-resilience.js`
+- `apps/web/src/pages/TarotMastery.tsx`
+- `docs/RELEASE_NOTES_v6.3.44.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- postprocess 책임 축소
+  - `postProcessReport()`에서 evidence 전면 재작성 경로 제거.
+  - fortune 보정은 구조 위반/오염 케이스에서만 수행하도록 제한.
+- normalize 단계 품질 보정 강화
+  - `normalizeReport()` evidence 정규화에서 오염/빈값/역방향-낙관 충돌을 1차 교정.
+  - `caution`은 prefix 제거 후 재검증해 안전 문장으로 정리.
+- 웹 중복 회피 단순화
+  - `getDistinctReportCopy()` overall fortune 분기에서 고정 상수 fallback 제거.
+  - `energy -> workFinance -> love/healthMind` 우선순위 대체만 유지.
+- 테스트 기준 정렬
+  - evidence 품질 보정이 normalize 단계에서 처리되는 정책에 맞춰 플래그 기대치 조정.
+
+#### 검증
+- `node apps/api/tests/hybrid-resilience.js` 통과
+- `node apps/api/tests/overall-fortune-regression.js` 통과
+- `npm run test:ui-flow --prefix apps/web` 통과
+
+## [2026-02-28]
+
 ### 리딩 문장 결합/중복/상세도 보정 (v6.3.43)
 
 #### 변경 파일

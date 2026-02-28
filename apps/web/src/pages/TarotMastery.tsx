@@ -415,12 +415,12 @@ export function TarotMastery() {
       const summary = data.report.summary || data.report.fortune.energy || '';
       const verdictRationale = data.report.verdict?.rationale || '';
       const fortuneMessage = data.report.fortune.message || '';
-      let energyText = verdictRationale || fortuneMessage || data.report.fortune.workFinance || '';
+      let energyText = verdictRationale || fortuneMessage || data.report.fortune.energy || '';
       if (isTextOverlapHigh(summary, energyText)) {
-        energyText = data.report.fortune.workFinance || verdictRationale || fortuneMessage || '';
+        energyText = data.report.fortune.workFinance || fortuneMessage || verdictRationale || '';
       }
       if (isTextOverlapHigh(summary, energyText)) {
-        energyText = '이번 구간은 속도보다 리듬과 점검 주기를 먼저 고정하는 접근이 안정적입니다.';
+        energyText = data.report.fortune.love || data.report.fortune.healthMind || energyText;
       }
       return {
         insightText: summary,

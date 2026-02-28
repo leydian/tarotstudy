@@ -329,8 +329,11 @@ const testEvidenceQualityRewrite = async () => {
       false,
       'evidence caution 오염 prefix는 제거되어야 합니다.'
     );
-    assert.ok((result.meta?.qualityFlags || []).includes('evidence_quality_rewritten'));
-    assert.ok((result.meta?.qualityFlags || []).includes('safety_evidence_quality_rewritten'));
+    assert.equal(
+      (result.meta?.qualityFlags || []).includes('evidence_quality_rewritten'),
+      false,
+      'evidence 품질 보정은 normalize 단계에서 처리되므로 postprocess rewrite 플래그가 없어야 합니다.'
+    );
   });
 };
 
