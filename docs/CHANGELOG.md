@@ -2,6 +2,30 @@
 
 ## [2026-02-28]
 
+### 종합운세 마스터 리포트 길이 확장 + 조사 오류 보정 (v6.3.63)
+
+#### 변경 파일
+- `apps/api/src/domains/reading/report/domain-policy.js`
+- `docs/RELEASE_NOTES_v6.3.63.md`
+- `docs/CHANGELOG.md`
+
+#### 변경 사항
+- overall_fortune 마스터 리포트(summary) 밀도 강화
+  - `buildFortuneSummary()`를 단문 1줄 중심에서 기간별 2~3문장(문단 분리) 구조로 확장.
+  - `UP/CAUTION/BALANCED` 각 기조에 대해
+    - 현재 상태 요약
+    - 리스크/운영 관점 보완 문장
+    - 기간별 실행 문장(today/week/month/year)
+    를 포함하도록 재구성.
+- 기간별 안내 문장 강화
+  - `today/week/month/year` 각각에 맞는 운영 가이드를 별도 분기해 리포트 본문 길이와 정보량을 보강.
+- 한국어 조사 결합 오류 수정
+  - 연간 케이스에서 발생하던 `"올해은"` 형태를 방지하도록 `periodWithTopic` 사용 구간 정리.
+
+#### 검증
+- `node apps/api/tests/overall-fortune-regression.js` 통과
+- `node apps/api/tests/hybrid-resilience.js` 통과
+
 ### 데스크탑/태블릿(<=1024) 성소 내부 스크롤 복구 (v6.3.62)
 
 #### 변경 파일

@@ -134,9 +134,35 @@ const buildCounterpointsByContext = ({ questionType, readingKind = 'general_read
 const buildFortuneSummary = (fortunePeriod, trendLabel) => {
   const periodLabel = periodLabelKo(fortunePeriod || 'week');
   const periodWithTopic = withTopicParticle(periodLabel);
-  if (trendLabel === 'UP') return `${periodLabel}의 흐름은 상승 기조입니다. 다만 리듬을 유지하며 컨디션 관리를 병행하세요.`;
-  if (trendLabel === 'CAUTION') return `${periodLabel}에는 속도 조절이 필요합니다. 무리한 확장보다 점검과 정리가 유리합니다.`;
-  return `${periodWithTopic} 균형 구간입니다. 조급한 결정보다 우선순위를 정리하는 접근이 안정적입니다.`;
+  const periodGuidance = fortunePeriod === 'year'
+    ? '분기 단위 회고를 고정해 상·하반기 전략을 유연하게 조정해 보세요.'
+    : fortunePeriod === 'month'
+      ? '주차별 체크포인트를 두고 변동 신호가 보이면 즉시 실행 강도를 조절하세요.'
+      : fortunePeriod === 'week'
+        ? '주중 중간 점검(수/목)을 기준점으로 삼으면 체감 편차를 줄일 수 있습니다.'
+        : '오늘은 한 번에 하나씩 완료하는 리듬을 유지할수록 흐름이 안정됩니다.';
+
+  if (trendLabel === 'UP') {
+    return [
+      `${periodLabel}의 흐름은 상승 기조입니다. 다만 리듬을 유지하며 컨디션 관리를 병행하세요.`,
+      `${periodLabel}에는 추진력이 살아 있지만 과속하면 회복 탄력이 빠르게 떨어질 수 있습니다.`,
+      periodGuidance
+    ].join('\n\n');
+  }
+
+  if (trendLabel === 'CAUTION') {
+    return [
+      `${periodLabel}에는 속도 조절이 필요합니다. 무리한 확장보다 점검과 정리가 유리합니다.`,
+      `${periodWithTopic} 변동성이 큰 구간이므로 결론을 서두르기보다 조건을 먼저 닫는 접근이 안전합니다.`,
+      periodGuidance
+    ].join('\n\n');
+  }
+
+  return [
+    `${periodWithTopic} 균형 구간입니다. 조급한 결정보다 우선순위를 정리하는 접근이 안정적입니다.`,
+    `${periodWithTopic} 상승·주의 신호가 교차하기 쉬워 실행과 점검의 리듬을 함께 운영하는 것이 중요합니다.`,
+    periodGuidance
+  ].join('\n\n');
 };
 
 export {
